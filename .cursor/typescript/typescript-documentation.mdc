@@ -1,0 +1,259 @@
+---
+alwaysApply: true
+---
+
+# TypeScript Documentation Guidelines
+
+## Core Principles
+
+TypeScript documentation should embrace Design by Contract principles, defining clear interface specifications between a client and a supplier.
+
+- The caller (client) is obliged to satisfy preconditions before invoking a function.
+- The function (supplier) is obliged to satisfy postconditions and maintain invariants when preconditions are met.
+
+For example, a client might be a caller of a method, and the supplier is the method implementation. Documentation should clearly state these obligations to ensure correct usage and expectations.
+
+### Example
+
+```typescript
+/**
+ * Returns the element at the specified index.
+ *
+ * @param array - The array to access
+ * @param index - Must be >= 0 and < array.length
+ * @returns The element at the specified index
+ * @throws {RangeError} If index is out of bounds
+ */
+function getElement<T>(array: T[], index: number): T;
+```
+
+### Documentation Requirements
+
+- **Exported identifiers**: Document all modules, classes, interfaces, types, constants, variables, functions, and methods using JSDoc comments.
+- **Unexported identifiers**: Document only when behavior is non-obvious from the code itself.
+
+### Doc Comment Structure
+
+- Write complete sentences with proper capitalization and punctuation.
+- Use JSDoc format (`/** ... */`) for all exported symbols.
+- Start with a summary sentence describing what the symbol does.
+- Use `@param` for parameters, `@returns` for return values, `@throws` for exceptions.
+- Document semantics and behavior (what/why), not implementation details (how).
+- Never restate information obvious from the signature or type.
+
+## Modules
+
+- Place module-level documentation at the top of the file using a JSDoc comment.
+- Module comment should describe the purpose and main exports of the module.
+
+For example:
+
+```typescript
+/**
+ * Provides utilities for parsing and formatting YAML documents.
+ *
+ * @module yaml
+ */
+
+export function parse(yaml: string): any { ... }
+```
+
+For main entry points (like `index.ts`):
+
+```typescript
+/**
+ * Main entry point for the application.
+ * Configures and starts the server.
+ */
+
+import { startServer } from "./server";
+startServer();
+```
+
+## Types and Interfaces
+
+- Document when default values provide meaningful behavior.
+- Document generic type parameter constraints.
+- Document thread/async safety when relevant (TypeScript/JavaScript is single-threaded, but async operations need clarity):
+  - When a type or API is not safe for concurrent access across async boundaries.
+  - When interfaces require specific async/await patterns from implementers.
+  - When only some operations are safe: specify which operations require synchronization.
+
+```typescript
+/**
+ * A variable-sized buffer with read and write methods.
+ * The default instance is an empty buffer ready to use.
+ */
+class Buffer {
+  // ...
+}
+
+/**
+ * Represents a compiled regular expression. Instances are immutable
+ * and safe for concurrent use across async operations. Configuration
+ * methods like `setLongest()` should only be called before first use.
+ */
+class Regexp {
+  // ...
+}
+
+/**
+ * A generic concurrent cache mapping keys to values.
+ *
+ * @template K - Must be a type that can be used as a Map key (string, number, symbol)
+ * @template V - The value type stored in the cache
+ */
+class Cache<K extends string | number | symbol, V> {
+  // ...
+}
+
+/**
+ * Unique identifier for a user. Must be non-empty and URL-safe.
+ */
+type UserID = string;
+```
+
+### Interface Properties
+
+- Document exported properties using JSDoc.
+- For optional properties, specify default behavior when undefined is used.
+
+```typescript
+/**
+ * Options to configure the service behavior.
+ */
+interface ServiceOptions {
+  /**
+   * Maximum duration to wait for requests.
+   * Default is undefined (no timeout: waits indefinitely).
+   */
+  timeout?: number;
+
+  /**
+   * Maximum number of attempts to perform an action.
+   * Default is 3: 1 initial attempt + 2 retries.
+   */
+  maxAttempts?: number;
+}
+```
+
+## Functions and Methods
+
+### Return Types
+
+Document return types clearly:
+
+- When functions return complex objects, document the shape.
+- When functions return Promises, document the resolved value type.
+- When functions can throw, document what exceptions may be thrown.
+
+````typescript
+/**
+ * Creates a cancellable timeout promise.
+ *
+ * @param duration - Milliseconds to wait before resolving
+ * @returns A promise that resolves after the duration, and a cancel function
+ * @example
+ * ```ts
+ * const [promise, cancel] = withTimeout(5000);
+ * // Cancel the timeout if needed
+ * cancel();
+ * ```
+ */
+function withTimeout(duration: number): [Promise<void>, () => void];
+
+/**
+ * Splits items into two arrays based on the predicate.
+ *
+ * @param items - Array of items to partition
+ * @param predicate - Function that returns true for items in the first partition
+ * @returns Tuple containing [matches, rest] where matches are items where predicate returns true
+ */
+function partition<T>(items: T[], predicate: (item: T) => boolean): [T[], T[]];
+````
+
+### Async Parameters
+
+Document async behavior and error handling:
+
+- Document when operations ignore cancellation or have cleanup side effects.
+- Document Promise rejection conditions.
+
+```typescript
+/**
+ * Uploads data and continues even if the abort signal is triggered.
+ * Returns immediately on abort, but upload completes in the background.
+ *
+ * @param data - Data to upload
+ * @param signal - AbortSignal that can cancel the upload
+ * @returns Promise that resolves when upload completes
+ */
+async function upload(data: Uint8Array, signal?: AbortSignal): Promise<void>;
+
+/**
+ * Performs a search operation. Cannot be cancelled once started.
+ *
+ * @param query - Search query string
+ * @returns Promise resolving to array of search results
+ */
+async function search(query: string): Promise<Result[]>;
+```
+
+### Inline Comments
+
+- Avoid inline comments that describe what the code obviously does.
+- Comments should explain why the code exists or what it does when it's not obvious from the code itself.
+- Do not write comments that simply restate what the code already says clearly.
+
+## Formatting Techniques
+
+- Use JSDoc block comments (`/** ... */`) for all exported symbols.
+- Break long comments at natural boundaries (punctuation, clauses), aim for lines ~80-100 characters.
+- Indent code snippets in examples with 2 or 4 spaces.
+- Use blank lines to separate sections in multi-line JSDoc comments.
+- Use markdown formatting within JSDoc comments for better readability.
+
+````typescript
+/**
+ * Connects to the address on the named network.
+ * Known networks are "tcp", "udp", and "unix".
+ *
+ * @param network - Network protocol name
+ * @param address - Network address
+ * @param timeout - Connection timeout in milliseconds
+ * @returns Promise resolving to connection object
+ * @example
+ * ```ts
+ * await connect("tcp", "example.com:80", 5000);
+ * await connect("unix", "/tmp/socket", 1000);
+ * ```
+ */
+async function connect(
+  network: string,
+  address: string,
+  timeout: number
+): Promise<Connection>;
+````
+
+### Links
+
+Use JSDoc link syntax for references:
+
+- `{@link SymbolName}` for current module identifiers.
+- `{@link module:moduleName}` for external modules.
+- `{@link external:PackageName.Symbol}` for external packages.
+
+Link to related functions, types, and error values to improve discoverability.
+
+```typescript
+/**
+ * Reads data from the reader until EOF and appends it to the buffer,
+ * growing the buffer as needed.
+ *
+ * @param reader - Source to read from
+ * @returns Number of bytes read, or throws {@link BufferOverflowError}
+ * if the buffer becomes too large.
+ * @throws {BufferOverflowError} When buffer size exceeds maximum
+ */
+async function readFrom(reader: ReadableStream): Promise<number>;
+```

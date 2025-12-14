@@ -1,0 +1,91 @@
+# TypeScript Coding Guidelines
+
+These rules supplement the general engineering standards for TypeScript services running on modern web platforms.
+
+---
+
+## General Rules
+
+- Write comments, identifiers and log messages in **English**.
+- Follow TypeScript naming conventions: `PascalCase` for classes/types/interfaces, `camelCase` for variables/functions; use meaningful names.
+- Avoid implicit `any` types; enable strict mode in `tsconfig.json`.
+- Target **ES2020+** and use modern syntax features.
+- Prefer standard-library APIs and built-in types when they satisfy the requirement.
+
+## Dependency Management
+
+- Use `package.json` with proper versioning (prefer exact versions or ranges for dependencies).
+- Minimise external dependencies; prefer well-maintained, popular packages when needed.
+- Use type definitions from `@types/*` packages for JavaScript libraries.
+
+## Error Handling
+
+- Use `try/catch` blocks for synchronous errors; `async/await` or `.catch()` for promises.
+- Create custom error classes extending `Error` for domain-specific error types.
+- Include error context in error messages; use error codes when appropriate.
+- Log errors once—at the edge where the system loses context—in structured form (see Logging).
+
+## Asynchronous Programming
+
+- Prefer `async/await` over promise chains for better readability.
+- Use `Promise.all()` for parallel operations; `Promise.allSettled()` when partial failures are acceptable.
+- Handle race conditions with proper synchronization primitives when needed.
+
+## Type Safety & Generics
+
+- Leverage TypeScript's type system; avoid type assertions (`as`) unless necessary.
+- Use generics to create reusable, type-safe components and functions.
+- Prefer `interface` for object shapes that might be extended; `type` for unions/intersections.
+- Use discriminated unions for state management and error handling.
+
+## Testing
+
+- Mock external dependencies and API calls in tests.
+- Use testing frameworks like Jest, Vitest, or Mocha with TypeScript support.
+- Aim for ≥ 80% coverage on critical modules.
+- Test types using tools like `tsd` or `@ts-expect-error` comments.
+- Run tests in CI: `npm test` or `yarn test`.
+
+## Continuous Integration
+
+- Checklist for each pipeline run:
+  1. `tsc --noEmit` (type checking)
+  2. `eslint .` (linting)
+  3. `npm test` or `yarn test` (unit tests)
+  4. `npm run build` (build verification)
+  5. Security audit: `npm audit` or equivalent
+  6. Check for outdated dependencies
+
+## API & Database Versioning
+
+- Expose versioned endpoints (`/v1`, `/v2`).
+- Maintain backwards compatibility until formally deprecated.
+- Use migration tools for database schema changes (e.g., Prisma Migrate, TypeORM migrations).
+
+## Messaging & Caching
+
+- Define event names and schemas with version IDs.
+- Implement retry policies and dead-letter queues for message consumers.
+- Choose caching strategy (cache-aside, write-through, write-behind) appropriate to workload.
+- Use typed event emitters for type-safe event handling.
+
+## Code Organization
+
+- Use modules and exports properly; avoid global scope pollution.
+- Organize code by feature or layer (not by file type).
+- Use barrel exports (`index.ts`) judiciously to create clean public APIs.
+
+## Anti-Patterns to Avoid
+
+1. Using `any` type to bypass type checking.
+2. Mixing responsibilities across layers.
+3. Duplicating business logic.
+4. Leaking infrastructure details into domain packages.
+5. Ignoring error handling or swallowing errors silently.
+6. Neglecting metrics and logs.
+7. Creating overly complex generic types.
+8. Using `eval()` or dynamic code execution.
+
+---
+
+Complement these rules with testing documentation for advanced testing practices and security patterns for secure-coding requirements.

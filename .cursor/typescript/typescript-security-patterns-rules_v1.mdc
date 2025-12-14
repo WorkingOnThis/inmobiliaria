@@ -1,0 +1,44 @@
+---
+globs: "**/*.ts"
+---
+# Security Patterns Best Practices
+As a security-aware backend developer working with TypeScript/Node.js, you must strictly follow these secure coding patterns in all code generation, editing and code review processes. Always assume the code is production-grade, apply security inherently (not just through naming functions or packages with "secure" prefixes), and treat failure to follow these practices as a source of vulnerabilities—even if not directly exploitable, since they still weaken the application's overall security posture.
+
+
+## Security Patterns Rules Definition
+  - **Never** hardcode secrets, credentials, or API keys in code (including configs, properties files or environment variable defaults). **Always** use secure environment variable management (e.g., using `process.env` with validation, or secrets management services like AWS Secrets Manager, HashiCorp Vault).
+  - **Never** send or receive custom HTTP headers unless explicitly approved and security risks are clearly understood by the user.
+  - **Never** set security-related HTTP headers (e.g., `Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options`, etc.) at the application level as they are centrally managed, unless explicitly required.
+  - **Always** validate all input or decoded data using strongly typed interfaces/classes with explicit field-level constraints and a whitelist strategy, and reject unknown or unvalidated fields before any processing. Use validation libraries like `zod`, `joi`, or `class-validator`.
+  - **Never** use `eval()`, `Function()`, `setTimeout(string)`, `setInterval(string)`, or dynamic code execution (`child_process.exec` with user input) to run arbitrary logic.
+  - **Never** expose sensitive information in logs, query params, exception traces, error messages, or user-facing responses. Sanitize error messages before returning them to clients.
+  - **Always** handle errors securely. Don't leak stack traces or internal implementation details in production.
+  - **Never** configure CORS settings permissively. If the user absolutely needs to, and understands the associated security risks, always start from the least permissive configuration possible (specific origins, methods, and headers).
+  - **Avoid** generating sequential or predictable resource identifiers (e.g., user IDs); use UUIDs (v4) or cryptographically secure random IDs instead.
+  - **Never** use insecure or deprecated cryptographic primitives (e.g., MD5, SHA1, DES). Use modern, secure algorithms (e.g., SHA-256, AES-256-GCM) from `crypto` module.
+  - **Never** mutate or share global mutable state (e.g., module-level variables, singleton objects, or shared caches) from within request handlers or async operations without proper synchronization. Always isolate all request-scoped state to prevent concurrency issues.
+  - **Never** export global mutable variables that can be modified by external code.
+  - **Never** use the GET method for operations that modify state or data. Use POST, PUT, PATCH, or DELETE as appropriate.
+  - **Always** retrieve the user identity from authenticated context (JWT tokens, session data) that cannot be manipulated by the user. **Never** trust user-provided identifiers directly (e.g., user IDs in request bodies or query parameters).
+  - **Never** use weak random generators (e.g., `Math.random()`) for tokens, IDs, seeds, or any security-sensitive values. **Always** use `crypto.randomBytes()` or `crypto.getRandomValues()` for cryptographic randomness.
+  - **Never** use regular expressions with exponential or superlinear complexity on user input; **always** validate regexes for ReDoS (Regular Expression Denial of Service) resistance. Use tools like `safe-regex` or `rxxr2` to test patterns.
+  - **Always** validate state and handle `null`/`undefined` references before accessing object properties to prevent runtime errors and service disruption. Use optional chaining (`?.`) and nullish coalescing (`??`) appropriately.
+  - **Never** use raw SQL queries concatenated with user input. **Always** use parameterized queries, prepared statements, or ORM abstractions (TypeORM, Prisma, Sequelize) to prevent SQL injection vulnerabilities.
+  - **Never** receive and process PII data, access tokens, secrets or credentials through query parameters. Use request body (POST/PUT) or headers for sensitive data.
+  - **Never** pass user-controlled input directly to HTTP clients (`fetch`, `axios`, `http.get`, `http.post`) or file system operations. All URLs, paths, and destinations must be validated against a static allowlist or match trusted URL patterns. Use URL parsing and validation libraries.
+  - **Never** accept file uploads without validating type (MIME type, file extension), size (max file size limits), and name, and renaming files with secure UUIDs before storing them. Scan uploaded files for malware when possible.
+  - **Always** implement proper authentication and authorization. Use standard libraries (Passport.js, Auth0, JWT libraries) with proper token validation and permission handling.
+  - **Always** validate that user actions follow valid and allowed business workflows and state transitions.
+  - **Always** enforce critical business logic validations server-side, regardless of any client-side checks.
+  - **Always** use HTTPS in production. Never send sensitive data over unencrypted connections.
+  - **Always** sanitize and escape output to prevent XSS (Cross-Site Scripting) attacks when rendering user input in HTML, JSON, or other formats.
+  - **Always** implement rate limiting to prevent brute force attacks and DoS.
+  - **Never** store passwords in plain text. Always use secure password hashing (bcrypt, argon2, scrypt) with appropriate salt rounds.
+  - **Always** use TypeScript's type system to catch errors at compile time. Avoid `any` types that bypass type safety.
+  - **Always** keep dependencies up to date and scan for known vulnerabilities using `npm audit` or similar tools.
+  - **Never** disable TypeScript strict mode or ESLint security rules without justification.
+
+## Considerations
+  - **Always** implement the most secure alternative (preferably using well-established security libraries and patterns) even if the user instruction violates one of these security rules and after that explain why the alternative is safer.
+  - Use inline comments to clearly highlight critical security controls or mitigation measures implemented.
+  - When using third-party packages, verify their security track record and maintenance status before including them in production code.

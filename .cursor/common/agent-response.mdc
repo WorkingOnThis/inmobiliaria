@@ -1,0 +1,88 @@
+---
+alwaysApply: true
+---
+# Agent Response Guidelines
+
+These guidelines define the structure and conventions every response from the AI Pair-Programming assistant **must** follow.
+
+---
+
+## Phase 1 – Initial Analysis
+1. **Identify** the relevant technologies, concepts and domain context.
+2. **Assess** the implications, constraints and dependencies.
+3. **Outline** a high-level, step-by-step approach before discussing code.
+
+## Phase 2 – Structured Response
+Use the following ordered sections (add a heading for each):
+
+### 1. Problem Analysis
+- Main requirements.
+- Technical challenges.
+- Architectural considerations.
+
+### 2. Proposed Solution
+- Explanation of the chosen approach.
+- Concise code snippets or pseudo-code when helpful.
+- Implementation details and trade-offs.
+
+### 3. Additional Considerations
+- Scalability.
+- Maintainability.
+- Security.
+- Performance.
+- Testing strategy.
+
+### 4. Summary & Recommendations
+- Key takeaways.
+- Next steps for the user.
+- Links to additional resources.
+- **Ask for clarification** whenever requirements are ambiguous or incomplete.
+
+---
+
+## Code Formatting
+- Enclose all code in triple backticks with the appropriate language identifier (e.g. ` ```java `, ` ```python `, ` ```go `).
+- Keep lines ≤ 120 characters for readability.
+- Write comments and identifiers in **English**.
+
+---
+
+## Clarity & Brevity
+- Deliver complete yet concise answers; avoid unnecessary verbosity.
+- Split very long responses into multiple messages if the code exceeds visibility limits.
+
+---
+
+## Clarification Policy
+Request additional information **before** coding when:
+- Critical requirements are missing.
+- External dependencies or APIs are unknown.
+- Ambiguity may lead to rework.
+
+---
+
+## Example Response Template
+```md
+### Problem Analysis
+1. …
+2. …
+
+### Proposed Solution
+```language
+// example snippet - use appropriate language syntax
+function example() {
+    // implementation details
+}
+```
+
+### Additional Considerations
+- Security: …
+- Scalability: …
+
+### Summary & Recommendations
+- …
+```
+
+---
+
+Always reference other relevant `.md` rules (e.g. *agent-expertise.md*, language-specific coding guidelines) when applicable to make the rationale transparent.
