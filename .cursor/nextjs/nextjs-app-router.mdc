@@ -1,0 +1,82 @@
+---
+globs: "**/app/**/*.{ts,tsx}"
+---
+
+# Next.js App Router Guidelines
+
+These rules apply to Next.js 16 App Router development patterns, routing, layouts, and file conventions.
+
+---
+
+## File-Based Routing
+
+- Use the `app/` directory for all routes. Each folder represents a route segment.
+- Use `page.tsx` for route pages (UI components that are publicly accessible).
+- Use `layout.tsx` for shared UI that wraps multiple pages (persists across navigation).
+- Use `loading.tsx` for loading UI shown while page content loads.
+- Use `error.tsx` for error boundaries that catch errors in the route segment.
+- Use `not-found.tsx` for 404 pages at specific route levels.
+- Use `route.ts` or `route.js` for API route handlers (not page components).
+- Use `template.tsx` for UI that creates a new instance for each child (unlike layouts).
+
+## Route Conventions
+
+- **Dynamic routes**: Use `[param]` folder names (e.g., `app/users/[id]/page.tsx`).
+- **Catch-all routes**: Use `[...slug]` for catch-all segments.
+- **Optional catch-all**: Use `[[...slug]]` for optional catch-all segments.
+- **Route groups**: Use `(groupName)` for organizing routes without affecting URL structure.
+- **Parallel routes**: Use `@slot` folders for parallel routes (advanced pattern).
+
+## Layout Patterns
+
+- Root layout (`app/layout.tsx`) must include `<html>` and `<body>` tags.
+- Nested layouts inherit from parent layouts and wrap child pages.
+- Layouts can fetch data and pass it to child components.
+- Use layouts for shared navigation, headers, footers, and sidebars.
+- Layouts receive `children` prop of type `React.ReactNode`.
+
+## Metadata & SEO
+
+- Export `metadata` object or `generateMetadata` function from `page.tsx` or `layout.tsx`.
+- Use typed `Metadata` from `next` for type safety.
+- Prefer static metadata when possible; use `generateMetadata` for dynamic metadata.
+- Include essential SEO fields: `title`, `description`, `openGraph`, `twitter`.
+- Use `generateStaticParams` for static generation of dynamic routes.
+
+## Route Handlers (API Routes)
+
+- Place API routes in `app/api/[route]/route.ts`.
+- Export named functions: `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, etc.
+- Use `NextRequest` and `NextResponse` from `next/server` for request/response handling.
+- Return `NextResponse.json()` for JSON responses.
+- Handle errors gracefully and return appropriate status codes.
+- Use `async` functions for route handlers that need async operations.
+
+## Navigation
+
+- Use `next/link`'s `Link` component for client-side navigation (not `<a>` tags).
+- Use `useRouter()` from `next/navigation` for programmatic navigation in Client Components.
+- Use `redirect()` from `next/navigation` in Server Components and Server Actions.
+- Prefer `Link` over `router.push()` for better prefetching and performance.
+
+## File Naming Conventions
+
+- Use `kebab-case` for folder names (route segments).
+- Use `PascalCase` for component files (`Page.tsx`, `Layout.tsx`).
+- Use `camelCase` for utility files and route handlers.
+- Keep route files at the root of their segment folder.
+
+## Type Safety
+
+- Use TypeScript for all route files.
+- Type route params with `{ params: { id: string } }` for dynamic routes.
+- Use `searchParams` prop typed as `{ [key: string]: string | string[] | undefined }` for query params.
+- Leverage Next.js TypeScript types from `next` package.
+
+## Best Practices
+
+- Keep pages focused and delegate complex logic to Server Components or Server Actions.
+- Use route groups to organize code without affecting URLs.
+- Implement proper error boundaries at appropriate route levels.
+- Use loading states to improve perceived performance.
+- Leverage parallel routes and intercepting routes for advanced UI patterns when needed.

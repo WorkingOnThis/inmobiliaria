@@ -1,0 +1,146 @@
+---
+globs: "**/*.{ts,tsx}"
+---
+
+# Next.js Performance Optimization Guidelines
+
+These rules cover Next.js-specific optimizations for images, links, fonts, caching, and bundle size.
+
+---
+
+## Image Optimization
+
+- **Always use `next/image`** instead of `<img>` tags for automatic optimization.
+- Provide `width` and `height` props (or use `fill` for responsive images).
+- Use `priority` prop for above-the-fold images (LCP optimization).
+- Use `loading="lazy"` (default) for below-the-fold images.
+- Use `placeholder="blur"` with `blurDataURL` for better perceived performance.
+- Configure `next.config.ts` with image domains if using external images.
+- Use appropriate `sizes` prop for responsive images.
+
+### Example
+
+```tsx
+import Image from "next/image";
+
+<Image
+  src="/hero.jpg"
+  alt="Hero image"
+  width={1200}
+  height={600}
+  priority
+  placeholder="blur"
+  blurDataURL="data:image/..."
+/>;
+```
+
+## Link Optimization
+
+- **Always use `next/link`'s `Link` component** instead of `<a>` tags for internal navigation.
+- Next.js automatically prefetches linked pages on hover (in viewport).
+- Use `prefetch={false}` only when you want to disable prefetching for specific links.
+- Use `scroll={false}` to disable scroll to top on navigation when needed.
+
+## Font Optimization
+
+- Use `next/font` for automatic font optimization and self-hosting.
+- Use `next/font/google` for Google Fonts.
+- Use `next/font/local` for local font files.
+- Configure font subsets to reduce bundle size.
+- Use CSS variables for font families (e.g., `--font-geist-sans`).
+
+### Example
+
+```tsx
+import { Geist } from "next/font/google";
+
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
+});
+
+// Use in className: `${geist.variable}`
+```
+
+## Code Splitting & Dynamic Imports
+
+- Use `next/dynamic` for code splitting and lazy loading components.
+- Use `dynamic()` with `ssr: false` for client-only components.
+- Use `dynamic()` with `loading` prop for loading states.
+- Split large libraries into separate chunks when possible.
+
+### Example
+
+```tsx
+import dynamic from "next/dynamic";
+
+const HeavyComponent = dynamic(() => import("./HeavyComponent"), {
+  loading: () => <p>Loading...</p>,
+  ssr: false, // If client-only
+});
+```
+
+## Metadata & SEO
+
+- Export `metadata` or `generateMetadata` for proper SEO.
+- Use `generateMetadata` for dynamic metadata to enable static generation when possible.
+- Include Open Graph and Twitter Card metadata for social sharing.
+- Use `robots.ts` or `sitemap.ts` for advanced SEO configuration.
+
+## Caching Strategies
+
+- Use `fetch()` caching options appropriately:
+  - `cache: 'force-cache'` for static data
+  - `cache: 'no-store'` for dynamic data
+  - `next: { revalidate: seconds }` for ISR
+- Use `unstable_cache` for custom caching logic.
+- Use `revalidatePath()` and `revalidateTag()` for on-demand revalidation.
+- Configure route segment config: `export const revalidate = seconds`.
+
+## Bundle Size Optimization
+
+- Minimize Client Components to reduce JavaScript bundle size.
+- Use Server Components by default (zero client-side JavaScript).
+- Analyze bundle size with `@next/bundle-analyzer`.
+- Remove unused dependencies and imports.
+- Use tree-shaking friendly imports (avoid `import * as` when possible).
+
+## React Compiler
+
+- This project has React Compiler enabled (`reactCompiler: true` in `next.config.ts`).
+- The compiler automatically optimizes React components.
+- Write idiomatic React code; the compiler handles optimizations.
+- No need for manual `useMemo` or `useCallback` in most cases (compiler optimizes automatically).
+
+## Streaming & Suspense
+
+- Use `Suspense` boundaries for progressive rendering.
+- Stream data with Server Components and Suspense.
+- Use `loading.tsx` for route-level loading states.
+- Implement skeleton screens for better UX during loading.
+
+## Static Generation
+
+- Prefer Static Generation when possible (`generateStaticParams` for dynamic routes).
+- Use `export const dynamic = 'force-static'` to force static generation.
+- Use `export const dynamic = 'force-dynamic'` to force dynamic rendering.
+- Use `export const dynamicParams = true/false` to control dynamic route behavior.
+
+## Performance Monitoring
+
+- Use Web Vitals for performance monitoring.
+- Monitor Core Web Vitals: LCP, FID, CLS.
+- Use `next/third-parties` for optimized third-party script loading.
+- Implement proper error tracking and monitoring.
+
+## Best Practices Summary
+
+1. **Images**: Always use `next/image`
+2. **Links**: Always use `next/link`
+3. **Fonts**: Use `next/font` for optimization
+4. **Components**: Prefer Server Components
+5. **Data**: Fetch in Server Components when possible
+6. **Caching**: Configure appropriate caching strategies
+7. **Bundle**: Minimize Client Components
+8. **SEO**: Export proper metadata
+9. **Monitoring**: Track performance metrics

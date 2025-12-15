@@ -1,0 +1,116 @@
+---
+globs: "**/*.{ts,tsx}"
+---
+
+# Next.js Server Components & Client Components
+
+These rules define when and how to use Server Components vs Client Components in Next.js 16.
+
+---
+
+## Default: Server Components
+
+- **By default, all components in the App Router are Server Components.**
+- Server Components render on the server, reducing client-side JavaScript bundle.
+- Server Components can directly access databases, file systems, and backend APIs.
+- Server Components cannot use browser-only APIs (`window`, `document`, `localStorage`, etc.).
+- Server Components cannot use React hooks (`useState`, `useEffect`, `useContext`, etc.).
+- Server Components cannot use event handlers (`onClick`, `onChange`, etc.).
+
+## When to Use Client Components
+
+Add `"use client"` directive at the top of the file when you need:
+
+- **Interactivity**: Event handlers (`onClick`, `onSubmit`, `onChange`, etc.).
+- **Browser APIs**: `window`, `document`, `localStorage`, `sessionStorage`, etc.
+- **React Hooks**: `useState`, `useEffect`, `useContext`, `useReducer`, etc.
+- **Third-party libraries**: That depend on browser APIs or React hooks.
+- **Context Providers**: React Context API requires Client Components.
+
+## Component Composition Strategy
+
+- **Keep Server Components as the default** and only mark components as Client Components when necessary.
+- **Compose Client Components inside Server Components** to minimize client-side JavaScript.
+- Pass Server Component data as props to Client Components.
+- Use the "interactivity boundary" pattern: mark only the interactive parts as Client Components.
+
+## Data Fetching in Server Components
+
+- Fetch data directly in Server Components using `async/await` and `fetch()`.
+- Use Drizzle ORM queries directly in Server Components (no API route needed).
+- Server Components can access environment variables directly.
+- Use `cache()` from React to deduplicate requests within the same render.
+- Use `unstable_cache` from `next/cache` for persistent caching across requests.
+
+## Server Actions
+
+- Use Server Actions for mutations (create, update, delete operations).
+- Define Server Actions with `"use server"` directive at the top of the file or function.
+- Server Actions can be called from Client Components using form actions or direct function calls.
+- Server Actions receive `FormData` when called from forms, or typed parameters when called directly.
+- Use Server Actions instead of API routes for mutations when possible (simpler, type-safe).
+
+## Patterns & Examples
+
+### ✅ Good: Server Component with Client Component
+
+```tsx
+// app/page.tsx (Server Component)
+import { db } from "@/db";
+import InteractiveButton from "./InteractiveButton";
+
+export default async function Page() {
+  const data = await db.select().from(users);
+  return (
+    <div>
+      <h1>Users</h1>
+      <InteractiveButton data={data} />
+    </div>
+  );
+}
+
+// app/InteractiveButton.tsx (Client Component)
+("use client");
+import { useState } from "react";
+
+export default function InteractiveButton({ data }) {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>Count: {count}</button>;
+}
+```
+
+### ❌ Bad: Unnecessary Client Component
+
+```tsx
+// Don't mark as Client Component if you don't need interactivity
+"use client"; // ❌ Unnecessary
+export default function StaticContent() {
+  return <p>This is static content</p>;
+}
+```
+
+## Importing Client Components in Server Components
+
+- You can import Client Components into Server Components.
+- Client Components must be imported as default exports or named exports.
+- Props passed from Server to Client Components must be serializable (no functions, classes, or complex objects).
+
+## Context Providers
+
+- Context Providers must be Client Components.
+- Create a separate Client Component file for the provider.
+- Wrap your app in the provider in the root layout or a nested layout.
+- Use providers sparingly to avoid unnecessary client-side JavaScript.
+
+## Type Safety
+
+- Type props for both Server and Client Components using TypeScript interfaces or types.
+- Use `React.ReactNode` for children props.
+- Ensure props passed from Server to Client Components are serializable.
+
+## Performance Considerations
+
+- Minimize Client Components to reduce bundle size.
+- Use Server Components for static content and data fetching.
+- Move interactivity to leaf components (components at the bottom of the tree).
+- Prefer Server Actions over API routes + fetch for mutations.

@@ -1,0 +1,244 @@
+---
+globs: "**/api/**/*.{ts,tsx}"
+---
+
+# ElysiaJS Integration Guidelines
+
+These rules cover ElysiaJS integration with Next.js, API route patterns, and type-safe client usage with Eden Treaty.
+
+---
+
+## ElysiaJS in Next.js
+
+- ElysiaJS is integrated with Next.js through Route Handlers in `app/api/[[...slugs]]/route.ts`.
+- Use the catch-all route pattern `[[...slugs]]` to handle all API routes through ElysiaJS.
+- Export Elysia's `fetch` method for each HTTP method you want to support: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`.
+- Set the `prefix` option to `/api` to match Next.js API route structure.
+
+## Route Definition
+
+- Define routes using Elysia's fluent API: `.get()`, `.post()`, `.put()`, `.patch()`, `.delete()`.
+- Use route parameters with `:param` syntax (e.g., `/users/:id`).
+- Group related routes using Elysia's plugin system or route grouping.
+- Export the app type as `AppType` for Eden Treaty type safety.
+
+### Example Route Structure
+
+```tsx
+import { Elysia, t } from "elysia";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+
+const app = new Elysia({ prefix: "/api" })
+  .get("/", () => ({ message: "API is running" }))
+  .get("/users", async () => {
+    const allUsers = await db.select().from(users);
+    return { users: allUsers };
+  })
+  .get("/users/:id", async ({ params }) => {
+    const user = await db.select().from(users).where(eq(users.id, params.id));
+    return { user };
+  })
+  .post(
+    "/users",
+    async ({ body }) => {
+      const newUser = await db.insert(users).values(body).returning();
+      return { user: newUser[0] };
+    },
+    {
+      body: t.Object({
+        name: t.String(),
+        email: t.String({ format: "email" }),
+      }),
+    }
+  );
+
+export type AppType = typeof app;
+export const GET = app.fetch;
+export const POST = app.fetch;
+```
+
+## Input Validation
+
+- Use Elysia's built-in validation with `t` (TypeBox) for request validation.
+- Validate `body`, `query`, `params`, and `headers` using TypeBox schemas.
+- Return appropriate error responses for validation failures (Elysia handles this automatically).
+- Use TypeBox's type inference for automatic TypeScript types.
+
+### Validation Example
+
+```tsx
+import { t } from "elysia";
+
+.post(
+  "/users",
+  async ({ body }) => {
+    // body is automatically typed and validated
+    return { user: body };
+  },
+  {
+    body: t.Object({
+      name: t.String({ minLength: 1, maxLength: 100 }),
+      email: t.String({ format: "email" }),
+      age: t.Optional(t.Number({ minimum: 0, maximum: 150 })),
+    }),
+    query: t.Object({
+      include: t.Optional(t.String()),
+    }),
+  }
+);
+```
+
+## Database Integration
+
+- Use Drizzle ORM directly in Elysia routes (same as Server Components).
+- Import database instance from `@/db` or `@/db/index`.
+- Handle database errors gracefully and return appropriate HTTP status codes.
+- Use transactions for multiple related operations.
+
+### Database Example
+
+```tsx
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+.get("/users/:id", async ({ params, error }) => {
+  try {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, params.id))
+      .limit(1);
+
+    if (!user) {
+      return error(404, { message: "User not found" });
+    }
+
+    return { user };
+  } catch (err) {
+    return error(500, { message: "Internal server error" });
+  }
+});
+```
+
+## Error Handling
+
+- Use Elysia's `error()` helper for error responses.
+- Return appropriate HTTP status codes (400, 404, 500, etc.).
+- Include meaningful error messages in responses.
+- Log errors server-side for debugging (never expose internal errors to clients).
+
+### Error Handling Example
+
+```tsx
+import { error } from "elysia";
+
+.get("/users/:id", async ({ params, error }) => {
+  const user = await findUser(params.id);
+  if (!user) {
+    return error(404, { message: "User not found" });
+  }
+  return { user };
+});
+```
+
+## Type-Safe Client with Eden Treaty
+
+- Use Eden Treaty client (`@elysiajs/eden`) for type-safe API calls from Next.js components.
+- Import the `api` client from `@/lib/eden` (or your configured path).
+- The client provides full TypeScript autocomplete and type safety.
+- Works in both Server Components and Client Components.
+
+### Client Usage in Server Components
+
+```tsx
+import { api } from "@/lib/eden";
+
+export default async function UsersPage() {
+  const response = await api.users.get();
+  // response is fully typed based on Elysia route definitions
+  return <UserList users={response.data.users} />;
+}
+```
+
+### Client Usage in Client Components
+
+```tsx
+"use client";
+import { api } from "@/lib/eden";
+import { useState } from "react";
+
+export default function CreateUserForm() {
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await api.users.post({
+        name: e.currentTarget.name.value,
+        email: e.currentTarget.email.value,
+      });
+      // Handle success
+    } catch (error) {
+      // Handle error
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return <form onSubmit={handleSubmit}>...</form>;
+}
+```
+
+## When to Use ElysiaJS vs Server Actions
+
+- **Use ElysiaJS** when:
+  - You need RESTful API endpoints that external services consume.
+  - You want type-safe APIs with automatic validation.
+  - You need complex routing patterns or middleware.
+  - You want to share API logic between Next.js and other clients.
+- **Use Server Actions** when:
+  - You're handling form submissions from Next.js forms.
+  - You want simpler, form-first mutations.
+  - You don't need RESTful endpoints.
+
+## Middleware & Plugins
+
+- Use Elysia plugins for reusable functionality (authentication, logging, CORS, etc.).
+- Create custom plugins for shared logic across routes.
+- Use Elysia's `onBeforeHandle`, `onAfterHandle`, and `onError` hooks for middleware.
+
+### Plugin Example
+
+```tsx
+import { Elysia } from "elysia";
+
+const authPlugin = new Elysia().onBeforeHandle(({ headers, error }) => {
+  const token = headers.authorization?.replace("Bearer ", "");
+  if (!token || !isValidToken(token)) {
+    return error(401, { message: "Unauthorized" });
+  }
+});
+
+const app = new Elysia({ prefix: "/api" })
+  .use(authPlugin)
+  .get("/protected", () => ({ message: "Protected route" }));
+```
+
+## Performance Considerations
+
+- ElysiaJS is extremely fast (built on Bun's HTTP server).
+- Use Elysia for high-performance API endpoints.
+- Leverage Elysia's automatic request parsing and validation.
+- Consider caching strategies for frequently accessed endpoints.
+
+## Best Practices
+
+1. **Type Safety**: Always export `AppType` and use Eden Treaty for client calls.
+2. **Validation**: Validate all inputs using TypeBox schemas.
+3. **Error Handling**: Use Elysia's error helpers and appropriate status codes.
+4. **Database**: Use Drizzle ORM consistently across Elysia routes and Server Components.
+5. **Structure**: Organize routes using Elysia plugins or separate route files.
+6. **Documentation**: Use JSDoc comments for complex routes and endpoints.

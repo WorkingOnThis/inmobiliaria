@@ -1,71 +1,122 @@
 ---
 alwaysApply: true
 ---
+
 # Agent Expertise
 
 ## Core Responsibilities
-- Provide comprehensive and practical guidance on backend development across multiple languages.
-- Promote industry best practices and modern patterns.
+
+- Provide comprehensive and practical guidance on full-stack web development with Next.js and React.
+- Promote industry best practices and modern patterns for Next.js applications.
 - Ensure security, scalability and maintainability in all solutions.
 - Guide developers through architectural decisions and trade-offs.
 - Help implement clean, efficient code aligned with industry standards.
 
 ## Areas of Expertise
 
+### Full-Stack Development (Next.js)
+
+- Next.js App Router patterns and conventions.
+- Server Components vs Client Components architecture.
+- Server Actions for mutations and form handling.
+- API Routes (Route Handlers) for external integrations.
+- Data fetching strategies (Server Components, Server Actions, API routes).
+- Integration with ORMs (Drizzle ORM) and databases.
+
+### Frontend Development (React)
+
+- React 19 patterns and best practices.
+- Component composition and reusability.
+- State management (local, server, global, URL-based).
+- Client-side interactivity and user experience.
+- Responsive design and accessibility.
+- Performance optimization (code splitting, lazy loading).
+
 ### API Development
-- RESTful and GraphQL service design.
-- HTTP protocol understanding and best practices.
-- Security, authentication and authorization patterns.
-- Request validation and robust error handling.
+
+- **ElysiaJS** for type-safe, high-performance API endpoints with automatic validation.
+- Next.js Route Handlers for API endpoints (traditional or ElysiaJS-integrated).
+- RESTful API design and best practices.
+- Server Actions as an alternative to API routes for form-based mutations.
+- Request validation using ElysiaJS TypeBox schemas or Zod.
+- Type-safe client usage with Eden Treaty for end-to-end type safety.
+- Authentication and authorization patterns.
 - API versioning and backward compatibility.
 
-### Performance & Scalability
-- Concurrency patterns and resource optimization.
-- Asynchronous processing and message queues.
-- Load-testing and capacity planning.
-- Performance profiling and optimization strategies.
-
 ### Database & Persistence
-- Relational SQL databases and query optimization.
-- NoSQL document and key-value stores.
-- Caching strategies and data modeling.
-- Database migration and schema design.
+
+- Relational SQL databases (PostgreSQL) and query optimization.
+- ORM patterns with Drizzle ORM.
+- Database schema design and migrations.
+- Caching strategies (Next.js caching, React cache, unstable_cache).
 - Connection pooling and transaction management.
+- Data modeling for web applications.
+
+### Performance & Scalability
+
+- Next.js performance optimizations (Image, Link, fonts, dynamic imports).
+- Server-side rendering (SSR) and static generation (SSG) strategies.
+- Incremental Static Regeneration (ISR) and on-demand revalidation.
+- Client-side performance (bundle size, code splitting, lazy loading).
+- Database query optimization and indexing.
+- Caching strategies at multiple levels.
 
 ### Architecture & Design
-- Microservices and service decomposition.
-- Repository and service layer patterns.
-- Domain-Driven Design principles.
+
+- Next.js App Router architecture and routing patterns.
+- Component architecture (Server/Client boundary decisions).
+- Data flow patterns (Server Components → Client Components).
+- Repository and service layer patterns for database operations.
 - Common design patterns and SOLID principles.
-- Event-driven architecture and messaging.
+- Monolithic full-stack architecture (Next.js) vs microservices trade-offs.
 
 ### DevOps & Infrastructure
+
 - **Observability**
   - Structured logging with contextual data.
   - Metrics collection (business & infrastructure) and SLIs/SLOs.
-  - Distributed tracing and correlation IDs.
   - Application Performance Monitoring (APM).
-- Containerization and orchestration (Docker, Kubernetes).
-- Cloud-native deployment patterns.
+  - Web Vitals monitoring for frontend performance.
+- Next.js deployment patterns (Vercel, self-hosted, Docker).
+- Environment variable management and configuration.
+- CI/CD pipelines for Next.js applications.
 - Infrastructure as Code (IaC) principles.
 
 ### Security & Compliance
+
 - Follow security baseline guidelines for threat modeling, data protection and secure coding.
+- Next.js security best practices (CSP, headers, authentication).
+- Input validation and sanitization (Server Actions, API routes).
+- Secure database queries (parameterized queries, ORM safety).
 - Integrate static analysis security testing (SAST) tools into development workflow.
 - Implement dependency vulnerability scanning and Software Bill of Materials (SBOM) generation.
-- Enforce secret management and key rotation policies.
-- Apply principle of least privilege and zero-trust security models.
+- Enforce secret management and environment variable security.
+- Apply principle of least privilege and secure authentication patterns.
 
 ### Testing & Quality Assurance
-- Unit testing strategies and test-driven development.
-- Integration and end-to-end testing approaches.
+
+- Unit testing strategies for React components and utilities.
+- Integration testing for Server Components and Server Actions.
+- End-to-end testing approaches (Playwright, Cypress).
+- API route testing and database testing patterns.
 - Mock and stub patterns for isolated testing.
 - Code coverage analysis and quality gates.
 - Automated testing in CI/CD pipelines.
 
-## Language-Specific Extensions
-This baseline is extended by language-specific expertise files that provide:
-- Language-specific best practices and idioms
-- Framework-specific guidance (Spring Boot, FastAPI, etc.)
-- Language-specific tooling and ecosystem knowledge
-- Performance characteristics and optimization techniques
+### User Experience & Accessibility
+
+- Responsive design patterns and mobile-first approaches.
+- Accessibility (a11y) best practices and WCAG compliance.
+- Progressive enhancement and graceful degradation.
+- Loading states and error handling UX.
+- Form validation and user feedback patterns.
+
+## Framework-Specific Extensions
+
+This baseline is extended by framework-specific expertise files that provide:
+
+- Next.js-specific patterns and best practices (see `../nextjs/`)
+- React 19 patterns and modern React development (see `../nextjs/react-patterns.mdc`)
+- TypeScript best practices (see `../typescript/`)
+- Framework-specific tooling and ecosystem knowledge
+- Performance characteristics and optimization techniques specific to Next.js

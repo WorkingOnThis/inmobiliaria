@@ -1,0 +1,171 @@
+---
+globs: "**/*.{ts,tsx}"
+---
+
+# React 19 Patterns & Best Practices
+
+These rules cover React 19 patterns, hooks, component composition, and modern React best practices for Next.js projects.
+
+---
+
+## React 19 Features
+
+- **React Compiler**: Enabled in this project. Write idiomatic React; compiler handles optimizations.
+- **Automatic Memoization**: Compiler automatically memoizes components and values.
+- **Actions**: Use Server Actions with form actions for mutations.
+- **use() Hook**: Use `use()` for reading promises and context (advanced pattern).
+
+## Component Patterns
+
+- Use functional components (not class components).
+- Keep components small and focused (single responsibility).
+- Extract reusable logic into custom hooks.
+- Use composition over inheritance.
+- Prefer explicit props over context when possible.
+
+## Hooks Best Practices
+
+- **useState**: Use for local component state. Prefer Server Components when state isn't needed.
+- **useEffect**: Use sparingly. Prefer Server Components for data fetching. Use for side effects that need to run on the client.
+- **useContext**: Use for shared state that needs to be accessed by multiple components. Keep context providers minimal.
+- **useMemo/useCallback**: Generally not needed with React Compiler, but use if compiler doesn't optimize specific cases.
+- **Custom Hooks**: Extract reusable stateful logic into custom hooks (e.g., `useLocalStorage`, `useDebounce`).
+
+## Component Composition
+
+- Compose Server Components with Client Components when needed.
+- Pass data from Server Components to Client Components as props.
+- Use children prop for flexible composition.
+- Create wrapper components for common patterns.
+
+### Example: Server + Client Composition
+
+```tsx
+// Server Component
+export default async function Page() {
+  const data = await fetchData();
+  return <InteractiveComponent data={data} />;
+}
+
+// Client Component
+("use client");
+export default function InteractiveComponent({ data }) {
+  const [state, setState] = useState();
+  // Interactive logic here
+}
+```
+
+## Props & Type Safety
+
+- Type all component props with TypeScript interfaces or types.
+- Use `React.ReactNode` for children props.
+- Use `Readonly<>` for props that shouldn't be mutated.
+- Destructure props in function parameters for cleaner code.
+- Provide default values when appropriate.
+
+### Example
+
+```tsx
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+  children?: React.ReactNode;
+}
+
+export default function Button({
+  label,
+  onClick,
+  variant = "primary",
+  children,
+}: ButtonProps) {
+  // Component implementation
+}
+```
+
+## State Management
+
+- **Local State**: Use `useState` for component-specific state.
+- **Server State**: Fetch in Server Components, pass as props.
+- **Global State**: Use Context API for app-wide state (keep minimal).
+- **Form State**: Use Server Actions with form actions, or `useFormState`/`useFormStatus` hooks.
+- **URL State**: Use `useSearchParams` and `useRouter` for URL-based state.
+
+## Event Handlers
+
+- Define event handlers in Client Components (Server Components can't use them).
+- Use arrow functions or bind handlers appropriately.
+- Prevent default behavior when needed (`e.preventDefault()`).
+- Use Server Actions for form submissions when possible.
+
+## Conditional Rendering
+
+- Use ternary operators or logical AND (`&&`) for simple conditions.
+- Extract complex conditional logic into separate functions or components.
+- Use early returns for cleaner code flow.
+
+## Lists & Keys
+
+- Always provide unique `key` props when rendering lists.
+- Use stable, unique identifiers for keys (not array indices when list can change).
+- Extract list items into separate components when they're complex.
+
+## Error Handling
+
+- Use error boundaries (`error.tsx` in Next.js) for component-level errors.
+- Handle errors in async operations with try/catch.
+- Provide fallback UI for error states.
+- Log errors appropriately (server-side for Server Components).
+
+## Performance Considerations
+
+- **React Compiler**: Automatically optimizes components (no manual memoization needed in most cases).
+- **Server Components**: Use by default to reduce client-side JavaScript.
+- **Code Splitting**: Use `next/dynamic` for large components.
+- **Avoid Unnecessary Re-renders**: Compiler handles this, but be mindful of prop changes.
+
+## Accessibility
+
+- Use semantic HTML elements.
+- Provide proper ARIA labels when needed.
+- Ensure keyboard navigation works.
+- Maintain proper focus management.
+- Test with screen readers.
+
+## Styling with Tailwind CSS
+
+- Use Tailwind utility classes for styling.
+- Extract repeated patterns into components or utility functions.
+- Use `className` prop for conditional classes (consider `clsx` or `cn` utility).
+- Follow mobile-first responsive design patterns.
+
+### Example
+
+```tsx
+import { cn } from "@/lib/utils"; // or use clsx
+
+export default function Button({ variant, className, ...props }) {
+  return (
+    <button
+      className={cn(
+        "px-4 py-2 rounded",
+        variant === "primary" && "bg-blue-500 text-white",
+        variant === "secondary" && "bg-gray-200 text-gray-800",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+```
+
+## Best Practices Summary
+
+1. **Default to Server Components** - Only use Client Components when needed
+2. **Type Everything** - Use TypeScript for all props and state
+3. **Compose Components** - Build complex UIs from simple components
+4. **Trust the Compiler** - React Compiler handles most optimizations
+5. **Handle Errors** - Use error boundaries and proper error handling
+6. **Accessibility First** - Build accessible components from the start
+7. **Performance** - Minimize Client Components, use Server Components
+8. **Clean Code** - Keep components focused and maintainable

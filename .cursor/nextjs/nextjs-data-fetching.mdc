@@ -1,0 +1,142 @@
+---
+globs: "**/*.{ts,tsx}"
+---
+
+# Next.js Data Fetching Guidelines
+
+These rules cover data fetching patterns, Server Actions, API routes, and database integration with Drizzle ORM.
+
+---
+
+## Data Fetching in Server Components
+
+- Fetch data directly in Server Components using `async/await`.
+- Use `fetch()` with Next.js automatic request deduplication and caching.
+- Access Drizzle ORM directly in Server Components (no API route needed for reads).
+- Use `cache()` from React to deduplicate requests within the same render.
+- Use `unstable_cache` from `next/cache` for persistent caching across requests.
+
+## Fetch API Configuration
+
+- Use `fetch()` with `cache` option: `'force-cache'` (default), `'no-store'`, `'revalidate'`, or `next: { revalidate: seconds }`.
+- Use `revalidate` option for time-based revalidation (ISR).
+- Use `tags` for on-demand revalidation with `revalidateTag()`.
+- Always handle errors with try/catch blocks.
+
+## Drizzle ORM Integration
+
+- Import database instance from a centralized location (e.g., `@/db`).
+- Use Drizzle queries directly in Server Components.
+- Use transactions for multiple related operations.
+- Handle database errors gracefully and return appropriate error responses.
+- Use prepared statements and parameterized queries (Drizzle handles this automatically).
+
+### Example Pattern
+
+```tsx
+import { db } from "@/db";
+import { users } from "@/db/schema";
+
+export default async function UsersPage() {
+  try {
+    const allUsers = await db.select().from(users);
+    return <UserList users={allUsers} />;
+  } catch (error) {
+    // Handle error appropriately
+    return <Error message="Failed to load users" />;
+  }
+}
+```
+
+## Server Actions
+
+- Use Server Actions for mutations (create, update, delete).
+- Define Server Actions with `"use server"` directive.
+- Place Server Actions in separate files (e.g., `actions.ts`) or at the top of component files.
+- Use `zod` or similar for input validation in Server Actions.
+- Return typed results or throw errors for error handling.
+- Use `revalidatePath()` or `revalidateTag()` after mutations to update cached data.
+
+### Server Action Pattern
+
+```tsx
+"use server";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+const createUserSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+});
+
+export async function createUser(formData: FormData) {
+  const rawData = {
+    name: formData.get("name"),
+    email: formData.get("email"),
+  };
+
+  const validated = createUserSchema.parse(rawData);
+
+  try {
+    await db.insert(users).values(validated);
+    revalidatePath("/users");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Failed to create user" };
+  }
+}
+```
+
+## API Routes (Route Handlers)
+
+- **ElysiaJS Integration**: This project uses ElysiaJS for API routes (see `elysia-integration.mdc` for details).
+- ElysiaJS routes are defined in `app/api/[[...slugs]]/route.ts` and provide type-safe APIs with automatic validation.
+- Use Eden Treaty client (`@/lib/eden`) for type-safe API calls from components.
+- **Traditional Next.js API Routes**: Use standard Next.js API routes (`app/api/[route]/route.ts`) when you need:
+  - Simple endpoints that don't benefit from ElysiaJS features
+  - Webhooks that require specific Next.js handling
+- Prefer Server Actions over API routes for form submissions and mutations.
+- For ElysiaJS routes, export Elysia's `fetch` method for each HTTP method.
+- For traditional routes, export named HTTP method functions: `GET`, `POST`, `PUT`, `DELETE`, `PATCH`.
+- Use `NextRequest` and `NextResponse` from `next/server` for traditional routes.
+- Return appropriate HTTP status codes and error responses.
+
+## Caching Strategies
+
+- **Static Generation**: Use `fetch()` with `cache: 'force-cache'` or `revalidate` option.
+- **Dynamic Rendering**: Use `fetch()` with `cache: 'no-store'` or `export const dynamic = 'force-dynamic'`.
+- **Time-based Revalidation**: Use `next: { revalidate: seconds }` in fetch options.
+- **On-demand Revalidation**: Use `revalidateTag()` or `revalidatePath()` after mutations.
+- **Route Segment Config**: Use `export const revalidate = seconds` for route-level revalidation.
+
+## Error Handling
+
+- Always wrap data fetching in try/catch blocks.
+- Return user-friendly error messages (don't expose internal errors).
+- Use error boundaries (`error.tsx`) for component-level error handling.
+- Log errors server-side for debugging (never log sensitive data).
+- Return appropriate HTTP status codes in API routes.
+
+## Type Safety
+
+- Type all database queries and responses.
+- Use Drizzle's inferred types for query results.
+- Validate input data with `zod` or similar validation libraries.
+- Type Server Action return values and parameters.
+
+## Performance Best Practices
+
+- Fetch data in parallel when possible using `Promise.all()`.
+- Use `loading.tsx` for loading states during data fetching.
+- Implement proper error boundaries for graceful error handling.
+- Use streaming with Suspense boundaries for progressive rendering.
+- Minimize data fetching in Client Components (prefer Server Components).
+
+## Environment Variables
+
+- Access environment variables directly in Server Components and Server Actions.
+- Use `process.env` for server-side only variables.
+- Use `NEXT_PUBLIC_` prefix for variables that need to be exposed to the client.
+- Validate environment variables at application startup.
