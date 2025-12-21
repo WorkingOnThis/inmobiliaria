@@ -95,6 +95,8 @@ src/
 │   │   └── better-auth.ts           # Esquema Better Auth
 │   └── index.ts                     # Instancia Drizzle
 └── middleware.ts                    # Middleware de autenticación
+scripts/
+└── seed.ts                          # Script de seed para datos de desarrollo
 ```
 
 **Structure Decision**: Next.js App Router con estructura modular. Better Auth se integra mediante API route handler en `/api/auth/[...all]`. Las páginas de autenticación están agrupadas en un route group `(auth)` para mejor organización. Componentes Shadcn UI se instalan en `src/components/ui/` usando `bunx shadcn@latest add` y son copiados directamente al proyecto (no instalados como npm packages). La configuración de Shadcn se encuentra en `components.json` en la raíz del proyecto.
@@ -143,6 +145,17 @@ src/
 
   - Migraciones generadas exitosamente
   - Pendiente: aplicar migraciones (`bun run db:migrate` o `bun run db:push`)
+
+- [x] T047 Crear script de seed para datos de desarrollo (`scripts/seed.ts`)
+
+  - Creado script ejecutable con `bun run db:seed`
+  - Implementado hashing de passwords usando scrypt (mismo algoritmo que Better Auth)
+  - Creado usuarios según acceptance scenarios:
+    - Usuario verificado: email "usuario@ejemplo.com", password "password123", emailVerified: true
+    - Usuario no verificado: email "no-verificado@ejemplo.com", password "password123", emailVerified: false
+  - Script es idempotente (maneja casos donde usuarios ya existen)
+  - Agregado script `db:seed` a `package.json`
+  - Documentado uso en comentarios del script
 
 - [x] T007 Configurar Better Auth API route handler
 
@@ -449,11 +462,12 @@ src/
 
 1. Aplicar migraciones de base de datos (`bun run db:migrate` o `bun run db:push`)
 2. Configurar variables de entorno en `.env.local`
-3. Configurar Google OAuth credentials (opcional para P2)
-4. Integrar servicio de email real (Resend/SendGrid) para producción
-5. Implementar tests (unitarios, integración, E2E)
-6. Crear página de dashboard/redirect post-login
-7. (Opcional) Agregar campo `status` a tabla user para usuarios suspendidos
+3. Ejecutar script de seed para crear usuarios de prueba (`bun run db:seed`)
+4. Configurar Google OAuth credentials (opcional para P2)
+5. Integrar servicio de email real (Resend/SendGrid) para producción
+6. Implementar tests (unitarios, integración, E2E)
+7. Crear página de dashboard/redirect post-login
+8. (Opcional) Agregar campo `status` a tabla user para usuarios suspendidos
 
 ### Archivos Creados
 
