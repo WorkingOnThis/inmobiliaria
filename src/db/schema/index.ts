@@ -5,3 +5,6 @@
 
 // Better Auth schemas
 export * from "./better-auth";
+
+// Business domain schemas
+export * from "./agency";

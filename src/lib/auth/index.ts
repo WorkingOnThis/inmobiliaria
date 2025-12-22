@@ -85,6 +85,10 @@ export const auth = betterAuth({
         window: 15 * 60, // 15 minutes
         max: 5, // 5 failed attempts
       },
+      "/sign-up/email": {
+        window: 15 * 60, // 15 minutes
+        max: 5, // 5 registration attempts per IP
+      },
     },
     storage: "database", // Store rate limits in database
     modelName: "rateLimit", // Use the rateLimit table we defined

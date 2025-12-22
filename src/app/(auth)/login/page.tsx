@@ -45,6 +45,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
+          Bienvenido
+        </h2>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          Ingresa a tu cuenta para continuar
+        </p>
+      </div>
+
       {errorMessage && (
         <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
           <p className="text-sm text-destructive">{errorMessage}</p>

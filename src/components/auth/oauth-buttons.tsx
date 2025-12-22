@@ -3,23 +3,35 @@
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
 
+interface OAuthButtonsProps {
+  mode?: "signin" | "signup";
+  callbackURL?: string;
+}
+
 /**
  * OAuthButtons Component
  * 
- * Botones para iniciar sesión con proveedores OAuth (Google, etc.)
+ * Botones para iniciar sesión o registrarse con proveedores OAuth (Google, etc.)
  */
-export function OAuthButtons() {
+export function OAuthButtons({ mode = "signin", callbackURL }: OAuthButtonsProps) {
   const [isLoading, setIsLoading] = useState<string | null>(null);
 
-  const handleOAuthSignIn = async (provider: "google") => {
+  const handleOAuth = async (provider: "google") => {
     setIsLoading(provider);
     try {
+      // For OAuth, signup and signin use the same flow
+      // We'll handle registration completion in the callback page
+      const redirectURL = mode === "signup" 
+        ? (callbackURL || "/register-oauth")
+        : (callbackURL || "/");
+        
       await authClient.signIn.social({
         provider,
+        callbackURL: redirectURL,
       });
       // Redirección manejada automáticamente por Better Auth
     } catch (error) {
-      console.error(`Error signing in with ${provider}:`, error);
+      console.error(`Error with ${provider} ${mode}:`, error);
       setIsLoading(null);
       // El error será manejado por el callback
     }
@@ -42,7 +54,7 @@ export function OAuthButtons() {
       {/* Google OAuth Button */}
       <button
         type="button"
-        onClick={() => handleOAuthSignIn("google")}
+        onClick={() => handleOAuth("google")}
         disabled={isLoading !== null}
         className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-border rounded-md bg-background text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
@@ -71,7 +83,7 @@ export function OAuthButtons() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span>Continuar con Google</span>
+            <span>{mode === "signup" ? "Registrarse con Google" : "Continuar con Google"}</span>
           </>
         )}
       </button>
