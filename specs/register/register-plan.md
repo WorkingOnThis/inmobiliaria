@@ -92,7 +92,7 @@ src/
 
 **Goal**: Reemplazar la implementación mock de `sendEmail` con integración real de Resend, manteniendo compatibilidad con código existente
 
-**Independent Test**: Verificar que los emails se envían correctamente ejecutando un registro de prueba y verificando que el email llega al destinatario dentro de 30 segundos
+**Independent Test**: Verificar que los emails se envían correctamente ejecutando un registro de prueba, verificando que el email llega al destinatario dentro de 30 segundos, y que el usuario se crea con rol `visitor`
 
 ### Tests para User Story 1
 
@@ -100,7 +100,7 @@ src/
 
 - [ ] T005 [P] [US1] Test manual: Solicitar reenvío de email de verificación y verificar recepción
 
-- [ ] T005b [P] [US1] Test manual: Verificar rollback completo cuando falla envío de email (simular fallo de Resend y verificar que no se crean entidades en BD)
+- [ ] T005b [P] [US1] Test manual: Verificar rollback completo cuando falla envío de email (simular fallo de Resend y verificar que no se crea la cuenta de usuario en Better Auth)
 
 ### Implementation para User Story 1
 
@@ -150,9 +150,11 @@ src/
 
 - Si el envío de email falla, la transacción completa debe revertirse (rollback)
 
-- No se deben crear entidades (inmobiliaria, usuario, cuenta Better Auth) si falla el email
+- No se debe crear la cuenta de usuario en Better Auth si falla el email
 
 - Verificar que el código maneja correctamente el rollback cuando falla el email
+
+- Verificar que el usuario se crea con rol `visitor`
 
 - [ ] T010b [US1] Actualizar `src/lib/auth/register.ts` (si existe) o lógica de registro para incluir envío de email en transacción:
 
@@ -161,6 +163,8 @@ src/
 - Implementar rollback completo si falla el envío
 
 - Verificar que Better Auth también maneja esto correctamente si usa callbacks
+
+- Verificar que el rol asignado es `visitor`
 
 **Checkpoint**: En este punto, los emails deben enviarse correctamente usando Resend dentro de la transacción atómica. El registro con email/password debe funcionar end-to-end con verificación de email real. Si falla el envío del email, toda la transacción debe revertirse y no se deben crear entidades en la base de datos.
 
@@ -234,12 +238,13 @@ src/
 - [ ] T019 Verificar que todos los flujos de email funcionan:
 
 - Registro con email/password → email de verificación (debe estar en transacción atómica)
-- Verificar rollback cuando falla envío durante registro (no se crean entidades)
+- Verificar rollback cuando falla envío durante registro (no se crea cuenta de usuario)
+- Verificar que usuarios se registran con rol `visitor`
 - Reenvío de email de verificación (no requiere rollback, solo mostrar error)
 
 - Reset de contraseña (cuando se implemente)
 
-- OAuth registration (no requiere email, pero verificar que no rompe)
+- OAuth registration (no requiere email, pero verificar que no rompe y que también asigna rol `visitor`)
 
 - [ ] T020 Revisar y mejorar logging:
 
@@ -309,7 +314,7 @@ src/
 
 - Manejo de errores:
 
-- **CRÍTICO**: Si el email falla durante registro, la transacción completa DEBE revertirse (rollback) - no se deben crear entidades en la base de datos (FR-008, FR-014)
+- **CRÍTICO**: Si el email falla durante registro, la transacción completa DEBE revertirse (rollback) - no se debe crear la cuenta de usuario en la base de datos (FR-008, FR-014)
 
 - El envío de email debe ejecutarse DENTRO de la transacción atómica de registro
 
@@ -337,4 +342,3 @@ src/
 - Nunca loggear API keys
 
 - Validar formato de emails antes de enviar
-

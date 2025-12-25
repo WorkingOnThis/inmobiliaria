@@ -7,7 +7,6 @@ import { eq } from "drizzle-orm";
  */
 
 export interface RegisterWithEmailPasswordInput {
-  agencyName: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -48,9 +47,6 @@ export async function emailExists(email: string): Promise<boolean> {
 export function validateRegistrationInput(
   input: RegisterWithEmailPasswordInput
 ): { valid: boolean; error?: string } {
-  if (!input.agencyName || !input.agencyName.trim()) {
-    return { valid: false, error: "Agency name is required" };
-  }
   if (!input.firstName || !input.firstName.trim()) {
     return { valid: false, error: "First name is required" };
   }

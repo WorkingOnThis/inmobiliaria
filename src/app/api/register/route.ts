@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { user, account, verification, rateLimit } from "@/db/schema/better-auth";
-import { agency } from "@/db/schema/agency";
 import {
   validateRegistrationInput,
   emailExists,
 } from "@/lib/auth/register";
 import { sendEmail } from "@/lib/auth/email";
 import { auth } from "@/lib/auth";
+import { createEmailVerificationToken } from "better-auth/api";
 import { eq } from "drizzle-orm";
 import { scrypt, randomBytes } from "node:crypto";
 import { promisify } from "node:util";
@@ -101,7 +101,9 @@ async function checkRateLimit(ip: string): Promise<{ exceeded: boolean; remainin
  * Register API Route
  * 
  * Handles user registration with email/password.
- * Creates Better Auth user and Agency in atomic transaction.
+ * Creates Better Auth user in atomic transaction with email verification.
+ * Note: Inmobiliaria is NOT created during registration (FR-031, FR-036).
+ * Users can create or join an inmobiliaria after registration.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -122,11 +124,10 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { agencyName, firstName, lastName, email, password } = body;
+    const { firstName, lastName, email, password } = body;
 
     // Validate input
     const validation = validateRegistrationInput({
-      agencyName,
       firstName,
       lastName,
       email,
@@ -148,24 +149,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Better Auth user and Agency in atomic transaction
-    // Then use Better Auth API to send verification email (which generates token correctly)
+    // Create Better Auth user, verification token, and send email in atomic transaction
+    // If email sending fails, entire transaction is rolled back (FR-008, FR-014)
+    // Note: Inmobiliaria is NOT created during registration (FR-031, FR-036)
+    // Users can create or join an inmobiliaria after registration
     const fullName = `${firstName} ${lastName}`.trim();
     const userId = generateId();
     const hashedPassword = await hashPassword(password);
     const normalizedEmail = email.toLowerCase().trim();
-    const agencyId = generateId();
+    const baseURL = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const secret = process.env.BETTER_AUTH_SECRET || "change-me-in-production";
+    const expiresIn = 24 * 60 * 60; // 24 hours in seconds (Better Auth default)
 
-    // Create user, account, and agency in a single atomic transaction
+    // Create user, account, verification token, and send email in a single atomic transaction
     try {
       await db.transaction(async (tx) => {
-        // 1. Create Better Auth user
+        // 1. Create Better Auth user with role "visitor" (FR-033, FR-034)
         await tx.insert(user).values({
           id: userId,
           name: fullName,
           email: normalizedEmail,
           emailVerified: false,
-          role: "account_admin",
+          role: "visitor",
           createdAt: new Date(),
           updatedAt: new Date(),
         });
@@ -181,13 +186,47 @@ export async function POST(request: NextRequest) {
           updatedAt: new Date(),
         });
 
-        // 3. Create Agency linked to Better Auth user (owner)
-        await tx.insert(agency).values({
-          id: agencyId,
-          name: agencyName.trim(),
-          ownerId: userId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+        // 3. Generate verification token (JWT format that Better Auth expects)
+        // Better Auth verifies the JWT directly, no need to store in verification table
+        const token = await createEmailVerificationToken(
+          secret,
+          normalizedEmail,
+          undefined,
+          expiresIn
+        );
+
+        // 4. Send verification email (must be inside transaction for atomicity)
+        // If this fails, the entire transaction will rollback
+        const callbackURL = encodeURIComponent(`${baseURL}/verify-email?verified=true`);
+        const verificationUrl = `${baseURL}/verify-email?token=${token}&callbackURL=${callbackURL}`;
+
+        await sendEmail({
+          to: normalizedEmail,
+          subject: "Verifica tu dirección de correo electrónico",
+          text: `Verifica tu dirección de correo electrónico\n\nHaz clic en el siguiente enlace para verificar tu correo:\n${verificationUrl}\n\nEste enlace expirará en 24 horas.\n\nSi no solicitaste esta verificación, por favor ignora este correo.`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Verifica tu dirección de correo electrónico</title>
+            </head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 30px; margin: 20px 0;">
+                <h1 style="color: #2c3e50; margin-top: 0;">Verifica tu dirección de correo electrónico</h1>
+                <p style="font-size: 16px; margin-bottom: 20px;">¡Gracias por registrarte! Por favor, haz clic en el botón de abajo para verificar tu dirección de correo electrónico:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${verificationUrl}" style="display: inline-block; background-color: #007bff; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 5px; font-weight: 600; font-size: 16px;">Verificar Correo Electrónico</a>
+                </div>
+                <p style="font-size: 14px; color: #6c757d; margin-top: 30px;">O copia y pega este enlace en tu navegador:</p>
+                <p style="font-size: 12px; color: #6c757d; word-break: break-all; background-color: #e9ecef; padding: 10px; border-radius: 4px;">${verificationUrl}</p>
+                <p style="font-size: 14px; color: #6c757d; margin-top: 20px;"><strong>Este enlace expirará en 24 horas.</strong></p>
+                <p style="font-size: 14px; color: #6c757d; margin-top: 20px; border-top: 1px solid #dee2e6; padding-top: 20px;">Si no solicitaste esta verificación, por favor ignora este correo.</p>
+              </div>
+            </body>
+            </html>
+          `,
         });
       });
     } catch (dbError: any) {
@@ -198,61 +237,20 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      console.error("Database transaction error:", dbError);
-      return NextResponse.json(
-        { error: "Registration failed. Please try again." },
-        { status: 500 }
-      );
-    }
-
-    // After successful transaction, use Better Auth API to send verification email
-    // This will generate the token in the correct format that Better Auth expects
-    // If email sending fails, we'll delete the user to maintain consistency (FR-008, FR-014)
-    try {
-      const baseURL = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       
-      // Use Better Auth API to send verification email
-      // This generates the token in the correct format that Better Auth can verify
-      const response = await auth.api.sendVerificationEmail({
-        body: {
-          email: normalizedEmail,
-          callbackURL: `${baseURL}/verify-email?verified=true`,
-        },
-        headers: new Headers(),
-      });
-
-      // If email sending fails, delete the user to maintain consistency
-      if (!response || (response as any).error) {
-        console.error("Failed to send verification email via Better Auth:", response);
-        
-        // Rollback: Delete user, account, and agency if email fails
-        await db.transaction(async (tx) => {
-          await tx.delete(agency).where(eq(agency.ownerId, userId));
-          await tx.delete(account).where(eq(account.userId, userId));
-          await tx.delete(user).where(eq(user.id, userId));
-        });
-        
+      // Check if error is from email sending (will be thrown by sendEmail)
+      if (dbError.message?.includes("Failed to send email") || dbError.message?.includes("email")) {
+        console.error("Email sending failed during registration:", dbError);
+        // Transaction already rolled back automatically, no need to manually delete
         return NextResponse.json(
-          { error: "Failed to send verification email. Please try again." },
+          { error: "No se pudo enviar el email de verificación. Por favor intenta nuevamente." },
           { status: 500 }
         );
       }
-    } catch (emailError: any) {
-      // If email sending fails, rollback by deleting the user
-      console.error("Failed to send verification email:", emailError);
       
-      try {
-        await db.transaction(async (tx) => {
-          await tx.delete(agency).where(eq(agency.ownerId, userId));
-          await tx.delete(account).where(eq(account.userId, userId));
-          await tx.delete(user).where(eq(user.id, userId));
-        });
-      } catch (deleteError) {
-        console.error("Failed to rollback user creation after email failure:", deleteError);
-      }
-      
+      console.error("Database transaction error:", dbError);
       return NextResponse.json(
-        { error: "Failed to send verification email. Please try again." },
+        { error: "Registration failed. Please try again." },
         { status: 500 }
       );
     }
@@ -264,7 +262,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "Registration successful. Please check your email to verify your account.",
+        message: "Registro exitoso. Por favor revisa tu correo electrónico para verificar tu cuenta.",
       },
       { status: 201 }
     );

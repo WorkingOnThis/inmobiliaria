@@ -10,12 +10,12 @@ interface RegisterFormProps {
 /**
  * RegisterForm Component
  *
- * Formulario de registro con nombre de inmobiliaria, nombre, apellido, email y contraseña.
+ * Formulario de registro con nombre, apellido, email y contraseña.
  * Maneja validación, estados de carga, errores, y redirección.
+ * Nota: La inmobiliaria NO se crea durante el registro. Los usuarios pueden crear o unirse a una inmobiliaria después del registro.
  */
 export function RegisterForm({ callbackUrl }: RegisterFormProps) {
   const router = useRouter();
-  const [agencyName, setAgencyName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -83,14 +83,6 @@ export function RegisterForm({ callbackUrl }: RegisterFormProps) {
     setFieldErrors({});
 
     // Validaciones
-    if (!agencyName.trim()) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        agencyName: "El nombre de la inmobiliaria es requerido",
-      }));
-      return;
-    }
-
     if (!firstName.trim()) {
       setFieldErrors((prev) => ({
         ...prev,
@@ -128,7 +120,6 @@ export function RegisterForm({ callbackUrl }: RegisterFormProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          agencyName: agencyName.trim(),
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.toLowerCase().trim(),
@@ -158,41 +149,6 @@ export function RegisterForm({ callbackUrl }: RegisterFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Agency Name Field */}
-      <div>
-        <label
-          htmlFor="agencyName"
-          className="block text-sm font-medium text-foreground mb-2"
-        >
-          Nombre de la Inmobiliaria
-        </label>
-        <input
-          id="agencyName"
-          type="text"
-          value={agencyName}
-          onChange={(e) => {
-            setAgencyName(e.target.value);
-            if (fieldErrors.agencyName) {
-              setFieldErrors((prev) => {
-                const newErrors = { ...prev };
-                delete newErrors.agencyName;
-                return newErrors;
-              });
-            }
-          }}
-          disabled={isLoading}
-          required
-          className="w-full px-4 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-          placeholder="Mi inmobiliaria"
-          autoComplete="organization"
-        />
-        {fieldErrors.agencyName && (
-          <p className="mt-1 text-sm text-destructive">
-            {fieldErrors.agencyName}
-          </p>
-        )}
-      </div>
-
       {/* First Name Field */}
       <div>
         <label
