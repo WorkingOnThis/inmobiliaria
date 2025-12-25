@@ -7,6 +7,7 @@ import {
   emailExists,
 } from "@/lib/auth/register";
 import { sendEmail } from "@/lib/auth/email";
+import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 import { scrypt, randomBytes } from "node:crypto";
 import { promisify } from "node:util";
@@ -148,13 +149,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Better Auth user and Agency in atomic transaction
+    // Then use Better Auth API to send verification email (which generates token correctly)
     const fullName = `${firstName} ${lastName}`.trim();
     const userId = generateId();
     const hashedPassword = await hashPassword(password);
     const normalizedEmail = email.toLowerCase().trim();
     const agencyId = generateId();
 
-    // Create everything in a single atomic transaction
+    // Create user, account, and agency in a single atomic transaction
     try {
       await db.transaction(async (tx) => {
         // 1. Create Better Auth user
@@ -203,40 +205,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create verification token and send email
-    const verificationToken = randomBytes(32).toString("base64url");
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours expiration
-
+    // After successful transaction, use Better Auth API to send verification email
+    // This will generate the token in the correct format that Better Auth expects
+    // If email sending fails, we'll delete the user to maintain consistency (FR-008, FR-014)
     try {
-      await db.insert(verification).values({
-        id: generateId(),
-        identifier: normalizedEmail,
-        value: verificationToken,
-        expiresAt,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      // Generate verification URL
       const baseURL = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-      const verificationURL = `${baseURL}/api/auth/verify-email?token=${verificationToken}&email=${encodeURIComponent(normalizedEmail)}`;
-
-      // Send verification email
-      await sendEmail({
-        to: normalizedEmail,
-        subject: "Verify your email address",
-        text: `Click the following link to verify your email: ${verificationURL}`,
-        html: `
-          <h1>Verify your email address</h1>
-          <p>Click the following link to verify your email:</p>
-          <a href="${verificationURL}">${verificationURL}</a>
-          <p>This link will expire in 24 hours.</p>
-        `,
+      
+      // Use Better Auth API to send verification email
+      // This generates the token in the correct format that Better Auth can verify
+      const response = await auth.api.sendVerificationEmail({
+        body: {
+          email: normalizedEmail,
+          callbackURL: `${baseURL}/verify-email?verified=true`,
+        },
+        headers: new Headers(),
       });
-    } catch (emailError) {
-      // Log error but don't fail registration - user can request resend later
+
+      // If email sending fails, delete the user to maintain consistency
+      if (!response || (response as any).error) {
+        console.error("Failed to send verification email via Better Auth:", response);
+        
+        // Rollback: Delete user, account, and agency if email fails
+        await db.transaction(async (tx) => {
+          await tx.delete(agency).where(eq(agency.ownerId, userId));
+          await tx.delete(account).where(eq(account.userId, userId));
+          await tx.delete(user).where(eq(user.id, userId));
+        });
+        
+        return NextResponse.json(
+          { error: "Failed to send verification email. Please try again." },
+          { status: 500 }
+        );
+      }
+    } catch (emailError: any) {
+      // If email sending fails, rollback by deleting the user
       console.error("Failed to send verification email:", emailError);
+      
+      try {
+        await db.transaction(async (tx) => {
+          await tx.delete(agency).where(eq(agency.ownerId, userId));
+          await tx.delete(account).where(eq(account.userId, userId));
+          await tx.delete(user).where(eq(user.id, userId));
+        });
+      } catch (deleteError) {
+        console.error("Failed to rollback user creation after email failure:", deleteError);
+      }
+      
+      return NextResponse.json(
+        { error: "Failed to send verification email. Please try again." },
+        { status: 500 }
+      );
     }
 
     // Log successful registration

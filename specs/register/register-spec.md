@@ -57,6 +57,12 @@ Un usuario puede registrarse en el sistema proporcionando información de su inm
    - **When** Ocurre un error durante el proceso de registro
    - **Then** El sistema revierte toda la transacción (no se crea ninguna entidad parcial), muestra un mensaje de error genérico al usuario, registra el error para diagnóstico, y mantiene al usuario en la página de registro
 
+6. **Scenario**: Registro fallido por fallo en envío de email de verificación
+
+   - **Given** El usuario envía datos válidos y el sistema intenta crear las entidades y enviar el email de verificación
+   - **When** El envío del email de verificación falla (servicio de email caído, email inválido, error de red, etc.)
+   - **Then** El sistema revierte toda la transacción (no se crea ninguna entidad: inmobiliaria, usuario, ni cuenta de usuario), muestra un mensaje apropiado al usuario indicando que hubo un problema al enviar el email y que debe intentar nuevamente, registra el error para diagnóstico, y mantiene al usuario en la página de registro
+
 ---
 
 ### User Story 2 - Registro con OAuth (Priority: P2)
@@ -113,7 +119,7 @@ Un usuario puede registrarse en el sistema usando su cuenta de un proveedor OAut
 
 - ¿Qué sucede cuando el email de verificación no puede ser enviado (servicio de email caído, email inválido, etc.)?
 
-  - El sistema debe registrar el error, mostrar un mensaje apropiado al usuario indicando que hubo un problema al enviar el email, permitir reintentar el envío del email de verificación, y mantener las entidades creadas (inmobiliaria, usuario, cuenta de usuario) para que el usuario pueda verificar su email más tarde.
+  - El sistema debe revertir toda la transacción (no se crea ninguna entidad), mostrar un mensaje apropiado al usuario indicando que hubo un problema al enviar el email y que debe intentar nuevamente, registrar el error para diagnóstico, y requerir que el usuario intente el registro nuevamente.
 
 - ¿Cómo maneja el sistema un registro que falla parcialmente (por ejemplo, se crea la inmobiliaria pero falla la creación del usuario)?
 
@@ -158,13 +164,13 @@ Un usuario puede registrarse en el sistema usando su cuenta de un proveedor OAut
 - **FR-005**: System MUST validate that user first name and last name are provided and not empty
 - **FR-006**: System MUST validate that passwords meet minimum security requirements (minimum length, complexity) before accepting them during registration
 - **FR-007**: System MUST hash and securely store passwords using industry-standard hashing algorithms (e.g., bcrypt, scrypt, argon2) - passwords MUST NEVER be stored in plain text
-- **FR-008**: System MUST create real estate agency (inmobiliaria), user/administrator, and Better Auth user account in a single atomic transaction - if any part fails, the entire operation MUST be rolled back
+- **FR-008**: System MUST create real estate agency (inmobiliaria), user/administrator, Better Auth user account, and send verification email in a single atomic transaction - if any part fails (including email sending), the entire operation MUST be rolled back
 - **FR-009**: System MUST establish a one-to-one relationship between real estate agency and user/administrator during registration (one agency has exactly one administrator)
 - **FR-010**: System MUST automatically associate the registered user as the administrator of the registered real estate agency
 - **FR-011**: System MUST create user account in Better Auth system with the provided email and hashed password
 - **FR-012**: System MUST require email verification before allowing users to complete registration and access protected routes
 - **FR-013**: System MUST generate unique, time-limited verification tokens for email verification (tokens MUST expire after 24 hours)
-- **FR-014**: System MUST send verification emails containing secure verification links when users register
+- **FR-014**: System MUST send verification emails containing secure verification links when users register - if email sending fails, the entire registration transaction MUST be rolled back and no entities MUST be persisted
 - **FR-015**: System MUST allow users to request resending of verification emails if the original email was not received or expired
 - **FR-016**: System MUST support OAuth registration through at least one provider (Google) with extensible architecture for additional providers
 - **FR-017**: System MUST create or update user accounts when OAuth registration succeeds, associating the OAuth provider account with the user record

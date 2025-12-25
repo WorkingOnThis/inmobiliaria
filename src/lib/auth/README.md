@@ -11,7 +11,7 @@ Este directorio contiene la configuración de Better Auth para el sistema de aut
 
 ## Variables de Entorno Requeridas
 
-Crea un archivo `.env.local` con las siguientes variables:
+Crea un archivo `.env.local` o `.env` con las siguientes variables:
 
 ```env
 # Database
@@ -21,6 +21,10 @@ DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 BETTER_AUTH_SECRET=tu-secret-key-aqui-cambiar-en-produccion
 BETTER_AUTH_URL=http://localhost:3000
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Email (Resend)
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+EMAIL_FROM=noreply@tudominio.com
 
 # OAuth Providers (opcional)
 GOOGLE_CLIENT_ID=tu-google-client-id
@@ -51,49 +55,66 @@ GOOGLE_CLIENT_SECRET=tu-google-client-secret
 
 ## Integración de Email
 
-Por defecto, los emails se loguean a la consola. Para producción, integra un servicio de email:
+El sistema utiliza **Resend** para el envío de emails de verificación y reset de contraseña.
 
-### Opción 1: Resend
+### Configuración de Resend
 
-```bash
-npm install resend
-```
+1. **Obtener API Key**:
+   - Ve a [Resend Dashboard](https://resend.com/api-keys)
+   - Crea una cuenta o inicia sesión
+   - Genera una nueva API key
+   - Copia la key (formato: `re_xxxxxxxxxxxxx`)
 
-```ts
-import { Resend } from "resend";
-const resend = new Resend(process.env.RESEND_API_KEY);
+2. **Configurar Variables de Entorno**:
+   ```env
+   RESEND_API_KEY=re_xxxxxxxxxxxxx
+   EMAIL_FROM=noreply@tudominio.com
+   ```
 
-export async function sendEmail(options: EmailOptions) {
-  await resend.emails.send({
-    from: process.env.EMAIL_FROM!,
-    to: options.to,
-    subject: options.subject,
-    html: options.html,
-    text: options.text,
-  });
-}
-```
+3. **Configurar Dominio (Producción)**:
+   - En desarrollo, puedes usar el dominio de prueba: `onboarding@resend.dev`
+   - Para producción, verifica tu dominio en [Resend Domains](https://resend.com/domains)
+   - Una vez verificado, usa un email de tu dominio: `noreply@tudominio.com`
 
-### Opción 2: SendGrid
+### Troubleshooting
 
-```bash
-npm install @sendgrid/mail
-```
+**Problema**: Los emails no se envían
+- Verifica que `RESEND_API_KEY` está configurada correctamente
+- Verifica que `EMAIL_FROM` está configurada
+- Revisa los logs del servidor para ver errores específicos
+- Si falta la API key, los emails se loguearán a la consola en desarrollo
 
-```ts
-import sgMail from "@sendgrid/mail";
-sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+**Problema**: Error "Invalid API key"
+- Verifica que la API key es correcta y no ha expirado
+- Asegúrate de que la key tiene permisos para enviar emails
 
-export async function sendEmail(options: EmailOptions) {
-  await sgMail.send({
-    from: process.env.EMAIL_FROM!,
-    to: options.to,
-    subject: options.subject,
-    html: options.html,
-    text: options.text,
-  });
-}
-```
+**Problema**: Error "Domain not verified"
+- En desarrollo, usa `onboarding@resend.dev`
+- En producción, verifica tu dominio en Resend Dashboard
+
+**Límites del Plan Gratuito**:
+- 3,000 emails por mes
+- 100 emails por día
+- Para más información, visita [Resend Pricing](https://resend.com/pricing)
+
+### Implementación
+
+La función `sendEmail` en `src/lib/auth/email.ts` maneja automáticamente:
+- Validación de variables de entorno
+- Fallback a console.log si falta configuración (desarrollo)
+- Manejo robusto de errores
+- Logging detallado para debugging
+
+### Transacción Atómica (CRÍTICO)
+
+**IMPORTANTE**: En el endpoint de registro (`/api/register`), el envío de email está dentro de una transacción atómica de base de datos. Esto significa:
+
+- Si el envío de email falla, **toda la transacción se revierte** (rollback completo)
+- **No se crean entidades** (usuario, inmobiliaria, cuenta) si falla el email
+- Esto cumple con los requisitos FR-008 y FR-014 de la especificación
+- El usuario debe intentar el registro nuevamente si el email falla
+
+Este comportamiento garantiza que no queden registros huérfanos en la base de datos cuando falla el envío del email de verificación.
 
 ## Migraciones de Base de Datos
 

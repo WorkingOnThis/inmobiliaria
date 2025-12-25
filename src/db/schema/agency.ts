@@ -18,3 +18,6 @@ export const agency = pgTable("agency", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
+
+
+
