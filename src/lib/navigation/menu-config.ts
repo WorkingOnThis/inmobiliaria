@@ -19,28 +19,28 @@ import type { MenuItem, MenuConfig, UserRole } from "./types";
  */
 const visitorMenuItems: MenuItem[] = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
+    title: "Tablero",
+    url: "/tablero",
     icon: LayoutDashboard,
     isActive: true,
   },
   {
     title: "Perfil",
-    url: "/dashboard/profile",
+    url: "/tablero/profile",
     icon: User,
   },
   {
     title: "Configuración",
-    url: "/dashboard/settings",
+    url: "/tablero/settings",
     icon: Settings,
     items: [
       {
         title: "General",
-        url: "/dashboard/settings/general",
+        url: "/tablero/settings/general",
       },
       {
         title: "Preferencias",
-        url: "/dashboard/settings/preferences",
+        url: "/tablero/settings/preferences",
       },
     ],
   },
@@ -53,113 +53,113 @@ const visitorMenuItems: MenuItem[] = [
  */
 const accountAdminMenuItems: MenuItem[] = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
+    title: "Tablero",
+    url: "/tablero",
     icon: LayoutDashboard,
     isActive: true,
   },
   {
     title: "Propiedades",
-    url: "/dashboard/properties",
+    url: "/tablero/properties",
     icon: Building2,
     items: [
       {
         title: "Todas las propiedades",
-        url: "/dashboard/properties",
+        url: "/tablero/properties",
       },
       {
         title: "Agregar propiedad",
-        url: "/dashboard/properties/new",
+        url: "/tablero/properties/new",
       },
     ],
   },
   {
     title: "Contratos",
-    url: "/dashboard/contracts",
+    url: "/tablero/contracts",
     icon: FileText,
     items: [
       {
         title: "Todos los contratos",
-        url: "/dashboard/contracts",
+        url: "/tablero/contracts",
       },
       {
         title: "Nuevo contrato",
-        url: "/dashboard/contracts/new",
+        url: "/tablero/contracts/new",
       },
     ],
   },
   {
     title: "Pagos",
-    url: "/dashboard/payments",
+    url: "/tablero/payments",
     icon: CreditCard,
     items: [
       {
         title: "Historial de pagos",
-        url: "/dashboard/payments",
+        url: "/tablero/payments",
       },
       {
         title: "Pagos pendientes",
-        url: "/dashboard/payments/pending",
+        url: "/tablero/payments/pending",
       },
     ],
   },
   {
     title: "Mantenimiento",
-    url: "/dashboard/maintenance",
+    url: "/tablero/maintenance",
     icon: Wrench,
     items: [
       {
         title: "Solicitudes",
-        url: "/dashboard/maintenance",
+        url: "/tablero/maintenance",
       },
       {
         title: "Historial",
-        url: "/dashboard/maintenance/history",
+        url: "/tablero/maintenance/history",
       },
     ],
   },
   {
     title: "Reportes",
-    url: "/dashboard/reports",
+    url: "/tablero/reports",
     icon: BarChart3,
     items: [
       {
         title: "Resumen ejecutivo",
-        url: "/dashboard/reports",
+        url: "/tablero/reports",
       },
       {
         title: "Ingresos",
-        url: "/dashboard/reports/income",
+        url: "/tablero/reports/income",
       },
     ],
   },
   {
     title: "Configuración",
-    url: "/dashboard/settings",
+    url: "/tablero/settings",
     icon: Settings,
     items: [
       {
         title: "General",
-        url: "/dashboard/settings/general",
+        url: "/tablero/settings/general",
       },
       {
         title: "Equipo",
-        url: "/dashboard/settings/team",
+        url: "/tablero/settings/team",
       },
     ],
   },
   {
     title: "Administración",
-    url: "/dashboard/admin",
+    url: "/tablero/admin",
     icon: Shield,
     items: [
       {
         title: "Usuarios",
-        url: "/dashboard/admin/users",
+        url: "/tablero/admin/users",
       },
       {
         title: "Permisos",
-        url: "/dashboard/admin/permissions",
+        url: "/tablero/admin/permissions",
       },
     ],
   },
@@ -170,14 +170,14 @@ const accountAdminMenuItems: MenuItem[] = [
  */
 const defaultMenuItems: MenuItem[] = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
+    title: "Tablero",
+    url: "/tablero",
     icon: LayoutDashboard,
     isActive: true,
   },
   {
     title: "Perfil",
-    url: "/dashboard/profile",
+    url: "/tablero/profile",
     icon: User,
   },
 ];
@@ -236,4 +236,5 @@ export function isValidRole(role: string | null | undefined): role is UserRole {
  * Útil para extensibilidad y documentación
  */
 export { menuConfig, defaultMenuItems };
+
 

@@ -115,8 +115,8 @@ src/
   - Navegación rápida y acceso a secciones principales (P2)
   - Alertas y notificaciones de tareas pendientes (P3)
 
-- **[Dashboard Navigation](dashboard-navigation/)** - Navegación del dashboard con menú basado en roles
-  - Redirección post-login al dashboard (P1)
+- **[Tablero Navigation](dashboard-navigation/)** - Navegación del tablero con menú basado en roles
+  - Redirección post-login al tablero (P1)
   - Menú lateral personalizado según rol de usuario (P1)
   - Persistencia de estado del sidebar (P2)
 

@@ -24,7 +24,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   });
 
   if (session?.user) {
-    redirect(params.callbackUrl || "/dashboard");
+    redirect(params.callbackUrl || "/tablero");
   }
 
   // Determinar mensaje de error si existe

@@ -9,7 +9,7 @@ import Link from "next/link";
  * Register Page
  *
  * Página de registro de nuevos usuarios.
- * Redirige a dashboard si el usuario ya está autenticado y verificado.
+ * Redirige a tablero si el usuario ya está autenticado y verificado.
  */
 export default async function RegisterPage() {
   const session = await auth.api.getSession({

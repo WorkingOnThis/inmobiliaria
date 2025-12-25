@@ -32,7 +32,7 @@ export default async function RegisterOAuthPage() {
     .where(eq(agency.ownerId, session.user.id))
     .limit(1);
 
-  // If already has agency, redirect to dashboard
+  // If already has agency, redirect to tablero
   if (existingAgency.length > 0) {
     redirect("/");
   }

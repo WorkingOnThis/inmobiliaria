@@ -17,7 +17,7 @@ import {
 /**
  * AppSidebar Component
  * 
- * Sidebar principal del dashboard con menú basado en roles.
+ * Sidebar principal del tablero con menú basado en roles.
  * Obtiene el rol del usuario desde la sesión y muestra items de menú apropiados.
  */
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

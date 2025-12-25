@@ -48,7 +48,7 @@ export function RegisterOAuthForm({ email, name }: RegisterOAuthFormProps) {
         return;
       }
 
-      // Registro exitoso - redirigir a dashboard
+      // Registro exitoso - redirigir a tablero
       router.push("/");
       router.refresh();
     } catch (err) {
@@ -109,6 +109,7 @@ export function RegisterOAuthForm({ email, name }: RegisterOAuthFormProps) {
     </div>
   );
 }
+
 
 
 

@@ -82,8 +82,8 @@ function createLocalStorageStore(storageKey: string | null) {
 
 /**
  * DashboardLayout Component
- *
- * Layout del dashboard que incluye el sidebar con persistencia de estado.
+ * 
+ * Layout del tablero que incluye el sidebar con persistencia de estado.
  * Maneja la persistencia del estado del sidebar usando localStorage con clave por usuario.
  */
 export function DashboardLayout({ children }: { children: React.ReactNode }) {

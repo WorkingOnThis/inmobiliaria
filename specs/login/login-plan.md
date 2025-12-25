@@ -176,7 +176,7 @@ scripts/
 
 ## Phase 3: User Story 1 - Login con Email y Contraseña (Priority: P1)
 
-**Goal**: Usuarios pueden iniciar sesión con email y contraseña. Sistema valida credenciales, verifica email, crea sesión, y redirige al dashboard.
+**Goal**: Usuarios pueden iniciar sesión con email y contraseña. Sistema valida credenciales, verifica email, crea sesión, y redirige al tablero.
 
 **Independent Test**: Crear usuario de prueba, verificar email, intentar login con credenciales correctas e incorrectas, verificar acceso a rutas protegidas.
 
@@ -368,7 +368,7 @@ scripts/
   - Accesibilidad mejorada con componentes Shadcn basados en Radix UI (ARIA labels, keyboard navigation, focus management)
   - Consistencia visual mediante sistema de diseño de Shadcn UI
 
-- [ ] T043 Implementar página de dashboard/redirect post-login
+- [ ] T043 Implementar página de tablero/redirect post-login
 
   - Pendiente: Crear página destino después de login exitoso
   - Pendiente: Manejar diferentes redirects según contexto
@@ -456,7 +456,7 @@ scripts/
 - Fase 3: User Story 1 - 100% (tests pendientes)
 - Fase 4: User Story 2 - 100% (tests pendientes)
 - Fase 5: Edge Cases - ~90% (campo status de usuario pendiente)
-- Fase 6: Polish - ~85% (dashboard y tests pendientes)
+- Fase 6: Polish - ~85% (tablero y tests pendientes)
 
 ### Pendiente ⏳
 
@@ -466,7 +466,7 @@ scripts/
 4. Configurar Google OAuth credentials (opcional para P2)
 5. Integrar servicio de email real (Resend/SendGrid) para producción
 6. Implementar tests (unitarios, integración, E2E)
-7. Crear página de dashboard/redirect post-login
+7. Crear página de tablero/redirect post-login
 8. (Opcional) Agregar campo `status` a tabla user para usuarios suspendidos
 
 ### Archivos Creados

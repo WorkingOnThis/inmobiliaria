@@ -31,7 +31,7 @@ Un usuario con una cuenta existente y verificada puede iniciar sesión en el sis
 
    - **Given** Un usuario existe en el sistema con email "usuario@ejemplo.com" y contraseña "password123", y su cuenta está verificada
    - **When** El usuario ingresa su email y contraseña correctos y envía el formulario de login
-   - **Then** El sistema autentica al usuario, crea una sesión, y redirige al usuario a la página principal o dashboard
+   - **Then** El sistema autentica al usuario, crea una sesión, y redirige al usuario a la página principal o tablero
 
 2. **Scenario**: Login fallido con credenciales incorrectas
 
@@ -91,7 +91,7 @@ Un usuario puede iniciar sesión en el sistema usando su cuenta de un proveedor 
 
 - ¿Qué sucede cuando un usuario intenta iniciar sesión mientras ya tiene una sesión activa?
 
-  - El sistema debe detectar la sesión existente y redirigir al usuario a la página principal o dashboard sin crear una nueva sesión, o permitir cerrar la sesión anterior y crear una nueva.
+  - El sistema debe detectar la sesión existente y redirigir al usuario a la página principal o tablero sin crear una nueva sesión, o permitir cerrar la sesión anterior y crear una nueva.
 
 - ¿Cómo maneja el sistema un token de sesión comprometido o robado?
 

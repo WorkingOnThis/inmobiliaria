@@ -23,26 +23,26 @@ Un usuario autenticado puede cerrar sesión de forma segura desde cualquier part
 
 **Why this priority**: El logout es una funcionalidad fundamental de seguridad y experiencia de usuario. Sin esta funcionalidad, los usuarios no pueden cerrar sesión de forma segura, lo que representa un riesgo de seguridad (especialmente en dispositivos compartidos) y una mala experiencia de usuario. Es esencial para el ciclo completo de autenticación y debe estar disponible desde el primer día.
 
-**Independent Test**: Puede ser probado completamente iniciando sesión con un usuario, accediendo a una ruta protegida (como `/dashboard`), haciendo clic en el botón de logout, y verificando que la sesión se invalida, las cookies se eliminan, el usuario es redirigido a la página de login, y cualquier intento de acceder a rutas protegidas resulta en redirección al login.
+**Independent Test**: Puede ser probado completamente iniciando sesión con un usuario, accediendo a una ruta protegida (como `/tablero`), haciendo clic en el botón de logout, y verificando que la sesión se invalida, las cookies se eliminan, el usuario es redirigido a la página de login, y cualquier intento de acceder a rutas protegidas resulta en redirección al login.
 
 **Acceptance Scenarios**:
 
-1. **Scenario**: Logout exitoso desde el dashboard
+1. **Scenario**: Logout exitoso desde el tablero
 
-   - **Given** Un usuario está autenticado y viendo el dashboard (`/dashboard`)
+   - **Given** Un usuario está autenticado y viendo el tablero (`/tablero`)
    - **When** El usuario hace clic en el botón "Log out" en el menú de usuario
    - **Then** El sistema invalida la sesión actual en la base de datos, elimina las cookies de autenticación, redirige al usuario a la página de login (`/login`), y muestra un mensaje de confirmación (opcional) indicando que la sesión se cerró correctamente
 
 2. **Scenario**: Logout desde cualquier ruta protegida
 
-   - **Given** Un usuario está autenticado y accediendo a cualquier ruta protegida (por ejemplo, `/dashboard/properties`)
+   - **Given** Un usuario está autenticado y accediendo a cualquier ruta protegida (por ejemplo, `/tablero/properties`)
    - **When** El usuario hace clic en el botón "Log out" desde el menú de navegación
    - **Then** El sistema invalida la sesión, elimina las cookies, y redirige al usuario a la página de login, independientemente de la ruta desde la cual se inició el logout
 
 3. **Scenario**: Acceso a rutas protegidas después del logout
 
    - **Given** Un usuario acaba de cerrar sesión exitosamente
-   - **When** El usuario intenta acceder directamente a una ruta protegida (por ejemplo, navegando a `/dashboard` o usando el botón de retroceso del navegador)
+   - **When** El usuario intenta acceder directamente a una ruta protegida (por ejemplo, navegando a `/tablero` o usando el botón de retroceso del navegador)
    - **Then** El sistema detecta que no hay sesión activa, redirige al usuario a la página de login, y no muestra ningún contenido protegido
 
 4. **Scenario**: Logout con sesión inválida o expirada

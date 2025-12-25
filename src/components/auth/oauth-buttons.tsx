@@ -23,7 +23,7 @@ export function OAuthButtons({ mode = "signin", callbackURL }: OAuthButtonsProps
       // We'll handle registration completion in the callback page
       const redirectURL = mode === "signup" 
         ? (callbackURL || "/register-oauth")
-        : (callbackURL || "/dashboard");
+        : (callbackURL || "/tablero");
         
       await authClient.signIn.social({
         provider,

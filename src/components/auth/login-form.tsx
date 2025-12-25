@@ -59,7 +59,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
         email,
         password,
         rememberMe,
-        callbackURL: callbackUrl || "/dashboard",
+        callbackURL: callbackUrl || "/tablero",
       });
 
       if (result.error) {
@@ -69,7 +69,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
       }
 
       // Login exitoso - redirigir
-      router.push(callbackUrl || "/dashboard");
+      router.push(callbackUrl || "/tablero");
       router.refresh();
     } catch (err) {
       // Error genérico para cualquier excepción

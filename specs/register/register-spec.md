@@ -71,7 +71,7 @@ Un usuario puede registrarse en el sistema usando su cuenta de un proveedor OAut
 
 **Why this priority**: OAuth proporciona una experiencia de usuario mejorada al eliminar la necesidad de recordar otra contraseña y simplificar el proceso de registro. Sin embargo, es secundario al registro tradicional ya que no todos los usuarios pueden o quieren usar OAuth, y requiere configuración adicional de proveedores externos. Además, algunos usuarios pueden preferir mantener sus cuentas separadas.
 
-**Independent Test**: Puede ser probado completamente configurando un proveedor OAuth de prueba (como Google OAuth en modo desarrollo), accediendo a la página de registro, haciendo clic en "Registrarse con Google", completando la autenticación con el proveedor, y verificando que se crea la cuenta de usuario en Better Auth con nombre y apellido (cuando están disponibles en los datos de OAuth), con el rol `visitor` asignado, se marca el email como verificado, y el usuario es redirigido al dashboard.
+**Independent Test**: Puede ser probado completamente configurando un proveedor OAuth de prueba (como Google OAuth en modo desarrollo), accediendo a la página de registro, haciendo clic en "Registrarse con Google", completando la autenticación con el proveedor, y verificando que se crea la cuenta de usuario en Better Auth con nombre y apellido (cuando están disponibles en los datos de OAuth), con el rol `visitor` asignado, se marca el email como verificado, y el usuario es redirigido al tablero.
 
 **Acceptance Scenarios**:
 
@@ -79,7 +79,7 @@ Un usuario puede registrarse en el sistema usando su cuenta de un proveedor OAut
 
    - **Given** El usuario no tiene cuenta en el sistema y hace clic en "Registrarse con Google" en la página de registro
    - **When** El usuario completa exitosamente la autenticación con Google y autoriza el acceso
-   - **Then** El sistema crea la cuenta de usuario en Better Auth asociada al email de Google con los datos de Google (nombre y apellido cuando están disponibles), con el rol `visitor`, marca el email como verificado (ya que OAuth proporciona verificación implícita), y redirige al usuario al dashboard
+   - **Then** El sistema crea la cuenta de usuario en Better Auth asociada al email de Google con los datos de Google (nombre y apellido cuando están disponibles), con el rol `visitor`, marca el email como verificado (ya que OAuth proporciona verificación implícita), y redirige al usuario al tablero
 
 2. **Scenario**: Registro OAuth fallido por email duplicado
 
@@ -111,7 +111,7 @@ Un usuario puede registrarse en el sistema usando su cuenta de un proveedor OAut
 
 - ¿Qué sucede cuando un usuario intenta registrarse mientras ya tiene una sesión activa?
 
-  - El sistema debe detectar la sesión existente y redirigir al usuario a su dashboard sin permitir el registro. Si el usuario desea crear otra cuenta, debe cerrar sesión primero.
+  - El sistema debe detectar la sesión existente y redirigir al usuario a su tablero sin permitir el registro. Si el usuario desea crear otra cuenta, debe cerrar sesión primero.
 
 - ¿Cómo maneja el sistema un intento de registro con un email que está en proceso de verificación pero aún no verificado?
 
@@ -202,7 +202,7 @@ Un usuario puede registrarse en el sistema usando su cuenta de un proveedor OAut
 ### Measurable Outcomes
 
 - **SC-001**: Users can complete registration with email/password in under 5 seconds from form submission to successful registration confirmation and email verification page redirect (measured at 95th percentile)
-- **SC-002**: OAuth registration flow completes in under 8 seconds from clicking OAuth button to successful registration and dashboard redirect (measured at 95th percentile, excluding time spent on external provider)
+- **SC-002**: OAuth registration flow completes in under 8 seconds from clicking OAuth button to successful registration and tablero redirect (measured at 95th percentile, excluding time spent on external provider)
 - **SC-003**: 95% of registration attempts with valid data result in successful registration on the first attempt
 - **SC-004**: System successfully blocks 100% of registration attempts exceeding rate limit threshold (5 attempts in 15 minutes per IP)
 - **SC-005**: Email verification emails are delivered within 30 seconds of user registration in 99% of cases

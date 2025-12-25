@@ -1,4 +1,4 @@
-# Feature Specification: Dashboard Navigation
+# Feature Specification: Tablero Navigation
 
 **Created**: 2025-01-21
 
@@ -17,45 +17,45 @@
   - Demonstrated to users independently
 -->
 
-### User Story 1 - Redirección Post-Login al Dashboard (Priority: P1)
+### User Story 1 - Redirección Post-Login al Tablero (Priority: P1)
 
-Después de un login exitoso, el sistema redirige automáticamente a todos los usuarios autenticados a la página del dashboard (`/dashboard`), independientemente de su rol. Si el usuario intentó acceder a una ruta protegida antes de autenticarse, el sistema respeta la URL de callback y redirige a esa ruta después del login.
+Después de un login exitoso, el sistema redirige automáticamente a todos los usuarios autenticados a la página del tablero (`/tablero`), independientemente de su rol. Si el usuario intentó acceder a una ruta protegida antes de autenticarse, el sistema respeta la URL de callback y redirige a esa ruta después del login.
 
-**Why this priority**: La redirección al dashboard después del login es fundamental para proporcionar a los usuarios acceso inmediato a las funcionalidades principales de la aplicación. Sin esta funcionalidad, los usuarios quedarían en la página de login o en una página sin contenido relevante después de autenticarse, lo que degrada significativamente la experiencia de usuario.
+**Why this priority**: La redirección al tablero después del login es fundamental para proporcionar a los usuarios acceso inmediato a las funcionalidades principales de la aplicación. Sin esta funcionalidad, los usuarios quedarían en la página de login o en una página sin contenido relevante después de autenticarse, lo que degrada significativamente la experiencia de usuario.
 
-**Independent Test**: Puede ser probado completamente realizando un login exitoso y verificando que el navegador redirige automáticamente a `/dashboard`. El test también puede verificar que si un usuario intenta acceder a una ruta protegida (como `/dashboard/properties`) antes de autenticarse, después del login es redirigido a esa ruta protegida original.
+**Independent Test**: Puede ser probado completamente realizando un login exitoso y verificando que el navegador redirige automáticamente a `/tablero`. El test también puede verificar que si un usuario intenta acceder a una ruta protegida (como `/tablero/properties`) antes de autenticarse, después del login es redirigido a esa ruta protegida original.
 
 **Acceptance Scenarios**:
 
-1. **Scenario**: Redirección al dashboard después de login exitoso
+1. **Scenario**: Redirección al tablero después de login exitoso
 
    - **Given** Un usuario existe en el sistema con email "usuario@ejemplo.com", contraseña válida, y cuenta verificada
    - **When** El usuario completa un login exitoso desde la página de login
-   - **Then** El sistema redirige automáticamente al usuario a la página `/dashboard`
+   - **Then** El sistema redirige automáticamente al usuario a la página `/tablero`
 
 2. **Scenario**: Redirección respeta callback URL de ruta protegida
 
-   - **Given** Un usuario no autenticado intenta acceder a la ruta protegida `/dashboard/properties`
-   - **When** El sistema redirige al usuario a `/login?callbackUrl=/dashboard/properties`, el usuario completa el login exitosamente
-   - **Then** El sistema redirige al usuario a `/dashboard/properties` (la ruta protegida original) en lugar de `/dashboard`
+   - **Given** Un usuario no autenticado intenta acceder a la ruta protegida `/tablero/properties`
+   - **When** El sistema redirige al usuario a `/login?callbackUrl=/tablero/properties`, el usuario completa el login exitosamente
+   - **Then** El sistema redirige al usuario a `/tablero/properties` (la ruta protegida original) en lugar de `/tablero`
 
-3. **Scenario**: Redirección al dashboard cuando no hay callback URL
+3. **Scenario**: Redirección al tablero cuando no hay callback URL
 
    - **Given** Un usuario no autenticado accede directamente a `/login` sin intentar acceder previamente a una ruta protegida
    - **When** El usuario completa un login exitoso
-   - **Then** El sistema redirige al usuario a `/dashboard` (la ruta por defecto)
+   - **Then** El sistema redirige al usuario a `/tablero` (la ruta por defecto)
 
 4. **Scenario**: Redirección funciona después de login OAuth
 
    - **Given** Un usuario inicia sesión usando OAuth (Google) exitosamente
    - **When** El proveedor OAuth completa la autenticación y redirige de vuelta a la aplicación
-   - **Then** El sistema crea o actualiza la sesión del usuario y redirige a `/dashboard` (o a la callback URL si existe)
+   - **Then** El sistema crea o actualiza la sesión del usuario y redirige a `/tablero` (o a la callback URL si existe)
 
 ---
 
 ### User Story 2 - Menú Lateral Basado en Rol (Priority: P1)
 
-El sistema muestra un menú lateral (sidebar) personalizado en el dashboard que contiene diferentes items de navegación según el rol del usuario autenticado. El sistema obtiene el rol del usuario desde su sesión y muestra solo los items de menú apropiados para ese rol, asegurando que los usuarios no vean opciones de navegación a funcionalidades para las que no tienen acceso.
+El sistema muestra un menú lateral (sidebar) personalizado en el tablero que contiene diferentes items de navegación según el rol del usuario autenticado. El sistema obtiene el rol del usuario desde su sesión y muestra solo los items de menú apropiados para ese rol, asegurando que los usuarios no vean opciones de navegación a funcionalidades para las que no tienen acceso.
 
 **Why this priority**: El menú basado en roles es esencial para la seguridad y la experiencia de usuario. Proporciona una interfaz clara y personalizada que refleja las capacidades de cada usuario, evitando confusión y mejorando la usabilidad. Sin esta funcionalidad, todos los usuarios verían el mismo menú, lo que puede ser confuso o incluso un riesgo de seguridad si se muestran rutas no autorizadas.
 
@@ -66,26 +66,26 @@ El sistema muestra un menú lateral (sidebar) personalizado en el dashboard que 
 1. **Scenario**: Usuario con rol `visitor` ve menú básico
 
    - **Given** Un usuario existe en el sistema con rol `visitor` y está autenticado
-   - **When** El usuario accede al dashboard (`/dashboard`)
-   - **Then** El sistema muestra el menú lateral con items apropiados para el rol `visitor` (por ejemplo: Dashboard, Perfil, Configuración básica)
+   - **When** El usuario accede al tablero (`/tablero`)
+   - **Then** El sistema muestra el menú lateral con items apropiados para el rol `visitor` (por ejemplo: Tablero, Perfil, Configuración básica)
 
 2. **Scenario**: Usuario con rol `account_admin` ve menú completo
 
    - **Given** Un usuario existe en el sistema con rol `account_admin` y está autenticado
-   - **When** El usuario accede al dashboard (`/dashboard`)
-   - **Then** El sistema muestra el menú lateral con items apropiados para el rol `account_admin` (por ejemplo: Dashboard, Propiedades, Contratos, Pagos, Mantenimiento, Reportes, Configuración, Administración)
+   - **When** El usuario accede al tablero (`/tablero`)
+   - **Then** El sistema muestra el menú lateral con items apropiados para el rol `account_admin` (por ejemplo: Tablero, Propiedades, Contratos, Pagos, Mantenimiento, Reportes, Configuración, Administración)
 
 3. **Scenario**: Menú se actualiza correctamente al cambiar de sesión
 
-   - **Given** Un usuario con rol `visitor` está autenticado y viendo el dashboard con su menú personalizado
+   - **Given** Un usuario con rol `visitor` está autenticado y viendo el tablero con su menú personalizado
    - **When** El usuario cierra sesión y otro usuario con rol `account_admin` inicia sesión
    - **Then** El sistema muestra el menú lateral apropiado para el rol `account_admin` sin necesidad de recargar manualmente la página
 
 4. **Scenario**: Manejo de rol desconocido o inválido
 
    - **Given** Un usuario existe en el sistema con un rol que no está definido en la configuración del menú (por ejemplo, un rol futuro que aún no se ha implementado)
-   - **When** El usuario accede al dashboard (`/dashboard`)
-   - **Then** El sistema muestra un menú mínimo por defecto (solo items básicos como Dashboard y Perfil) y registra un evento para monitoreo
+   - **When** El usuario accede al tablero (`/tablero`)
+   - **Then** El sistema muestra un menú mínimo por defecto (solo items básicos como Tablero y Perfil) y registra un evento para monitoreo
 
 5. **Scenario**: Items de menú no exponen rutas no autorizadas
 
@@ -97,7 +97,7 @@ El sistema muestra un menú lateral (sidebar) personalizado en el dashboard que 
 
 ### User Story 3 - Estado Persistente del Sidebar (Priority: P2)
 
-El sistema recuerda el estado de expansión/colapso del menú lateral (sidebar) entre sesiones del mismo usuario. Si un usuario colapsa o expande el sidebar, esa preferencia se guarda y se restaura la próxima vez que el usuario acceda al dashboard.
+El sistema recuerda el estado de expansión/colapso del menú lateral (sidebar) entre sesiones del mismo usuario. Si un usuario colapsa o expande el sidebar, esa preferencia se guarda y se restaura la próxima vez que el usuario acceda al tablero.
 
 **Why this priority**: Esta funcionalidad mejora la experiencia de usuario al permitir que cada usuario mantenga su preferencia de interfaz personalizada. Sin embargo, es secundaria a la funcionalidad básica de navegación y menú basado en roles, ya que no afecta la seguridad o las funcionalidades core del sistema.
 
@@ -107,14 +107,14 @@ El sistema recuerda el estado de expansión/colapso del menú lateral (sidebar) 
 
 1. **Scenario**: Estado del sidebar se guarda al colapsar
 
-   - **Given** Un usuario está autenticado y viendo el dashboard con el sidebar expandido
+   - **Given** Un usuario está autenticado y viendo el tablero con el sidebar expandido
    - **When** El usuario hace clic en el botón para colapsar el sidebar
    - **Then** El sidebar se colapsa y el estado se guarda (en localStorage o preferencias del usuario)
 
 2. **Scenario**: Estado del sidebar se restaura al volver
 
    - **Given** Un usuario colapsó el sidebar en una sesión previa y el estado fue guardado
-   - **When** El usuario inicia sesión nuevamente y accede al dashboard
+   - **When** El usuario inicia sesión nuevamente y accede al tablero
    - **Then** El sidebar se muestra en estado colapsado (el estado guardado se restaura)
 
 3. **Scenario**: Estado del sidebar es independiente por usuario
@@ -149,15 +149,15 @@ El sistema recuerda el estado de expansión/colapso del menú lateral (sidebar) 
 
 - ¿Cómo maneja el sistema la navegación cuando el usuario no tiene acceso a ninguna ruta del menú?
 
-  - Este caso no debería ocurrir en circunstancias normales, ya que todos los usuarios deberían tener acceso al menos a Dashboard y Perfil. Sin embargo, si ocurre, el sistema debe mostrar un mensaje apropiado y permitir al usuario contactar soporte o cerrar sesión.
+  - Este caso no debería ocurrir en circunstancias normales, ya que todos los usuarios deberían tener acceso al menos a Tablero y Perfil. Sin embargo, si ocurre, el sistema debe mostrar un mensaje apropiado y permitir al usuario contactar soporte o cerrar sesión.
 
 ## Requirements _(mandatory)_
 
 ### Functional Requirements
 
-- **FR-001**: System MUST redirect all authenticated users to `/dashboard` after successful login by default
-- **FR-002**: System MUST respect callback URLs (`callbackUrl` parameter) when redirecting users after login, redirecting to the callback URL instead of `/dashboard` if provided
-- **FR-003**: System MUST redirect to `/dashboard` when no callback URL is provided or when callback URL is invalid/inaccessible
+- **FR-001**: System MUST redirect all authenticated users to `/tablero` after successful login by default
+- **FR-002**: System MUST respect callback URLs (`callbackUrl` parameter) when redirecting users after login, redirecting to the callback URL instead of `/tablero` if provided
+- **FR-003**: System MUST redirect to `/tablero` when no callback URL is provided or when callback URL is invalid/inaccessible
 - **FR-004**: System MUST obtain user role from the active user session (from `session.user.role`)
 - **FR-005**: System MUST display menu items in the sidebar based on the user's role
 - **FR-006**: System MUST provide a configuration system for defining menu items per role that is extensible for future roles
@@ -170,7 +170,7 @@ El sistema recuerda el estado de expansión/colapso del menú lateral (sidebar) 
 - **FR-013**: System MUST support at minimum two roles in menu configuration: `visitor` and `account_admin`
 - **FR-014**: System MUST design menu configuration architecture to be extensible for future roles (Propietario, Administrador de Propiedades, Inquilino, etc.)
 - **FR-015**: System MUST persist sidebar expansion/collapse state per user (using localStorage or user preferences)
-- **FR-016**: System MUST restore sidebar state from persisted storage when user accesses dashboard
+- **FR-016**: System MUST restore sidebar state from persisted storage when user accesses tablero
 - **FR-017**: System MUST maintain sidebar state independently per user (users on different devices/browsers have independent states)
 - **FR-018**: System MUST handle cases where persisted sidebar state is unavailable or corrupted gracefully (default to expanded state)
 
@@ -184,11 +184,11 @@ El sistema recuerda el estado de expansión/colapso del menú lateral (sidebar) 
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of successful logins result in redirect to `/dashboard` (or callback URL if provided) within 500ms of authentication completion (measured at 95th percentile)
+- **SC-001**: 100% of successful logins result in redirect to `/tablero` (or callback URL if provided) within 500ms of authentication completion (measured at 95th percentile)
 - **SC-002**: Menu items are rendered according to user role within 100ms after session data is available (measured at 95th percentile)
 - **SC-003**: 100% of menu items displayed to users correspond to routes that the user's role has access to (zero unauthorized menu items visible)
 - **SC-004**: System handles unknown or invalid roles gracefully (shows default menu, logs event) in 100% of cases without errors or crashes
 - **SC-005**: Sidebar state (expanded/collapsed) is persisted and restored correctly for 99% of users across sessions
 - **SC-006**: Menu configuration system supports addition of new roles without requiring changes to core menu rendering logic (extensibility requirement)
-- **SC-007**: Dashboard page loads and displays menu within 1 second for 95% of requests (including session fetch and menu rendering)
+- **SC-007**: Tablero page loads and displays menu within 1 second for 95% of requests (including session fetch and menu rendering)
 
