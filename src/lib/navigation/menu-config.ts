@@ -14,7 +14,7 @@ import type { MenuItem, MenuConfig, UserRole } from "./types";
 
 /**
  * Configuración de menú para rol visitor (menú básico)
- * 
+ *
  * Incluye solo funcionalidades básicas accesibles para visitantes
  */
 const visitorMenuItems: MenuItem[] = [
@@ -48,7 +48,7 @@ const visitorMenuItems: MenuItem[] = [
 
 /**
  * Configuración de menú para rol account_admin (menú completo)
- * 
+ *
  * Incluye todas las funcionalidades de administración de propiedades
  */
 const accountAdminMenuItems: MenuItem[] = [
@@ -75,16 +75,16 @@ const accountAdminMenuItems: MenuItem[] = [
   },
   {
     title: "Contratos",
-    url: "/tablero/contracts",
+    url: "/tablero/contratos",
     icon: FileText,
     items: [
       {
         title: "Todos los contratos",
-        url: "/tablero/contracts",
+        url: "/tablero/contratos",
       },
       {
         title: "Nuevo contrato",
-        url: "/tablero/contracts/new",
+        url: "/tablero/contratos/nuevo",
       },
     ],
   },
@@ -192,16 +192,18 @@ const menuConfig: MenuConfig = {
 
 /**
  * Obtiene los items de menú para un rol específico
- * 
+ *
  * @param role - El rol del usuario
  * @returns Array de MenuItem para el rol especificado
- * 
+ *
  * @example
  * ```ts
  * const menuItems = getMenuItemsByRole("visitor");
  * ```
  */
-export function getMenuItemsByRole(role: string | null | undefined): MenuItem[] {
+export function getMenuItemsByRole(
+  role: string | null | undefined
+): MenuItem[] {
   // Si no hay rol, retornar menú mínimo
   if (!role) {
     console.warn("[MenuConfig] No role provided, using default menu");
@@ -223,7 +225,7 @@ export function getMenuItemsByRole(role: string | null | undefined): MenuItem[] 
 
 /**
  * Verifica si un rol es válido
- * 
+ *
  * @param role - El rol a verificar
  * @returns true si el rol es válido, false en caso contrario
  */
@@ -236,5 +238,3 @@ export function isValidRole(role: string | null | undefined): role is UserRole {
  * Útil para extensibilidad y documentación
  */
 export { menuConfig, defaultMenuItems };
-
-
