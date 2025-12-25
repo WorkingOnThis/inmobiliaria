@@ -62,7 +62,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
       <LoginForm callbackUrl={params.callbackUrl} />
 
-      <OAuthButtons />
+      <OAuthButtons callbackURL={params.callbackUrl} />
 
       <div className="text-center text-sm text-muted-foreground">
         <p>

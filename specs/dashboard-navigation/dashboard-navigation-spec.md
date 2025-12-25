@@ -145,7 +145,7 @@ El sistema recuerda el estado de expansión/colapso del menú lateral (sidebar) 
 
 - ¿Qué sucede cuando un item de menú apunta a una ruta que requiere permisos adicionales más allá del rol?
 
-  - El sistema debe validar los permisos tanto en el nivel de menú (para ocultar items no autorizados) como en el nivel de ruta (para proteger contra acceso directo mediante URL). El middleware de autenticación debe verificar permisos incluso si el item de menú es visible.
+  - El sistema debe validar los permisos tanto en el nivel de menú (para ocultar items no autorizados) como en el nivel de ruta (para proteger contra acceso directo mediante URL). El middleware de autenticación debe verificar permisos incluso si el item de menú es visible. **Nota**: Algunas features pueden requerir permisos granulares definidos en `src/lib/permissions.ts` (por ejemplo, `canManageClauses()`). Los detalles de permisos específicos de cada feature se documentan en las specs individuales de esas features. El sistema de menú debe integrarse con estas funciones de permisos para filtrar items de menú apropiadamente.
 
 - ¿Cómo maneja el sistema la navegación cuando el usuario no tiene acceso a ninguna ruta del menú?
 
@@ -167,6 +167,7 @@ El sistema recuerda el estado de expansión/colapso del menú lateral (sidebar) 
 - **FR-010**: System MUST update the menu dynamically when user session changes (e.g., after login/logout)
 - **FR-011**: System MUST show a loading state or minimal menu while user session and role are being loaded
 - **FR-012**: System MUST validate menu item visibility based on role permissions before rendering
+- **FR-012a**: System MUST integrate with feature-specific permission functions (e.g., `canManageClauses()` from `src/lib/permissions.ts`) when menu items point to routes that require granular permissions beyond basic role-based access. Feature-specific permission requirements are documented in each feature's specification.
 - **FR-013**: System MUST support at minimum two roles in menu configuration: `visitor` and `account_admin`
 - **FR-014**: System MUST design menu configuration architecture to be extensible for future roles (Propietario, Administrador de Propiedades, Inquilino, etc.)
 - **FR-015**: System MUST persist sidebar expansion/collapse state per user (using localStorage or user preferences)
@@ -191,4 +192,3 @@ El sistema recuerda el estado de expansión/colapso del menú lateral (sidebar) 
 - **SC-005**: Sidebar state (expanded/collapsed) is persisted and restored correctly for 99% of users across sessions
 - **SC-006**: Menu configuration system supports addition of new roles without requiring changes to core menu rendering logic (extensibility requirement)
 - **SC-007**: Tablero page loads and displays menu within 1 second for 95% of requests (including session fetch and menu rendering)
-

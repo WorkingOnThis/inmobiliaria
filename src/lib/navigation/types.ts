@@ -5,7 +5,13 @@ import { type LucideIcon } from "lucide-react";
  * 
  * Extensible para futuros roles: Propietario, Administrador de Propiedades, Inquilino, etc.
  */
-export type UserRole = "visitor" | "account_admin";
+export type UserRole = "visitor" | "agent" | "account_admin";
+
+/**
+ * Tipo para funciones de permiso disponibles en el sistema
+ * Extensible para futuros permisos granulares
+ */
+export type PermissionFunction = "canManageClauses";
 
 /**
  * Tipo para un item de menú individual
@@ -16,6 +22,12 @@ export interface MenuItem {
   icon?: LucideIcon;
   isActive?: boolean;
   items?: MenuSubItem[];
+  /**
+   * Permiso granular requerido para mostrar este item de menú
+   * Si se especifica, el sistema verificará este permiso además del rol básico
+   * Si el permiso no se cumple, el item será ocultado del menú
+   */
+  requiredPermission?: PermissionFunction;
 }
 
 /**
@@ -24,6 +36,12 @@ export interface MenuItem {
 export interface MenuSubItem {
   title: string;
   url: string;
+  /**
+   * Permiso granular requerido para mostrar este sub-item de menú
+   * Si se especifica, el sistema verificará este permiso además del rol básico
+   * Si el permiso no se cumple, el sub-item será ocultado del menú
+   */
+  requiredPermission?: PermissionFunction;
 }
 
 /**

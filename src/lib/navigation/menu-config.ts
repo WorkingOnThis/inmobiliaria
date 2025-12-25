@@ -10,7 +10,8 @@ import {
   Shield,
   type LucideIcon,
 } from "lucide-react";
-import type { MenuItem, MenuConfig, UserRole } from "./types";
+import type { MenuItem, MenuConfig, UserRole, MenuSubItem } from "./types";
+import { canManageClauses, hasRouteAccess } from "@/lib/permissions";
 
 /**
  * Configuración de menú para rol visitor (menú básico)
@@ -85,6 +86,11 @@ const accountAdminMenuItems: MenuItem[] = [
       {
         title: "Nuevo contrato",
         url: "/tablero/contratos/nuevo",
+      },
+      {
+        title: "Cláusulas",
+        url: "/tablero/contratos/clausulas/nueva",
+        requiredPermission: "canManageClauses",
       },
     ],
   },
@@ -191,10 +197,203 @@ const menuConfig: MenuConfig = {
 };
 
 /**
+ * Mapa de funciones de permiso a sus implementaciones
+ * Permite llamar dinámicamente a funciones de permiso desde strings
+ */
+const permissionFunctions: Record<string, (role: string | null | undefined) => boolean> = {
+  canManageClauses,
+};
+
+/**
+ * Logging de eventos para monitoreo
+ * Registra cuando se encuentra un rol desconocido o inválido
+ *
+ * @param role - El rol desconocido que se encontró
+ */
+function logUnknownRole(role: string): void {
+  const logData = {
+    timestamp: new Date().toISOString(),
+    event: "unknown_role_detected",
+    role,
+    userAgent: typeof window !== "undefined" ? window.navigator.userAgent : undefined,
+  };
+
+  // En desarrollo: usar console.warn
+  if (process.env.NODE_ENV === "development") {
+    console.warn(`[MenuConfig] Unknown role detected:`, logData);
+  }
+
+  // En producción: preparar estructura para enviar a servicio de logging
+  // TODO: Implementar envío a servicio de logging en producción
+  // Ejemplo:
+  // if (process.env.NODE_ENV === "production") {
+  //   sendToLoggingService(logData);
+  // }
+}
+
+/**
+ * Verifica si un item de menú o sub-item debe ser visible según permisos
+ *
+ * @param item - El item o sub-item a verificar
+ * @param role - El rol del usuario
+ * @returns true si el item debe ser visible, false en caso contrario
+ */
+function isMenuItemVisible(
+  item: { url: string; requiredPermission?: string },
+  role: string | null | undefined
+): boolean {
+  // Si no hay rol, el item no es visible
+  if (!role) {
+    return false;
+  }
+
+  // Verificar permiso granular si está especificado
+  if (item.requiredPermission) {
+    const permissionFn = permissionFunctions[item.requiredPermission];
+    if (!permissionFn) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          `[MenuConfig] Unknown permission function: ${item.requiredPermission}, item will be hidden`
+        );
+      }
+      return false;
+    }
+
+    if (!permissionFn(role)) {
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `[MenuConfig] Item "${item.url}" filtered due to permission: ${item.requiredPermission}`
+        );
+      }
+      return false;
+    }
+  }
+
+  // Verificar acceso a la ruta como capa adicional de seguridad
+  if (!hasRouteAccess(item.url, role)) {
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `[MenuConfig] Item "${item.url}" filtered due to route access check`
+      );
+    }
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Filtra items de menú y sub-items según permisos granulares del usuario
+ *
+ * @param items - Array de MenuItem a filtrar
+ * @param role - El rol del usuario
+ * @returns Array de MenuItem filtrado con solo items visibles
+ */
+function filterMenuItemsByPermissions(
+  items: MenuItem[],
+  role: string | null | undefined
+): MenuItem[] {
+  if (!role) {
+    return [];
+  }
+
+  try {
+    return items
+      .map((item) => {
+        try {
+          // Verificar si el item principal es visible
+          if (!isMenuItemVisible(item, role)) {
+            return null;
+          }
+
+          // Filtrar sub-items si existen
+          let filteredSubItems: MenuSubItem[] | undefined;
+          if (item.items) {
+            try {
+              filteredSubItems = item.items.filter((subItem) =>
+                isMenuItemVisible(subItem, role)
+              );
+            } catch (error) {
+              // Si hay error al filtrar sub-items, usar array vacío
+              if (process.env.NODE_ENV === "development") {
+                console.warn(
+                  `[MenuConfig] Error filtering sub-items for "${item.title}":`,
+                  error
+                );
+              }
+              filteredSubItems = [];
+            }
+          }
+
+          // Si el item tiene sub-items pero todos fueron filtrados, ocultar el item principal también
+          // A menos que el item principal tenga una URL propia que sea accesible
+          if (
+            item.items &&
+            item.items.length > 0 &&
+            (!filteredSubItems || filteredSubItems.length === 0)
+          ) {
+            // Si el item principal tiene una URL válida, mantenerlo aunque no tenga sub-items
+            // De lo contrario, ocultarlo
+            try {
+              if (
+                !item.url ||
+                item.url === "#" ||
+                !hasRouteAccess(item.url, role)
+              ) {
+                return null;
+              }
+            } catch (error) {
+              // Si hay error al verificar acceso a ruta, ocultar el item por seguridad
+              if (process.env.NODE_ENV === "development") {
+                console.warn(
+                  `[MenuConfig] Error checking route access for "${item.url}":`,
+                  error
+                );
+              }
+              return null;
+            }
+          }
+
+          // Retornar item con sub-items filtrados
+          return {
+            ...item,
+            items: filteredSubItems,
+          };
+        } catch (error) {
+          // Si hay error procesando un item individual, ocultarlo por seguridad
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              `[MenuConfig] Error processing menu item "${item.title}":`,
+              error
+            );
+          }
+          return null;
+        }
+      })
+      .filter((item): item is MenuItem => item !== null);
+  } catch (error) {
+    // Si hay error crítico al filtrar, retornar items básicos
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "[MenuConfig] Critical error filtering menu items, returning basic menu:",
+        error
+      );
+    }
+    // Retornar items básicos que siempre deberían ser accesibles
+    return items.filter(
+      (item) =>
+        item.url === "/tablero" ||
+        item.url === "/tablero/profile" ||
+        !item.requiredPermission
+    );
+  }
+}
+
+/**
  * Obtiene los items de menú para un rol específico
  *
  * @param role - El rol del usuario
- * @returns Array de MenuItem para el rol especificado
+ * @returns Array de MenuItem para el rol especificado, filtrado por permisos granulares
  *
  * @example
  * ```ts
@@ -215,12 +414,13 @@ export function getMenuItemsByRole(
 
   // Si el rol no existe en la configuración, usar menú mínimo y loggear
   if (!menuItems) {
-    console.warn(`[MenuConfig] Unknown role: ${role}, using default menu`);
-    // TODO: En producción, considerar enviar evento de monitoreo aquí
-    return defaultMenuItems;
+    logUnknownRole(role);
+    // Filtrar menú mínimo por permisos también (aunque normalmente no tendrá permisos requeridos)
+    return filterMenuItemsByPermissions(defaultMenuItems, role);
   }
 
-  return menuItems;
+  // Filtrar items según permisos granulares
+  return filterMenuItemsByPermissions(menuItems, role);
 }
 
 /**

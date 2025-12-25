@@ -7,6 +7,18 @@
 
 [Extract from feature spec: primary requirement + technical approach from research]
 
+## Architecture
+
+[Optional: Add a mermaid diagram to visualize the flow, data architecture, or system design]
+
+```mermaid
+flowchart TD
+    A["Start"] -->|"Action"| B["Process"]
+    B -->|"Decision"| C{"Condition?"}
+    C -->|"Yes"| D["Result A"]
+    C -->|"No"| E["Result B"]
+```
+
 ## Technical Context
 
 <!--

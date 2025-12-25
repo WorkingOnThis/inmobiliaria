@@ -126,6 +126,12 @@ src/
   - Redirección al login después del logout
   - Manejo seguro de cookies y sesiones
 
+- **[Creación de Cláusulas de Contratos](create-contract-clause/)** - Sistema para crear plantillas de cláusulas reutilizables
+  - Control de acceso basado en roles (P1)
+  - Formulario de creación de plantillas con categorías (P1)
+  - Soporte para variables/placeholders en contenido (P1)
+  - Selección de categorías predefinidas (P2)
+
 ### 📋 Planificadas
 
 - **Dashboard Propietario** - Panel personalizado para propietarios de propiedades
