@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,93 +8,133 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { useSession } from "@/lib/auth/hooks"
-import { useEffect, useState, useCallback } from "react"
+} from "@/components/ui/sidebar";
+import { useSession, useLogoutListener } from "@/lib/auth/hooks";
+import { useSyncExternalStore, useCallback, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-const SIDEBAR_STORAGE_PREFIX = "sidebar-state-"
+const SIDEBAR_STORAGE_PREFIX = "sidebar-state-";
+
+// Crear un store personalizado para manejar localStorage
+function createLocalStorageStore(storageKey: string | null) {
+  const listeners = new Set<() => void>();
+
+  const getSnapshot = (): boolean | undefined => {
+    if (!storageKey) return undefined;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        if (typeof parsed === "boolean") {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.warn(
+        "[DashboardLayout] Error reading sidebar state from localStorage:",
+        error
+      );
+    }
+    return undefined;
+  };
+
+  const subscribe = (callback: () => void) => {
+    listeners.add(callback);
+
+    // Escuchar cambios desde otras pestañas
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === storageKey) {
+        listeners.forEach((listener) => listener());
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      listeners.delete(callback);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  };
+
+  const setValue = (value: boolean) => {
+    if (!storageKey) return;
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(value));
+      // Notificar a todos los listeners (incluyendo componentes en la misma pestaña)
+      listeners.forEach((listener) => listener());
+    } catch (error) {
+      console.warn(
+        "[DashboardLayout] Error saving sidebar state to localStorage:",
+        error
+      );
+    }
+  };
+
+  return { getSnapshot, subscribe, setValue };
+}
 
 /**
  * DashboardLayout Component
- * 
+ *
  * Layout del dashboard que incluye el sidebar con persistencia de estado.
  * Maneja la persistencia del estado del sidebar usando localStorage con clave por usuario.
  */
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { session } = useSession()
-  const userId = session?.user?.id
-  const [sidebarOpen, setSidebarOpen] = useState<boolean | undefined>(undefined)
+  const { session, isLoading } = useSession();
+  const userId = session?.user?.id;
+  const router = useRouter();
+
+  // Escuchar eventos de logout desde otras pestañas
+  useLogoutListener();
+
+  // Redirigir si no hay sesión después de cargar
+  // El middleware del servidor ya protege la ruta, esto es solo una verificación adicional en el cliente
+  useEffect(() => {
+    if (!isLoading && !session?.user) {
+      router.replace("/login");
+    }
+  }, [session, isLoading, router]);
 
   // Obtener clave de localStorage para el usuario actual
-  const getStorageKey = useCallback(() => {
-    if (!userId) return null
-    return `${SIDEBAR_STORAGE_PREFIX}${userId}`
-  }, [userId])
+  const storageKey = useMemo(() => {
+    if (!userId) return null;
+    return `${SIDEBAR_STORAGE_PREFIX}${userId}`;
+  }, [userId]);
 
-  // Leer estado inicial desde localStorage
-  useEffect(() => {
-    if (!userId) {
-      // Si no hay usuario, usar estado por defecto (expandido)
-      setSidebarOpen(undefined)
-      return
-    }
+  // Crear el store para este storageKey (se recrea cuando cambia storageKey)
+  const store = useMemo(
+    () => createLocalStorageStore(storageKey),
+    [storageKey]
+  );
 
-    const storageKey = getStorageKey()
-    if (!storageKey) return
-
-    try {
-      const stored = localStorage.getItem(storageKey)
-      if (stored !== null) {
-        const parsed = JSON.parse(stored)
-        // Validar que sea un boolean
-        if (typeof parsed === "boolean") {
-          setSidebarOpen(parsed)
-        } else {
-          // Si los datos son inválidos, usar estado por defecto
-          setSidebarOpen(undefined)
-        }
-      } else {
-        // Si no hay estado guardado, usar estado por defecto (expandido)
-        setSidebarOpen(undefined)
-      }
-    } catch (error) {
-      // Si hay error leyendo localStorage, usar estado por defecto
-      console.warn("[DashboardLayout] Error reading sidebar state from localStorage:", error)
-      setSidebarOpen(undefined)
-    }
-  }, [userId, getStorageKey])
+  // Usar useSyncExternalStore para sincronizar con localStorage
+  const sidebarOpen = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    // Server snapshot (siempre undefined para SSR)
+    () => undefined
+  );
 
   // Guardar estado en localStorage cuando cambia
   const handleOpenChange = useCallback(
     (open: boolean) => {
-      setSidebarOpen(open)
-
-      if (!userId) return
-
-      const storageKey = getStorageKey()
-      if (!storageKey) return
-
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(open))
-      } catch (error) {
-        console.warn("[DashboardLayout] Error saving sidebar state to localStorage:", error)
-        // Continuar sin guardar si hay error (localStorage puede estar deshabilitado)
-      }
+      store.setValue(open);
     },
-    [userId, getStorageKey]
-  )
+    [store]
+  );
 
   // Props para SidebarProvider
   const sidebarProps =
     sidebarOpen === undefined
       ? { defaultOpen: true, onOpenChange: handleOpenChange }
-      : { open: sidebarOpen, onOpenChange: handleOpenChange }
+      : { open: sidebarOpen, onOpenChange: handleOpenChange };
 
   return (
     <SidebarProvider {...sidebarProps}>
@@ -110,7 +150,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Building Your Application</BreadcrumbLink>
+                  <BreadcrumbLink href="#">
+                    Building Your Application
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
@@ -123,6 +165,5 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {children}
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }
-

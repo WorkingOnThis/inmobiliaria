@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   BadgeCheck,
@@ -7,13 +7,11 @@ import {
   CreditCard,
   LogOut,
   Sparkles,
-} from "lucide-react"
+  Loader2,
+  MonitorX,
+} from "lucide-react";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,26 +20,30 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+import { useLogout, useLogoutAllDevices } from "@/lib/auth/hooks";
 
 export function NavUser({
   user,
   initials = "U",
 }: {
   user: {
-    name: string
-    email: string
-    avatar: string
-  }
-  initials?: string
+    name: string;
+    email: string;
+    avatar: string;
+  };
+  initials?: string;
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
+  const { logout, isLoading } = useLogout();
+  const { logoutAllDevices, isLoading: isLoadingAllDevices } =
+    useLogoutAllDevices();
 
   return (
     <SidebarMenu>
@@ -54,7 +56,9 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
@@ -73,7 +77,9 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -104,13 +110,43 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut />
-              Log out
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                if (
+                  confirm(
+                    "¿Está seguro de que desea cerrar sesión en todos los dispositivos? Esto cerrará su sesión en todos los navegadores y dispositivos donde haya iniciado sesión."
+                  )
+                ) {
+                  logoutAllDevices();
+                }
+              }}
+              disabled={isLoading || isLoadingAllDevices}
+            >
+              {isLoadingAllDevices ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <MonitorX />
+              )}
+              Cerrar sesión en todos los dispositivos
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                logout();
+              }}
+              disabled={isLoading || isLoadingAllDevices}
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <LogOut />
+              )}
+              Salir
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

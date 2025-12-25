@@ -1,6 +1,6 @@
 # Proyecto: Sistema de Administración de Alquileres
 
-**Última actualización**: 2025-12-21
+**Última actualización**: 2025-01-21
 
 ## Descripción del Proyecto
 
@@ -119,6 +119,12 @@ src/
   - Redirección post-login al dashboard (P1)
   - Menú lateral personalizado según rol de usuario (P1)
   - Persistencia de estado del sidebar (P2)
+
+- **[Logout](logout/)** - Sistema de cierre de sesión
+  - Logout básico con invalidación de sesión (P1)
+  - Logout desde múltiples dispositivos (P2)
+  - Redirección al login después del logout
+  - Manejo seguro de cookies y sesiones
 
 ### 📋 Planificadas
 

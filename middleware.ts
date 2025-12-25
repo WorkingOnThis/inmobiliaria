@@ -23,15 +23,24 @@ export async function middleware(request: NextRequest) {
 
   try {
     // Obtener sesión del usuario
+    // Con cookieCache deshabilitado, getSession siempre verifica contra la base de datos
     const session = await auth.api.getSession({
       headers: request.headers,
     });
 
-    // Si no hay sesión, redirigir a login
+    // Si no hay sesión o el usuario no existe, redirigir a login inmediatamente
     if (!session?.user) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
+      const response = NextResponse.redirect(loginUrl);
+      
+      // Agregar headers para prevenir cache del navegador
+      response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      response.headers.set("Pragma", "no-cache");
+      response.headers.set("Expires", "0");
+      response.headers.set("X-Robots-Tag", "noindex, nofollow");
+      
+      return response;
     }
 
     // Si el usuario no ha verificado su email, redirigir a verificación
@@ -42,12 +51,25 @@ export async function middleware(request: NextRequest) {
     // }
 
     // Usuario autenticado, permitir acceso
-    return NextResponse.next();
+    // Agregar headers para prevenir cache en rutas protegidas
+    const response = NextResponse.next();
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+    
+    return response;
   } catch (error) {
     console.error("Middleware auth error:", error);
     // En caso de error, redirigir a login para estar seguro
     const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    
+    // Agregar headers para prevenir cache
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+    
+    return response;
   }
 }
 

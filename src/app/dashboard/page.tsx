@@ -1,5 +1,9 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
 
+// Forzar renderizado dinámico para prevenir cache
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default function Page() {
   return (
     <DashboardLayout>
