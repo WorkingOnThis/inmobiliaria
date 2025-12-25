@@ -30,6 +30,18 @@ export const auth = betterAuth({
   basePath: "/api/auth",
   secret: process.env.BETTER_AUTH_SECRET || "change-me-in-production",
 
+  // User configuration with additional fields
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "visitor",
+        input: false, // Don't allow user to set role during signup
+      },
+    },
+  },
+
   // Email Verification configuration
   emailVerification: {
     // Send verification email callback

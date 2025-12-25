@@ -26,6 +26,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Obtener rol del usuario desde la sesión
   const userRole = session?.user?.role as string | undefined
   
+  // Debug: Log para verificar el rol del usuario
+  React.useEffect(() => {
+    if (session?.user) {
+      console.log("[AppSidebar] User session:", {
+        userId: session.user.id,
+        email: session.user.email,
+        role: session.user.role,
+        fullUser: session.user,
+      });
+    }
+  }, [session]);
+  
   // Obtener items de menú según el rol
   const menuItems = React.useMemo(() => {
     if (isLoading) {
