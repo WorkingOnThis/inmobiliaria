@@ -8,22 +8,8 @@ import {
 import { sendEmail } from "@/lib/auth/email";
 import { auth } from "@/lib/auth";
 import { createEmailVerificationToken } from "better-auth/api";
+import { hashPassword } from "better-auth/crypto";
 import { eq } from "drizzle-orm";
-import { scrypt, randomBytes } from "node:crypto";
-import { promisify } from "node:util";
-
-const scryptAsync = promisify(scrypt);
-
-/**
- * Hash a password using scrypt (same algorithm as Better Auth)
- * Format: base64(hash).base64(salt)
- */
-async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16);
-  // Better Auth scrypt parameters: costFactor=16384, blockSize=8, parallelization=1
-  const hash = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${hash.toString("base64")}.${salt.toString("base64")}`;
-}
 
 function generateId(): string {
   return crypto.randomUUID();

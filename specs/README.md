@@ -110,9 +110,15 @@ src/
   - Rate limiting y seguridad
 
 - **[Dashboard Agente Inmobiliario](dashboard-agent/)** - Panel personalizado para administradores de propiedades
+
   - Visualización de resumen ejecutivo y métricas clave (P1)
   - Navegación rápida y acceso a secciones principales (P2)
   - Alertas y notificaciones de tareas pendientes (P3)
+
+- **[Dashboard Navigation](dashboard-navigation/)** - Navegación del dashboard con menú basado en roles
+  - Redirección post-login al dashboard (P1)
+  - Menú lateral personalizado según rol de usuario (P1)
+  - Persistencia de estado del sidebar (P2)
 
 ### 📋 Planificadas
 

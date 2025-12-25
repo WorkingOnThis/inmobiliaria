@@ -14,23 +14,7 @@ import "dotenv/config";
 import { db } from "@/db";
 import { user, account } from "@/db/schema/better-auth";
 import { eq } from "drizzle-orm";
-import { scrypt, randomBytes } from "node:crypto";
-import { promisify } from "node:util";
-
-const scryptAsync = promisify(scrypt);
-
-/**
- * Hash a password using scrypt
- * Better Auth uses scrypt with specific parameters
- * Format: base64(hash).base64(salt)
- */
-async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16);
-  // Better Auth scrypt parameters: costFactor=16384, blockSize=8, parallelization=1
-  const hash = (await scryptAsync(password, salt, 64)) as Buffer;
-  // Better Auth format appears to be: hash.salt (both base64 encoded)
-  return `${hash.toString("base64")}.${salt.toString("base64")}`;
-}
+import { hashPassword } from "better-auth/crypto";
 
 /**
  * Generate a unique ID (Better Auth uses text IDs, typically UUID-like)
