@@ -16,6 +16,7 @@ import {
   CLAUSE_CATEGORIES,
   MAX_TITLE_LENGTH,
   MAX_CONTENT_LENGTH,
+  type ClauseCategory,
 } from "@/lib/clauses/constants";
 
 /**
@@ -64,7 +65,7 @@ export function CreateClauseForm() {
       }));
       return false;
     }
-    if (!CLAUSE_CATEGORIES.includes(categoryValue as any)) {
+    if (!CLAUSE_CATEGORIES.includes(categoryValue as ClauseCategory)) {
       setFieldErrors((prev) => ({
         ...prev,
         category: "La categoría seleccionada no es válida",
@@ -135,7 +136,8 @@ export function CreateClauseForm() {
 
       if (!response.ok) {
         setError(
-          data.error || "Error al crear la cláusula. Por favor intenta de nuevo."
+          data.error ||
+            "Error al crear la cláusula. Por favor intenta de nuevo."
         );
         return;
       }
@@ -225,7 +227,9 @@ export function CreateClauseForm() {
           </SelectContent>
         </Select>
         {fieldErrors.category && (
-          <p className="mt-1 text-sm text-destructive">{fieldErrors.category}</p>
+          <p className="mt-1 text-sm text-destructive">
+            {fieldErrors.category}
+          </p>
         )}
       </div>
 
@@ -250,7 +254,7 @@ export function CreateClauseForm() {
           disabled={isLoading}
           required
           maxLength={MAX_CONTENT_LENGTH}
-          placeholder='Ej: El inquilino se compromete a pagar el monto de {{monto_mensual}} el día {{dia_pago}} de cada mes.'
+          placeholder="Ej: El inquilino se compromete a pagar el monto de {{monto_mensual}} el día {{dia_pago}} de cada mes."
           rows={10}
           className="resize-y"
           aria-invalid={fieldErrors.content ? "true" : "false"}
@@ -283,16 +287,7 @@ export function CreateClauseForm() {
         <Button type="submit" disabled={isLoading} className="flex-1">
           {isLoading ? "Guardando..." : "Crear Cláusula"}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push("/tablero/contratos")}
-          disabled={isLoading}
-        >
-          Cancelar
-        </Button>
       </div>
     </form>
   );
 }
-

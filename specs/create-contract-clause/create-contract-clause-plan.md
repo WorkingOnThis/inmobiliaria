@@ -195,7 +195,7 @@ src/
   - Mensajes de error específicos por campo
   - Manejo de envío: validar antes de enviar, POST a `/api/clauses`, mostrar mensaje de éxito y redirigir a `/tablero` con parámetro `success=clause_created`, preservar datos en caso de error de validación
   - Contadores de caracteres para título y contenido
-  - Botones: "Crear Cláusula" (submit) y "Cancelar" (redirigir a `/tablero/contratos`)
+  - Botones: "Crear Cláusula" (submit)
 
 **Checkpoint**: Formulario funcional con validación completa. Los datos se envían correctamente a la API y se manejan los errores apropiadamente.
 
