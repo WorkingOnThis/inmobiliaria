@@ -76,20 +76,20 @@ const accountAdminMenuItems: MenuItem[] = [
   },
   {
     title: "Contratos",
-    url: "/tablero/contratos",
+    url: "/contratos",
     icon: FileText,
     items: [
       {
         title: "Todos los contratos",
-        url: "/tablero/contratos",
+        url: "/contratos",
       },
       {
         title: "Nuevo contrato",
-        url: "/tablero/contratos/nuevo",
+        url: "/contratos/nuevo",
       },
       {
         title: "Cláusulas",
-        url: "/tablero/contratos/clausulas/nueva",
+        url: "/contratos/clausulas/nueva",
         requiredPermission: "canManageClauses",
       },
     ],

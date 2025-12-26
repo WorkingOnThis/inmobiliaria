@@ -156,7 +156,7 @@ export function CreateClauseForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-2xl">
       {/* Title Field */}
       <div>
         <label

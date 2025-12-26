@@ -13,7 +13,7 @@ import type { UserRole } from "./navigation/types";
  * Permisos para la creación de cláusulas de contratos
  * 
  * Define qué roles pueden acceder a las rutas de creación de cláusulas:
- * - `/tablero/contratos/clausulas/nueva` (creación)
+ * - `/contratos/clausulas/nueva` (creación)
  * 
  * Nota: Este permiso puede extenderse en el futuro para incluir otras operaciones
  * como listar, editar o eliminar cláusulas.
@@ -34,7 +34,7 @@ export function canManageClauses(role: string | null | undefined): boolean {
 /**
  * Verifica si un rol tiene acceso a una ruta específica
  * 
- * @param route - La ruta a verificar (ej: "/tablero/contratos/clausulas")
+ * @param route - La ruta a verificar (ej: "/contratos/clausulas")
  * @param role - El rol del usuario
  * @returns true si el rol tiene acceso, false en caso contrario
  */
@@ -46,7 +46,7 @@ export function hasRouteAccess(
 
   // Permisos para rutas de creación de cláusulas
   if (
-    route.startsWith("/tablero/contratos/clausulas/nueva") &&
+    route.startsWith("/contratos/clausulas/nueva") &&
     !canManageClauses(role)
   ) {
     return false;

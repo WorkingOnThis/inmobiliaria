@@ -23,7 +23,7 @@ export default async function CreateClausePage() {
 
   // Verificar que el usuario esté autenticado
   if (!session?.user) {
-    redirect("/login?callbackUrl=/tablero/contratos/clausulas/nueva");
+    redirect("/login?callbackUrl=/contratos/clausulas/nueva");
   }
 
   // Verificar permisos
@@ -35,8 +35,8 @@ export default async function CreateClausePage() {
   return (
     <DashboardLayout>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold">Crear Nueva Cláusula</h1>
+        <div className="flex flex-col gap-2 w-full items-center mx-auto">
+          <h1 className="text-2xl font-bold">Crear nueva cláusula</h1>
           <p className="text-muted-foreground">
             Crea una nueva plantilla de cláusula para usar en contratos. Puedes
             incluir variables en el formato{" "}
@@ -46,7 +46,7 @@ export default async function CreateClausePage() {
             .
           </p>
         </div>
-        <div className="max-w-2xl">
+        <div className="flex flex-col items-center">
           <CreateClauseForm />
         </div>
       </div>
