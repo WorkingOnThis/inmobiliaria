@@ -9,3 +9,5 @@ export * from "./better-auth";
 // Business domain schemas
 export * from "./agency";
 export * from "./clause";
+export * from "./client";
+export * from "./property";

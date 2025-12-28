@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,12 +12,17 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   CLAUSE_CATEGORIES,
   MAX_TITLE_LENGTH,
   MAX_CONTENT_LENGTH,
   type ClauseCategory,
 } from "@/lib/clauses/constants";
+import { ClauseContentEditor } from "./structured-content-editor/clause-content-editor";
+import { serializeStructuredContent } from "@/lib/clauses/structured-content/serializer";
+import { validateStructuredContent } from "@/lib/clauses/structured-content/validator";
+import type { StructuredContent } from "@/lib/clauses/structured-content/types";
 
 /**
  * CreateClauseForm Component
@@ -30,6 +35,15 @@ export function CreateClauseForm() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
+  const [contentMode, setContentMode] = useState<"plain" | "structured">(
+    "structured"
+  );
+  const [structuredContent, setStructuredContent] = useState<StructuredContent>(
+    {
+      type: "structured",
+      parts: [{ type: "text", content: "" }],
+    }
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -103,6 +117,59 @@ export function CreateClauseForm() {
     return true;
   };
 
+  const validateStructured = (): boolean => {
+    // Validar que haya al menos una parte con contenido
+    const hasContent = structuredContent.parts.some((part) => {
+      if (part.type === "text") {
+        return part.content.trim().length > 0;
+      }
+      return true; // Variables e iteraciones siempre tienen contenido
+    });
+
+    if (!hasContent) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        content: "El contenido es requerido",
+      }));
+      return false;
+    }
+
+    // Validar estructura
+    const validation = validateStructuredContent(structuredContent);
+    if (!validation.valid) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        content: validation.errors.join(". "),
+      }));
+      return false;
+    }
+
+    // Validar longitud después de serializar
+    try {
+      const serialized = serializeStructuredContent(structuredContent);
+      if (serialized.length > MAX_CONTENT_LENGTH) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          content: `El contenido serializado excede ${MAX_CONTENT_LENGTH} caracteres`,
+        }));
+        return false;
+      }
+    } catch (err) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        content: "Error al validar el contenido estructurado",
+      }));
+      return false;
+    }
+
+    setFieldErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.content;
+      return newErrors;
+    });
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -111,7 +178,26 @@ export function CreateClauseForm() {
     // Validar todos los campos
     const isTitleValid = validateTitle(title);
     const isCategoryValid = validateCategory(category);
-    const isContentValid = validateContent(content);
+    
+    let finalContent = "";
+    let isContentValid = false;
+
+    if (contentMode === "structured") {
+      isContentValid = validateStructured();
+      if (isContentValid) {
+        try {
+          finalContent = serializeStructuredContent(structuredContent);
+        } catch (err) {
+          setError("Error al serializar el contenido estructurado");
+          return;
+        }
+      }
+    } else {
+      isContentValid = validateContent(content);
+      if (isContentValid) {
+        finalContent = content.trim();
+      }
+    }
 
     if (!isTitleValid || !isCategoryValid || !isContentValid) {
       return;
@@ -128,7 +214,7 @@ export function CreateClauseForm() {
         body: JSON.stringify({
           title: title.trim(),
           category: category,
-          content: content.trim(),
+          content: finalContent,
         }),
       });
 
@@ -235,44 +321,93 @@ export function CreateClauseForm() {
 
       {/* Content Field */}
       <div>
-        <label
-          htmlFor="content"
-          className="block text-sm font-medium text-foreground mb-2"
-        >
-          Contenido <span className="text-destructive">*</span>
-        </label>
-        <Textarea
-          id="content"
-          value={content}
-          onChange={(e) => {
-            setContent(e.target.value);
-            if (fieldErrors.content) {
-              validateContent(e.target.value);
-            }
-          }}
-          onBlur={() => validateContent(content)}
-          disabled={isLoading}
-          required
-          maxLength={MAX_CONTENT_LENGTH}
-          placeholder="Ej: El inquilino se compromete a pagar el monto de {{monto_mensual}} el día {{dia_pago}} de cada mes."
-          rows={10}
-          className="resize-y"
-          aria-invalid={fieldErrors.content ? "true" : "false"}
-        />
-        <div className="flex justify-between items-center mt-1">
-          {fieldErrors.content && (
-            <p className="text-sm text-destructive">{fieldErrors.content}</p>
-          )}
-          <span className="text-xs text-muted-foreground ml-auto">
-            {content.length}/{MAX_CONTENT_LENGTH}
-          </span>
+        <div className="flex items-center justify-between mb-2">
+          <label
+            htmlFor="content"
+            className="block text-sm font-medium text-foreground"
+          >
+            Contenido <span className="text-destructive">*</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="content-mode" className="text-xs text-muted-foreground">
+              Modo:
+            </Label>
+            <Select
+              value={contentMode}
+              onValueChange={(value: "plain" | "structured") => {
+                setContentMode(value);
+                setFieldErrors((prev) => {
+                  const newErrors = { ...prev };
+                  delete newErrors.content;
+                  return newErrors;
+                });
+              }}
+              disabled={isLoading}
+            >
+              <SelectTrigger id="content-mode" className="w-[140px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="structured">Estructurado</SelectItem>
+                <SelectItem value="plain">Texto Plano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Puedes usar variables en el formato{" "}
-          <code className="px-1 py-0.5 bg-muted rounded text-xs">
-            {"{{nombre_variable}}"}
-          </code>
-        </p>
+
+        {contentMode === "structured" ? (
+          <div>
+            <ClauseContentEditor
+              value={structuredContent}
+              onChange={setStructuredContent}
+              disabled={isLoading}
+            />
+            {fieldErrors.content && (
+              <p className="mt-2 text-sm text-destructive">
+                {fieldErrors.content}
+              </p>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">
+              Usa el editor visual para agregar variables y listas de forma
+              intuitiva.
+            </p>
+          </div>
+        ) : (
+          <div>
+            <Textarea
+              id="content"
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value);
+                if (fieldErrors.content) {
+                  validateContent(e.target.value);
+                }
+              }}
+              onBlur={() => validateContent(content)}
+              disabled={isLoading}
+              required
+              maxLength={MAX_CONTENT_LENGTH}
+              placeholder="Ej: El inquilino se compromete a pagar el monto de {{monto_mensual}} el día {{dia_pago}} de cada mes."
+              rows={10}
+              className="resize-y"
+              aria-invalid={fieldErrors.content ? "true" : "false"}
+            />
+            <div className="flex justify-between items-center mt-1">
+              {fieldErrors.content && (
+                <p className="text-sm text-destructive">{fieldErrors.content}</p>
+              )}
+              <span className="text-xs text-muted-foreground ml-auto">
+                {content.length}/{MAX_CONTENT_LENGTH}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Puedes usar variables en el formato{" "}
+              <code className="px-1 py-0.5 bg-muted rounded text-xs">
+                {"{{nombre_variable}}"}
+              </code>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Error Message */}

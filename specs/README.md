@@ -131,6 +131,11 @@ src/
   - Formulario de creación de plantillas con categorías (P1)
   - Soporte para variables/placeholders en contenido (P1)
   - Selección de categorías predefinidas (P2)
+- **[Editor Visual para Contenido Estructurado de Cláusulas](clause-structured-content/)** - Editor visual para usuarios no técnicos
+  - Insertar variables simples mediante UI (P1)
+  - Crear bloques de iteración visualmente (P1)
+  - Guardado y persistencia de contenido estructurado (P1)
+  - Visualización y edición de contenido estructurado (P2)
 
 ### 📋 Planificadas
 

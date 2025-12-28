@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   User,
+  Users,
   Settings,
   Building2,
   FileText,
@@ -11,7 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { MenuItem, MenuConfig, UserRole, MenuSubItem } from "./types";
-import { canManageClauses, hasRouteAccess } from "@/lib/permissions";
+import { canManageClauses, canManageClients, canManageProperties, hasRouteAccess } from "@/lib/permissions";
 
 /**
  * Configuración de menú para rol visitor (menú básico)
@@ -60,17 +61,34 @@ const accountAdminMenuItems: MenuItem[] = [
     isActive: true,
   },
   {
+    title: "Clientes",
+    url: "/clientes",
+    icon: Users,
+    items: [
+      {
+        title: "Todos los clientes",
+        url: "/clientes",
+      },
+      {
+        title: "Agregar cliente",
+        url: "/clientes/nuevo",
+        requiredPermission: "canManageClients",
+      },
+    ],
+  },
+  {
     title: "Propiedades",
-    url: "/tablero/properties",
+    url: "/propiedades",
     icon: Building2,
     items: [
       {
         title: "Todas las propiedades",
-        url: "/tablero/properties",
+        url: "/propiedades",
       },
       {
         title: "Agregar propiedad",
-        url: "/tablero/properties/new",
+        url: "/propiedades/nueva",
+        requiredPermission: "canManageProperties",
       },
     ],
   },
@@ -202,6 +220,8 @@ const menuConfig: MenuConfig = {
  */
 const permissionFunctions: Record<string, (role: string | null | undefined) => boolean> = {
   canManageClauses,
+  canManageClients,
+  canManageProperties,
 };
 
 /**

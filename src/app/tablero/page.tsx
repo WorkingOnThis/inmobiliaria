@@ -11,9 +11,15 @@ interface PageProps {
 
 export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams
-  const successMessage = params?.success === "clause_created" 
-    ? "Cláusula creada exitosamente" 
-    : null
+  let successMessage = null
+  
+  if (params?.success === "clause_created") {
+    successMessage = "Cláusula creada exitosamente"
+  } else if (params?.success === "client_created") {
+    successMessage = "Cliente creado exitosamente"
+  } else if (params?.success === "property_created") {
+    successMessage = "Propiedad creada exitosamente"
+  }
 
   return (
     <DashboardLayout>

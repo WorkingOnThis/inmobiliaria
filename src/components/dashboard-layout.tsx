@@ -30,6 +30,7 @@ const SIDEBAR_STORAGE_PREFIX = "sidebar-state-";
 // Mapa de rutas a nombres amigables para el breadcrumb
 const routeLabels: Record<string, string> = {
   tablero: "Tablero",
+  clientes: "Clientes",
   contratos: "Contratos",
   clausulas: "Cláusulas",
   nueva: "Nueva",

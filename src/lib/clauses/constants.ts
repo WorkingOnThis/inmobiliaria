@@ -29,3 +29,13 @@ export const MAX_TITLE_LENGTH = 200;
  */
 export const MAX_CONTENT_LENGTH = 50000;
 
+/**
+ * Entidades disponibles para uso en cláusulas estructuradas
+ */
+export const AVAILABLE_ENTITIES = ["propietarios", "inquilinos"] as const;
+
+/**
+ * Tipo para las entidades disponibles
+ */
+export type AvailableEntity = (typeof AVAILABLE_ENTITIES)[number];
+
