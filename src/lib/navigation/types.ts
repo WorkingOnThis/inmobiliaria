@@ -11,7 +11,10 @@ export type UserRole = "visitor" | "agent" | "account_admin";
  * Tipo para funciones de permiso disponibles en el sistema
  * Extensible para futuros permisos granulares
  */
-export type PermissionFunction = "canManageClauses" | "canManageClients";
+export type PermissionFunction =
+  | "canManageClauses"
+  | "canManageClients"
+  | "canManageProperties";
 
 /**
  * Tipo para un item de menú individual

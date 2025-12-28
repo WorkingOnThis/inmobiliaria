@@ -1,12 +1,13 @@
-# Feature Specification: Gestión de Clientes (Agregar)
+# Feature Specification: Gestión de Clientes
 
-**Created**: 2025-12-27
+**Created**: 2025-12-28
+**Unified from**: `specs/create-client/` and `specs/list-clients/`
 
 ## Permisos y Control de Acceso
 
 **IMPORTANTE**: Los permisos para esta feature están centralizados en `src/lib/permissions.ts`. Los roles autorizados para gestionar clientes se definirán en la constante `CLIENT_MANAGEMENT_PERMISSIONS`.
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing
 
 ### User Story 1 - Registro de Nuevo Cliente (Priority: P1)
 
@@ -60,7 +61,36 @@ Como usuario del sistema, quiero clasificar a cada cliente según su rol (dueño
 
 ---
 
-## Requirements *(mandatory)*
+### User Story 3 - Visualización de Lista de Clientes Paginada (Priority: P1)
+
+Como administrador o agente, quiero ver una lista de todos los clientes en una tabla para poder navegar entre ellos fácilmente. Quiero ver solo un número determinado de clientes por página para evitar tiempos de carga prolongados.
+
+**Why this priority**: Esencial para gestionar clientes una vez que su número crece. Es la forma principal de acceder a la información de los clientes.
+
+**Independent Test**: Navegar a `/clientes`, verificar que aparezca una tabla con clientes y que los controles de paginación permitan cambiar de página.
+
+**Acceptance Scenarios**:
+
+1. **Scenario**: Carga inicial de clientes
+   - **Given** Hay 25 clientes en la base de datos
+   - **When** Navego a `/clientes`
+   - **Then** Veo los primeros 10 clientes en una tabla
+   - **And** Veo controles de paginación indicando 3 páginas
+
+2. **Scenario**: Navegación entre páginas
+   - **Given** Estoy en la primera página de la lista de clientes
+   - **When** Hago clic en "Siguiente"
+   - **Then** Veo los siguientes 10 clientes
+   - **And** El indicador de página actual muestra "2"
+
+3. **Scenario**: Estado vacío
+   - **Given** No hay clientes en la base de datos
+   - **When** Navego a `/clientes`
+   - **Then** Veo una tabla vacía con el mensaje "No se encontraron clientes"
+
+---
+
+## Requirements
 
 ### Functional Requirements
 
@@ -68,20 +98,25 @@ Como usuario del sistema, quiero clasificar a cada cliente según su rol (dueño
 - **FR-002**: El campo `tipo` DEBE ser una selección de: vendedor, comprador, locador, dueño, inquilino, interesado.
 - **FR-003**: El sistema DEBE validar que `nombre` y `apellido` no estén vacíos.
 - **FR-004**: El sistema DEBE validar el formato del `email` si se proporciona.
-- **FR-005**: El sistema DEBE registrar la fecha de creación y la fecha de última edición (`ultima_edicion`).
+- **FR-005**: El sistema DEBE registrar la fecha de creación y la fecha de última edición (`updatedAt`).
 - **FR-006**: El sistema DEBE asociar el cliente a la agencia del usuario que lo crea (o al usuario creador).
-- **FR-007**: Solo usuarios con permisos (definidos en `CLIENT_MANAGEMENT_PERMISSIONS`) pueden acceder a la creación.
+- **FR-007**: Solo usuarios con permisos (definidos en `CLIENT_MANAGEMENT_PERMISSIONS`) pueden acceder a la creación y visualización.
+- **FR-008**: El sistema DEBE proporcionar un endpoint `GET /api/clients` que soporte parámetros de paginación `page` y `pageSize`.
+- **FR-009**: La respuesta de la API DEBE incluir la lista de clientes y el conteo total de registros.
+- **FR-010**: El frontend DEBE mostrar los clientes en una tabla responsiva utilizando componentes de shadcn/ui.
+- **FR-011**: El frontend DEBE implementar controles de paginación (Anterior, Siguiente, Números de página).
 
 ### Key Entities
 
 - **Cliente (Client)**: Representa a una persona física o jurídica con la que la inmobiliaria tiene relación.
-  - Atributos: `id`, `nombre`, `apellido`, `tipo`, `telefono`, `dni`, `email`, `dueño_de` (texto descriptivo por ahora), `alquila` (texto descriptivo por ahora), `creado_por` (userId), `createdAt`, `updatedAt` (ultima_edicion).
+  - Atributos: `id`, `nombre`, `apellido`, `tipo`, `telefono`, `dni`, `email`, `dueño_de`, `alquila`, `creado_por` (userId), `createdAt`, `updatedAt`.
 
-## Success Criteria *(mandatory)*
+## Success Criteria
 
 ### Measurable Outcomes
 
 - **SC-001**: Un agente puede registrar un cliente en menos de 45 segundos.
 - **SC-002**: El 100% de los registros guardados deben persistir correctamente todos los campos ingresados.
 - **SC-003**: El sistema debe impedir el guardado si falta el nombre o el apellido en el 100% de los casos.
-
+- **SC-004**: La lista de clientes carga en menos de 1 segundo para más de 1000 registros totales (gracias a la paginación en el servidor).
+- **SC-005**: Los usuarios pueden navegar a cualquier página de resultados con un máximo de 2 clics desde la página actual.

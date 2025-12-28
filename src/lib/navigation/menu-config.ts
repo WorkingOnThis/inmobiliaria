@@ -212,6 +212,7 @@ const defaultMenuItems: MenuItem[] = [
 const menuConfig: MenuConfig = {
   visitor: visitorMenuItems,
   account_admin: accountAdminMenuItems,
+  agent: accountAdminMenuItems,
 };
 
 /**
