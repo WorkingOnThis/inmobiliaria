@@ -14,12 +14,13 @@ import { es } from "date-fns/locale";
 
 interface Client {
   id: string;
-  nombre: string;
-  apellido: string;
-  tipo: string;
-  telefono: string | null;
-  dni: string | null;
+  userId: string;
+  firstName: string;
+  lastName: string;
   email: string | null;
+  phone: string | null;
+  dni: string | null;
+  role: string | null;
   createdAt: string;
 }
 
@@ -34,7 +35,7 @@ export function ClientTable({ clients }: ClientTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Nombre</TableHead>
-            <TableHead>Tipo</TableHead>
+            <TableHead>Rol / Tipo</TableHead>
             <TableHead>DNI</TableHead>
             <TableHead>Teléfono</TableHead>
             <TableHead>Email</TableHead>
@@ -46,15 +47,15 @@ export function ClientTable({ clients }: ClientTableProps) {
             clients.map((client) => (
               <TableRow key={client.id}>
                 <TableCell className="font-medium">
-                  {client.nombre} {client.apellido}
+                  {client.firstName} {client.lastName}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="capitalize">
-                    {client.tipo}
+                    {client.role || "visitor"}
                   </Badge>
                 </TableCell>
                 <TableCell>{client.dni || "-"}</TableCell>
-                <TableCell>{client.telefono || "-"}</TableCell>
+                <TableCell>{client.phone || "-"}</TableCell>
                 <TableCell>{client.email || "-"}</TableCell>
                 <TableCell>
                   {format(new Date(client.createdAt), "dd/MM/yyyy", { locale: es })}
@@ -73,4 +74,3 @@ export function ClientTable({ clients }: ClientTableProps) {
     </div>
   );
 }
-

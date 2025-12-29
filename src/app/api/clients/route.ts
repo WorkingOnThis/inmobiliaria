@@ -2,26 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { client } from "@/db/schema/client";
+import { user } from "@/db/schema/better-auth";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
-import { CLIENT_TYPES } from "@/lib/clients/constants";
 import { z } from "zod";
-import { count, desc } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 
 /**
  * Zod schema for client creation
  */
 const createClientSchema = z.object({
-  nombre: z.string().min(1, "El nombre es requerido"),
-  apellido: z.string().min(1, "El apellido es requerido"),
-  tipo: z.enum(CLIENT_TYPES, {
-    errorMap: () => ({ message: "El tipo de cliente no es válido" }),
-  }),
-  telefono: z.string().optional().nullable(),
+  firstName: z.string().min(1, "El nombre es requerido"),
+  lastName: z.string().min(1, "El apellido es requerido"),
+  phone: z.string().optional().nullable(),
   dni: z.string().optional().nullable(),
-  email: z.string().email("Email inválido").optional().or(z.literal("")).nullable(),
-  dueño_de: z.string().optional().nullable(),
-  alquila: z.string().optional().nullable(),
+  email: z.string().email("Email inválido"),
 });
 
 /**
@@ -70,16 +65,28 @@ export async function GET(request: NextRequest) {
     const [totalCountResult] = await db.select({ value: count() }).from(client);
     const totalCount = Number(totalCountResult.value);
 
-    // Obtener lista de clientes paginada
-    const clients = await db
-      .select()
+    // Obtener lista de clientes paginada con datos de usuario
+    const clientsData = await db
+      .select({
+        id: client.id,
+        userId: client.userId,
+        firstName: client.firstName,
+        lastName: client.lastName,
+        email: user.email,
+        phone: client.phone,
+        dni: client.dni,
+        role: user.role,
+        createdAt: client.createdAt,
+        updatedAt: client.updatedAt,
+      })
       .from(client)
+      .innerJoin(user, eq(client.userId, user.id))
       .orderBy(desc(client.createdAt))
       .limit(limit)
       .offset(offset);
 
     return NextResponse.json({
-      clients,
+      clients: clientsData,
       pagination: {
         total: totalCount,
         page,
@@ -135,36 +142,54 @@ export async function POST(request: NextRequest) {
 
     const data = result.data;
 
-    // Crear cliente en la base de datos
-    const clientId = generateId();
-    const now = new Date();
+    // Verificar si el email ya existe en la tabla users
+    const existingUser = await db.select().from(user).where(eq(user.email, data.email)).limit(1);
+    if (existingUser.length > 0) {
+      return NextResponse.json(
+        { error: "El email ya está registrado en el sistema." },
+        { status: 409 }
+      );
+    }
 
-    const [newClient] = await db
-      .insert(client)
-      .values({
-        id: clientId,
-        nombre: data.nombre,
-        apellido: data.apellido,
-        tipo: data.tipo,
-        telefono: data.telefono,
-        dni: data.dni,
+    // Iniciar transacción para crear usuario y cliente
+    const newClientData = await db.transaction(async (tx) => {
+      const userId = generateId();
+      const now = new Date();
+
+      // 1. Crear usuario
+      await tx.insert(user).values({
+        id: userId,
+        name: `${data.firstName} ${data.lastName}`,
         email: data.email,
-        dueño_de: data.dueño_de,
-        alquila: data.alquila,
-        creado_por: session.user.id,
+        role: "visitor", // Rol por defecto
+        emailVerified: false,
         createdAt: now,
         updatedAt: now,
-      })
-      .returning();
+      });
+
+      // 2. Crear detalle de cliente
+      const clientId = generateId();
+      const [newClient] = await tx
+        .insert(client)
+        .values({
+          id: clientId,
+          userId: userId,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          phone: data.phone,
+          dni: data.dni,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+      
+      return newClient;
+    });
 
     return NextResponse.json(
       {
         message: "Cliente creado exitosamente",
-        client: {
-          id: newClient.id,
-          nombre: newClient.nombre,
-          apellido: newClient.apellido,
-        },
+        client: newClientData,
       },
       { status: 201 }
     );
@@ -178,4 +203,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -3,40 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { CLIENT_TYPES, CLIENT_TYPE_LABELS, type ClientType } from "@/lib/clients/constants";
 
 /**
  * ClientForm Component
  *
  * Formulario para agregar nuevos clientes al sistema.
- * Incluye validación de campos requeridos y manejo de estados.
+ * Crea un Usuario y un Cliente asociado.
  */
 export function ClientForm() {
   const router = useRouter();
-  const [nombre, setNombre] = useState("");
-  const [apellido, setApellido] = useState("");
-  const [tipo, setTipo] = useState<ClientType | "">("");
-  const [telefono, setTelefono] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [dni, setDni] = useState("");
   const [email, setEmail] = useState("");
-  const [duenoDe, setDuenoDe] = useState("");
-  const [alquila, setAlquila] = useState("");
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const validateEmail = (emailValue: string): boolean => {
-    if (!emailValue) return true; // Opcional
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(emailValue)) {
       setFieldErrors((prev) => ({
@@ -62,22 +50,20 @@ export function ClientForm() {
     let hasErrors = false;
     const newFieldErrors: Record<string, string> = {};
 
-    if (!nombre.trim()) {
-      newFieldErrors.nombre = "El nombre es requerido";
+    if (!firstName.trim()) {
+      newFieldErrors.firstName = "El nombre es requerido";
       hasErrors = true;
     }
 
-    if (!apellido.trim()) {
-      newFieldErrors.apellido = "El apellido es requerido";
+    if (!lastName.trim()) {
+      newFieldErrors.lastName = "El apellido es requerido";
       hasErrors = true;
     }
 
-    if (!tipo) {
-      newFieldErrors.tipo = "El tipo de cliente es requerido";
+    if (!email.trim()) {
+      newFieldErrors.email = "El email es requerido";
       hasErrors = true;
-    }
-
-    if (email && !validateEmail(email)) {
+    } else if (!validateEmail(email)) {
       hasErrors = true;
     }
 
@@ -95,14 +81,11 @@ export function ClientForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          nombre: nombre.trim(),
-          apellido: apellido.trim(),
-          tipo,
-          telefono: telefono.trim() || null,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          phone: phone.trim() || null,
           dni: dni.trim() || null,
-          email: email.trim() || null,
-          dueño_de: duenoDe.trim() || null,
-          alquila: alquila.trim() || null,
+          email: email.trim(),
         }),
       });
 
@@ -129,63 +112,37 @@ export function ClientForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Nombre Field */}
         <div className="space-y-2">
-          <Label htmlFor="nombre">
+          <Label htmlFor="firstName">
             Nombre <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="nombre"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
+            id="firstName"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
             disabled={isLoading}
             placeholder="Ej: Juan"
-            aria-invalid={!!fieldErrors.nombre}
+            aria-invalid={!!fieldErrors.firstName}
           />
-          {fieldErrors.nombre && (
-            <p className="text-sm text-destructive">{fieldErrors.nombre}</p>
+          {fieldErrors.firstName && (
+            <p className="text-sm text-destructive">{fieldErrors.firstName}</p>
           )}
         </div>
 
         {/* Apellido Field */}
         <div className="space-y-2">
-          <Label htmlFor="apellido">
+          <Label htmlFor="lastName">
             Apellido <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="apellido"
-            value={apellido}
-            onChange={(e) => setApellido(e.target.value)}
+            id="lastName"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
             disabled={isLoading}
             placeholder="Ej: Pérez"
-            aria-invalid={!!fieldErrors.apellido}
+            aria-invalid={!!fieldErrors.lastName}
           />
-          {fieldErrors.apellido && (
-            <p className="text-sm text-destructive">{fieldErrors.apellido}</p>
-          )}
-        </div>
-
-        {/* Tipo Field */}
-        <div className="space-y-2">
-          <Label htmlFor="tipo">
-            Tipo <span className="text-destructive">*</span>
-          </Label>
-          <Select
-            value={tipo}
-            onValueChange={(value: ClientType) => setTipo(value)}
-            disabled={isLoading}
-          >
-            <SelectTrigger id="tipo" aria-invalid={!!fieldErrors.tipo}>
-              <SelectValue placeholder="Selecciona un tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              {CLIENT_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {CLIENT_TYPE_LABELS[type]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {fieldErrors.tipo && (
-            <p className="text-sm text-destructive">{fieldErrors.tipo}</p>
+          {fieldErrors.lastName && (
+            <p className="text-sm text-destructive">{fieldErrors.lastName}</p>
           )}
         </div>
 
@@ -203,19 +160,21 @@ export function ClientForm() {
 
         {/* Teléfono Field */}
         <div className="space-y-2">
-          <Label htmlFor="telefono">Teléfono</Label>
+          <Label htmlFor="phone">Teléfono</Label>
           <Input
-            id="telefono"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
+            id="phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
             disabled={isLoading}
             placeholder="Ej: 1122334455"
           />
         </div>
 
         {/* Email Field */}
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="email">
+            Email <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="email"
             type="email"
@@ -228,32 +187,9 @@ export function ClientForm() {
           {fieldErrors.email && (
             <p className="text-sm text-destructive">{fieldErrors.email}</p>
           )}
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {/* Dueño de Field */}
-        <div className="space-y-2">
-          <Label htmlFor="duenoDe">Dueño de</Label>
-          <Input
-            id="duenoDe"
-            value={duenoDe}
-            onChange={(e) => setDuenoDe(e.target.value)}
-            disabled={isLoading}
-            placeholder="Propiedad que posee"
-          />
-        </div>
-
-        {/* Alquila Field */}
-        <div className="space-y-2">
-          <Label htmlFor="alquila">Alquila</Label>
-          <Input
-            id="alquila"
-            value={alquila}
-            onChange={(e) => setAlquila(e.target.value)}
-            disabled={isLoading}
-            placeholder="Propiedad que alquila"
-          />
+          <p className="text-xs text-muted-foreground">
+            Se creará un usuario con este email para el cliente.
+          </p>
         </div>
       </div>
 
@@ -271,4 +207,3 @@ export function ClientForm() {
     </form>
   );
 }
-

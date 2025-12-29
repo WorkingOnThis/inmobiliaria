@@ -23,8 +23,8 @@ flowchart TD
     end
 
     subgraph DB ["Database (Drizzle + PostgreSQL)"]
-        D -->|"Validar y Guardar"| F[("Tabla client")]
-        E -->|"Consultar con Paginación"| F
+        D -->|"Crear User + Client (Detail)"| F[("Tables: user + client")]
+        E -->|"Join User + Client"| F
     end
 
     F -->|"Éxito / Datos"| D
@@ -39,6 +39,7 @@ flowchart TD
 - **UI Components**: shadcn/ui (Table, Pagination, Input, Select, Button, Card, Form, Badge).
 - **Validation**: Zod (para validación en cliente y servidor).
 - **Auth**: Better Auth para control de roles y permisos.
+- **Model**: `Client` como entidad detalle 1:1 de `User`.
 
 ## Project Structure (Relevant Paths)
 
