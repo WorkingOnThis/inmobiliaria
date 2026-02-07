@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 /**
  * ClientForm Component
@@ -12,16 +14,21 @@ import { Label } from "@/components/ui/label";
  * Formulario para agregar nuevos clientes al sistema.
  * Crea un Usuario y un Cliente asociado.
  */
-export function ClientForm() {
+interface ClientFormProps {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+export function ClientForm({ onSuccess, onCancel }: ClientFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [dni, setDni] = useState("");
   const [email, setEmail] = useState("");
   
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const validateEmail = (emailValue: string): boolean => {
@@ -41,9 +48,40 @@ export function ClientForm() {
     return true;
   };
 
+  const createClientMutation = useMutation({
+    mutationFn: async (clientData: any) => {
+      const response = await fetch("/api/clients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(clientData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Error al crear el cliente");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast.success("Cliente creado exitosamente");
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/clientes");
+        router.refresh();
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
     setFieldErrors({});
 
     // Validaciones
@@ -72,39 +110,13 @@ export function ClientForm() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/clients", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          phone: phone.trim() || null,
-          dni: dni.trim() || null,
-          email: email.trim(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Error al crear el cliente. Por favor intenta de nuevo.");
-        return;
-      }
-
-      // Éxito - redirigir al listado con mensaje de éxito
-      router.push("/clientes?success=client_created");
-      router.refresh();
-    } catch (err) {
-      console.error("Client creation error:", err);
-      setError("Ocurrió un error al crear el cliente. Por favor intenta de nuevo.");
-    } finally {
-      setIsLoading(false);
-    }
+    createClientMutation.mutate({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phone: phone.trim() || null,
+      dni: dni.trim() || null,
+      email: email.trim(),
+    });
   };
 
   return (
@@ -119,7 +131,7 @@ export function ClientForm() {
             id="firstName"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            disabled={isLoading}
+            disabled={createClientMutation.isPending}
             placeholder="Ej: Juan"
             aria-invalid={!!fieldErrors.firstName}
           />
@@ -137,7 +149,7 @@ export function ClientForm() {
             id="lastName"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            disabled={isLoading}
+            disabled={createClientMutation.isPending}
             placeholder="Ej: Pérez"
             aria-invalid={!!fieldErrors.lastName}
           />
@@ -153,7 +165,7 @@ export function ClientForm() {
             id="dni"
             value={dni}
             onChange={(e) => setDni(e.target.value)}
-            disabled={isLoading}
+            disabled={createClientMutation.isPending}
             placeholder="Ej: 12345678"
           />
         </div>
@@ -165,7 +177,7 @@ export function ClientForm() {
             id="phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            disabled={isLoading}
+            disabled={createClientMutation.isPending}
             placeholder="Ej: 1122334455"
           />
         </div>
@@ -180,7 +192,7 @@ export function ClientForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={isLoading}
+            disabled={createClientMutation.isPending}
             placeholder="Ej: juan.perez@ejemplo.com"
             aria-invalid={!!fieldErrors.email}
           />
@@ -193,17 +205,22 @@ export function ClientForm() {
         </div>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
-      )}
-
-      {/* Submit Button */}
-      <Button type="submit" disabled={isLoading} className="w-full md:w-auto">
-        {isLoading ? "Guardando..." : "Crear Cliente"}
-      </Button>
+      {/* Action Buttons */}
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+        {onCancel && (
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel}
+            disabled={createClientMutation.isPending}
+          >
+            Cancelar
+          </Button>
+        )}
+        <Button type="submit" disabled={createClientMutation.isPending}>
+          {createClientMutation.isPending ? "Guardando..." : "Crear Cliente"}
+        </Button>
+      </div>
     </form>
   );
 }
