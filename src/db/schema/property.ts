@@ -9,11 +9,13 @@ import { client } from "./client";
  */
 export const property = pgTable("property", {
   id: text("id").primaryKey(),
-  title: text("title").notNull(),
+  title: text("title"), // Opcional, se puede completar luego en la ficha
   address: text("address").notNull(),
-  price: decimal("price", { precision: 12, scale: 2 }).notNull(),
+  price: decimal("price", { precision: 12, scale: 2 }), // Opcional, se puede completar luego en la ficha
   type: text("type").notNull(), // casa, depto, terreno, local, etc.
   status: text("status").notNull().default("available"), // available, rented, sold, reserved
+  zone: text("zone"), // Barrio / Zona
+  floorUnit: text("floorUnit"), // Piso / Unidad
   rooms: integer("rooms"),
   bathrooms: integer("bathrooms"),
   surface: decimal("surface", { precision: 10, scale: 2 }),

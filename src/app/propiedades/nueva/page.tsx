@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { PropertyForm } from "@/components/properties/property-form";
+import { QuickPropertyForm } from "@/components/properties/quick-property-form";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
 
@@ -35,17 +35,18 @@ export default async function CreatePropertyPage() {
   return (
     <DashboardLayout>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="flex flex-col gap-2 w-full items-center mx-auto">
+        <div className="flex flex-col gap-2 w-full items-center mx-auto mb-4">
           <h1 className="text-2xl font-bold">Agregar nueva propiedad</h1>
           <p className="text-muted-foreground text-center max-w-lg">
             Completa los detalles de la propiedad para registrarla en el inventario.
           </p>
         </div>
         <div className="flex flex-col items-center">
-          <PropertyForm />
+          <div className="w-full max-w-lg bg-[#1a1d1e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            <QuickPropertyForm inline />
+          </div>
         </div>
       </div>
     </DashboardLayout>
   );
 }
-

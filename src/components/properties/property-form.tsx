@@ -21,14 +21,19 @@ import {
   type PropertyStatus
 } from "@/lib/properties/constants";
 
+interface PropertyFormProps {
+  onSuccess?: () => void;
+}
+
 /**
  * PropertyForm Component
  *
  * Formulario para registrar nuevas propiedades en el sistema.
+ * Acepta onSuccess para usarse dentro de un drawer (no navega).
  */
-export function PropertyForm() {
+export function PropertyForm({ onSuccess }: PropertyFormProps) {
   const router = useRouter();
-  
+
   // States para los campos del formulario
   const [title, setTitle] = useState("");
   const [address, setAddress] = useState("");
@@ -130,9 +135,13 @@ export function PropertyForm() {
         return;
       }
 
-      // Éxito - redirigir al tablero con mensaje de éxito
-      router.push("/tablero?success=property_created");
-      router.refresh();
+      // Éxito
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/tablero?success=property_created");
+        router.refresh();
+      }
     } catch (err) {
       console.error("Property creation error:", err);
       setError("Ocurrió un error al crear la propiedad. Por favor intenta de nuevo.");
