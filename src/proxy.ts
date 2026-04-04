@@ -3,13 +3,13 @@ import type { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 
 /**
- * Middleware de autenticación
+ * Proxy de autenticación (anteriormente Middleware)
  * 
  * Protege rutas que requieren autenticación.
  * Redirige usuarios no autenticados a /login.
  * Maneja usuarios sin email verificado.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Rutas públicas que no requieren autenticación
@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
     
     return response;
   } catch (error) {
-    console.error("Middleware auth error:", error);
+    console.error("Proxy auth error:", error);
     // En caso de error, redirigir a login para estar seguro
     const loginUrl = new URL("/login", request.url);
     const response = NextResponse.redirect(loginUrl);

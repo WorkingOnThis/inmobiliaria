@@ -1,4 +1,7 @@
-import "dotenv/config";
+if (typeof process !== "undefined" && !process.argv) {
+  (process as any).argv = [];
+}
+
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
