@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   User,
   Users,
+  UserCheck,
   Settings,
   Building2,
   FileText,
@@ -12,7 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { MenuItem, MenuConfig, UserRole, MenuSubItem } from "./types";
-import { canManageClauses, canManageClients, canManageProperties, hasRouteAccess } from "@/lib/permissions";
+import { canManageClauses, canManageClients, canManageContracts, canManageProperties, hasRouteAccess } from "@/lib/permissions";
 
 /**
  * Configuración de menú para rol visitor (menú básico)
@@ -61,17 +62,33 @@ const accountAdminMenuItems: MenuItem[] = [
     isActive: true,
   },
   {
-    title: "Clientes",
-    url: "/clientes",
+    title: "Propietarios",
+    url: "/propietarios",
+    icon: UserCheck,
+    items: [
+      {
+        title: "Todos los propietarios",
+        url: "/propietarios",
+      },
+      {
+        title: "Agregar propietario",
+        url: "/propietarios/nuevo",
+        requiredPermission: "canManageClients",
+      },
+    ],
+  },
+  {
+    title: "Inquilinos",
+    url: "/inquilinos",
     icon: Users,
     items: [
       {
-        title: "Todos los clientes",
-        url: "/clientes",
+        title: "Todos los inquilinos",
+        url: "/inquilinos",
       },
       {
-        title: "Agregar cliente",
-        url: "/clientes/nuevo",
+        title: "Agregar inquilino",
+        url: "/inquilinos/nuevo",
         requiredPermission: "canManageClients",
       },
     ],
@@ -104,6 +121,7 @@ const accountAdminMenuItems: MenuItem[] = [
       {
         title: "Nuevo contrato",
         url: "/contratos/nuevo",
+        requiredPermission: "canManageContracts",
       },
       {
         title: "Cláusulas",
@@ -222,6 +240,7 @@ const menuConfig: MenuConfig = {
 const permissionFunctions: Record<string, (role: string | null | undefined) => boolean> = {
   canManageClauses,
   canManageClients,
+  canManageContracts,
   canManageProperties,
 };
 
@@ -391,7 +410,7 @@ function filterMenuItemsByPermissions(
           return null;
         }
       })
-      .filter((item): item is MenuItem => item !== null);
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   } catch (error) {
     // Si hay error crítico al filtrar, retornar items básicos
     if (process.env.NODE_ENV === "development") {

@@ -14,7 +14,8 @@ export type UserRole = "visitor" | "agent" | "account_admin";
 export type PermissionFunction =
   | "canManageClauses"
   | "canManageClients"
-  | "canManageProperties";
+  | "canManageProperties"
+  | "canManageContracts";
 
 /**
  * Tipo para un item de menú individual

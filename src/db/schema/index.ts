@@ -10,4 +10,5 @@ export * from "./better-auth";
 export * from "./agency";
 export * from "./clause";
 export * from "./client";
+export * from "./contract";
 export * from "./property";

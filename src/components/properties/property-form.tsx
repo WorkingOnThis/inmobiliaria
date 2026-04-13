@@ -52,11 +52,11 @@ export function PropertyForm({ onSuccess }: PropertyFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Cargar lista de clientes para el selector de dueño
+  // Cargar solo propietarios para el selector de dueño
   useEffect(() => {
     async function fetchClients() {
       try {
-        const response = await fetch("/api/clients?limit=100");
+        const response = await fetch("/api/clients?type=propietario&limit=100");
         if (response.ok) {
           const data = await response.json();
           setClients(data.clients || []);
@@ -273,11 +273,13 @@ export function PropertyForm({ onSuccess }: PropertyFormProps) {
               {clients.length > 0 ? (
                 clients.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.nombre} {c.apellido}
+                    {c.firstName} {c.lastName || ""}
                   </SelectItem>
                 ))
               ) : (
-                <SelectItem value="_empty" disabled>No se encontraron clientes</SelectItem>
+                <SelectItem value="_empty" disabled>
+                  {isLoadingClients ? "Cargando..." : "No hay propietarios cargados"}
+                </SelectItem>
               )}
             </SelectContent>
           </Select>

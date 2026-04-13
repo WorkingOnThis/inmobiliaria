@@ -74,17 +74,26 @@ Las entradas van de más nueva a más vieja (la última sesión arriba).
 
 ---
 
-## Mi sistema de aprendizaje externo
+## Mi sistema de aprendizaje — Obsidian
 
-Uso Obsidian para documentar lo que aprendo.
-Tengo 4 tipos de notas con plantillas:
+Vault: `E:\Obsidians\Investigación y escritura\Obsidian Vault\Obsidian Gastón\Plantillas`
 
-- **Concepto** — qué es algo y para qué sirve
-- **Bug resuelto** — qué falló, por qué, cómo se resolvió
-- **Decisión técnica** — por qué elegimos X sobre Y
-- **Patrón/Receta** — cómo se hace algo que se repite
+Cuando sugieras qué anotar al final de cada sesión, usá SOLO estas plantillas y completá el contenido listo para pegar. No uses ninguna otra plantilla fuera de estas cinco.
 
-Cuando sugieras qué anotar, indicá qué tipo de nota corresponde.
+### 1. Concepto PR `tag: concepto/pr`
+Secciones: ¿Qué es? / ¿Para qué sirve? / Analogía / Ejemplo concreto / Cómo se relaciona con / Preguntas que me hice / Fuente
+
+### 2. Decisión técnica `tag: decision/pr`
+Secciones: La decisión / El contexto / Las alternativas que existían / Por qué elegí esta y no las otras / Desventajas de lo que elegí / Cuándo revisarla / Fuente
+
+### 3. Bug `tag: bug/pr`
+Secciones: El error / Contexto / Por qué pasó / Cómo lo resolví / Qué aprendí / Cómo reconocerlo la próxima vez / Fuente
+
+### 4. Patrón o Receta `tag: patron/pr`
+Secciones: ¿Qué problema resuelve? / La receta (pasos) / Código base / Dónde lo usé / Variaciones / Ojo con esto / Fuente
+
+### 5. Comando `tag: comando/pr`
+Secciones: Sintaxis / Qué hace / Ejemplo de uso / Opciones comunes / Cuándo lo usás / Errores comunes / Relaciones / Notas personales
 
 ---
 
