@@ -8,7 +8,10 @@
       "Bash(badge)",
       "Bash(check\")",
       "Bash(mkdir -p \"E:\\\\Ordenar\\\\Todo el escritorio\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\servicios\\\\[id]\\\\comprobante\")",
-      "Bash(mkdir -p \"E:\\\\Ordenar\\\\Todo el escritorio\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\servicios\\\\[id]\\\\omitir-bloqueo\")"
+      "Bash(mkdir -p \"E:\\\\Ordenar\\\\Todo el escritorio\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\servicios\\\\[id]\\\\omitir-bloqueo\")",
+      "Bash(gh api:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl:*)"
     ]
   }
 }
