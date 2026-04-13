@@ -1,0 +1,1301 @@
+﻿<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Renovación y Salida — Arce Administración</title>
+
+<!--
+  ============================================================
+  WIREFRAME: Renovación y Salida
+  Archivo: ../renovacion/wireframe_renovacion_salida.html
+  Sistema de diseño: Arce Administración v2.0
+  Modo: Oscuro por defecto
+  ============================================================
+
+  DOS VISTAS EN ESTE ARCHIVO (navegables con botón):
+  1. LISTA DEL MÓDULO — KPIs + tabla de contratos próximos a vencer
+  2. FICHA DEL CONTRATO — tabs: Renovación | Inspección | Acta | Liquidación
+     2b. CHECKLIST DE INSPECCIÓN — pantalla separada desde tab Inspección
+
+  REGLAS DE NEGOCIO
+
+  Vista 1 — Lista:
+  - Filtro default: contratos que vencen en los próximos 60 días.
+  - Chips de estado: Por definir / Renovando / Salida / Finalizado.
+  - El cron dispara la alerta automática. El staff gestiona desde acá.
+
+  Vista 2 — Tab Renovación:
+  - Staff registra intención de cada parte (propietario, inquilino).
+  - Si ambos renuevan → botón "Generar nuevo contrato" (conecta con módulo Contratos).
+  - Si no → se activa el flujo de salida (tabs Inspección, Acta, Liquidación).
+  - El nuevo contrato pre-carga datos del anterior (customizable).
+
+  Vista 2 — Tab Inspección:
+  - Checklist auto-generado desde reclamos previos del contrato + ítems del contrato.
+  - El staff edita ítems antes de ir. Puede adjuntar fotos/video pre y durante.
+  - Referencia: compara con fotos/video del acta de entrega de entrada.
+  - Botón "Ir al checklist" abre la vista separada (pantalla completa).
+
+  Vista 2b — Checklist de inspección:
+  - Ítems tipo check (Bien / Regular / Mal) o texto libre por ítem.
+  - Cada ítem puede tener fotos adjuntas.
+  - Al guardar vuelve al tab Inspección con el resumen.
+
+  Vista 2 — Tab Acta de Recepción:
+  - Staff registra fecha y detalle de llaves entregadas.
+  - Inquilino firma: Conforme o Disconforme (manuscrita por ahora).
+  - La disconformidad no bloquea la liquidación; queda registrada.
+
+  Vista 2 — Tab Liquidación:
+  - Depósito original + opción de indexar por índice (ICL, IPC, etc.) o valor nominal.
+  - Staff carga descuentos: reparaciones, deuda pendiente, servicios, otros.
+  - Si descuentos > depósito → saldo negativo queda como deuda en CC del inquilino.
+  - Inquilino recibe resumen por mail con período de objeción configurable (días).
+  - Al cerrar: contrato pasa a FINALIZADO, propiedad a DISPONIBLE.
+
+  ENDPOINTS
+  GET  /api/renovacion-salida                       lista módulo
+  GET  /api/contratos/{id}/renovacion               estado del proceso
+  PUT  /api/contratos/{id}/renovacion/intencion     registrar intención
+  POST /api/contratos/{id}/inspeccion               crear/actualizar inspección
+  POST /api/contratos/{id}/inspeccion/items         guardar ítems checklist
+  POST /api/contratos/{id}/acta-recepcion           registrar acta
+  GET  /api/contratos/{id}/liquidacion              calcular liquidación
+  POST /api/contratos/{id}/liquidacion/descuentos   cargar descuentos
+  POST /api/contratos/{id}/liquidacion/cerrar       cerrar y finalizar
+  GET  /api/indices                                 lista de índices disponibles
+  ============================================================
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGN SYSTEM — Arce Administración v2.0
+   ============================================================ */
+:root {
+  --bg:              #111314;
+  --surface:         #191c1e;
+  --surface-low:     #1d2022;
+  --surface-mid:     #222527;
+  --surface-high:    #282a2c;
+  --surface-highest: #333537;
+  --surface-white:   #0e1011;
+  --on-bg:           #e1e2e4;
+  --on-surface:      #e1e2e4;
+  --text-secondary:  #a8a9ac;
+  --text-muted:      #6b6d70;
+  --primary:         #ffb4a2;
+  --primary-dark:    #6b1702;
+  --primary-dim:     rgba(255,180,162,0.12);
+  --primary-tint:    rgba(255,180,162,0.08);
+  --on-primary:      #561100;
+  --mustard:         #ffdea8;
+  --mustard-dim:     rgba(253,222,168,0.15);
+  --on-mustard:      #271900;
+  --error:           #ffb4ab;
+  --error-dim:       rgba(255,180,171,0.12);
+  --success:         #8dcf95;
+  --success-dim:     rgba(141,207,149,0.12);
+  --border:          rgba(255,255,255,0.07);
+  --border-accent:   rgba(255,180,162,0.2);
+  --font-headline:   "Space Grotesk", sans-serif;
+  --font-brand:      "Montserrat", sans-serif;
+  --font-body:       "Inter", sans-serif;
+  --radius-xs:  4px; --radius-sm: 6px; --radius: 12px;
+  --radius-lg:  18px; --radius-xl: 24px; --radius-pill: 9999px;
+  --transition: all 0.18s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: var(--font-body); background: var(--bg); color: var(--on-surface);
+  font-size: 0.875rem; line-height: 1.6; -webkit-font-smoothing: antialiased; min-height: 100vh;
+}
+
+/* ── LAYOUT ── */
+.app-shell { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px; min-height: 100vh; background: var(--surface);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.sidebar-logo { padding: 20px 20px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.logo-svg { width: 32px; height: 32px; flex-shrink: 0; }
+.logo-text-name { font-family: var(--font-brand); font-size: 0.78rem; font-weight: 800; color: var(--on-bg); line-height: 1.1; }
+.logo-text-sub { font-size: 0.52rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-top: 1px; }
+.nav-section { padding: 18px 16px 5px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; margin: 1px 8px; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: var(--transition); text-decoration: none; }
+.nav-item:hover { background: var(--surface-high); color: var(--on-surface); }
+.nav-item.active { background: var(--primary-dim); color: var(--primary); font-weight: 600; }
+.nav-icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: var(--mustard-dim); color: var(--mustard); font-size: 0.6rem; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-pill); }
+.sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--border); }
+.user-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); }
+.user-row:hover { background: var(--surface-high); }
+.user-avatar { width: 30px; height: 30px; background: var(--primary-dark); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 800; color: #fff; font-family: var(--font-brand); flex-shrink: 0; }
+.user-name { font-size: 0.8rem; font-weight: 600; color: var(--on-surface); }
+.user-role { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+
+/* ── MAIN ── */
+.main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+
+/* ── TOPBAR ── */
+.topbar { height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 28px; gap: 10px; flex-shrink: 0; }
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); }
+.breadcrumb a { color: var(--text-secondary); text-decoration: none; cursor: pointer; }
+.breadcrumb a:hover { color: var(--primary); }
+.breadcrumb-current { color: var(--on-surface); font-weight: 600; }
+.breadcrumb-sep { color: var(--text-muted); }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* ── BOTONES ── */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-family: var(--font-body); font-size: 0.72rem; font-weight: 600; cursor: pointer; border: none; border-radius: var(--radius); transition: var(--transition); }
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-secondary { background: var(--surface-highest); color: var(--on-surface); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--surface-high); }
+.btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--surface-high); color: var(--on-surface); }
+.btn-success { background: var(--success-dim); color: var(--success); border: 1px solid rgba(141,207,149,0.2); }
+.btn-danger { background: var(--error-dim); color: var(--error); border: 1px solid rgba(255,180,171,0.2); }
+.btn-warn { background: var(--mustard-dim); color: var(--mustard); border: 1px solid rgba(253,222,168,0.2); }
+.btn-sm { padding: 5px 10px; font-size: 0.68rem; }
+.btn-xs { padding: 3px 8px; font-size: 0.62rem; }
+
+/* ── CONTENT ── */
+.content { flex: 1; overflow-y: auto; padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+
+/* ── PAGE HEADER ── */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.page-title { font-family: var(--font-headline); font-size: 1.5rem; font-weight: 700; color: var(--on-bg); letter-spacing: -0.02em; }
+.page-subtitle { font-size: 0.78rem; color: var(--text-secondary); margin-top: 3px; }
+
+/* ── KPI GRID ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; transition: var(--transition); }
+.kpi-card:hover { border-color: var(--border-accent); }
+.kpi-card.warn { background: var(--mustard-dim); border-color: rgba(253,222,168,0.2); }
+.kpi-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 10px; }
+.kpi-card.warn .kpi-label { color: rgba(39,25,0,0.6); }
+.kpi-value { font-family: var(--font-headline); font-size: 1.75rem; font-weight: 700; color: var(--on-bg); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; margin-bottom: 5px; }
+.kpi-card.warn .kpi-value { color: var(--mustard); font-size: 1.4rem; }
+.kpi-sub { font-size: 0.7rem; color: var(--text-muted); }
+
+/* ── TABLA ── */
+.tabla-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.tabla-toolbar { padding: 14px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.tabla-title { font-size: 0.82rem; font-weight: 600; color: var(--on-surface); }
+.filtros { display: flex; gap: 4px; flex-wrap: wrap; }
+.filter-btn { padding: 4px 10px; font-size: 0.65rem; font-weight: 600; background: none; border: 1px solid var(--border); border-radius: var(--radius-pill); cursor: pointer; color: var(--text-secondary); transition: var(--transition); font-family: var(--font-body); }
+.filter-btn:hover { color: var(--on-surface); border-color: var(--border-accent); }
+.filter-btn.active { background: var(--primary-dim); color: var(--primary); border-color: var(--border-accent); }
+.tabla-actions { margin-left: auto; display: flex; gap: 8px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.data-table th { padding: 10px 14px; text-align: left; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); background: var(--surface-low); }
+.data-table td { padding: 10px 14px; color: var(--on-surface); vertical-align: middle; }
+.data-table td.r { text-align: right; }
+.data-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.data-table tbody tr:hover td { background: var(--primary-tint); cursor: pointer; }
+
+/* ── TAGS ── */
+.tag { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; font-size: 0.6rem; font-weight: 700; border-radius: var(--radius-pill); white-space: nowrap; letter-spacing: 0.04em; }
+.tag-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.tag-definir   { background: var(--surface-highest); color: var(--text-secondary); }
+.tag-renovando { background: var(--primary-dim); color: var(--primary); }
+.tag-salida    { background: var(--error-dim); color: var(--error); }
+.tag-finalizado{ background: var(--success-dim); color: var(--success); }
+.tag-warn      { background: var(--mustard-dim); color: var(--mustard); }
+.tag-ok        { background: var(--success-dim); color: var(--success); }
+
+/* ── VENCIMIENTO URGENCIA ── */
+.dias-chip { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-headline); font-weight: 700; font-size: 0.85rem; }
+.dias-chip.urgente { color: var(--error); }
+.dias-chip.pronto  { color: var(--mustard); }
+.dias-chip.ok      { color: var(--text-secondary); }
+
+/* ── MOV NOMBRE/META ── */
+.mov-nombre { font-weight: 500; color: var(--on-surface); }
+.mov-meta   { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+.monto      { font-family: var(--font-headline); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.875rem; }
+
+/* ── SECTION LABEL ── */
+.section-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.section-label::before { content: ""; width: 18px; height: 2px; background: var(--primary); border-radius: 1px; flex-shrink: 0; }
+
+/* ── TABS (ficha) ── */
+.ficha-tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 28px; background: var(--surface); gap: 0; }
+.ficha-tab { padding: 14px 18px; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: var(--transition); background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font-body); display: flex; align-items: center; gap: 6px; }
+.ficha-tab:hover { color: var(--on-surface); }
+.ficha-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.ficha-tab .tab-badge { background: var(--primary-dim); color: var(--primary); font-size: 0.58rem; font-weight: 700; padding: 1px 5px; border-radius: var(--radius-pill); }
+.ficha-tab .tab-badge.warn { background: var(--mustard-dim); color: var(--mustard); }
+.ficha-tab .tab-badge.err  { background: var(--error-dim); color: var(--error); }
+.tab-panel { display: none; padding: 24px 28px; }
+.tab-panel.active { display: block; }
+
+/* ── FICHA HEADER (cuando se abre el contrato) ── */
+.ficha-header-bar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 16px 28px; display: flex; align-items: center; gap: 16px;
+}
+.ficha-contrato-num { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); }
+.ficha-inquilino { font-family: var(--font-headline); font-size: 1.1rem; font-weight: 700; color: var(--on-bg); }
+.ficha-propiedad { font-size: 0.75rem; color: var(--text-secondary); }
+.ficha-header-meta { display: flex; gap: 24px; margin-left: 24px; padding-left: 24px; border-left: 1px solid var(--border); }
+.ficha-meta-item { display: flex; flex-direction: column; gap: 2px; }
+.ficha-meta-label { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.ficha-meta-value { font-size: 0.8rem; font-weight: 600; color: var(--on-surface); font-variant-numeric: tabular-nums; }
+.ficha-meta-value.warn { color: var(--mustard); }
+.ficha-meta-value.err  { color: var(--error); }
+.ficha-header-actions { margin-left: auto; display: flex; gap: 8px; }
+
+/* ── INTENCION CARD ── */
+.intencion-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.intencion-card { background: var(--surface-low); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+.intencion-who { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 8px; }
+.intencion-nombre { font-size: 0.9rem; font-weight: 600; color: var(--on-bg); margin-bottom: 14px; }
+.intencion-opciones { display: flex; gap: 8px; flex-direction: column; }
+.intencion-btn {
+  padding: 9px 14px; border-radius: var(--radius); font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border); background: var(--surface-high);
+  color: var(--text-secondary); font-family: var(--font-body); transition: var(--transition);
+  text-align: left; display: flex; align-items: center; gap: 8px;
+}
+.intencion-btn:hover { border-color: var(--border-accent); color: var(--on-surface); }
+.intencion-btn.selected-renueva { background: var(--success-dim); border-color: rgba(141,207,149,0.3); color: var(--success); }
+.intencion-btn.selected-sale    { background: var(--error-dim); border-color: rgba(255,180,171,0.3); color: var(--error); }
+.intencion-fecha { font-size: 0.68rem; color: var(--text-muted); margin-top: 10px; }
+
+/* ── RESULTADO DECISIÓN ── */
+.decision-banner {
+  padding: 14px 18px; border-radius: var(--radius); margin-bottom: 20px;
+  display: flex; align-items: center; gap: 12px; font-size: 0.82rem; font-weight: 600;
+}
+.decision-banner.renovar { background: var(--success-dim); border: 1px solid rgba(141,207,149,0.2); color: var(--success); }
+.decision-banner.salida  { background: var(--error-dim); border: 1px solid rgba(255,180,171,0.2); color: var(--error); }
+.decision-banner.pendiente { background: var(--mustard-dim); border: 1px solid rgba(253,222,168,0.2); color: var(--mustard); }
+
+/* ── INSPECCION TAB ── */
+.inspeccion-estado {
+  background: var(--surface-low); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px;
+}
+.insp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.insp-title { font-size: 0.9rem; font-weight: 600; color: var(--on-bg); }
+.insp-meta-row { display: flex; gap: 20px; flex-wrap: wrap; }
+.insp-meta { display: flex; flex-direction: column; gap: 2px; }
+.insp-meta-label { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.insp-meta-value { font-size: 0.8rem; font-weight: 500; color: var(--on-surface); }
+
+/* Fotos adjuntas preview */
+.fotos-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.foto-thumb {
+  width: 64px; height: 64px; border-radius: var(--radius-sm);
+  background: var(--surface-mid); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; cursor: pointer; transition: var(--transition);
+  flex-shrink: 0; overflow: hidden;
+}
+.foto-thumb:hover { border-color: var(--border-accent); }
+.foto-add { border-style: dashed; color: var(--text-muted); font-size: 18px; }
+.foto-add:hover { color: var(--primary); border-color: var(--border-accent); }
+
+/* Resumen checklist */
+.checklist-resumen { display: flex; gap: 10px; flex-wrap: wrap; }
+.check-stat { background: var(--surface-mid); border-radius: var(--radius); padding: 10px 14px; display: flex; flex-direction: column; gap: 3px; min-width: 80px; }
+.check-stat-num { font-family: var(--font-headline); font-size: 1.4rem; font-weight: 700; }
+.check-stat-num.ok   { color: var(--success); }
+.check-stat-num.warn { color: var(--mustard); }
+.check-stat-num.bad  { color: var(--error); }
+.check-stat-label { font-size: 0.62rem; color: var(--text-muted); }
+
+/* ── CHECKLIST PANTALLA ── */
+.checklist-screen { display: flex; flex-direction: column; gap: 0; }
+.checklist-item {
+  border-bottom: 1px solid var(--border); padding: 16px 20px;
+  display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start;
+}
+.checklist-item:last-child { border-bottom: none; }
+.checklist-item.origen-reclamo { border-left: 3px solid var(--error); }
+.checklist-item.origen-contrato { border-left: 3px solid var(--border-accent); }
+.checklist-item-nombre { font-size: 0.85rem; font-weight: 600; color: var(--on-bg); margin-bottom: 3px; }
+.checklist-item-origen { font-size: 0.62rem; color: var(--text-muted); margin-bottom: 10px; }
+.checklist-opciones { display: flex; gap: 6px; }
+.check-opt {
+  padding: 5px 12px; border-radius: var(--radius-pill); font-size: 0.7rem; font-weight: 700;
+  cursor: pointer; border: 1px solid var(--border); background: none;
+  color: var(--text-muted); font-family: var(--font-body); transition: var(--transition);
+}
+.check-opt:hover { border-color: var(--border-accent); }
+.check-opt.bien   { background: var(--success-dim); border-color: rgba(141,207,149,0.3); color: var(--success); }
+.check-opt.regular{ background: var(--mustard-dim); border-color: rgba(253,222,168,0.3); color: var(--mustard); }
+.check-opt.mal    { background: var(--error-dim); border-color: rgba(255,180,171,0.3); color: var(--error); }
+.checklist-obs { width: 100%; background: var(--surface-high); border: 1px solid var(--border); color: var(--on-surface); font-family: var(--font-body); font-size: 0.75rem; padding: 7px 10px; border-radius: var(--radius-sm); outline: none; margin-top: 8px; resize: vertical; }
+.checklist-obs:focus { border-color: var(--border-accent); }
+.checklist-item-fotos { display: flex; gap: 6px; align-items: center; }
+
+/* ── ACTA TAB ── */
+.acta-form { display: flex; flex-direction: column; gap: 16px; }
+.form-row { display: grid; gap: 12px; }
+.form-row.two { grid-template-columns: 1fr 1fr; }
+.form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.form-hint  { font-size: 0.65rem; color: var(--text-muted); }
+.input-base {
+  background: var(--surface-high); border: 1px solid var(--border);
+  color: var(--on-surface); font-family: var(--font-body);
+  font-size: 0.8rem; padding: 8px 11px;
+  border-radius: var(--radius-sm); outline: none; width: 100%;
+}
+.input-base:focus { border-color: var(--border-accent); }
+textarea.input-base { resize: vertical; min-height: 72px; }
+
+.firma-opciones { display: flex; gap: 10px; }
+.firma-btn {
+  flex: 1; padding: 14px; border-radius: var(--radius); font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border); background: var(--surface-high);
+  color: var(--text-secondary); font-family: var(--font-body); transition: var(--transition); text-align: center;
+}
+.firma-btn:hover { border-color: var(--border-accent); color: var(--on-surface); }
+.firma-btn.selected-conforme    { background: var(--success-dim); border-color: rgba(141,207,149,0.3); color: var(--success); }
+.firma-btn.selected-disconforme { background: var(--error-dim); border-color: rgba(255,180,171,0.3); color: var(--error); }
+
+/* ── LIQUIDACIÓN TAB ── */
+.liq-deposito-card {
+  background: var(--surface-low); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 20px;
+}
+.liq-deposito-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.liq-deposito-title { font-size: 0.82rem; font-weight: 600; color: var(--on-surface); }
+.liq-deposito-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.liq-label { font-size: 0.75rem; color: var(--text-secondary); min-width: 180px; }
+.liq-value { font-family: var(--font-headline); font-size: 1rem; font-weight: 700; color: var(--on-bg); font-variant-numeric: tabular-nums; }
+.liq-value.result { color: var(--success); font-size: 1.15rem; }
+.liq-value.negative { color: var(--error); font-size: 1.15rem; }
+.indice-select { background: var(--surface-high); border: 1px solid var(--border); color: var(--on-surface); font-family: var(--font-body); font-size: 0.78rem; padding: 6px 10px; border-radius: var(--radius-sm); outline: none; cursor: pointer; }
+.liq-sep { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* Descuentos */
+.descuentos-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.descuento-row {
+  background: var(--surface-mid); border-radius: var(--radius); padding: 12px 14px;
+  display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: center;
+}
+.desc-concepto { font-size: 0.8rem; color: var(--on-surface); }
+.desc-tipo { font-size: 0.62rem; color: var(--text-muted); }
+.desc-monto { font-family: var(--font-headline); font-size: 0.875rem; font-weight: 700; color: var(--error); font-variant-numeric: tabular-nums; }
+.desc-del-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; transition: var(--transition); }
+.desc-del-btn:hover { color: var(--error); }
+
+/* Saldo final */
+.saldo-card {
+  border-radius: var(--radius-lg); padding: 20px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.saldo-card.positivo { background: var(--success-dim); border: 1px solid rgba(141,207,149,0.2); }
+.saldo-card.negativo { background: var(--error-dim); border: 1px solid rgba(255,180,171,0.2); }
+.saldo-desc { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; }
+.saldo-monto { font-family: var(--font-headline); font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.saldo-card.positivo .saldo-monto { color: var(--success); }
+.saldo-card.negativo .saldo-monto { color: var(--error); }
+.saldo-nota { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+
+/* Período objeción */
+.objecion-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.objecion-label { font-size: 0.75rem; color: var(--text-secondary); }
+.input-sm { width: 60px; background: var(--surface-high); border: 1px solid var(--border); color: var(--on-surface); font-family: var(--font-body); font-size: 0.8rem; padding: 5px 8px; border-radius: var(--radius-sm); outline: none; text-align: center; }
+.input-sm:focus { border-color: var(--border-accent); }
+
+/* ── STEP INDICATOR ── */
+.step-indicator {
+  display: flex; align-items: center; gap: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 12px 20px; margin-bottom: 4px;
+  overflow: hidden;
+}
+.step-item { display: flex; align-items: center; gap: 8px; flex: 1; position: relative; }
+.step-item:not(:last-child)::after { content: "→"; color: var(--text-muted); font-size: 0.75rem; margin: 0 8px; }
+.step-num { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 800; flex-shrink: 0; }
+.step-num.done   { background: var(--primary); color: var(--on-primary); }
+.step-num.active { background: var(--surface-highest); color: var(--on-surface); border: 1.5px solid var(--primary); }
+.step-num.todo   { background: var(--surface-high); color: var(--text-muted); }
+.step-text { font-size: 0.72rem; font-weight: 500; }
+.step-item.active .step-text { color: var(--on-surface); font-weight: 600; }
+.step-item.done   .step-text { color: var(--text-secondary); }
+.step-item.todo   .step-text { color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <!-- Logo: PNG oficial en base64. Si no est├í disponible, usar SVG placeholder. -->
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#6b1702"/>
+        <path d="M16 5L6 26h4l2-5h8l2 5h4L16 5zm0 6l3 8h-6l3-8z" fill="#ffb4a2"/>
+        <path d="M16 4L18 7l2-1-1 3 2 1-3 1v2l-2-2-2 2v-2l-3-1 2-1-1-3 2 1z" fill="#ffdea8" opacity="0.8"/>
+      </svg>
+      <div>
+        <div class="logo-text-name">Arce Administraci├│n</div>
+        <div class="logo-text-sub">Gesti├│n inmobiliaria</div>
+      </div>
+    </div>
+    <div class="nav-section">Principal</div>
+    <a class="nav-item" href="../dashboard/wireframe_dashboard_staff.html">
+      <span class="nav-icon">Ô¼ø</span> Dashboard
+    </a>
+    <a class="nav-item" href="../caja/wireframe_caja_general.html">
+      <span class="nav-icon">Ôùê</span> Caja General
+    </a>
+    <div class="nav-section">Entidades</div>
+    <a class="nav-item" href="../inquilinos/wireframe_lista_inquilinos.html">
+      <span class="nav-icon">Ôù╗</span> Inquilinos
+    </a>
+    <a class="nav-item" href="../propietarios/wireframe_lista_propietarios.html">
+      <span class="nav-icon">Ôù╗</span> Propietarios
+    </a>
+    <a class="nav-item" href="../propiedades/wireframe_ficha_propiedad.html">
+      <span class="nav-icon">Ôù╗</span> Propiedades
+    </a>
+    <a class="nav-item" href="../contratos/wireframe_lista_contratos.html">
+      <span class="nav-icon">Ôù╗</span> Contratos
+    </a>
+    <div class="nav-section">Gesti├│n</div>
+    <a class="nav-item" href="../tareas/wireframe_tareas.html">
+      <span class="nav-icon">Ôù╗</span> Tareas <span class="nav-badge">9</span>
+    </a>
+    <a class="nav-item" href="../v1/wireframe_bandeja_staff.html">
+      <span class="nav-icon">Ôù╗</span> Notificaciones <span class="nav-badge">3</span>
+    </a>
+    <a class="nav-item" href="../servicios/wireframe_control_servicios.html">
+      <span class="nav-icon">Ôù╗</span> Control Servicios
+    </a>
+    <a class="nav-item" href="../financiero/wireframe_motor_financiero.html">
+      <span class="nav-icon">Ôù╗</span> Motor Financiero
+    </a>
+    <a class="nav-item active" href="../renovacion/wireframe_renovacion_salida.html">
+      <span class="nav-icon">Ôù╗</span> Renovaci├│n y Salida
+    </a>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">MG</div>
+        <div>
+          <div class="user-name">M. Gonz├ílez</div>
+          <div class="user-role">Staff Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── MAIN ── -->
+  <main class="main-content">
+
+    <!-- ══════════════════════════════════════════════════════
+         VISTA 1: LISTA DEL MÓDULO
+    ══════════════════════════════════════════════════════ -->
+    <div id="vista-lista">
+
+      <div class="topbar">
+        <div class="breadcrumb">
+          <a href="#">Dashboard</a>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">Renovación y Salida</span>
+        </div>
+      </div>
+
+      <div class="content">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title">Renovación y Salida</div>
+            <div class="page-subtitle">Contratos próximos a vencer · Alerta automática a los 60 días</div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <!-- Mustard: un único uso → total de contratos activos en proceso -->
+        <div class="kpi-grid">
+          <div class="kpi-card warn">
+            <div class="kpi-label">Por definir</div>
+            <div class="kpi-value">3</div>
+            <div class="kpi-sub">Sin decisión de alguna parte</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Renovando</div>
+            <div class="kpi-value" style="color:var(--primary);">1</div>
+            <div class="kpi-sub">Contrato nuevo en proceso</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">En salida</div>
+            <div class="kpi-value" style="color:var(--error);">2</div>
+            <div class="kpi-sub">Inspección / Acta / Liquidación</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Finalizados (este mes)</div>
+            <div class="kpi-value" style="color:var(--text-secondary);">4</div>
+            <div class="kpi-sub">Contratos cerrados</div>
+          </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="tabla-wrapper">
+          <div class="tabla-toolbar">
+            <div class="tabla-title">Contratos próximos a vencer</div>
+            <div class="filtros">
+              <button class="filter-btn active">Todos (6)</button>
+              <button class="filter-btn">Por definir (3)</button>
+              <button class="filter-btn">Renovando (1)</button>
+              <button class="filter-btn">En salida (2)</button>
+              <button class="filter-btn">Finalizados</button>
+            </div>
+            <div class="tabla-actions">
+              <button class="btn btn-ghost btn-sm">↓ Exportar</button>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Contrato</th>
+                <th>Inquilino</th>
+                <th>Propiedad</th>
+                <th>Vence</th>
+                <th>Decisión</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr onclick="abrirFicha('salida')">
+                <td><div class="mov-nombre">CON-2024-018</div><div class="mov-meta">Inicio: 01/06/2024 · 24 meses</div></td>
+                <td><div class="mov-nombre">Sebastián Torres</div></td>
+                <td><div class="mov-nombre">Av. Colón 1234, 3°A</div><div class="mov-meta">Córdoba Capital</div></td>
+                <td>
+                  <div class="dias-chip urgente">12 días</div>
+                  <div class="mov-meta">01/07/2025</div>
+                </td>
+                <td>
+                  <div style="font-size:0.72rem;"><span style="color:var(--error);">✗ Propietario: No renueva</span></div>
+                  <div style="font-size:0.72rem;margin-top:2px;"><span style="color:var(--error);">✗ Inquilino: No renueva</span></div>
+                </td>
+                <td><span class="tag tag-salida"><span class="tag-dot"></span>En salida</span></td>
+                <td class="r"><button class="btn btn-ghost btn-xs">Gestionar →</button></td>
+              </tr>
+              <tr onclick="abrirFicha('salida')">
+                <td><div class="mov-nombre">CON-2023-047</div><div class="mov-meta">Inicio: 15/07/2023 · 24 meses</div></td>
+                <td><div class="mov-nombre">Roberto Gómez</div></td>
+                <td><div class="mov-nombre">Caseros 334, 1°B</div><div class="mov-meta">Córdoba Capital</div></td>
+                <td>
+                  <div class="dias-chip urgente">28 días</div>
+                  <div class="mov-meta">15/07/2025</div>
+                </td>
+                <td>
+                  <div style="font-size:0.72rem;"><span style="color:var(--error);">✗ Propietario: No renueva</span></div>
+                  <div style="font-size:0.72rem;margin-top:2px;"><span style="color:var(--text-muted);">— Inquilino: sin respuesta</span></div>
+                </td>
+                <td><span class="tag tag-salida"><span class="tag-dot"></span>En salida</span></td>
+                <td class="r"><button class="btn btn-ghost btn-xs">Gestionar →</button></td>
+              </tr>
+              <tr>
+                <td><div class="mov-nombre">CON-2024-031</div><div class="mov-meta">Inicio: 01/08/2024 · 24 meses</div></td>
+                <td><div class="mov-nombre">Carolina Méndez</div></td>
+                <td><div class="mov-nombre">Bv. San Juan 890, PB</div><div class="mov-meta">Córdoba Capital</div></td>
+                <td>
+                  <div class="dias-chip pronto">34 días</div>
+                  <div class="mov-meta">01/08/2025</div>
+                </td>
+                <td>
+                  <div style="font-size:0.72rem;"><span style="color:var(--success);">✓ Propietario: Renueva</span></div>
+                  <div style="font-size:0.72rem;margin-top:2px;"><span style="color:var(--success);">✓ Inquilino: Renueva</span></div>
+                </td>
+                <td><span class="tag tag-renovando"><span class="tag-dot"></span>Renovando</span></td>
+                <td class="r"><button class="btn btn-ghost btn-xs">Gestionar →</button></td>
+              </tr>
+              <tr>
+                <td><div class="mov-nombre">CON-2025-003</div><div class="mov-meta">Inicio: 15/08/2025 · 24 meses</div></td>
+                <td><div class="mov-nombre">Florencia Ibáñez</div></td>
+                <td><div class="mov-nombre">Lima 211, 2°D</div><div class="mov-meta">Córdoba Capital</div></td>
+                <td>
+                  <div class="dias-chip pronto">51 días</div>
+                  <div class="mov-meta">15/08/2025</div>
+                </td>
+                <td>
+                  <div style="font-size:0.72rem;"><span style="color:var(--text-muted);">— Propietario: sin respuesta</span></div>
+                  <div style="font-size:0.72rem;margin-top:2px;"><span style="color:var(--text-muted);">— Inquilino: sin respuesta</span></div>
+                </td>
+                <td><span class="tag tag-definir"><span class="tag-dot"></span>Por definir</span></td>
+                <td class="r"><button class="btn btn-ghost btn-xs">Gestionar →</button></td>
+              </tr>
+              <tr>
+                <td><div class="mov-nombre">CON-2024-055</div><div class="mov-meta">Inicio: 01/09/2023 · 24 meses</div></td>
+                <td><div class="mov-nombre">Ana Paula Ríos</div></td>
+                <td><div class="mov-nombre">Italia 1560, 1°C</div><div class="mov-meta">Córdoba Capital</div></td>
+                <td>
+                  <div class="dias-chip ok">58 días</div>
+                  <div class="mov-meta">23/08/2025</div>
+                </td>
+                <td>
+                  <div style="font-size:0.72rem;"><span style="color:var(--success);">✓ Propietario: Renueva</span></div>
+                  <div style="font-size:0.72rem;margin-top:2px;"><span style="color:var(--text-muted);">— Inquilino: sin respuesta</span></div>
+                </td>
+                <td><span class="tag tag-definir"><span class="tag-dot"></span>Por definir</span></td>
+                <td class="r"><button class="btn btn-ghost btn-xs">Gestionar →</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div><!-- /vista-lista -->
+
+
+    <!-- ══════════════════════════════════════════════════════
+         VISTA 2: FICHA DEL CONTRATO (con tabs)
+    ══════════════════════════════════════════════════════ -->
+    <div id="vista-ficha" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+
+      <!-- Topbar ficha -->
+      <div class="topbar">
+        <div class="breadcrumb">
+          <a href="#" onclick="volverLista()">Renovación y Salida</a>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">CON-2024-018 · Sebastián Torres</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-sm" onclick="volverLista()">← Volver a la lista</button>
+        </div>
+      </div>
+
+      <!-- Header ficha -->
+      <div class="ficha-header-bar">
+        <div>
+          <div class="ficha-contrato-num">CON-2024-018</div>
+          <div class="ficha-inquilino">Sebastián Torres</div>
+          <div class="ficha-propiedad">🏠 Av. Colón 1234, 3°A · Córdoba Capital</div>
+        </div>
+        <div class="ficha-header-meta">
+          <div class="ficha-meta-item">
+            <span class="ficha-meta-label">Inicio</span>
+            <span class="ficha-meta-value">01/06/2024</span>
+          </div>
+          <div class="ficha-meta-item">
+            <span class="ficha-meta-label">Vencimiento</span>
+            <span class="ficha-meta-value err">01/07/2025</span>
+          </div>
+          <div class="ficha-meta-item">
+            <span class="ficha-meta-label">Días restantes</span>
+            <span class="ficha-meta-value err">12 días</span>
+          </div>
+          <div class="ficha-meta-item">
+            <span class="ficha-meta-label">Canon vigente</span>
+            <span class="ficha-meta-value">$412.000</span>
+          </div>
+          <div class="ficha-meta-item">
+            <span class="ficha-meta-label">Estado</span>
+            <span class="ficha-meta-value" style="color:var(--error);">En salida</span>
+          </div>
+        </div>
+        <div class="ficha-header-actions">
+          <button class="btn btn-ghost btn-sm">📧 Notificar</button>
+          <button class="btn btn-ghost btn-sm">📋 Ver contrato</button>
+        </div>
+      </div>
+
+      <!-- Step indicator del proceso de salida -->
+      <div style="padding: 16px 28px; background: var(--surface); border-bottom: 1px solid var(--border);">
+        <div class="step-indicator">
+          <div class="step-item done">
+            <div class="step-num done">✓</div>
+            <span class="step-text">Decisión</span>
+          </div>
+          <div class="step-item active">
+            <div class="step-num active">2</div>
+            <span class="step-text">Inspección</span>
+          </div>
+          <div class="step-item todo">
+            <div class="step-num todo">3</div>
+            <span class="step-text">Acta de recepción</span>
+          </div>
+          <div class="step-item todo">
+            <div class="step-num todo">4</div>
+            <span class="step-text">Liquidación</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs ficha -->
+      <div class="ficha-tabs">
+        <button class="ficha-tab active" onclick="switchFichaTab('renovacion', this)">🔄 Renovación / Salida</button>
+        <button class="ficha-tab" onclick="switchFichaTab('inspeccion', this)">🔍 Inspección <span class="tab-badge">En curso</span></button>
+        <button class="ficha-tab" onclick="switchFichaTab('acta', this)">📄 Acta de recepción</button>
+        <button class="ficha-tab" onclick="switchFichaTab('liquidacion', this)">💰 Liquidación</button>
+      </div>
+
+      <!-- Contenido tabs (scrollable) -->
+      <div style="flex:1; overflow-y:auto;">
+
+        <!-- TAB: RENOVACIÓN / DECISIÓN -->
+        <div id="ftab-renovacion" class="tab-panel active">
+
+          <!-- Banner decisión actual -->
+          <div class="decision-banner salida">
+            <span style="font-size:18px;">🚪</span>
+            Ambas partes decidieron no renovar. El contrato entra en proceso de salida.
+          </div>
+
+          <!-- Intenciones -->
+          <div class="section-label">Intención de las partes</div>
+          <div class="intencion-grid">
+            <div class="intencion-card">
+              <div class="intencion-who">Propietario</div>
+              <div class="intencion-nombre">Carlos Fernández</div>
+              <div class="intencion-opciones">
+                <button class="intencion-btn">✓ Renovar contrato</button>
+                <button class="intencion-btn selected-sale">✗ No renovar — recuperar la propiedad</button>
+              </div>
+              <div class="intencion-fecha">Registrado el 05/06/2025 por Marcos Staff</div>
+            </div>
+            <div class="intencion-card">
+              <div class="intencion-who">Inquilino</div>
+              <div class="intencion-nombre">Sebastián Torres</div>
+              <div class="intencion-opciones">
+                <button class="intencion-btn">✓ Quiero renovar</button>
+                <button class="intencion-btn selected-sale">✗ Me voy al vencimiento</button>
+              </div>
+              <div class="intencion-fecha">Registrado el 07/06/2025 por Marcos Staff</div>
+            </div>
+          </div>
+
+          <!-- Notas -->
+          <div class="section-label" style="margin-top:8px;">Notas del proceso</div>
+          <div style="background:var(--surface-low);border:1px solid var(--border);border-radius:var(--radius);padding:16px;">
+            <textarea class="input-base" style="background:transparent;border:none;padding:0;resize:vertical;min-height:60px;" placeholder="Agregar notas internas del proceso de salida…"></textarea>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-secondary btn-sm">Guardar notas</button>
+            <button class="btn btn-primary btn-sm" onclick="switchFichaTab('inspeccion', document.querySelectorAll('.ficha-tab')[1])">Ir a Inspección →</button>
+          </div>
+
+        </div>
+
+        <!-- TAB: INSPECCIÓN -->
+        <div id="ftab-inspeccion" class="tab-panel">
+
+          <!-- Estado inspección -->
+          <div class="inspeccion-estado">
+            <div class="insp-header">
+              <div>
+                <div class="insp-title">Inspección de salida</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-secondary btn-sm" onclick="abrirChecklist()">📋 Ir al checklist completo →</button>
+              </div>
+            </div>
+            <div class="insp-meta-row">
+              <div class="insp-meta">
+                <span class="insp-meta-label">Fecha programada</span>
+                <span class="insp-meta-value">25/06/2025 · 10:00hs</span>
+              </div>
+              <div class="insp-meta">
+                <span class="insp-meta-label">Realizada por</span>
+                <span class="insp-meta-value">Marcos Staff</span>
+              </div>
+              <div class="insp-meta">
+                <span class="insp-meta-label">Estado</span>
+                <span class="insp-meta-value" style="color:var(--mustard);">En curso</span>
+              </div>
+              <div class="insp-meta">
+                <span class="insp-meta-label">Ítems completados</span>
+                <span class="insp-meta-value">8 / 12</span>
+              </div>
+            </div>
+
+            <!-- Resumen checklist -->
+            <div style="margin-top:16px;">
+              <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:8px;">Resumen de estado</div>
+              <div class="checklist-resumen">
+                <div class="check-stat"><span class="check-stat-num ok">5</span><span class="check-stat-label">Bien</span></div>
+                <div class="check-stat"><span class="check-stat-num warn">2</span><span class="check-stat-label">Regular</span></div>
+                <div class="check-stat"><span class="check-stat-num bad">1</span><span class="check-stat-label">Mal</span></div>
+                <div class="check-stat"><span class="check-stat-num" style="color:var(--text-muted);">4</span><span class="check-stat-label">Sin revisar</span></div>
+              </div>
+            </div>
+
+            <!-- Fotos adjuntas -->
+            <div style="margin-top:16px;">
+              <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:8px;">Fotos y video adjuntos</div>
+              <div class="fotos-row">
+                <div class="foto-thumb" title="Sala de estar — entrada">🖼️</div>
+                <div class="foto-thumb" title="Cocina">🖼️</div>
+                <div class="foto-thumb" title="Baño — azulejos">🖼️</div>
+                <div class="foto-thumb" title="Video general">🎥</div>
+                <div class="foto-thumb foto-add" title="Agregar foto o video">+</div>
+              </div>
+              <div style="font-size:0.65rem;color:var(--text-muted);margin-top:6px;">Referencia de entrega: <a href="#" style="color:var(--primary);font-size:0.65rem;">ver fotos del acta de entrega original →</a></div>
+            </div>
+          </div>
+
+          <!-- Observaciones generales -->
+          <div class="section-label">Observaciones generales</div>
+          <textarea class="input-base" placeholder="Notas adicionales de la inspección…" style="min-height:80px;"></textarea>
+
+          <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-secondary btn-sm">Guardar</button>
+            <button class="btn btn-primary btn-sm" onclick="switchFichaTab('acta', document.querySelectorAll('.ficha-tab')[2])">Ir a Acta →</button>
+          </div>
+
+        </div>
+
+        <!-- TAB: ACTA DE RECEPCIÓN -->
+        <div id="ftab-acta" class="tab-panel">
+
+          <div class="section-label">Datos de la recepción</div>
+          <div class="acta-form">
+            <div class="form-row two">
+              <div class="form-field">
+                <label class="form-label">Fecha de recepción de llaves</label>
+                <input type="date" class="input-base" value="2025-07-01" />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Hora</label>
+                <input type="time" class="input-base" value="10:00" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">Llaves entregadas</label>
+                <input type="text" class="input-base" placeholder="Ej: 2 llaves puerta principal, 1 llave buzón, 1 control cochera" />
+                <span class="form-hint">Detallar cantidad y tipo</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">Observaciones del staff</label>
+                <textarea class="input-base" placeholder="Notas sobre el estado al momento de la entrega de llaves…"></textarea>
+              </div>
+            </div>
+
+            <!-- Firma -->
+            <div class="section-label" style="margin-top:4px;">Firma del inquilino</div>
+            <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:12px;">El inquilino puede recibir las llaves en conformidad o disconformidad. La disconformidad no bloquea la liquidación — queda registrada en el historial.</div>
+            <div class="firma-opciones">
+              <button class="firma-btn selected-conforme">✓ Firma en conformidad<br><span style="font-size:0.68rem;font-weight:400;margin-top:4px;display:block;">Acepta el estado del inmueble al momento de la entrega</span></button>
+              <button class="firma-btn">✗ Firma en disconformidad<br><span style="font-size:0.68rem;font-weight:400;margin-top:4px;display:block;">Tiene observaciones — se registran en el historial</span></button>
+            </div>
+
+            <!-- Disconformidad (visible si seleccionan esa opción) -->
+            <div style="background:var(--error-dim);border:1px solid rgba(255,180,171,0.2);border-radius:var(--radius);padding:14px;display:none;" id="disconf-obs">
+              <div class="form-field">
+                <label class="form-label" style="color:var(--error);">Motivo de disconformidad</label>
+                <textarea class="input-base" placeholder="Describir los puntos de disconformidad del inquilino…"></textarea>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+              <button class="btn btn-secondary btn-sm">Guardar borrador</button>
+              <button class="btn btn-primary btn-sm" onclick="switchFichaTab('liquidacion', document.querySelectorAll('.ficha-tab')[3])">Cerrar acta e ir a Liquidación →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: LIQUIDACIÓN -->
+        <div id="ftab-liquidacion" class="tab-panel">
+
+          <!-- Depósito -->
+          <div class="liq-deposito-card">
+            <div class="liq-deposito-header">
+              <div class="liq-deposito-title">Cálculo del depósito</div>
+            </div>
+
+            <div class="liq-deposito-row">
+              <span class="liq-label">Depósito original (al inicio del contrato)</span>
+              <span class="liq-value">$412.000</span>
+            </div>
+            <div class="liq-deposito-row">
+              <span class="liq-label">Modalidad de ajuste</span>
+              <select class="indice-select">
+                <option>Sin ajuste (valor nominal)</option>
+                <option selected>Indexar por índice ICL</option>
+                <option>Indexar por IPC</option>
+                <option>Indexar por CER</option>
+                <option>Valor manual</option>
+              </select>
+            </div>
+            <div class="liq-deposito-row">
+              <span class="liq-label">ICL acumulado (jun 2024 → jul 2025)</span>
+              <span class="liq-value" style="color:var(--primary);">+87.4%</span>
+            </div>
+
+            <div class="liq-sep"></div>
+
+            <div class="liq-deposito-row">
+              <span class="liq-label" style="font-weight:600;color:var(--on-surface);">Depósito ajustado</span>
+              <span class="liq-value" style="font-size:1.2rem;">$771.688</span>
+            </div>
+          </div>
+
+          <!-- Descuentos -->
+          <div class="section-label">Descuentos sobre el depósito</div>
+          <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:14px;">Solo el staff puede cargar descuentos. Los ítems marcados como "Mal" en la inspección se sugieren automáticamente.</div>
+
+          <div class="descuentos-list">
+            <div class="descuento-row">
+              <div>
+                <div class="desc-concepto">Reparación cerámica baño (reclamo #12)</div>
+                <div class="desc-tipo">Reparación · Desde inspección</div>
+              </div>
+              <div></div>
+              <div class="desc-monto">−$45.000</div>
+              <button class="desc-del-btn">✕</button>
+            </div>
+            <div class="descuento-row">
+              <div>
+                <div class="desc-concepto">Servicio de luz — mayo 2025 (impago)</div>
+                <div class="desc-tipo">Deuda de servicios</div>
+              </div>
+              <div></div>
+              <div class="desc-monto">−$18.400</div>
+              <button class="desc-del-btn">✕</button>
+            </div>
+            <div class="descuento-row">
+              <div>
+                <div class="desc-concepto">Pintura habitación principal</div>
+                <div class="desc-tipo">Reparación · Manual</div>
+              </div>
+              <div></div>
+              <div class="desc-monto">−$80.000</div>
+              <button class="desc-del-btn">✕</button>
+            </div>
+          </div>
+
+          <!-- Agregar descuento -->
+          <div style="background:var(--surface-low);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:20px;">
+            <div style="font-size:0.72rem;font-weight:600;color:var(--on-surface);margin-bottom:10px;">+ Agregar descuento</div>
+            <div class="form-row two" style="margin-bottom:8px;">
+              <input type="text" class="input-base" placeholder="Concepto del descuento" />
+              <input type="number" class="input-base" placeholder="Monto $" />
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="filter-btn">Reparación</button>
+              <button class="filter-btn active">Deuda</button>
+              <button class="filter-btn">Servicios</button>
+              <button class="filter-btn">Otro</button>
+              <button class="btn btn-primary btn-xs" style="margin-left:auto;">Agregar</button>
+            </div>
+          </div>
+
+          <!-- Saldo final -->
+          <div class="section-label">Saldo a devolver</div>
+          <div class="saldo-card positivo">
+            <div>
+              <div class="saldo-desc">Depósito ajustado − Descuentos totales ($143.400)</div>
+              <div class="saldo-monto">$628.288</div>
+              <div class="saldo-nota">A favor del inquilino · Se transfiere a CBU declarado</div>
+            </div>
+            <button class="btn btn-success">💰 Registrar transferencia</button>
+          </div>
+
+          <!-- Si el saldo fuera negativo (comentado, para referencia del programador):
+          <div class="saldo-card negativo">
+            <div>
+              <div class="saldo-desc">Descuentos superan el depósito</div>
+              <div class="saldo-monto">−$25.000</div>
+              <div class="saldo-nota">Saldo negativo → se genera deuda en CC del inquilino</div>
+            </div>
+            <button class="btn btn-danger">Generar deuda en CC</button>
+          </div>
+          -->
+
+          <!-- Período de objeción -->
+          <div style="background:var(--surface-low);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:14px;">
+            <div style="font-size:0.78rem;font-weight:600;color:var(--on-surface);margin-bottom:6px;">Notificación al inquilino</div>
+            <div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:10px;">Se enviará el resumen de liquidación por mail. El inquilino tendrá un período para objetar antes del cierre definitivo.</div>
+            <div class="objecion-row">
+              <span class="objecion-label">Período de objeción:</span>
+              <input type="number" class="input-sm" value="5" min="1" max="30" />
+              <span class="objecion-label">días hábiles</span>
+              <button class="btn btn-secondary btn-sm" style="margin-left:auto;">📧 Enviar resumen al inquilino</button>
+            </div>
+          </div>
+
+          <!-- Cierre -->
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;align-items:center;">
+            <span style="font-size:0.72rem;color:var(--text-muted);">Al cerrar: contrato → FINALIZADO · Propiedad → DISPONIBLE</span>
+            <button class="btn btn-primary">✓ Cerrar liquidación y finalizar contrato</button>
+          </div>
+
+        </div>
+
+      </div><!-- /scroll -->
+    </div><!-- /vista-ficha -->
+
+
+    <!-- ══════════════════════════════════════════════════════
+         VISTA 3: CHECKLIST DE INSPECCIÓN (pantalla separada)
+    ══════════════════════════════════════════════════════ -->
+    <div id="vista-checklist" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+
+      <div class="topbar">
+        <div class="breadcrumb">
+          <a href="#" onclick="volverLista()">Renovación y Salida</a>
+          <span class="breadcrumb-sep">›</span>
+          <a href="#" onclick="volverFicha()">CON-2024-018 · Torres</a>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">Checklist de inspección</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-sm" onclick="volverFicha()">← Volver a la ficha</button>
+          <button class="btn btn-primary btn-sm">Guardar progreso</button>
+        </div>
+      </div>
+
+      <div style="padding:16px 28px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);">CON-2024-018 · Sebastián Torres</div>
+          <div style="font-size:0.9rem;font-weight:600;color:var(--on-bg);">Av. Colón 1234, 3°A</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+          <span style="font-size:0.75rem;color:var(--text-secondary);">8 / 12 completados</span>
+          <div style="width:120px;height:6px;background:var(--surface-highest);border-radius:var(--radius-pill);overflow:hidden;">
+            <div style="width:66%;height:100%;background:var(--primary);border-radius:var(--radius-pill);"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm">+ Agregar ítem</button>
+          <button class="btn btn-ghost btn-sm">📎 Adjuntar foto/video</button>
+        </div>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;">
+
+        <!-- Ítems del checklist -->
+        <!-- Leyenda: border-left rojo = origen reclamo previo, azul/acento = origen contrato -->
+        <div style="padding:8px 28px 0;display:flex;gap:12px;align-items:center;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.65rem;color:var(--text-muted);"><div style="width:12px;height:3px;background:var(--error);border-radius:2px;"></div> Generado desde reclamo previo</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.65rem;color:var(--text-muted);"><div style="width:12px;height:3px;background:var(--border-accent);border-radius:2px;"></div> Generado desde contrato / manual</div>
+        </div>
+
+        <div class="tabla-wrapper" style="margin:12px 28px 28px;border-radius:var(--radius-lg);">
+          <div class="checklist-screen">
+
+            <div class="checklist-item origen-contrato">
+              <div>
+                <div class="checklist-item-nombre">Pisos — sala y comedor</div>
+                <div class="checklist-item-origen">Origen: ítems del contrato</div>
+                <div class="checklist-opciones">
+                  <button class="check-opt bien">✓ Bien</button>
+                  <button class="check-opt">Regular</button>
+                  <button class="check-opt">Mal</button>
+                </div>
+              </div>
+              <div class="checklist-item-fotos">
+                <div class="foto-thumb" style="width:48px;height:48px;">🖼️</div>
+                <div class="foto-thumb foto-add" style="width:48px;height:48px;font-size:14px;">+</div>
+              </div>
+            </div>
+
+            <div class="checklist-item origen-contrato">
+              <div>
+                <div class="checklist-item-nombre">Paredes — sala y comedor</div>
+                <div class="checklist-item-origen">Origen: ítems del contrato</div>
+                <div class="checklist-opciones">
+                  <button class="check-opt">Bien</button>
+                  <button class="check-opt regular">Regular</button>
+                  <button class="check-opt">Mal</button>
+                </div>
+                <textarea class="checklist-obs" placeholder="Observación…">Hay algunas manchas en la pared lateral derecha.</textarea>
+              </div>
+              <div class="checklist-item-fotos">
+                <div class="foto-thumb" style="width:48px;height:48px;">🖼️</div>
+                <div class="foto-thumb foto-add" style="width:48px;height:48px;font-size:14px;">+</div>
+              </div>
+            </div>
+
+            <div class="checklist-item origen-reclamo">
+              <div>
+                <div class="checklist-item-nombre">Cerámica del baño</div>
+                <div class="checklist-item-origen">Origen: Reclamo #12 · "Cerámica rota en baño" (mar 2025) — sin reparar</div>
+                <div class="checklist-opciones">
+                  <button class="check-opt">Bien</button>
+                  <button class="check-opt">Regular</button>
+                  <button class="check-opt mal">✕ Mal</button>
+                </div>
+                <textarea class="checklist-obs" placeholder="Observación…">Cerámica rota en el lado izquierdo de la ducha. No fue reparada desde el reclamo.</textarea>
+              </div>
+              <div class="checklist-item-fotos">
+                <div class="foto-thumb" style="width:48px;height:48px;">🖼️</div>
+                <div class="foto-thumb" style="width:48px;height:48px;">🖼️</div>
+                <div class="foto-thumb foto-add" style="width:48px;height:48px;font-size:14px;">+</div>
+              </div>
+            </div>
+
+            <div class="checklist-item origen-contrato">
+              <div>
+                <div class="checklist-item-nombre">Aberturas — ventanas y puertas</div>
+                <div class="checklist-item-origen">Origen: ítems del contrato</div>
+                <div class="checklist-opciones">
+                  <button class="check-opt bien">✓ Bien</button>
+                  <button class="check-opt">Regular</button>
+                  <button class="check-opt">Mal</button>
+                </div>
+              </div>
+              <div class="checklist-item-fotos">
+                <div class="foto-thumb foto-add" style="width:48px;height:48px;font-size:14px;">+</div>
+              </div>
+            </div>
+
+            <div class="checklist-item origen-contrato">
+              <div>
+                <div class="checklist-item-nombre">Instalación eléctrica</div>
+                <div class="checklist-item-origen">Origen: ítems del contrato</div>
+                <div class="checklist-opciones">
+                  <button class="check-opt bien">✓ Bien</button>
+                  <button class="check-opt">Regular</button>
+                  <button class="check-opt">Mal</button>
+                </div>
+              </div>
+              <div class="checklist-item-fotos">
+                <div class="foto-thumb foto-add" style="width:48px;height:48px;font-size:14px;">+</div>
+              </div>
+            </div>
+
+            <div class="checklist-item origen-reclamo">
+              <div>
+                <div class="checklist-item-nombre">Pintura — habitación principal</div>
+                <div class="checklist-item-origen">Origen: Reclamo #8 · "Humedad en pared norte" (oct 2024) — parcialmente reparado</div>
+                <div class="checklist-opciones">
+                  <button class="check-opt">Bien</button>
+                  <button class="check-opt regular">Regular</button>
+                  <button class="check-opt">Mal</button>
+                </div>
+                <textarea class="checklist-obs" placeholder="Observación…">La humedad fue tratada pero quedaron manchas de pintura descascarada.</textarea>
+              </div>
+              <div class="checklist-item-fotos">
+                <div class="foto-thumb" style="width:48px;height:48px;">🖼️</div>
+                <div class="foto-thumb foto-add" style="width:48px;height:48px;font-size:14px;">+</div>
+              </div>
+            </div>
+
+            <!-- Ítems sin revisar -->
+            <div class="checklist-item origen-contrato" style="opacity:0.6;">
+              <div>
+                <div class="checklist-item-nombre">Sanitarios y grifería</div>
+                <div class="checklist-item-origen">Origen: ítems del contrato · Sin revisar</div>
+                <div class="checklist-opciones">
+                  <button class="check-opt">Bien</button>
+                  <button class="check-opt">Regular</button>
+                  <button class="check-opt">Mal</button>
+                </div>
+              </div>
+              <div class="checklist-item-fotos">
+                <div class="foto-thumb foto-add" style="width:48px;height:48px;font-size:14px;">+</div>
+              </div>
+            </div>
+
+            <div class="checklist-item origen-contrato" style="opacity:0.6;">
+              <div>
+                <div class="checklist-item-nombre">Cocina — mesada y artefactos</div>
+                <div class="checklist-item-origen">Origen: ítems del contrato · Sin revisar</div>
+                <div class="checklist-opciones">
+                  <button class="check-opt">Bien</button>
+                  <button class="check-opt">Regular</button>
+                  <button class="check-opt">Mal</button>
+                </div>
+              </div>
+              <div class="checklist-item-fotos">
+                <div class="foto-thumb foto-add" style="width:48px;height:48px;font-size:14px;">+</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div style="padding:0 28px 28px;display:flex;gap:8px;justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="volverFicha()">Guardar y volver a la ficha</button>
+          <button class="btn btn-primary">Finalizar inspección</button>
+        </div>
+
+      </div>
+    </div><!-- /vista-checklist -->
+
+  </main>
+</div>
+
+<script>
+  // ── Navegación entre vistas ──
+  function mostrar(id) {
+    ['vista-lista','vista-ficha','vista-checklist'].forEach(v => {
+      const el = document.getElementById(v);
+      el.style.display = 'none';
+    });
+    const target = document.getElementById(id);
+    target.style.display = 'flex';
+    target.style.flexDirection = 'column';
+    target.style.flex = '1';
+  }
+
+  function abrirFicha(tipo) {
+    mostrar('vista-ficha');
+    // Activar tab inspección si viene de salida
+    if (tipo === 'salida') {
+      switchFichaTab('inspeccion', document.querySelectorAll('.ficha-tab')[1]);
+    }
+  }
+
+  function abrirChecklist() { mostrar('vista-checklist'); }
+  function volverLista()    { mostrar('vista-lista'); }
+  function volverFicha()    {
+    mostrar('vista-ficha');
+    switchFichaTab('inspeccion', document.querySelectorAll('.ficha-tab')[1]);
+  }
+
+  // ── Tabs de la ficha ──
+  function switchFichaTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.ficha-tab').forEach(b => b.classList.remove('active'));
+    const panel = document.getElementById('ftab-' + name);
+    if (panel) panel.classList.add('active');
+    if (btn) btn.classList.add('active');
+  }
+
+  // ── Firma disconformidad ──
+  document.querySelectorAll('.firma-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.firma-btn').forEach(b => {
+        b.classList.remove('selected-conforme','selected-disconforme');
+      });
+      const disconf = document.getElementById('disconf-obs');
+      if (this.textContent.includes('disconformidad')) {
+        this.classList.add('selected-disconforme');
+        if (disconf) disconf.style.display = 'block';
+      } else {
+        this.classList.add('selected-conforme');
+        if (disconf) disconf.style.display = 'none';
+      }
+    });
+  });
+
+  // ── Intención partes ──
+  document.querySelectorAll('.intencion-opciones').forEach(grupo => {
+    grupo.querySelectorAll('.intencion-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        grupo.querySelectorAll('.intencion-btn').forEach(b => {
+          b.classList.remove('selected-renueva','selected-sale');
+        });
+        if (this.textContent.includes('Renovar') || this.textContent.includes('renovar')) {
+          this.classList.add('selected-renueva');
+        } else {
+          this.classList.add('selected-sale');
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

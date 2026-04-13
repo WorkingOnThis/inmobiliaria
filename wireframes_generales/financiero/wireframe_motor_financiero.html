@@ -1,0 +1,1448 @@
+﻿<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Motor Financiero — Arce Administración</title>
+
+<!--
+  ============================================================
+  WIREFRAME: Motor Financiero
+  Archivo: ../financiero/wireframe_motor_financiero.html
+  Sistema de diseño: Arce Administración v2.0
+  Modo: Oscuro por defecto
+  ============================================================
+
+  DESCRIPCIÓN
+  Panel de gestión del motor financiero. Tres tabs:
+  1. Mora Activa — lista de contratos pendientes/en mora con
+     desglose de deuda y proyección día a día expandible.
+  2. Carta Documento — borradores generados automáticamente
+     que requieren revisión y aprobación del staff antes del envío.
+  3. Configuración — parámetros del motor por contrato:
+     multiplicador TIM, días de gracia, día máximo de cobro,
+     umbral carta documento.
+
+  REGLAS DE NEGOCIO (para el programador)
+
+  Tab 1 — Mora Activa:
+  - Dos secciones separadas: "Pendiente" (pre-mora, dentro del
+    período de gracia) y "En mora" (gracia vencida, punitorios activos).
+  - Estado "Pendiente" → chip amarillo (mustard). NO genera punitorios.
+  - Estado "En mora" → chip rojo (error). Punitorios acumulados diariamente.
+  - Desglose de deuda: Capital adeudado | Punitorios acumulados | Total a hoy.
+  - Tabla proyección: se activa con botón "Ver proyección →" en el
+    panel lateral de cada contrato. Configurable hasta fecha elegida.
+  - La TIM se obtiene de la API BCRA /estadisticas/tasas/TNA-TIM.
+    Si la API falla, se usa la última TIM conocida y se marca la fila
+    con badge "TIM sin confirmar" + tarea automática al staff.
+
+  Tab 2 — Carta Documento:
+  - Solo visible para Staff Admin y Staff Ventas.
+  - Los borradores se generan automáticamente cuando el contrato
+    supera el umbral de mora (configurable, ej: 30 días).
+  - Workflow: Pendiente revisión → En revisión → Aprobado → Enviado.
+  - Staff puede editar el borrador antes de aprobar.
+  - NUNCA se envía sin aprobación explícita del staff.
+  - Canal de envío: módulo comunicaciones formales (email con
+    validez legal, Ley 25.506).
+
+  Tab 3 — Configuración:
+  - Los parámetros viven en la ficha del contrato (override por contrato).
+  - Esta vista permite editarlos agrupados por contrato.
+  - Parámetros: multiplicador TIM (default × 1), tipo de punitorios
+    (TIM BCRA o monto fijo diario), días de gracia (default 0),
+    día máximo de cobro (default 10), umbral carta documento (días en mora).
+  - El "día máximo de cobro" considera el calendario de días hábiles.
+    Si cae en inhábil → se extiende automáticamente al siguiente hábil.
+  - Cambios en configuración se aplican desde la siguiente corrida del cron job.
+
+  ENDPOINTS
+  GET  /api/motor/mora                          lista contratos en mora/pendiente
+  GET  /api/motor/mora/{contrato_id}/proyeccion?hasta=YYYY-MM-DD  tabla diaria
+  GET  /api/motor/carta-documento               borradores pendientes
+  GET  /api/motor/carta-documento/{id}          borrador completo
+  PUT  /api/motor/carta-documento/{id}          editar borrador
+  POST /api/motor/carta-documento/{id}/aprobar  aprobar + enviar
+  POST /api/motor/carta-documento/{id}/descartar
+  GET  /api/motor/configuracion                 params de todos los contratos activos
+  PUT  /api/contratos/{id}/motor-config         actualizar params de un contrato
+  GET  /api/bcra/tim                            TNA TIM del día
+  ============================================================
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGN SYSTEM — Arce Administración v2.0
+   ============================================================ */
+:root {
+  --bg:                 #111314;
+  --surface:            #191c1e;
+  --surface-low:        #1d2022;
+  --surface-mid:        #222527;
+  --surface-high:       #282a2c;
+  --surface-highest:    #333537;
+  --surface-white:      #0e1011;
+  --on-bg:              #e1e2e4;
+  --on-surface:         #e1e2e4;
+  --text-secondary:     #a8a9ac;
+  --text-muted:         #6b6d70;
+  --primary:            #ffb4a2;
+  --primary-dark:       #6b1702;
+  --primary-dim:        rgba(255,180,162,0.12);
+  --primary-tint:       rgba(255,180,162,0.08);
+  --on-primary:         #561100;
+  --mustard:            #ffdea8;
+  --mustard-dim:        rgba(253,222,168,0.15);
+  --on-mustard:         #271900;
+  --error:              #ffb4ab;
+  --error-dim:          rgba(255,180,171,0.12);
+  --error-dark:         #93000a;
+  --on-error-dim:       #ffb4ab;
+  --border:             rgba(255,255,255,0.07);
+  --border-accent:      rgba(255,180,162,0.2);
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-brand:    "Montserrat", sans-serif;
+  --font-body:     "Inter", sans-serif;
+  --radius-xs:  4px;
+  --radius-sm:  6px;
+  --radius:     12px;
+  --radius-lg:  18px;
+  --radius-xl:  24px;
+  --radius-pill:9999px;
+  --transition: all 0.18s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--on-surface);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ── LAYOUT ── */
+.app-shell { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px; min-height: 100vh;
+  background: var(--surface);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.sidebar-logo {
+  padding: 20px 20px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-svg { width: 32px; height: 32px; flex-shrink: 0; }
+.logo-text-name {
+  font-family: var(--font-brand); font-size: 0.78rem;
+  font-weight: 800; letter-spacing: -0.01em;
+  color: var(--on-bg); line-height: 1.1;
+}
+.logo-text-sub {
+  font-size: 0.52rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-muted); margin-top: 1px;
+}
+.nav-section {
+  padding: 18px 16px 5px;
+  font-size: 0.58rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px; margin: 1px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem; font-weight: 500;
+  color: var(--text-secondary); cursor: pointer;
+  transition: var(--transition); text-decoration: none;
+}
+.nav-item:hover { background: var(--surface-high); color: var(--on-surface); }
+.nav-item.active { background: var(--primary-dim); color: var(--primary); font-weight: 600; }
+.nav-icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--error-dim); color: var(--error);
+  font-size: 0.6rem; font-weight: 700;
+  padding: 1px 6px; border-radius: var(--radius-pill);
+}
+.sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--border); }
+.user-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: var(--transition);
+}
+.user-row:hover { background: var(--surface-high); }
+.user-avatar {
+  width: 30px; height: 30px;
+  background: var(--primary-dark); border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 800; color: #fff;
+  font-family: var(--font-brand); flex-shrink: 0;
+}
+.user-name { font-size: 0.8rem; font-weight: 600; color: var(--on-surface); }
+.user-role { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+
+/* ── MAIN ── */
+.main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+
+/* ── TOPBAR ── */
+.topbar {
+  height: 56px; background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 28px; gap: 10px; flex-shrink: 0;
+}
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); }
+.breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+.breadcrumb a:hover { color: var(--primary); }
+.breadcrumb-current { color: var(--on-surface); font-weight: 600; }
+.breadcrumb-sep { color: var(--text-muted); }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* ── BOTONES ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; font-family: var(--font-body);
+  font-size: 0.72rem; font-weight: 600;
+  cursor: pointer; border: none; border-radius: var(--radius);
+  transition: var(--transition); letter-spacing: 0.01em;
+}
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-secondary { background: var(--surface-highest); color: var(--on-surface); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--surface-high); }
+.btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--surface-high); color: var(--on-surface); }
+.btn-danger { background: var(--error-dim); color: var(--error); border: 1px solid rgba(255,180,171,0.2); }
+.btn-sm { padding: 5px 10px; font-size: 0.68rem; }
+.btn-xs { padding: 3px 8px; font-size: 0.62rem; }
+
+/* ── CONTENT ── */
+.content { flex: 1; overflow-y: auto; padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+
+/* ── PAGE HEADER ── */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.page-title { font-family: var(--font-headline); font-size: 1.5rem; font-weight: 700; color: var(--on-bg); letter-spacing: -0.02em; }
+.page-subtitle { font-size: 0.78rem; color: var(--text-secondary); margin-top: 3px; }
+
+/* ── KPI GRID ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 22px; transition: var(--transition);
+}
+.kpi-card:hover { border-color: var(--border-accent); }
+.kpi-card.warn { background: var(--mustard-dim); border-color: rgba(253,222,168,0.2); }
+.kpi-card.danger { background: var(--error-dim); border-color: rgba(255,180,171,0.2); }
+.kpi-label {
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 10px;
+}
+.kpi-card.warn .kpi-label { color: rgba(39,25,0,0.7); }
+.kpi-card.danger .kpi-label { color: rgba(255,180,171,0.6); }
+.kpi-value {
+  font-family: var(--font-headline); font-size: 1.75rem; font-weight: 700;
+  color: var(--on-bg); line-height: 1; font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em; margin-bottom: 5px;
+}
+.kpi-card.warn .kpi-value { color: var(--mustard); font-size: 1.4rem; }
+.kpi-card.danger .kpi-value { color: var(--error); }
+.kpi-sub { font-size: 0.7rem; color: var(--text-muted); }
+.kpi-card.warn .kpi-sub { color: rgba(253,222,168,0.5); }
+.kpi-card.danger .kpi-sub { color: rgba(255,180,171,0.5); }
+
+/* ── TABS ── */
+.tabs-bar {
+  display: flex; gap: 2px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 4px;
+  width: fit-content;
+}
+.tab-btn {
+  padding: 7px 18px; font-size: 0.78rem; font-weight: 500;
+  color: var(--text-secondary); background: none; border: none;
+  border-radius: var(--radius); cursor: pointer; transition: var(--transition);
+  font-family: var(--font-body); display: flex; align-items: center; gap: 6px;
+}
+.tab-btn:hover { color: var(--on-surface); background: var(--surface-high); }
+.tab-btn.active { background: var(--surface-highest); color: var(--on-surface); font-weight: 600; }
+.tab-badge {
+  font-size: 0.58rem; font-weight: 700;
+  padding: 1px 6px; border-radius: var(--radius-pill);
+}
+.tab-badge-error { background: var(--error-dim); color: var(--error); }
+.tab-badge-warn  { background: var(--mustard-dim); color: var(--mustard); }
+.tab-badge-muted { background: var(--surface-highest); color: var(--text-secondary); }
+.tab-panel { display: none; }
+.tab-panel.active { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── SECTION LABEL ── */
+.section-label {
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.14em; color: var(--text-muted);
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.section-label::before {
+  content: ""; width: 18px; height: 2px;
+  background: var(--primary); border-radius: 1px; flex-shrink: 0;
+}
+.section-label.warn-line::before { background: var(--mustard); }
+
+/* ── TABLA ── */
+.tabla-wrapper {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.tabla-toolbar {
+  padding: 14px 20px; display: flex; align-items: center;
+  gap: 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+}
+.tabla-title { font-size: 0.82rem; font-weight: 600; color: var(--on-surface); }
+.filtros { display: flex; gap: 4px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 4px 10px; font-size: 0.65rem; font-weight: 600;
+  background: none; border: 1px solid var(--border);
+  border-radius: var(--radius-pill); cursor: pointer; color: var(--text-secondary);
+  transition: var(--transition); font-family: var(--font-body);
+}
+.filter-btn:hover { color: var(--on-surface); border-color: var(--border-accent); }
+.filter-btn.active { background: var(--primary-dim); color: var(--primary); border-color: var(--border-accent); }
+.tabla-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* Tabla sin bordes internos */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.data-table th {
+  padding: 10px 14px; text-align: left;
+  font-size: 0.6rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-muted); background: var(--surface-low);
+}
+.data-table th.r, .data-table td.r { text-align: right; }
+.data-table td { padding: 10px 14px; color: var(--on-surface); vertical-align: middle; }
+.data-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.data-table tbody tr:hover td { background: var(--primary-tint); cursor: pointer; }
+.fila-mora td { background: rgba(255,180,171,0.04) !important; }
+.fila-mora:hover td { background: rgba(255,180,171,0.08) !important; }
+.fila-pre td { background: rgba(253,222,168,0.04) !important; }
+.fila-pre:hover td { background: rgba(253,222,168,0.08) !important; }
+
+/* ── TAGS ── */
+.tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; font-size: 0.6rem; font-weight: 700;
+  border-radius: var(--radius-pill); white-space: nowrap; letter-spacing: 0.04em;
+}
+.tag-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.tag-mora    { background: var(--error-dim); color: var(--error); }
+.tag-pre     { background: var(--mustard-dim); color: var(--mustard); }
+.tag-ok      { background: var(--primary-dim); color: var(--primary); }
+.tag-borrador{ background: var(--surface-highest); color: var(--text-secondary); }
+.tag-revision{ background: var(--mustard-dim); color: var(--mustard); }
+.tag-aprobado{ background: var(--primary-dim); color: var(--primary); }
+.tag-enviado { background: rgba(100,200,100,0.12); color: #8dcf95; }
+.tag-tim-warn{ background: rgba(255,180,171,0.15); color: var(--error); font-size: 0.55rem; }
+
+/* ── MONTOS ── */
+.monto {
+  font-family: var(--font-headline); font-variant-numeric: tabular-nums;
+  font-weight: 600; font-size: 0.875rem; letter-spacing: -0.01em;
+}
+.monto-in  { color: var(--primary); }
+.monto-out { color: var(--error); }
+.monto-neu { color: var(--text-secondary); }
+
+/* ── MOV META ── */
+.mov-nombre { font-weight: 500; color: var(--on-surface); }
+.mov-meta   { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+
+/* ── PANEL LATERAL MORA (detalle expandible) ── */
+/* Cuando se hace click en una fila de mora, se muestra
+   el panel de detalle como una fila expandida (accordion).
+   En la implementación real puede ser un panel deslizable
+   desde la derecha — se deja a criterio del programador. */
+.mora-detalle-row td {
+  padding: 0 !important;
+  background: var(--surface-low) !important;
+}
+.mora-detalle-inner {
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.mora-detalle-section { display: flex; flex-direction: column; gap: 12px; }
+.mora-detalle-title {
+  font-size: 0.62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-muted); margin-bottom: 4px;
+}
+
+/* Desglose de deuda */
+.deuda-breakdown {
+  background: var(--surface-mid);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.deuda-row { display: flex; justify-content: space-between; align-items: center; }
+.deuda-label { font-size: 0.75rem; color: var(--text-secondary); }
+.deuda-value { font-family: var(--font-headline); font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.deuda-row.total {
+  border-top: 1px solid var(--border);
+  padding-top: 8px; margin-top: 2px;
+}
+.deuda-row.total .deuda-label { font-weight: 700; color: var(--on-surface); font-size: 0.8rem; }
+.deuda-row.total .deuda-value { color: var(--error); font-size: 1.05rem; }
+.deuda-row .deuda-value.capital { color: var(--on-surface); }
+.deuda-row .deuda-value.punitorios { color: var(--error); }
+
+/* Config TIM en uso */
+.tim-badge {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface-high); border-radius: var(--radius-sm);
+  padding: 8px 12px; font-size: 0.72rem;
+}
+.tim-label { color: var(--text-muted); }
+.tim-value { font-family: var(--font-headline); font-weight: 700; color: var(--primary); margin-left: auto; }
+
+/* Proyección */
+.proyeccion-toggle {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 10px;
+}
+.proyeccion-input-wrap { display: flex; gap: 6px; align-items: center; }
+.input-date {
+  background: var(--surface-high); border: 1px solid var(--border);
+  color: var(--on-surface); font-family: var(--font-body);
+  font-size: 0.72rem; padding: 5px 10px;
+  border-radius: var(--radius-sm); outline: none;
+}
+.input-date:focus { border-color: var(--border-accent); }
+
+/* Tabla de proyección */
+.proyeccion-table-wrap {
+  background: var(--surface-white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.proy-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+.proy-table th {
+  padding: 7px 12px; font-size: 0.58rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-muted); background: var(--surface-low);
+  text-align: right;
+}
+.proy-table th:first-child { text-align: left; }
+.proy-table td { padding: 6px 12px; color: var(--on-surface); text-align: right; font-variant-numeric: tabular-nums; }
+.proy-table td:first-child { text-align: left; color: var(--text-secondary); }
+.proy-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.proy-table tbody tr.proy-hoy td { background: rgba(255,180,162,0.07); font-weight: 600; }
+.proy-table tbody tr.proy-hoy td:first-child::after {
+  content: " ← hoy";
+  font-size: 0.6rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+.proy-total-row td {
+  border-top: 1px solid var(--border);
+  font-weight: 700; padding: 8px 12px;
+  background: var(--surface-low) !important;
+  color: var(--error);
+}
+.proy-total-row td:first-child { color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* Acciones del detalle */
+.mora-detalle-actions { display: flex; gap: 8px; grid-column: 1/-1; }
+
+/* ── TAB 2: CARTA DOCUMENTO ── */
+.carta-list { display: flex; flex-direction: column; gap: 10px; }
+.carta-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 24px;
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 16px; align-items: start; transition: var(--transition);
+}
+.carta-card:hover { border-color: var(--border-accent); }
+.carta-card.highlight { border-color: rgba(255,180,171,0.25); }
+
+.carta-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.carta-contrato { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.carta-inquilino { font-size: 0.9rem; font-weight: 600; color: var(--on-bg); }
+.carta-propiedad { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 10px; }
+.carta-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+.carta-meta-item { display: flex; flex-direction: column; gap: 2px; }
+.carta-meta-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.carta-meta-value { font-size: 0.78rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.carta-meta-value.err { color: var(--error); }
+.carta-meta-value.warn { color: var(--mustard); }
+
+.carta-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.carta-preview {
+  font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5;
+  background: var(--surface-low); border-radius: var(--radius);
+  padding: 12px 14px; margin-top: 10px; border-left: 3px solid var(--border-accent);
+  font-style: italic; grid-column: 1/-1;
+}
+
+/* ── TAB 3: CONFIGURACIÓN ── */
+.config-list { display: flex; flex-direction: column; gap: 10px; }
+.config-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.config-card-header {
+  padding: 16px 20px; display: flex; align-items: center;
+  gap: 12px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: var(--transition);
+}
+.config-card-header:hover { background: var(--surface-low); }
+.config-chevron {
+  margin-left: auto; color: var(--text-muted); font-size: 12px;
+  transition: var(--transition);
+}
+.config-card.open .config-chevron { transform: rotate(180deg); }
+.config-contrato-num { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.config-inquilino { font-size: 0.88rem; font-weight: 600; color: var(--on-bg); }
+.config-propiedad { font-size: 0.72rem; color: var(--text-secondary); }
+
+.config-card-body { display: none; padding: 20px 24px; }
+.config-card.open .config-card-body { display: block; }
+.config-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 16px; margin-bottom: 16px;
+}
+.config-field { display: flex; flex-direction: column; gap: 6px; }
+.config-field-label {
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted);
+}
+.config-field-hint { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+.input-wrap { display: flex; align-items: center; gap: 6px; }
+.input-base {
+  background: var(--surface-high); border: 1px solid var(--border);
+  color: var(--on-surface); font-family: var(--font-body);
+  font-size: 0.8rem; padding: 7px 11px;
+  border-radius: var(--radius-sm); outline: none; width: 100%;
+}
+.input-base:focus { border-color: var(--border-accent); }
+.input-unit {
+  font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0;
+}
+.input-select {
+  background: var(--surface-high); border: 1px solid var(--border);
+  color: var(--on-surface); font-family: var(--font-body);
+  font-size: 0.8rem; padding: 7px 11px;
+  border-radius: var(--radius-sm); outline: none;
+  cursor: pointer; width: 100%;
+}
+.config-row-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Barra calendario */
+.feriados-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 24px;
+}
+.feriados-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.feriados-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.feriado-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 12px;
+  background: var(--surface-high); border: 1px solid var(--border);
+  border-radius: var(--radius-pill); font-size: 0.7rem; color: var(--on-surface);
+}
+.feriado-chip button {
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; font-size: 12px; line-height: 1;
+  padding: 0 0 0 2px; transition: var(--transition);
+}
+.feriado-chip button:hover { color: var(--error); }
+.feriado-add {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px; background: none; border: 1px dashed var(--border);
+  border-radius: var(--radius-pill); cursor: pointer; color: var(--text-muted);
+  font-size: 0.7rem; font-family: var(--font-body); transition: var(--transition);
+}
+.feriado-add:hover { color: var(--primary); border-color: var(--border-accent); }
+
+/* ── TOTALES BAR ── */
+.totales-bar {
+  background: var(--surface-low); border-top: 1px solid var(--border);
+  padding: 14px 20px; display: flex; gap: 0;
+}
+.totales-item { flex: 1; padding: 0 18px; border-right: 1px solid var(--border); }
+.totales-item:first-child { padding-left: 0; }
+.totales-item:last-child { border-right: none; }
+.totales-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 4px; }
+.totales-value { font-family: var(--font-headline); font-size: 1.1rem; font-weight: 700; color: var(--on-bg); font-variant-numeric: tabular-nums; }
+.totales-value.err { color: var(--error); }
+.totales-value.warn { color: var(--mustard); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <!-- Logo: PNG oficial en base64. Si no est├í disponible, usar SVG placeholder. -->
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#6b1702"/>
+        <path d="M16 5L6 26h4l2-5h8l2 5h4L16 5zm0 6l3 8h-6l3-8z" fill="#ffb4a2"/>
+        <path d="M16 4L18 7l2-1-1 3 2 1-3 1v2l-2-2-2 2v-2l-3-1 2-1-1-3 2 1z" fill="#ffdea8" opacity="0.8"/>
+      </svg>
+      <div>
+        <div class="logo-text-name">Arce Administraci├│n</div>
+        <div class="logo-text-sub">Gesti├│n inmobiliaria</div>
+      </div>
+    </div>
+    <div class="nav-section">Principal</div>
+    <a class="nav-item" href="../dashboard/wireframe_dashboard_staff.html">
+      <span class="nav-icon">Ô¼ø</span> Dashboard
+    </a>
+    <a class="nav-item" href="../caja/wireframe_caja_general.html">
+      <span class="nav-icon">Ôùê</span> Caja General
+    </a>
+    <div class="nav-section">Entidades</div>
+    <a class="nav-item" href="../inquilinos/wireframe_lista_inquilinos.html">
+      <span class="nav-icon">Ôù╗</span> Inquilinos
+    </a>
+    <a class="nav-item" href="../propietarios/wireframe_lista_propietarios.html">
+      <span class="nav-icon">Ôù╗</span> Propietarios
+    </a>
+    <a class="nav-item" href="../propiedades/wireframe_ficha_propiedad.html">
+      <span class="nav-icon">Ôù╗</span> Propiedades
+    </a>
+    <a class="nav-item" href="../contratos/wireframe_lista_contratos.html">
+      <span class="nav-icon">Ôù╗</span> Contratos
+    </a>
+    <div class="nav-section">Gesti├│n</div>
+    <a class="nav-item" href="../tareas/wireframe_tareas.html">
+      <span class="nav-icon">Ôù╗</span> Tareas <span class="nav-badge">9</span>
+    </a>
+    <a class="nav-item" href="../v1/wireframe_bandeja_staff.html">
+      <span class="nav-icon">Ôù╗</span> Notificaciones <span class="nav-badge">3</span>
+    </a>
+    <a class="nav-item" href="../servicios/wireframe_control_servicios.html">
+      <span class="nav-icon">Ôù╗</span> Control Servicios
+    </a>
+    <a class="nav-item active" href="../financiero/wireframe_motor_financiero.html">
+      <span class="nav-icon">Ôù╗</span> Motor Financiero
+    </a>
+    <a class="nav-item" href="../renovacion/wireframe_renovacion_salida.html">
+      <span class="nav-icon">Ôù╗</span> Renovaci├│n y Salida
+    </a>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">MG</div>
+        <div>
+          <div class="user-name">M. Gonz├ílez</div>
+          <div class="user-role">Staff Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── MAIN ── -->
+  <main class="main-content">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="breadcrumb">
+        <a href="#">Dashboard</a>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">Motor Financiero</span>
+      </div>
+      <div class="topbar-actions">
+        <!-- Indicador TIM del día -->
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 12px;background:var(--surface-high);border:1px solid var(--border);border-radius:var(--radius);font-size:0.7rem;">
+          <span style="color:var(--text-muted);">TIM BCRA hoy</span>
+          <span style="font-family:var(--font-headline);font-weight:700;color:var(--primary);font-size:0.82rem;">6.24% TNA</span>
+          <span style="width:7px;height:7px;border-radius:50%;background:#8dcf95;flex-shrink:0;" title="API activa"></span>
+        </div>
+        <button class="btn btn-secondary btn-sm">
+          <span>↻</span> Ejecutar cron ahora
+        </button>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div>
+          <div class="page-title">Motor Financiero</div>
+          <div class="page-subtitle">Cron job diario · Mora, punitorios y carta documento · Última ejecución: hoy 00:00hs</div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card danger">
+          <div class="kpi-label">Contratos en mora</div>
+          <div class="kpi-value">4</div>
+          <div class="kpi-sub">Punitorios activos</div>
+        </div>
+        <div class="kpi-card warn">
+          <!-- Mustard: máximo 1 uso crítico por vista — aquí el monto total en mora -->
+          <div class="kpi-label">Total adeudado</div>
+          <div class="kpi-value">$1.284.750</div>
+          <div class="kpi-sub">Capital + punitorios acumulados</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pre-mora (gracia)</div>
+          <div class="kpi-value" style="color:var(--text-secondary);">3</div>
+          <div class="kpi-sub">Alquileres pendientes</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Cartas documento</div>
+          <div class="kpi-value" style="color:var(--text-secondary);">2</div>
+          <div class="kpi-sub">Pendientes de revisión</div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tabs-bar">
+        <button class="tab-btn active" onclick="switchTab('mora')">
+          ⚡ Mora Activa
+          <span class="tab-badge tab-badge-error">7</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('carta')">
+          📄 Carta Documento
+          <span class="tab-badge tab-badge-warn">2</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('config')">
+          ⚙️ Configuración
+          <span class="tab-badge tab-badge-muted">8</span>
+        </button>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           TAB 1: MORA ACTIVA
+      ══════════════════════════════════════════ -->
+      <div id="tab-mora" class="tab-panel active">
+
+        <!-- SECCIÓN: EN MORA FORMAL -->
+        <div>
+          <div class="section-label">En mora — punitorios activos</div>
+          <div class="tabla-wrapper">
+            <div class="tabla-toolbar">
+              <div class="filtros">
+                <button class="filter-btn active">Todos</button>
+                <button class="filter-btn">TIM BCRA</button>
+                <button class="filter-btn">Monto fijo</button>
+              </div>
+              <div class="tabla-actions">
+                <button class="btn btn-ghost btn-sm">↓ Exportar</button>
+              </div>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Contrato</th>
+                  <th>Inquilino</th>
+                  <th>Propiedad</th>
+                  <th>Días en mora</th>
+                  <th class="r">Capital</th>
+                  <th class="r">Punitorios</th>
+                  <th class="r">Total a hoy</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+
+                <!-- Fila mora 1 — expandida como ejemplo -->
+                <tr class="fila-mora" onclick="toggleDetalle('d1')">
+                  <td>
+                    <div class="mov-nombre">CON-2024-018</div>
+                    <div class="mov-meta">ICL × 2 · TIM ×1</div>
+                  </td>
+                  <td>
+                    <div class="mov-nombre">Sebastián Torres</div>
+                    <div class="mov-meta">+54 9 351 412 3344</div>
+                  </td>
+                  <td>
+                    <div class="mov-nombre">Av. Colón 1234, 3°A</div>
+                    <div class="mov-meta">Córdoba Capital</div>
+                  </td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <span style="font-family:var(--font-headline);font-weight:700;color:var(--error);font-size:1.05rem;">34</span>
+                      <span style="font-size:0.65rem;color:var(--text-muted);">días</span>
+                    </div>
+                  </td>
+                  <td class="r"><span class="monto">$412.000</span></td>
+                  <td class="r"><span class="monto monto-out">$24.380</span></td>
+                  <td class="r"><span class="monto monto-out">$436.380</span></td>
+                  <td>
+                    <span class="tag tag-mora"><span class="tag-dot"></span>En mora</span>
+                  </td>
+                  <td class="r">
+                    <button class="btn btn-ghost btn-xs" id="btn-d1" onclick="event.stopPropagation();toggleDetalle('d1')">Ver detalle ↓</button>
+                  </td>
+                </tr>
+
+                <!-- Detalle expandido fila 1 -->
+                <tr id="d1" class="mora-detalle-row" style="display:none;">
+                  <td colspan="9">
+                    <div class="mora-detalle-inner">
+
+                      <!-- Desglose deuda -->
+                      <div class="mora-detalle-section">
+                        <div class="mora-detalle-title">Desglose de deuda</div>
+                        <div class="deuda-breakdown">
+                          <div class="deuda-row">
+                            <span class="deuda-label">Alquiler mayo 2025</span>
+                            <span class="deuda-value capital">$412.000</span>
+                          </div>
+                          <div class="deuda-row">
+                            <span class="deuda-label">Punitorios (34 días)</span>
+                            <span class="deuda-value punitorios">$24.380</span>
+                          </div>
+                          <div class="deuda-row">
+                            <span class="deuda-label" style="font-size:0.68rem;color:var(--text-muted);">Interés computable: TIM 6.24% TNA × 1 × 34 días</span>
+                            <span class="deuda-value" style="font-size:0.72rem;color:var(--text-muted);">0.017%/día</span>
+                          </div>
+                          <div class="deuda-row total">
+                            <span class="deuda-label">Total a hoy (26/06/2025)</span>
+                            <span class="deuda-value">$436.380</span>
+                          </div>
+                        </div>
+                        <div class="tim-badge">
+                          <span class="tim-label">Tipo de punitorios</span>
+                          <span class="tim-value">TIM BCRA × 1</span>
+                        </div>
+                        <div class="mora-detalle-actions">
+                          <button class="btn btn-primary btn-sm">💰 Registrar pago</button>
+                          <button class="btn btn-secondary btn-sm">📧 Enviar mail ahora</button>
+                          <button class="btn btn-ghost btn-sm">📋 Ver contrato</button>
+                        </div>
+                      </div>
+
+                      <!-- Proyección día a día -->
+                      <div class="mora-detalle-section">
+                        <div class="mora-detalle-title">Proyección día a día</div>
+                        <div class="proyeccion-toggle">
+                          <span style="font-size:0.75rem;color:var(--text-secondary);">¿Cuánto adeuda hasta...</span>
+                          <div class="proyeccion-input-wrap">
+                            <input type="date" class="input-date" value="2025-07-05" />
+                            <button class="btn btn-secondary btn-xs">Calcular</button>
+                          </div>
+                        </div>
+                        <div class="proyeccion-table-wrap">
+                          <table class="proy-table">
+                            <thead>
+                              <tr>
+                                <th>Fecha</th>
+                                <th>TIM/día</th>
+                                <th>Punitorios día</th>
+                                <th>Total acum.</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr class="proy-hoy">
+                                <td>26/06/2025</td>
+                                <td>0.0171%</td>
+                                <td style="color:var(--error);">+$704</td>
+                                <td style="color:var(--error);">$436.380</td>
+                              </tr>
+                              <tr>
+                                <td>27/06/2025</td>
+                                <td>0.0171%</td>
+                                <td style="color:var(--error);">+$705</td>
+                                <td style="color:var(--error);">$437.085</td>
+                              </tr>
+                              <tr>
+                                <td>28/06/2025</td>
+                                <td>0.0171%</td>
+                                <td style="color:var(--error);">+$705</td>
+                                <td style="color:var(--error);">$437.790</td>
+                              </tr>
+                              <tr>
+                                <td>29/06/2025</td>
+                                <td>0.0171%</td>
+                                <td style="color:var(--error);">+$705</td>
+                                <td style="color:var(--error);">$438.495</td>
+                              </tr>
+                              <tr>
+                                <td>30/06/2025</td>
+                                <td>0.0171%</td>
+                                <td style="color:var(--error);">+$706</td>
+                                <td style="color:var(--error);">$439.201</td>
+                              </tr>
+                              <tr>
+                                <td>01/07/2025</td>
+                                <td>—</td>
+                                <td style="color:var(--text-muted);">$0 (feriado)</td>
+                                <td style="color:var(--error);">$439.201</td>
+                              </tr>
+                              <tr>
+                                <td>02/07/2025</td>
+                                <td>0.0171%</td>
+                                <td style="color:var(--error);">+$706</td>
+                                <td style="color:var(--error);">$439.907</td>
+                              </tr>
+                              <tr>
+                                <td>03/07/2025</td>
+                                <td>0.0171%</td>
+                                <td style="color:var(--error);">+$707</td>
+                                <td style="color:var(--error);">$440.614</td>
+                              </tr>
+                              <tr>
+                                <td>04/07/2025</td>
+                                <td>0.0171%</td>
+                                <td style="color:var(--error);">+$707</td>
+                                <td style="color:var(--error);">$441.321</td>
+                              </tr>
+                              <tr>
+                                <td>05/07/2025</td>
+                                <td>0.0171%</td>
+                                <td style="color:var(--error);">+$708</td>
+                                <td style="color:var(--error);">$442.029</td>
+                              </tr>
+                              <tr class="proy-total-row">
+                                <td>Al 05/07/2025</td>
+                                <td></td>
+                                <td></td>
+                                <td>$442.029</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:6px;">
+                          ⚠️ Los días marcados como feriado en el calendario no acumulan punitorios.
+                          La TIM puede variar diariamente según BCRA.
+                        </div>
+                      </div>
+
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Fila mora 2 — colapsada -->
+                <tr class="fila-mora">
+                  <td>
+                    <div class="mov-nombre">CON-2024-031</div>
+                    <div class="mov-meta">ICL · TIM ×2</div>
+                  </td>
+                  <td>
+                    <div class="mov-nombre">Carolina Méndez</div>
+                  </td>
+                  <td>
+                    <div class="mov-nombre">Bv. San Juan 890, PB</div>
+                    <div class="mov-meta">Córdoba Capital</div>
+                  </td>
+                  <td>
+                    <span style="font-family:var(--font-headline);font-weight:700;color:var(--error);font-size:1.05rem;">51</span>
+                    <span style="font-size:0.65rem;color:var(--text-muted);"> días</span>
+                  </td>
+                  <td class="r"><span class="monto">$380.000</span></td>
+                  <td class="r"><span class="monto monto-out">$72.440</span></td>
+                  <td class="r"><span class="monto monto-out">$452.440</span></td>
+                  <td>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      <span class="tag tag-mora"><span class="tag-dot"></span>En mora</span>
+                      <span class="tag tag-tim-warn">⚠ TIM sin confirmar</span>
+                    </div>
+                  </td>
+                  <td class="r">
+                    <button class="btn btn-ghost btn-xs" onclick="toggleDetalle('d2')">Ver detalle ↓</button>
+                  </td>
+                </tr>
+                <tr id="d2" class="mora-detalle-row" style="display:none;">
+                  <td colspan="9"><div style="padding:14px 24px;color:var(--text-secondary);font-size:0.75rem;">[ Panel de detalle para CON-2024-031 — misma estructura que arriba ]</div></td>
+                </tr>
+
+                <!-- Fila mora 3 -->
+                <tr class="fila-mora">
+                  <td><div class="mov-nombre">CON-2023-047</div><div class="mov-meta">IPC · Monto fijo $800/día</div></td>
+                  <td><div class="mov-nombre">Roberto Gómez</div></td>
+                  <td><div class="mov-nombre">Caseros 334, 1°B</div><div class="mov-meta">Córdoba Capital</div></td>
+                  <td><span style="font-family:var(--font-headline);font-weight:700;color:var(--error);font-size:1.05rem;">18</span><span style="font-size:0.65rem;color:var(--text-muted);"> días</span></td>
+                  <td class="r"><span class="monto">$295.000</span></td>
+                  <td class="r"><span class="monto monto-out">$14.400</span></td>
+                  <td class="r"><span class="monto monto-out">$309.400</span></td>
+                  <td><span class="tag tag-mora"><span class="tag-dot"></span>En mora</span></td>
+                  <td class="r"><button class="btn btn-ghost btn-xs" onclick="toggleDetalle('d3')">Ver detalle ↓</button></td>
+                </tr>
+                <tr id="d3" class="mora-detalle-row" style="display:none;"><td colspan="9"><div style="padding:14px 24px;color:var(--text-secondary);font-size:0.75rem;">[ Panel de detalle para CON-2023-047 — misma estructura que arriba ]</div></td></tr>
+
+                <!-- Fila mora 4 -->
+                <tr class="fila-mora">
+                  <td><div class="mov-nombre">CON-2025-003</div><div class="mov-meta">ICL · TIM ×1.5</div></td>
+                  <td><div class="mov-nombre">Florencia Ibáñez</div></td>
+                  <td><div class="mov-nombre">Lima 211, 2°D</div><div class="mov-meta">Córdoba Capital</div></td>
+                  <td><span style="font-family:var(--font-headline);font-weight:700;color:var(--error);font-size:1.05rem;">9</span><span style="font-size:0.65rem;color:var(--text-muted);"> días</span></td>
+                  <td class="r"><span class="monto">$197.000</span></td>
+                  <td class="r"><span class="monto monto-out">$2.700</span></td>
+                  <td class="r"><span class="monto monto-out">$199.700</span></td>
+                  <td><span class="tag tag-mora"><span class="tag-dot"></span>En mora</span></td>
+                  <td class="r"><button class="btn btn-ghost btn-xs" onclick="toggleDetalle('d4')">Ver detalle ↓</button></td>
+                </tr>
+                <tr id="d4" class="mora-detalle-row" style="display:none;"><td colspan="9"><div style="padding:14px 24px;color:var(--text-secondary);font-size:0.75rem;">[ Panel de detalle para CON-2025-003 — misma estructura que arriba ]</div></td></tr>
+
+              </tbody>
+            </table>
+            <div class="totales-bar">
+              <div class="totales-item">
+                <div class="totales-label">Contratos en mora</div>
+                <div class="totales-value">4</div>
+              </div>
+              <div class="totales-item">
+                <div class="totales-label">Capital adeudado</div>
+                <div class="totales-value">$1.284.000</div>
+              </div>
+              <div class="totales-item">
+                <div class="totales-label">Punitorios acumulados</div>
+                <div class="totales-value err">$113.920</div>
+              </div>
+              <div class="totales-item">
+                <div class="totales-label">Total a cobrar</div>
+                <div class="totales-value err">$1.397.920</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: PRE-MORA -->
+        <div>
+          <div class="section-label warn-line">Pendiente — dentro del período de gracia</div>
+          <div class="tabla-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Contrato</th>
+                  <th>Inquilino</th>
+                  <th>Propiedad</th>
+                  <th>Vencido hace</th>
+                  <th>Días de gracia restantes</th>
+                  <th class="r">Alquiler</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="fila-pre">
+                  <td><div class="mov-nombre">CON-2025-009</div></td>
+                  <td><div class="mov-nombre">Diego Herrera</div></td>
+                  <td><div class="mov-nombre">Chacabuco 720, 4°A</div></td>
+                  <td><span style="font-family:var(--font-headline);font-weight:600;color:var(--mustard);">2 días</span></td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="flex:1;background:var(--surface-high);border-radius:var(--radius-pill);height:4px;">
+                        <div style="width:40%;background:var(--mustard);border-radius:var(--radius-pill);height:4px;"></div>
+                      </div>
+                      <span style="font-size:0.72rem;color:var(--mustard);font-weight:600;">3 restantes</span>
+                    </div>
+                  </td>
+                  <td class="r"><span class="monto">$320.000</span></td>
+                  <td><span class="tag tag-pre"><span class="tag-dot"></span>Pendiente</span></td>
+                  <td class="r"><button class="btn btn-ghost btn-xs">Ver →</button></td>
+                </tr>
+                <tr class="fila-pre">
+                  <td><div class="mov-nombre">CON-2024-055</div></td>
+                  <td><div class="mov-nombre">Ana Paula Ríos</div></td>
+                  <td><div class="mov-nombre">Italia 1560, 1°C</div></td>
+                  <td><span style="font-family:var(--font-headline);font-weight:600;color:var(--mustard);">1 día</span></td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="flex:1;background:var(--surface-high);border-radius:var(--radius-pill);height:4px;">
+                        <div style="width:80%;background:var(--mustard);border-radius:var(--radius-pill);height:4px;"></div>
+                      </div>
+                      <span style="font-size:0.72rem;color:var(--mustard);font-weight:600;">4 restantes</span>
+                    </div>
+                  </td>
+                  <td class="r"><span class="monto">$275.000</span></td>
+                  <td><span class="tag tag-pre"><span class="tag-dot"></span>Pendiente</span></td>
+                  <td class="r"><button class="btn btn-ghost btn-xs">Ver →</button></td>
+                </tr>
+                <tr class="fila-pre">
+                  <td><div class="mov-nombre">CON-2025-012</div></td>
+                  <td><div class="mov-nombre">Lucas Vega</div></td>
+                  <td><div class="mov-nombre">Laprida 445, PB</div></td>
+                  <td><span style="font-family:var(--font-headline);font-weight:600;color:var(--mustard);">1 día</span></td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="flex:1;background:var(--surface-high);border-radius:var(--radius-pill);height:4px;">
+                        <div style="width:83%;background:var(--mustard);border-radius:var(--radius-pill);height:4px;"></div>
+                      </div>
+                      <span style="font-size:0.72rem;color:var(--mustard);font-weight:600;">5 restantes</span>
+                    </div>
+                  </td>
+                  <td class="r"><span class="monto">$410.000</span></td>
+                  <td><span class="tag tag-pre"><span class="tag-dot"></span>Pendiente</span></td>
+                  <td class="r"><button class="btn btn-ghost btn-xs">Ver →</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /tab-mora -->
+
+
+      <!-- ══════════════════════════════════════════
+           TAB 2: CARTA DOCUMENTO
+      ══════════════════════════════════════════ -->
+      <div id="tab-carta" class="tab-panel">
+
+        <div style="padding:12px 16px;background:var(--surface-low);border:1px solid var(--border);border-radius:var(--radius);font-size:0.78rem;color:var(--text-secondary);display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:16px;flex-shrink:0;">ℹ️</span>
+          <span>Los borradores de carta documento se generan automáticamente cuando un contrato supera el umbral de mora configurable. <strong style="color:var(--on-surface);">Nunca se envían sin revisión y aprobación explícita del staff.</strong> El envío utiliza el módulo de comunicaciones formales (validez legal Ley 25.506).</span>
+        </div>
+
+        <div class="carta-list">
+
+          <!-- Carta 1 — Pendiente revisión (la más urgente) -->
+          <div class="carta-card highlight">
+            <div>
+              <div class="carta-header">
+                <span class="carta-contrato">CON-2024-031</span>
+                <span class="tag tag-revision">⏳ Pendiente revisión</span>
+              </div>
+              <div class="carta-inquilino">Carolina Méndez</div>
+              <div class="carta-propiedad">🏠 Bv. San Juan 890, PB · Córdoba Capital</div>
+              <div class="carta-meta">
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Días en mora</span>
+                  <span class="carta-meta-value err">51 días</span>
+                </div>
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Deuda total</span>
+                  <span class="carta-meta-value err">$452.440</span>
+                </div>
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Borrador generado</span>
+                  <span class="carta-meta-value">hace 3 días</span>
+                </div>
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Umbral mora</span>
+                  <span class="carta-meta-value warn">30 días (config. contrato)</span>
+                </div>
+              </div>
+              <!-- Preview del borrador -->
+              <div class="carta-preview">
+                "Por medio de la presente y en virtud del contrato de locación celebrado el día 01/11/2024… la parte locataria Carolina Méndez CUIT 27-38772041-6… adeuda la suma de $452.440 en concepto de canon locativo del mes de mayo 2025 más punitorios devengados a la fecha…"
+              </div>
+            </div>
+            <div class="carta-actions">
+              <button class="btn btn-primary btn-sm">✓ Revisar y aprobar</button>
+              <button class="btn btn-secondary btn-sm">✏️ Editar borrador</button>
+              <button class="btn btn-ghost btn-sm">📋 Ver contrato</button>
+              <button class="btn btn-danger btn-sm">✕ Descartar</button>
+            </div>
+          </div>
+
+          <!-- Carta 2 — En revisión -->
+          <div class="carta-card">
+            <div>
+              <div class="carta-header">
+                <span class="carta-contrato">CON-2024-018</span>
+                <span class="tag tag-revision">✏️ En revisión</span>
+              </div>
+              <div class="carta-inquilino">Sebastián Torres</div>
+              <div class="carta-propiedad">🏠 Av. Colón 1234, 3°A · Córdoba Capital</div>
+              <div class="carta-meta">
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Días en mora</span>
+                  <span class="carta-meta-value err">34 días</span>
+                </div>
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Deuda total</span>
+                  <span class="carta-meta-value err">$436.380</span>
+                </div>
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Revisando</span>
+                  <span class="carta-meta-value">Marcos Staff</span>
+                </div>
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Borrador generado</span>
+                  <span class="carta-meta-value">ayer</span>
+                </div>
+              </div>
+            </div>
+            <div class="carta-actions">
+              <button class="btn btn-primary btn-sm">✓ Aprobar y enviar</button>
+              <button class="btn btn-secondary btn-sm">✏️ Editar</button>
+              <button class="btn btn-danger btn-sm">✕ Descartar</button>
+            </div>
+          </div>
+
+          <!-- Carta histórica — enviada -->
+          <div class="carta-card" style="opacity:0.7;">
+            <div>
+              <div class="carta-header">
+                <span class="carta-contrato">CON-2023-047</span>
+                <span class="tag tag-enviado">✓ Enviada</span>
+              </div>
+              <div class="carta-inquilino">Roberto Gómez</div>
+              <div class="carta-propiedad">🏠 Caseros 334, 1°B · Córdoba Capital</div>
+              <div class="carta-meta">
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Enviada el</span>
+                  <span class="carta-meta-value">10/06/2025</span>
+                </div>
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Aprobada por</span>
+                  <span class="carta-meta-value">Marcos Staff</span>
+                </div>
+                <div class="carta-meta-item">
+                  <span class="carta-meta-label">Destinatario</span>
+                  <span class="carta-meta-value">r.gomez@mail.com</span>
+                </div>
+              </div>
+            </div>
+            <div class="carta-actions">
+              <button class="btn btn-ghost btn-sm">📄 Ver copia</button>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /tab-carta -->
+
+
+      <!-- ══════════════════════════════════════════
+           TAB 3: CONFIGURACIÓN
+      ══════════════════════════════════════════ -->
+      <div id="tab-config" class="tab-panel">
+
+        <!-- Calendario de días hábiles (Admin only) -->
+        <div class="feriados-section">
+          <div class="feriados-header">
+            <div>
+              <div style="font-size:0.82rem;font-weight:600;color:var(--on-surface);margin-bottom:2px;">Calendario de días hábiles — 2025</div>
+              <div style="font-size:0.72rem;color:var(--text-secondary);">Solo Admin · Los feriados interrumpen el cómputo del día máximo de cobro</div>
+            </div>
+            <button class="btn btn-secondary btn-sm">+ Agregar feriado</button>
+          </div>
+          <div class="feriados-grid">
+            <div class="feriado-chip">01 Ene <button>×</button></div>
+            <div class="feriado-chip">24 Mar <button>×</button></div>
+            <div class="feriado-chip">02 Abr <button>×</button></div>
+            <div class="feriado-chip">01 May <button>×</button></div>
+            <div class="feriado-chip">25 May <button>×</button></div>
+            <div class="feriado-chip">17 Jun <button>×</button></div>
+            <div class="feriado-chip">09 Jul <button>×</button></div>
+            <div class="feriado-chip">17 Ago <button>×</button></div>
+            <div class="feriado-chip">12 Oct <button>×</button></div>
+            <div class="feriado-chip">20 Nov <button>×</button></div>
+            <div class="feriado-chip">08 Dic <button>×</button></div>
+            <div class="feriado-chip">25 Dic <button>×</button></div>
+            <button class="feriado-add">+ Agregar</button>
+          </div>
+        </div>
+
+        <!-- Config por contrato (accordion) -->
+        <div>
+          <div class="section-label">Configuración por contrato</div>
+          <div class="config-list">
+
+            <!-- Contrato 1 — abierto -->
+            <div class="config-card open">
+              <div class="config-card-header" onclick="toggleConfig(this)">
+                <div>
+                  <div class="config-contrato-num">CON-2024-018</div>
+                  <div class="config-inquilino">Sebastián Torres</div>
+                  <div class="config-propiedad">Av. Colón 1234, 3°A</div>
+                </div>
+                <div style="margin-left:auto;display:flex;gap:8px;align-items:center;margin-right:16px;">
+                  <span class="tag tag-mora">En mora</span>
+                  <span class="tag" style="background:var(--surface-highest);color:var(--text-secondary);">TIM BCRA ×1</span>
+                  <span class="tag" style="background:var(--surface-highest);color:var(--text-secondary);">Gracia: 0 días</span>
+                </div>
+                <span class="config-chevron">▲</span>
+              </div>
+              <div class="config-card-body">
+                <div class="config-grid">
+                  <div class="config-field">
+                    <label class="config-field-label">Tipo de punitorios</label>
+                    <select class="input-select">
+                      <option selected>TIM BCRA (variable)</option>
+                      <option>Monto fijo diario</option>
+                    </select>
+                    <div class="config-field-hint">TIM BCRA: se actualiza diariamente vía API</div>
+                  </div>
+                  <div class="config-field">
+                    <label class="config-field-label">Multiplicador TIM</label>
+                    <div class="input-wrap">
+                      <span class="input-unit">TIM ×</span>
+                      <input type="number" class="input-base" value="1" min="0.5" max="5" step="0.5" />
+                    </div>
+                    <div class="config-field-hint">Default: ×1. Ej: ×2 duplica el interés</div>
+                  </div>
+                  <div class="config-field">
+                    <label class="config-field-label">Días de gracia</label>
+                    <div class="input-wrap">
+                      <input type="number" class="input-base" value="0" min="0" max="30" />
+                      <span class="input-unit">días</span>
+                    </div>
+                    <div class="config-field-hint">Default: 0 (mora desde día siguiente al vencimiento)</div>
+                  </div>
+                  <div class="config-field">
+                    <label class="config-field-label">Día máximo de cobro</label>
+                    <div class="input-wrap">
+                      <input type="number" class="input-base" value="10" min="1" max="28" />
+                      <span class="input-unit">del mes</span>
+                    </div>
+                    <div class="config-field-hint">Si cae en inhábil → se extiende al siguiente hábil</div>
+                  </div>
+                  <div class="config-field">
+                    <label class="config-field-label">Umbral carta documento</label>
+                    <div class="input-wrap">
+                      <input type="number" class="input-base" value="30" min="1" />
+                      <span class="input-unit">días en mora</span>
+                    </div>
+                    <div class="config-field-hint">A partir de estos días se genera borrador auto</div>
+                  </div>
+                  <div class="config-field">
+                    <label class="config-field-label">Monto fijo diario</label>
+                    <div class="input-wrap">
+                      <span class="input-unit">$</span>
+                      <input type="number" class="input-base" value="" placeholder="— (no aplica)" disabled />
+                    </div>
+                    <div class="config-field-hint">Solo activo si Tipo = Monto fijo</div>
+                  </div>
+                </div>
+                <div class="config-row-actions">
+                  <button class="btn btn-ghost btn-sm">Cancelar</button>
+                  <button class="btn btn-primary btn-sm">Guardar cambios</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contrato 2 — cerrado -->
+            <div class="config-card">
+              <div class="config-card-header" onclick="toggleConfig(this)">
+                <div>
+                  <div class="config-contrato-num">CON-2024-031</div>
+                  <div class="config-inquilino">Carolina Méndez</div>
+                  <div class="config-propiedad">Bv. San Juan 890, PB</div>
+                </div>
+                <div style="margin-left:auto;display:flex;gap:8px;align-items:center;margin-right:16px;">
+                  <span class="tag tag-mora">En mora</span>
+                  <span class="tag" style="background:var(--surface-highest);color:var(--text-secondary);">TIM BCRA ×2</span>
+                  <span class="tag" style="background:var(--surface-highest);color:var(--text-secondary);">Gracia: 0 días</span>
+                </div>
+                <span class="config-chevron">▼</span>
+              </div>
+            </div>
+
+            <!-- Contrato 3 — cerrado -->
+            <div class="config-card">
+              <div class="config-card-header" onclick="toggleConfig(this)">
+                <div>
+                  <div class="config-contrato-num">CON-2025-009</div>
+                  <div class="config-inquilino">Diego Herrera</div>
+                  <div class="config-propiedad">Chacabuco 720, 4°A</div>
+                </div>
+                <div style="margin-left:auto;display:flex;gap:8px;align-items:center;margin-right:16px;">
+                  <span class="tag tag-pre">Pendiente</span>
+                  <span class="tag" style="background:var(--surface-highest);color:var(--text-secondary);">TIM BCRA ×1</span>
+                  <span class="tag" style="background:var(--surface-highest);color:var(--text-secondary);">Gracia: 5 días</span>
+                </div>
+                <span class="config-chevron">▼</span>
+              </div>
+            </div>
+
+            <!-- Contrato 4 — cerrado, al día -->
+            <div class="config-card" style="opacity:0.7;">
+              <div class="config-card-header" onclick="toggleConfig(this)">
+                <div>
+                  <div class="config-contrato-num">CON-2025-015</div>
+                  <div class="config-inquilino">Valentina Castro</div>
+                  <div class="config-propiedad">Marcelo T. de Alvear 566, 3°B</div>
+                </div>
+                <div style="margin-left:auto;display:flex;gap:8px;align-items:center;margin-right:16px;">
+                  <span class="tag tag-ok">Al día</span>
+                  <span class="tag" style="background:var(--surface-highest);color:var(--text-secondary);">Monto fijo $500/día</span>
+                  <span class="tag" style="background:var(--surface-highest);color:var(--text-secondary);">Gracia: 3 días</span>
+                </div>
+                <span class="config-chevron">▼</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- /tab-config -->
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<script>
+  // ── Tabs ──
+  function switchTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  // ── Detalle mora expandible ──
+  function toggleDetalle(id) {
+    const row = document.getElementById(id);
+    const isOpen = row.style.display !== 'none';
+    // Cerrar todos
+    document.querySelectorAll('.mora-detalle-row').forEach(r => r.style.display = 'none');
+    document.querySelectorAll('[id^="btn-"]').forEach(b => {
+      if (b) b.textContent = 'Ver detalle ↓';
+    });
+    if (!isOpen) {
+      row.style.display = 'table-row';
+      const btn = document.getElementById('btn-' + id);
+      if (btn) btn.textContent = 'Cerrar ↑';
+    }
+  }
+
+  // ── Config accordion ──
+  function toggleConfig(header) {
+    const card = header.closest('.config-card');
+    const isOpen = card.classList.contains('open');
+    document.querySelectorAll('.config-card').forEach(c => {
+      c.classList.remove('open');
+      const chev = c.querySelector('.config-chevron');
+      if (chev) chev.textContent = '▼';
+    });
+    if (!isOpen) {
+      card.classList.add('open');
+      const chev = card.querySelector('.config-chevron');
+      if (chev) chev.textContent = '▲';
+    }
+  }
+
+  // ── Input monto fijo: habilitar/deshabilitar según tipo ──
+  document.querySelectorAll('.input-select').forEach(sel => {
+    sel.addEventListener('change', function() {
+      const card = this.closest('.config-card-body');
+      const montoFijoInput = card.querySelectorAll('input[type="number"]')[4];
+      const timInput = card.querySelectorAll('input[type="number"]')[1];
+      if (montoFijoInput && timInput) {
+        if (this.value === 'Monto fijo diario') {
+          montoFijoInput.disabled = false;
+          montoFijoInput.placeholder = 'ej: 800';
+          timInput.disabled = true;
+        } else {
+          montoFijoInput.disabled = true;
+          montoFijoInput.placeholder = '— (no aplica)';
+          timInput.disabled = false;
+        }
+      }
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cuenta Corriente Propietario — Arce Administración</title>
+
+<!--
+  ============================================================
+  WIREFRAME: Ficha Propietario — Tab Cuenta Corriente
+  Archivo: ../propietarios/wireframe_cuenta_corriente_propietario.html
+  Sistema: Arce Administración v2.0
+  Modo: Oscuro por defecto
+  ============================================================
+
+  ESTRUCTURA DE LA VISTA:
+  1. Resumen (3 KPIs livianos): liquidado acumulado, pendiente, saldo favor propietario
+  2. Barra de herramientas: filtro por propiedad + filtro por período + acciones
+  3. Tabla unificada de movimientos, una fila por ítem, agrupados por período+propiedad
+  4. Barra de totales al pie
+
+  TIPOS DE FILA:
+  ─ Grupo header   : separador visual por período (Ej: "Abril 2025 — Av. Colón 234")
+  ─ Ítem normal    : Alquiler cobrado, Comisión, Gasto extraordinario, etc.
+  ─ Ítem "extra"   : movimiento suelto (crédito/débito manual) — destacado visualmente
+  ─ Fila pendiente : pago que el inquilino dice haber hecho → propietario debe confirmar
+                     Estado: "Pendiente de confirmación" con acciones inline
+                     REGLA: el staff puede hacer visible/oculto este estado al propietario.
+                     Si está oculto al propietario, solo el staff lo ve.
+
+  MODALIDAD DE PAGO:
+  ─ Modalidad A (CBU inmobiliaria): la inmobiliaria recibe y luego liquida al propietario.
+    En este caso el propietario NO tiene que confirmar nada; el staff ejecuta la liquidación.
+  ─ Modalidad B (split directo): el inquilino transfiere directo al propietario.
+    En este caso aparece la fila "Pendiente de confirmación" para que el propietario
+    confirme recepción. También puede confirmarlo el staff.
+
+  ACCIONES DEL STAFF DESDE ESTE TAB:
+  ─ Generar liquidación manual (modal)
+  ─ Aprobar / rechazar confirmación de pago del propietario
+  ─ Agregar crédito o débito suelto (modal)
+  ─ Enviar notificación al propietario (modal)
+  ─ Exportar estado de cuenta (CSV/PDF)
+
+  ENDPOINTS:
+  GET    /api/propietarios/:id/cuenta-corriente?propiedad=&periodo=
+  POST   /api/propietarios/:id/liquidaciones          crear liquidación manual
+  POST   /api/pagos/:id/confirmar                     confirmar pago (staff o propietario)
+  POST   /api/propietarios/:id/movimientos            agregar crédito/débito suelto
+  POST   /api/propietarios/:id/notificacion           enviar notificación
+  GET    /api/propietarios/:id/cuenta-corriente/export
+  ============================================================
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:               #111314;
+  --surface:          #191c1e;
+  --surface-low:      #1d2022;
+  --surface-mid:      #222527;
+  --surface-high:     #282a2c;
+  --surface-highest:  #333537;
+  --surface-white:    #0e1011;
+  --on-bg:            #e1e2e4;
+  --on-surface:       #e1e2e4;
+  --text-secondary:   #a8a9ac;
+  --text-muted:       #6b6d70;
+  --primary:          #ffb4a2;
+  --primary-dark:     #6b1702;
+  --primary-dim:      rgba(255,180,162,0.12);
+  --primary-tint:     rgba(255,180,162,0.08);
+  --on-primary:       #561100;
+  --mustard:          #ffdea8;
+  --mustard-dim:      rgba(253,222,168,0.15);
+  --on-mustard:       #271900;
+  --error:            #ffb4ab;
+  --error-dim:        rgba(255,180,171,0.12);
+  --green:            #7fd3a0;
+  --green-dim:        rgba(127,211,160,0.12);
+  --border:           rgba(255,255,255,0.07);
+  --border-accent:    rgba(255,180,162,0.2);
+  --font-headline:    "Space Grotesk", sans-serif;
+  --font-brand:       "Montserrat", sans-serif;
+  --font-body:        "Inter", sans-serif;
+  --radius-xs:  4px; --radius-sm: 6px; --radius: 12px;
+  --radius-lg:  18px; --radius-xl: 24px; --radius-pill: 9999px;
+  --transition: all 0.18s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg); color: var(--on-surface);
+  font-size: 0.875rem; line-height: 1.6;
+  -webkit-font-smoothing: antialiased; min-height: 100vh;
+}
+
+/* ── LAYOUT ── */
+.app-shell { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px; min-height: 100vh; background: var(--surface);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.sidebar-logo {
+  padding: 20px 20px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-mark {
+  width: 32px; height: 32px; background: var(--primary-dark);
+  border-radius: var(--radius-sm); display: flex; align-items: center;
+  justify-content: center; font-family: var(--font-brand);
+  font-size: 1rem; font-weight: 800; color: var(--primary); flex-shrink: 0;
+}
+.logo-text-name { font-family: var(--font-brand); font-size: 0.78rem; font-weight: 800; letter-spacing: -0.01em; color: var(--on-bg); line-height: 1.1; }
+.logo-text-sub { font-size: 0.52rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-top: 1px; }
+.nav-section { padding: 18px 16px 5px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; margin: 1px 8px; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: var(--transition); text-decoration: none; }
+.nav-item:hover { background: var(--surface-high); color: var(--on-surface); }
+.nav-item.active { background: var(--primary-dim); color: var(--primary); font-weight: 600; }
+.nav-icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: var(--error-dim); color: var(--error); font-size: 0.6rem; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-pill); }
+.sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--border); }
+.user-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); }
+.user-row:hover { background: var(--surface-high); }
+.user-avatar { width: 30px; height: 30px; background: var(--primary-dark); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 800; color: #fff; font-family: var(--font-brand); flex-shrink: 0; }
+.user-name { font-size: 0.8rem; font-weight: 600; color: var(--on-surface); }
+.user-role { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+
+/* ── MAIN ── */
+.main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+
+/* ── TOPBAR ── */
+.topbar { height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 28px; gap: 10px; flex-shrink: 0; }
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); }
+.breadcrumb a { color: var(--text-secondary); text-decoration: none; transition: var(--transition); }
+.breadcrumb a:hover { color: var(--primary); }
+.breadcrumb-current { color: var(--on-surface); font-weight: 600; }
+.breadcrumb-sep { color: var(--text-muted); }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* ── BOTONES ── */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-family: var(--font-body); font-size: 0.72rem; font-weight: 600; cursor: pointer; border: none; border-radius: var(--radius); transition: var(--transition); letter-spacing: 0.01em; }
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-secondary { background: var(--surface-highest); color: var(--on-surface); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--surface-high); }
+.btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--surface-high); color: var(--on-surface); }
+.btn-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(127,211,160,0.2); }
+.btn-green:hover { background: rgba(127,211,160,0.2); }
+.btn-danger { background: var(--error-dim); color: var(--error); border: 1px solid rgba(255,180,171,0.2); }
+.btn-danger:hover { background: rgba(255,180,171,0.2); }
+.btn-sm { padding: 5px 10px; font-size: 0.68rem; }
+.btn-xs { padding: 3px 8px; font-size: 0.62rem; }
+
+/* ── PROFILE HEADER (condensado, igual que ficha datos) ── */
+.profile-header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 18px 28px 0;
+}
+.profile-identity { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.profile-avatar { width: 40px; height: 40px; background: var(--primary-dark); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-family: var(--font-brand); font-size: 0.9rem; font-weight: 800; color: var(--primary); flex-shrink: 0; }
+.profile-name { font-family: var(--font-headline); font-size: 1rem; font-weight: 700; color: var(--on-bg); letter-spacing: -0.02em; }
+.profile-meta { display: flex; align-items: center; gap: 8px; }
+.profile-id { font-size: 0.65rem; color: var(--text-muted); font-family: "Courier New", monospace; letter-spacing: 0.05em; }
+.status-pill { padding: 2px 10px; border-radius: var(--radius-pill); font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.status-active { background: var(--green-dim); color: var(--green); }
+
+/* Barra de completitud condensada en header secundario */
+.completitud-mini {
+  display: flex; align-items: center; gap: 10px;
+  margin-left: auto;
+}
+.completitud-mini-track { width: 80px; height: 4px; background: var(--surface-highest); border-radius: var(--radius-pill); overflow: hidden; }
+.completitud-mini-fill { height: 100%; border-radius: var(--radius-pill); background: linear-gradient(90deg, #ffdea8, #7fd3a0); }
+.completitud-mini-label { font-size: 0.6rem; color: var(--text-muted); white-space: nowrap; }
+
+/* ── TABS ── */
+.tab-nav { display: flex; gap: 2px; padding: 0 28px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.tab-btn { padding: 12px 16px; font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: var(--transition); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font-body); }
+.tab-btn:hover { color: var(--on-surface); }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+/* ── CONTENT ── */
+.content { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── KPIs LIVIANOS ── */
+/*
+  Tres métricas clave en cards compactas.
+  Sin el peso visual de los KPIs de Caja General — esta es una vista de detalle.
+  Mustard: solo en "Pendiente de confirmar" — único dato crítico de esta vista.
+*/
+.kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.kpi-mini {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px 20px;
+}
+.kpi-mini.mustard { background: var(--mustard-dim); border-color: rgba(253,222,168,0.2); }
+.kpi-mini-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 6px; }
+.kpi-mini.mustard .kpi-mini-label { color: rgba(39,25,0,0.7); }
+.kpi-mini-value { font-family: var(--font-headline); font-size: 1.4rem; font-weight: 700; color: var(--on-bg); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.kpi-mini.mustard .kpi-mini-value { color: var(--on-mustard); }
+.kpi-mini-sub { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; }
+
+/* ── TOOLBAR DE TABLA ── */
+.tabla-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.tabla-toolbar {
+  padding: 14px 20px; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border); flex-wrap: wrap;
+}
+.tabla-title { font-size: 0.82rem; font-weight: 600; color: var(--on-surface); flex-shrink: 0; }
+.tabla-divider { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+
+/* Selector de propiedad — pill dropdown */
+.prop-selector {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface-high); border: 1px solid var(--border);
+  border-radius: var(--radius-pill); padding: 4px 12px;
+  cursor: pointer; transition: var(--transition);
+  font-size: 0.72rem; font-weight: 600; color: var(--on-surface);
+}
+.prop-selector:hover { border-color: var(--border-accent); }
+.prop-selector-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+
+/* Selector de período */
+.periodo-selector { display: flex; align-items: center; gap: 4px; }
+.periodo-btn { width: 24px; height: 24px; background: var(--surface-high); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-secondary); transition: var(--transition); }
+.periodo-btn:hover { border-color: var(--border-accent); color: var(--primary); }
+.periodo-label { font-size: 0.72rem; font-weight: 600; color: var(--on-surface); padding: 3px 10px; background: var(--surface-high); border: 1px solid var(--border); border-radius: var(--radius); }
+
+.filtros { display: flex; gap: 4px; }
+.filter-btn { padding: 4px 10px; font-size: 0.62rem; font-weight: 600; background: none; border: 1px solid var(--border); border-radius: var(--radius-pill); cursor: pointer; color: var(--text-secondary); transition: var(--transition); font-family: var(--font-body); }
+.filter-btn:hover { color: var(--on-surface); border-color: var(--border-accent); }
+.filter-btn.active { background: var(--primary-dim); color: var(--primary); border-color: var(--border-accent); }
+.tabla-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+
+/* ── TABLA ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.data-table th { padding: 10px 16px; text-align: left; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); background: var(--surface-low); }
+.data-table th:last-child, .data-table td:last-child { text-align: right; }
+.data-table td { padding: 10px 16px; color: var(--on-surface); vertical-align: middle; }
+.data-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.data-table tbody tr:hover td { background: var(--primary-tint); cursor: pointer; }
+
+/* ── FILA GRUPO (separador por período + propiedad) ── */
+/*
+  Cada grupo de filas pertenece a un período+propiedad.
+  El header del grupo actúa como separador visual:
+  - Período (Abril 2025) + Dirección de la propiedad
+  - Subtotal del grupo a la derecha
+  - Sin hover ni cursor, es solo estructura
+*/
+.fila-grupo td {
+  background: var(--surface-mid) !important;
+  cursor: default !important;
+  padding: 8px 16px;
+  border-top: 2px solid var(--border);
+}
+.fila-grupo:first-child td { border-top: none; }
+.grupo-periodo {
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted);
+}
+.grupo-propiedad {
+  font-size: 0.82rem; font-weight: 600; color: var(--on-surface);
+  margin-top: 1px;
+}
+.grupo-subtotal {
+  font-family: var(--font-headline); font-size: 0.9rem; font-weight: 700;
+  color: var(--primary); font-variant-numeric: tabular-nums;
+}
+
+/* ── FILA ÍTEM EXTRA (movimiento suelto) ── */
+/*
+  Los movimientos sueltos (crédito/débito manual del staff)
+  tienen un borde izquierdo de color para distinguirlos de los ítems
+  de liquidación normales. El texto "Extra" aparece en la columna tipo.
+*/
+.fila-extra td { background: rgba(255,180,162,0.04) !important; }
+.fila-extra td:first-child { border-left: 3px solid var(--primary-dim); }
+.fila-extra:hover td { background: var(--primary-tint) !important; }
+
+/* ── FILA PENDIENTE DE CONFIRMACIÓN ── */
+/*
+  REGLA DE NEGOCIO — Modalidad B (split directo):
+  El inquilino transfiere al propietario y carga el comprobante.
+  El sistema lo muestra al staff siempre.
+  Al propietario: solo si el staff habilitó la opción "Mostrar al propietario"
+  (toggle por contrato). Si está habilitado, el propietario lo ve y puede confirmar.
+  Si no está habilitado, solo el staff lo puede confirmar.
+
+  La fila tiene acciones inline: "Confirmar recepción" / "Rechazar".
+  El comprobante adjunto se puede ver en el modal de detalle.
+*/
+.fila-pendiente td { background: rgba(253,222,168,0.06) !important; }
+.fila-pendiente td:first-child { border-left: 3px solid rgba(253,222,168,0.4); }
+.fila-pendiente:hover td { background: rgba(253,222,168,0.1) !important; }
+
+/* ── TAGS ── */
+.tag { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; font-size: 0.58rem; font-weight: 700; border-radius: var(--radius-pill); white-space: nowrap; letter-spacing: 0.04em; }
+.tag-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.tag-liquidado  { background: var(--green-dim); color: var(--green); }
+.tag-pendiente  { background: var(--surface-highest); color: var(--text-secondary); }
+.tag-confirmacion { background: var(--mustard-dim); color: #c89000; }
+.tag-extra      { background: var(--primary-dim); color: var(--primary); }
+.tag-debito     { background: var(--error-dim); color: var(--error); }
+
+/* ── MONTOS ── */
+.monto { font-family: var(--font-headline); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.875rem; letter-spacing: -0.01em; }
+.monto-in  { color: var(--green); }
+.monto-out { color: var(--error); }
+.monto-neu { color: var(--text-secondary); }
+
+/* ── ACCIONES INLINE (fila pendiente) ── */
+.inline-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+/* ── MOV NOMBRE + META ── */
+.mov-nombre { font-weight: 500; color: var(--on-surface); line-height: 1.3; }
+.mov-meta   { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+.mov-comprobante { font-size: 0.65rem; color: var(--primary); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.mov-comprobante:hover { text-decoration: underline; }
+
+/* ── BARRA TOTALES ── */
+.totales-bar { background: var(--surface-low); border-top: 1px solid var(--border); padding: 14px 20px; display: flex; gap: 0; }
+.totales-item { flex: 1; padding: 0 20px; border-right: 1px solid var(--border); }
+.totales-item:first-child { padding-left: 0; }
+.totales-item:last-child { border-right: none; padding-right: 0; text-align: right; }
+.totales-label { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 4px; }
+.totales-value { font-family: var(--font-headline); font-size: 1.05rem; font-weight: 700; color: var(--on-bg); font-variant-numeric: tabular-nums; }
+.totales-value.hl  { color: var(--green); }
+.totales-value.err { color: var(--error); }
+.totales-value.prim { color: var(--primary); }
+
+/* ── MODAL BASE ── */
+.modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(10,12,13,0.78); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal-backdrop.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 540px; max-height: 90vh; overflow-y: auto; border-top: 3px solid var(--primary); }
+.modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-family: var(--font-headline); font-size: 1rem; font-weight: 700; color: var(--on-surface); }
+.modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 4px; border-radius: var(--radius-sm); transition: var(--transition); }
+.modal-close:hover { background: var(--surface-high); color: var(--primary); }
+.modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; }
+.modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; background: var(--surface-low); border-radius: 0 0 var(--radius-xl) var(--radius-xl); }
+
+/* Form */
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.form-input, .form-select, .form-textarea { font-family: var(--font-body); font-size: 0.875rem; color: var(--on-surface); background: var(--surface-high); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; outline: none; transition: var(--transition); width: 100%; }
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); background: var(--surface-highest); }
+.form-input::placeholder, .form-textarea::placeholder { color: var(--text-muted); }
+.form-textarea { resize: vertical; min-height: 72px; }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-section { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin: 4px 0 10px; display: flex; align-items: center; gap: 8px; }
+.form-section::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.form-hint { font-size: 0.65rem; color: var(--text-muted); }
+
+/* Toggle ingreso/egreso */
+.tipo-toggle { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.tipo-toggle-btn { flex: 1; padding: 8px; font-family: var(--font-body); font-size: 0.78rem; font-weight: 600; border: none; cursor: pointer; background: var(--surface-high); color: var(--text-secondary); transition: var(--transition); }
+.tipo-toggle-btn.ing.active { background: var(--green-dim); color: var(--green); }
+.tipo-toggle-btn.egr.active { background: var(--error-dim); color: var(--error); }
+
+/* Liquidación preview (modal generar liquidación) */
+.liq-block { background: var(--surface-low); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.liq-block-title { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 10px; }
+.liq-row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.liq-row:last-child { border-bottom: none; }
+.liq-row-label { color: var(--text-secondary); }
+.liq-row-value { font-family: var(--font-headline); font-variant-numeric: tabular-nums; font-weight: 600; }
+.liq-row-value.neg { color: var(--error); }
+.liq-total { display: flex; justify-content: space-between; padding: 12px 0 0; margin-top: 6px; font-family: var(--font-headline); font-size: 1.15rem; font-weight: 700; border-top: 2px solid var(--border-accent); color: var(--on-bg); }
+.liq-total-label { color: var(--text-secondary); font-size: 0.82rem; align-self: flex-end; padding-bottom: 2px; }
+
+/* Nota informativa */
+.nota-info { font-size: 0.7rem; color: var(--text-secondary); background: var(--surface-low); border-left: 3px solid var(--primary-dim); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 9px 12px; line-height: 1.5; }
+
+/* ── ÍTEMS LIQUIDACIÓN CON CHECKBOX ── */
+.liq-check-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition);
+}
+.liq-check-row:last-child { border-bottom: none; }
+.liq-check-row:not(.liq-row-locked):hover { background: var(--primary-tint); }
+.liq-check-row.liq-row-locked {
+  opacity: 0.45;
+  cursor: default;
+}
+.liq-lock { font-size: 0.75rem; flex-shrink: 0; opacity: 0.5; width: 18px; text-align: center; }
+
+/* Fila desactivada (checkbox desmarcado) */
+.liq-check-row.deselected label > div { opacity: 0.4; }
+.liq-check-row.deselected > span:not(.liq-lock) { opacity: 0.35; text-decoration: line-through; }
+
+/* ── PAPELERA EN TABLA (movimientos manuales no liquidados) ── */
+/*
+  Solo aparece en filas de tipo "Extra" que no estén liquidadas.
+  Staff Admin → elimina directamente (con confirmación inline).
+  Staff Ventas → abre modal de solicitud de aprobación.
+  Movimientos automáticos y ya liquidados → sin papelera.
+*/
+.btn-trash {
+  background: none; border: none;
+  color: var(--text-muted);
+  cursor: pointer; padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  transition: var(--transition);
+  opacity: 0;
+}
+tr:hover .btn-trash { opacity: 1; }
+.btn-trash:hover { background: var(--error-dim); color: var(--error); }
+
+/* ── FAB FLOTANTE ── */
+/*
+  Botón flotante fijo abajo a la derecha.
+  Al hacer clic se expande en un menú de 4 acciones verticales.
+  El botón principal rota 45° cuando está abierto (× para cerrar).
+  Las acciones aparecen de abajo hacia arriba con stagger animation.
+*/
+.fab-wrap {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.fab-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.fab-menu.open {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+.fab-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.fab-action-label {
+  background: var(--surface-highest);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 5px 14px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: var(--transition);
+}
+.fab-action:hover .fab-action-label {
+  background: var(--surface-high);
+  border-color: var(--border-accent);
+  color: var(--primary);
+}
+.fab-action-btn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  border: none; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.fab-action-btn.notif    { background: var(--surface-highest); color: var(--text-secondary); }
+.fab-action-btn.export   { background: var(--surface-highest); color: var(--text-secondary); }
+.fab-action-btn.movim    { background: var(--surface-highest); color: var(--text-secondary); }
+.fab-action-btn.liq      { background: var(--primary-dark); color: var(--primary); }
+.fab-action:hover .fab-action-btn { transform: scale(1.08); }
+
+.fab-main {
+  width: 52px; height: 52px;
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: 50%;
+  border: none;
+  font-size: 1.4rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgba(255,180,162,0.35);
+  transition: transform 0.22s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+}
+.fab-main:hover { box-shadow: 0 8px 28px rgba(255,180,162,0.5); }
+.fab-main.open {
+  transform: rotate(45deg);
+}
+
+/* ── MODAL: Exportar ── */
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.export-opt {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface-low);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.export-opt:hover { border-color: var(--border-accent); background: var(--surface-mid); }
+.export-opt-icon { font-size: 1.4rem; flex-shrink: 0; }
+.export-opt-title { font-size: 0.82rem; font-weight: 600; color: var(--on-surface); }
+.export-opt-desc  { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+
+/* Comprobante viewer (dentro de modal confirmar) */
+.comprobante-preview { background: var(--surface-mid); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; display: flex; align-items: center; gap: 12px; }
+.comprobante-icon { font-size: 1.8rem; flex-shrink: 0; }
+.comprobante-nombre { font-size: 0.8rem; font-weight: 600; color: var(--on-surface); }
+.comprobante-meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+.comprobante-link { font-size: 0.68rem; color: var(--primary); cursor: pointer; margin-top: 4px; display: inline-flex; align-items: center; gap: 4px; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+<!-- ─── SIDEBAR ─── -->
+<nav class="sidebar">
+    <div class="sidebar-logo">
+      <!-- Logo: PNG oficial en base64. Si no está disponible, usar SVG placeholder. -->
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#6b1702"/>
+        <path d="M16 5L6 26h4l2-5h8l2 5h4L16 5zm0 6l3 8h-6l3-8z" fill="#ffb4a2"/>
+        <path d="M16 4L18 7l2-1-1 3 2 1-3 1v2l-2-2-2 2v-2l-3-1 2-1-1-3 2 1z" fill="#ffdea8" opacity="0.8"/>
+      </svg>
+      <div>
+        <div class="logo-text-name">Arce Administración</div>
+        <div class="logo-text-sub">Gestión inmobiliaria</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Principal</div>
+    <a class="nav-item" href="../dashboard/wireframe_dashboard_staff.html">
+      <span class="nav-icon">⬛</span> Dashboard
+    </a>
+    <a class="nav-item" href="../caja/wireframe_caja_general.html">
+      <span class="nav-icon">◈</span> Caja General
+    </a>
+
+    <div class="nav-section">Entidades</div>
+    <a class="nav-item" href="../inquilinos/wireframe_lista_inquilinos.html">
+      <span class="nav-icon">◻</span> Inquilinos
+    </a>
+    <a class="nav-item active" href="../propietarios/wireframe_lista_propietarios.html">
+      <span class="nav-icon">◻</span> Propietarios
+    </a>
+    <a class="nav-item" href="../propiedades/wireframe_ficha_propiedad.html">
+      <span class="nav-icon">◻</span> Propiedades
+    </a>
+    <a class="nav-item" href="../contratos/wireframe_lista_contratos.html">
+      <span class="nav-icon">◻</span> Contratos
+    </a>
+
+    <div class="nav-section">Gestión</div>
+    <a class="nav-item" href="../tareas/wireframe_tareas.html">
+      <span class="nav-icon">◻</span> Tareas <span class="nav-badge">9</span>
+    </a>
+    <a class="nav-item" href="../v1/wireframe_bandeja_staff.html">
+      <span class="nav-icon">◻</span> Notificaciones <span class="nav-badge">3</span>
+    </a>
+    <a class="nav-item" href="../servicios/wireframe_control_servicios.html">
+      <span class="nav-icon">◻</span> Control Servicios
+    </a>
+    <a class="nav-item" href="../financiero/wireframe_motor_financiero.html">
+      <span class="nav-icon">◻</span> Motor Financiero
+    </a>
+    <a class="nav-item" href="../renovacion/wireframe_renovacion_salida.html">
+      <span class="nav-icon">◻</span> Renovación y Salida
+    </a>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">MG</div>
+        <div>
+          <div class="user-name">M. González</div>
+          <div class="user-role">Staff Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+<!-- ─── MAIN ─── -->
+<div class="main-content">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="breadcrumb">
+      <a href="#">Propietarios</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Carlos Mendoza</span>
+    </div>
+    <!-- Acciones movidas al FAB flotante -->
+    <div class="topbar-actions"></div>
+  </div>
+
+  <!-- ─── PROFILE HEADER CONDENSADO ─── -->
+  <!--
+    Header de identidad reducido: ocupa menos espacio vertical que en el tab Datos.
+    La barra de completitud se muestra en versión mini.
+  -->
+  <div class="profile-header">
+    <div class="profile-identity">
+      <div class="profile-avatar">CM</div>
+      <div>
+        <div class="profile-name">Carlos Mendoza</div>
+        <div class="profile-meta">
+          <span class="profile-id">PROP-0031</span>
+          <span class="status-pill status-active">Activo</span>
+        </div>
+      </div>
+      <div class="completitud-mini">
+        <div class="completitud-mini-track">
+          <div class="completitud-mini-fill" style="width:72%"></div>
+        </div>
+        <span class="completitud-mini-label">72% completitud</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TABS ─── -->
+  <div class="tab-nav">
+    <button class="tab-btn" onclick="window.location='../propietarios/wireframe_ficha_propietario.html'">Datos</button>
+    <button class="tab-btn">Propiedades</button>
+    <button class="tab-btn active">Cuenta corriente</button>
+    <button class="tab-btn">Documentos</button>
+  </div>
+
+  <!-- ─── CONTENIDO ─── -->
+  <div class="content">
+
+    <!-- KPIs LIVIANOS -->
+    <!--
+      Solo 3 métricas. Sin exceso de información.
+      Mustard = "Pendiente de confirmar" → único dato crítico de esta vista.
+      Es el dinero que el inquilino dice haber transferido y que todavía
+      no fue confirmado (ni por el propietario ni por el staff).
+    -->
+    <div class="kpi-row">
+      <div class="kpi-mini">
+        <div class="kpi-mini-label">Liquidado acumulado · 2025</div>
+        <div class="kpi-mini-value">$14.820.500</div>
+        <div class="kpi-mini-sub">3 propiedades · 4 períodos</div>
+      </div>
+      <div class="kpi-mini">
+        <div class="kpi-mini-label">Próxima liquidación estimada</div>
+        <div class="kpi-mini-value">$3.240.000</div>
+        <div class="kpi-mini-sub">Mayo 2025 · pendiente de ejecución</div>
+      </div>
+      <!-- Mustard: único uso en esta vista -->
+      <div class="kpi-mini mustard">
+        <div class="kpi-mini-label">⏳ Pendiente de confirmar</div>
+        <div class="kpi-mini-value">$890.000</div>
+        <div class="kpi-mini-sub">1 transferencia sin confirmar · Modalidad B</div>
+      </div>
+    </div>
+
+    <!-- TABLA UNIFICADA -->
+    <div class="tabla-wrapper">
+      <div class="tabla-toolbar">
+        <span class="tabla-title">Movimientos</span>
+        <div class="tabla-divider"></div>
+
+        <!-- Selector de propiedad: "Todas" por defecto, filtrable -->
+        <div class="prop-selector" onclick="">
+          <span class="prop-selector-dot"></span>
+          Todas las propiedades ▾
+        </div>
+
+        <!-- Selector de período -->
+        <div class="periodo-selector">
+          <button class="periodo-btn">‹</button>
+          <div class="periodo-label">Ene–May 2025</div>
+          <button class="periodo-btn">›</button>
+        </div>
+
+        <div class="tabla-divider"></div>
+        <div class="filtros">
+          <button class="filter-btn active">Todos</button>
+          <button class="filter-btn">Liquidados</button>
+          <button class="filter-btn">Pendientes</button>
+          <button class="filter-btn" style="color:#c89000;border-color:rgba(253,222,168,0.3);">⏳ A confirmar</button>
+        </div>
+
+        <div class="tabla-actions">
+          <button class="btn btn-ghost btn-xs">⬇ CSV</button>
+        </div>
+      </div>
+
+      <!-- ── TABLA ── -->
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:34%">Concepto</th>
+            <th style="width:14%">Propiedad</th>
+            <th style="width:10%">Fecha</th>
+            <th style="width:12%">Tipo</th>
+            <th style="width:10%">Estado</th>
+            <th style="width:12%;text-align:right">Monto</th>
+            <th style="width:8%;text-align:right"></th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- ════ GRUPO: Mayo 2025 — Av. Colón 234 ════ -->
+          <tr class="fila-grupo">
+            <td colspan="5">
+              <div class="grupo-periodo">Mayo 2025</div>
+              <div class="grupo-propiedad">🏠 Av. Colón 234, 2°A — CON-0089</div>
+            </td>
+            <td colspan="2" style="text-align:right;vertical-align:middle;">
+              <span class="grupo-subtotal">+$1.820.000</span>
+            </td>
+          </tr>
+
+          <!-- Ítem: Alquiler cobrado -->
+          <tr>
+            <td>
+              <div class="mov-nombre">Alquiler cobrado</div>
+              <div class="mov-meta">Mayo 2025 · Inquilino: Laura Sánchez</div>
+            </td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">Av. Colón 234</td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">05/05/2025</td>
+            <td><span class="tag tag-pendiente">Liquidación</span></td>
+            <td><span class="tag tag-liquidado">Liquidado</span></td>
+            <td class="monto monto-in">+$2.100.000</td>
+            <td></td>
+          </tr>
+
+          <!-- Ítem: Comisión inmobiliaria -->
+          <tr>
+            <td>
+              <div class="mov-nombre">Comisión inmobiliaria</div>
+              <div class="mov-meta">10% sobre alquiler cobrado</div>
+            </td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">Av. Colón 234</td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">05/05/2025</td>
+            <td><span class="tag tag-pendiente">Liquidación</span></td>
+            <td><span class="tag tag-liquidado">Liquidado</span></td>
+            <td class="monto monto-out">−$210.000</td>
+            <td></td>
+          </tr>
+
+          <!-- Ítem: Recargo 1% Modalidad A -->
+          <tr>
+            <td>
+              <div class="mov-nombre">Recargo gestión (1%)</div>
+              <!--
+                REGLA: El recargo del 1% se descuenta de la liquidación al propietario.
+                Nunca se cobra al inquilino. Solo aplica en Modalidad A.
+              -->
+              <div class="mov-meta">Modalidad A · se descuenta de liquidación</div>
+            </td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">Av. Colón 234</td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">05/05/2025</td>
+            <td><span class="tag tag-pendiente">Liquidación</span></td>
+            <td><span class="tag tag-liquidado">Liquidado</span></td>
+            <td class="monto monto-out">−$21.000</td>
+            <td></td>
+          </tr>
+
+          <!-- Ítem: Gasto de plomería (extra) -->
+          <!--
+            FILA EXTRA: movimiento suelto (no pertenece a la liquidación base).
+            Borde izquierdo terracota + tag "Extra".
+            PAPELERA: visible al hover — este ítem está aplicado (liquidado),
+            por eso se muestra con candado en lugar de papelera activa.
+            Si fuera pendiente → papelera activa con lógica de permisos por rol.
+          -->
+          <tr class="fila-extra">
+            <td>
+              <div class="mov-nombre">Gasto plomería — Baño principal</div>
+              <div class="mov-meta">Movimiento extra · Staff: M. González · <span class="mov-comprobante" onclick="open('modalVerComprobante')">📎 Ver comprobante</span></div>
+            </td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">Av. Colón 234</td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">03/05/2025</td>
+            <td><span class="tag tag-extra">Extra</span></td>
+            <td><span class="tag tag-liquidado">Aplicado</span></td>
+            <td class="monto monto-out">−$49.000</td>
+            <td style="text-align:right;">
+              <!-- Bloqueado: ya fue incluido en liquidación ejecutada -->
+              <span title="Incluido en liquidación — no eliminable" style="font-size:0.75rem;opacity:0.35;cursor:default;">🔒</span>
+            </td>
+          </tr>
+
+          <!-- ════ GRUPO: Mayo 2025 — Bv. San Juan 890 ════ -->
+          <tr class="fila-grupo">
+            <td colspan="5">
+              <div class="grupo-periodo">Mayo 2025</div>
+              <div class="grupo-propiedad">🏠 Bv. San Juan 890, PB — CON-0102 · <span style="font-size:0.65rem;color:#c89000;font-weight:600;">Modalidad B</span></div>
+            </td>
+            <td colspan="2" style="text-align:right;vertical-align:middle;">
+              <span style="font-size:0.75rem;color:var(--text-muted);font-style:italic;">pendiente</span>
+            </td>
+          </tr>
+
+          <!-- Ítem: Alquiler pendiente de confirmación (Modalidad B) -->
+          <!--
+            FILA PENDIENTE DE CONFIRMACIÓN:
+            El inquilino subió el comprobante y dice haber transferido.
+            El propietario (o el staff) debe confirmar que llegó al banco.
+            Fondo ámbar suave + borde izquierdo mostaza.
+            Acciones inline: "Confirmar" y "Rechazar/Consultar".
+
+            VISIBILIDAD AL PROPIETARIO:
+            Configurable por staff (toggle en el contrato).
+            Si está habilitado → el propietario lo ve en su portal.
+            Si no → solo el staff puede confirmar.
+          -->
+          <tr class="fila-pendiente">
+            <td>
+              <div class="mov-nombre">Alquiler cobrado — pendiente de confirmar</div>
+              <div class="mov-meta">Inquilino: Roberto Paz · Subió comprobante el 04/05 · <span class="mov-comprobante" onclick="open('modalConfirmar')">📎 Ver comprobante</span></div>
+            </td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">Bv. San Juan 890</td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">—</td>
+            <td><span class="tag" style="background:rgba(253,222,168,0.15);color:#c89000;">Liquidación</span></td>
+            <td><span class="tag tag-confirmacion">⏳ A confirmar</span></td>
+            <td class="monto" style="color:#c89000;">$1.950.000</td>
+            <td>
+              <div class="inline-actions">
+                <button class="btn btn-green btn-xs" id="btnConfirmarInline">✓ Confirmar</button>
+                <button class="btn btn-danger btn-xs" id="btnRechazarInline">✕</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ════ GRUPO: Abril 2025 — Av. Colón 234 ════ -->
+          <tr class="fila-grupo">
+            <td colspan="5">
+              <div class="grupo-periodo">Abril 2025</div>
+              <div class="grupo-propiedad">🏠 Av. Colón 234, 2°A — CON-0089</div>
+            </td>
+            <td colspan="2" style="text-align:right;vertical-align:middle;">
+              <span class="grupo-subtotal">+$1.780.000</span>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="mov-nombre">Alquiler cobrado</div>
+              <div class="mov-meta">Abril 2025 · Inquilino: Laura Sánchez</div>
+            </td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">Av. Colón 234</td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">05/04/2025</td>
+            <td><span class="tag tag-pendiente">Liquidación</span></td>
+            <td><span class="tag tag-liquidado">Liquidado</span></td>
+            <td class="monto monto-in">+$2.050.000</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="mov-nombre">Comisión inmobiliaria</div>
+              <div class="mov-meta">10% sobre alquiler cobrado</div>
+            </td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">Av. Colón 234</td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">05/04/2025</td>
+            <td><span class="tag tag-pendiente">Liquidación</span></td>
+            <td><span class="tag tag-liquidado">Liquidado</span></td>
+            <td class="monto monto-out">−$205.000</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="mov-nombre">Recargo gestión (1%)</div>
+              <div class="mov-meta">Modalidad A · se descuenta de liquidación</div>
+            </td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">Av. Colón 234</td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">05/04/2025</td>
+            <td><span class="tag tag-pendiente">Liquidación</span></td>
+            <td><span class="tag tag-liquidado">Liquidado</span></td>
+            <td class="monto monto-out">−$20.500</td>
+            <td></td>
+          </tr>
+          <!-- Ítem extra: crédito por adelanto de propietario — PENDIENTE (no liquidado) -->
+          <!--
+            Este movimiento todavía no fue incluido en ninguna liquidación.
+            → Papelera activa visible al hover.
+            Staff Admin: elimina directo con confirmación.
+            Staff Ventas: solicita aprobación a Admin.
+          -->
+          <tr class="fila-extra">
+            <td>
+              <div class="mov-nombre">Crédito — adelanto propietario</div>
+              <div class="mov-meta">Movimiento extra · Staff: M. González · Pendiente de liquidar</div>
+            </td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">Av. Colón 234</td>
+            <td style="font-size:0.72rem;color:var(--text-muted)">01/04/2025</td>
+            <td><span class="tag tag-extra">Extra</span></td>
+            <td><span class="tag tag-pendiente">Pendiente</span></td>
+            <td class="monto monto-in">+$44.500</td>
+            <td style="text-align:right;">
+              <button class="btn-trash" onclick="open('modalEliminar')" title="Eliminar movimiento">🗑</button>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+
+      <!-- BARRA DE TOTALES -->
+      <div class="totales-bar">
+        <div class="totales-item">
+          <div class="totales-label">Total ingresos (período filtrado)</div>
+          <div class="totales-value hl">+$6.144.500</div>
+        </div>
+        <div class="totales-item">
+          <div class="totales-label">Total descuentos y comisiones</div>
+          <div class="totales-value err">−$505.500</div>
+        </div>
+        <div class="totales-item">
+          <div class="totales-label">Pendiente de confirmar</div>
+          <div class="totales-value" style="color:#c89000;">$1.950.000</div>
+        </div>
+        <div class="totales-item">
+          <div class="totales-label">Neto liquidado al propietario</div>
+          <div class="totales-value prim">$5.639.000</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+
+<!-- ─── FAB FLOTANTE ─── -->
+<!--
+  Menú de acciones flotante fijo abajo a la derecha.
+  Al hacer clic en el botón principal (+) se despliegan 4 acciones:
+  ① Notificar al propietario
+  ② Exportar estado de cuenta
+  ③ Agregar movimiento suelto
+  ④ Generar liquidación (acción principal)
+  El orden es de menor a mayor peso: la liquidación queda más cerca del botón.
+-->
+<div class="fab-wrap" id="fabWrap">
+  <div class="fab-menu" id="fabMenu">
+
+    <!-- Acción 1: Notificar -->
+    <div class="fab-action" data-modal="modalNotif">
+      <span class="fab-action-label">Notificar al propietario</span>
+      <button class="fab-action-btn notif">✉</button>
+    </div>
+
+    <!-- Acción 2: Exportar -->
+    <div class="fab-action" data-modal="modalExportar">
+      <span class="fab-action-label">Exportar estado de cuenta</span>
+      <button class="fab-action-btn export">⬇</button>
+    </div>
+
+    <!-- Acción 3: Agregar movimiento -->
+    <div class="fab-action" data-modal="modalMovimiento">
+      <span class="fab-action-label">Agregar movimiento</span>
+      <button class="fab-action-btn movim">＋</button>
+    </div>
+
+    <!-- Acción 4: Generar liquidación (la más importante, más cerca del FAB) -->
+    <div class="fab-action" data-modal="modalLiquidacion">
+      <span class="fab-action-label">Generar liquidación</span>
+      <button class="fab-action-btn liq">⚡</button>
+    </div>
+
+  </div>
+
+  <!-- Botón principal -->
+  <button class="fab-main" id="fabMain" title="Acciones">＋</button>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     MODAL: Generar liquidación manual
+     ═══════════════════════════════════════════ -->
+<!--
+  SELECCIÓN DE ÍTEMS:
+  Los ítems pendientes (no liquidados) se muestran con checkbox.
+  "Marcar todo" selecciona/deselecciona todos los pendientes.
+  Los ítems ya liquidados aparecen bloqueados (solo lectura, con candado).
+  El total se recalcula en tiempo real según los ítems seleccionados.
+
+  PERMISOS DE ELIMINACIÓN (no en este modal, sino en la tabla):
+  - Automáticos (alquiler, comisión, recargo): nunca se eliminan,
+    solo contra-asiento. Sin ícono de papelera.
+  - Manuales no liquidados: papelera visible.
+    Staff Admin → elimina directo.
+    Staff Ventas → solicita aprobación a Admin.
+  - Ya incluidos en liquidación ejecutada: bloqueados para siempre.
+-->
+<div class="modal-backdrop" id="modalLiquidacion">
+  <div class="modal" style="width:580px;">
+    <div class="modal-header">
+      <span class="modal-title">Generar liquidación</span>
+      <button class="modal-close" onclick="close('modalLiquidacion')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Propiedad</label>
+          <select class="form-select" onchange="recalcLiq()">
+            <option>Av. Colón 234, 2°A (CON-0089)</option>
+            <option>Bv. San Juan 890, PB (CON-0102)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Período</label>
+          <input class="form-input" type="month" value="2025-05">
+        </div>
+      </div>
+
+      <!-- Tabla de ítems con checkboxes -->
+      <div class="form-section">Ítems a incluir</div>
+      <div style="background:var(--surface-low);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+
+        <!-- Header: marcar todo -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface-mid);">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.72rem;font-weight:600;color:var(--text-secondary);">
+            <input type="checkbox" id="checkAll" checked onchange="toggleAll(this)"
+              style="width:14px;height:14px;accent-color:var(--primary);cursor:pointer;">
+            Marcar todo
+          </label>
+          <span style="font-size:0.62rem;color:var(--text-muted);" id="countSelected">4 de 4 ítems seleccionados</span>
+        </div>
+
+        <!-- Ítem: Alquiler cobrado (automático — no eliminable) -->
+        <div class="liq-check-row" id="liqItem1" data-monto="2100000" data-sign="1">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;">
+            <input type="checkbox" class="liq-check" checked onchange="recalcLiq()"
+              style="width:14px;height:14px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;">
+            <div style="flex:1;">
+              <div style="font-size:0.8rem;font-weight:500;color:var(--on-surface);">Alquiler cobrado</div>
+              <div style="font-size:0.65rem;color:var(--text-muted);">Automático · Mayo 2025</div>
+            </div>
+          </label>
+          <span style="font-family:var(--font-headline);font-size:0.85rem;font-weight:600;color:var(--green);font-variant-numeric:tabular-nums;">+$2.100.000</span>
+          <span class="liq-lock" title="Movimiento automático — no eliminable">🔒</span>
+        </div>
+
+        <!-- Ítem: Comisión (automático) -->
+        <div class="liq-check-row" id="liqItem2" data-monto="210000" data-sign="-1">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;">
+            <input type="checkbox" class="liq-check" checked onchange="recalcLiq()"
+              style="width:14px;height:14px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;">
+            <div style="flex:1;">
+              <div style="font-size:0.8rem;font-weight:500;color:var(--on-surface);">Comisión inmobiliaria (10%)</div>
+              <div style="font-size:0.65rem;color:var(--text-muted);">Automático</div>
+            </div>
+          </label>
+          <span style="font-family:var(--font-headline);font-size:0.85rem;font-weight:600;color:var(--error);font-variant-numeric:tabular-nums;">−$210.000</span>
+          <span class="liq-lock" title="Movimiento automático — no eliminable">🔒</span>
+        </div>
+
+        <!-- Ítem: Recargo 1% (automático) -->
+        <div class="liq-check-row" id="liqItem3" data-monto="21000" data-sign="-1">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;">
+            <input type="checkbox" class="liq-check" checked onchange="recalcLiq()"
+              style="width:14px;height:14px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;">
+            <div style="flex:1;">
+              <div style="font-size:0.8rem;font-weight:500;color:var(--on-surface);">Recargo gestión (1%) — Modalidad A</div>
+              <div style="font-size:0.65rem;color:var(--text-muted);">Automático</div>
+            </div>
+          </label>
+          <span style="font-family:var(--font-headline);font-size:0.85rem;font-weight:600;color:var(--error);font-variant-numeric:tabular-nums;">−$21.000</span>
+          <span class="liq-lock" title="Movimiento automático — no eliminable">🔒</span>
+        </div>
+
+        <!-- Ítem: Gasto plomería (manual — sí eliminable desde la tabla, pero aquí solo desmarcable) -->
+        <div class="liq-check-row" id="liqItem4" data-monto="49000" data-sign="-1">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;">
+            <input type="checkbox" class="liq-check" checked onchange="recalcLiq()"
+              style="width:14px;height:14px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;">
+            <div style="flex:1;">
+              <div style="font-size:0.8rem;font-weight:500;color:var(--on-surface);">Gasto plomería — Baño principal</div>
+              <div style="font-size:0.65rem;color:var(--text-muted);">Extra · Staff: M. González · 03/05</div>
+            </div>
+          </label>
+          <span style="font-family:var(--font-headline);font-size:0.85rem;font-weight:600;color:var(--error);font-variant-numeric:tabular-nums;">−$49.000</span>
+          <!-- Sin candado: es manual, puede desmarcarse libremente -->
+          <span style="width:18px;"></span>
+        </div>
+
+        <!-- Ítem ya liquidado — bloqueado, sin checkbox -->
+        <div class="liq-check-row liq-row-locked">
+          <div style="width:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:0.8rem;">🔒</span>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:0.8rem;font-weight:500;color:var(--text-muted);">Alquiler cobrado — Abril 2025</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);">Ya incluido en liquidación LIQ-0041 · 05/04/2025</div>
+          </div>
+          <span style="font-family:var(--font-headline);font-size:0.85rem;font-weight:500;color:var(--text-muted);font-variant-numeric:tabular-nums;">$2.050.000</span>
+          <span style="width:18px;"></span>
+        </div>
+
+      </div>
+
+      <!-- Total dinámico -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 2px;">
+        <span style="font-size:0.72rem;color:var(--text-muted);">Neto a transferir</span>
+        <span style="font-family:var(--font-headline);font-size:1.3rem;font-weight:700;color:var(--on-bg);font-variant-numeric:tabular-nums;" id="liqTotal">$1.820.000</span>
+      </div>
+
+      <div class="nota-info" style="margin-top:10px;">
+        Los ítems desmarcados <strong>quedan pendientes</strong> para la próxima liquidación — no se eliminan. Una vez generada, aparecerá en Caja General como pendiente de ejecución.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="close('modalLiquidacion')">Cancelar</button>
+      <button class="btn btn-secondary btn-sm" onclick="open('modalMovimiento')">+ Agregar ítem</button>
+      <button class="btn btn-primary btn-sm">Generar liquidación</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     MODAL: Confirmar recepción de pago (Modalidad B)
+     ═══════════════════════════════════════════ -->
+<!--
+  El propietario (o el staff) confirma que recibió la transferencia del inquilino.
+  Se muestra el comprobante subido por el inquilino.
+  Después de confirmar → el ítem pasa de "A confirmar" a "Confirmado".
+-->
+<div class="modal-backdrop" id="modalConfirmar">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Confirmar recepción de pago</span>
+      <button class="modal-close" onclick="close('modalConfirmar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;background:var(--surface-low);border-radius:var(--radius);padding:14px;">
+        <div>
+          <div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Inquilino</div>
+          <div style="font-weight:600;color:var(--on-surface);">Roberto Paz</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);">Bv. San Juan 890, PB · CON-0102</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Monto declarado</div>
+          <div style="font-family:var(--font-headline);font-size:1.3rem;font-weight:700;color:#c89000;">$1.950.000</div>
+          <div style="font-size:0.68rem;color:var(--text-muted);">Transferido el 04/05/2025</div>
+        </div>
+      </div>
+
+      <div class="form-section">Comprobante adjunto</div>
+      <div class="comprobante-preview">
+        <div class="comprobante-icon">📄</div>
+        <div>
+          <div class="comprobante-nombre">comprobante_transferencia_mayo.pdf</div>
+          <div class="comprobante-meta">Subido por Roberto Paz · 04/05/2025 18:42 · 284 KB</div>
+          <div class="comprobante-link">↗ Ver comprobante completo</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nota interna (opcional)</label>
+        <textarea class="form-textarea" placeholder="Ej: Verificado en homebanking Nación, acreditación el 05/05…"></textarea>
+      </div>
+
+      <div class="nota-info">
+        Al confirmar, el ítem pasará a estado <strong>Confirmado</strong> y quedará registrado en la cuenta corriente. El inquilino recibirá una notificación automática.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="close('modalConfirmar')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="btnRechazarDesdeConfirmar">✕ Rechazar</button>
+      <button class="btn btn-green btn-sm">✓ Confirmar recepción</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     MODAL: Rechazar / Consultar pago
+     ═══════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modalRechazar">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" style="color:var(--error)">Rechazar o consultar pago</span>
+      <button class="modal-close" onclick="close('modalRechazar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Motivo</label>
+        <select class="form-select">
+          <option value="">Seleccioná un motivo…</option>
+          <option>El monto no coincide</option>
+          <option>No encontré la transferencia en el banco</option>
+          <option>El comprobante es ilegible</option>
+          <option>Otro motivo</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mensaje al inquilino <span style="font-weight:400;text-transform:none;font-size:0.6rem;">(se enviará por email)</span></label>
+        <textarea class="form-textarea" placeholder="Explicá qué necesita corregir o adjuntar el inquilino…"></textarea>
+      </div>
+      <div class="nota-info">El inquilino recibirá un email con el motivo. El ítem volverá a estado "A confirmar" y podrá subir un nuevo comprobante.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="close('modalRechazar')">Cancelar</button>
+      <button class="btn btn-danger btn-sm">Enviar rechazo</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     MODAL: Agregar movimiento suelto (crédito/débito)
+     ═══════════════════════════════════════════ -->
+<!--
+  El staff puede agregar un crédito o débito suelto a la cuenta corriente
+  de este propietario. Puede estar vinculado a una propiedad específica
+  o ser independiente (crédito/débito general).
+  Aparecerá en la tabla como fila de tipo "Extra".
+-->
+<div class="modal-backdrop" id="modalMovimiento">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Agregar movimiento</span>
+      <button class="modal-close" onclick="close('modalMovimiento')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <div class="tipo-toggle">
+          <button class="tipo-toggle-btn ing active" onclick="toggleTipo(this,'ing')">+ Crédito (a favor del propietario)</button>
+          <button class="tipo-toggle-btn egr" onclick="toggleTipo(this,'egr')">− Débito (descuento al propietario)</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <input class="form-input" placeholder="Ej: Adelanto de alquiler, reintegro de gasto…">
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Monto</label>
+          <input class="form-input" placeholder="$0" type="number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-input" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Propiedad asociada <span style="font-weight:400;text-transform:none;font-size:0.6rem;">(opcional)</span></label>
+        <select class="form-select">
+          <option value="">Sin asociar — movimiento general</option>
+          <option>Av. Colón 234, 2°A (CON-0089)</option>
+          <option>Bv. San Juan 890, PB (CON-0102)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Comprobante <span style="font-weight:400;text-transform:none;font-size:0.6rem;">(opcional)</span></label>
+        <input class="form-input" type="file" style="padding:6px 12px;font-size:0.78rem;">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="close('modalMovimiento')">Cancelar</button>
+      <button class="btn btn-primary btn-sm">Agregar movimiento</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     MODAL: Exportar estado de cuenta
+     ═══════════════════════════════════════════ -->
+<!--
+  Dos opciones de exportación:
+  - CSV: para importar en planillas, contabilidad
+  - PDF: para enviar al propietario como resumen formal
+  Ambas respetan el filtro de período y propiedad activo en la tabla.
+-->
+<div class="modal-backdrop" id="modalExportar">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Exportar estado de cuenta</span>
+      <button class="modal-close" onclick="close('modalExportar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:4px;">
+        Se exportará la información según los filtros activos: <strong style="color:var(--on-surface)">Todas las propiedades · Ene–May 2025</strong>
+      </p>
+      <div class="export-options">
+        <div class="export-opt">
+          <div class="export-opt-icon">📊</div>
+          <div>
+            <div class="export-opt-title">Exportar como CSV</div>
+            <div class="export-opt-desc">Para importar en Excel, Google Sheets o sistema contable. Incluye todos los ítems con columnas separadas.</div>
+          </div>
+        </div>
+        <div class="export-opt">
+          <div class="export-opt-icon">📄</div>
+          <div>
+            <div class="export-opt-title">Exportar como PDF</div>
+            <div class="export-opt-desc">Resumen formal con encabezado de Arce Administración. Listo para enviar al propietario.</div>
+          </div>
+        </div>
+        <div class="export-opt" id="btnExportarYEnviar">
+          <div class="export-opt-icon">✉</div>
+          <div>
+            <div class="export-opt-title">Generar PDF y enviar por email</div>
+            <div class="export-opt-desc">Genera el PDF y abre el modal de notificación con el archivo adjunto listo para enviar.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="close('modalExportar')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     MODAL: Enviar notificación al propietario
+     ═══════════════════════════════════════════ -->
+<!--
+  El staff elige el canal: Email o WhatsApp.
+  Email: canal formal, queda registrado en historial, válido legalmente.
+  WhatsApp: informal, NO registrado como comunicación oficial.
+            Genera link wa.me con mensaje pre-armado.
+  REGLA: comunicaciones con validez legal → solo email.
+  El sistema avisa si se elige WhatsApp.
+-->
+<div class="modal-backdrop" id="modalNotif">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Notificar a Carlos Mendoza</span>
+      <button class="modal-close" onclick="close('modalNotif')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-group">
+        <label class="form-label">Canal de envío</label>
+        <div class="tipo-toggle">
+          <button class="tipo-toggle-btn ing active" id="btnCanalEmail" onclick="setCanal('email')">✉ Email</button>
+          <button class="tipo-toggle-btn" id="btnCanalWA" onclick="setCanal('wa')" style="background:var(--surface-high);color:var(--text-secondary);">💬 WhatsApp</button>
+        </div>
+      </div>
+
+      <div id="warnWA" style="display:none;background:var(--mustard-dim);border-left:3px solid rgba(253,222,168,0.5);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:9px 12px;font-size:0.7rem;color:#9a6a00;line-height:1.5;">
+        ⚠ WhatsApp no queda registrado como comunicación oficial. Para notificaciones con validez legal usá Email.
+      </div>
+
+      <div class="form-group" id="campoAsunto">
+        <label class="form-label">Asunto</label>
+        <input class="form-input" placeholder="Ej: Liquidación Mayo 2025 ejecutada">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Mensaje</label>
+        <textarea class="form-textarea" style="min-height:100px;" placeholder="Escribí el mensaje…"></textarea>
+      </div>
+
+      <div class="form-group" id="campoAdjunto">
+        <label class="form-label">Adjunto <span style="font-weight:400;text-transform:none;font-size:0.6rem;">(opcional)</span></label>
+        <input class="form-input" type="file" style="padding:6px 12px;font-size:0.78rem;">
+        <span style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">Si exportaste el PDF, podés adjuntarlo aquí.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Propiedad relacionada <span style="font-weight:400;text-transform:none;font-size:0.6rem;">(opcional)</span></label>
+        <select class="form-select">
+          <option value="">Sin asociar</option>
+          <option>Av. Colón 234, 2°A (CON-0089)</option>
+          <option>Bv. San Juan 890, PB (CON-0102)</option>
+        </select>
+      </div>
+
+      <div class="nota-info" id="notaEmail">
+        Se enviará a <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="07646a626963687d6647606a666e6b2964686a">[email&#160;protected]</a></strong>. Quedará registrado en el historial de comunicaciones.
+      </div>
+      <div class="nota-info" id="notaWA" style="display:none;border-left-color:rgba(37,211,102,0.4);">
+        Se abrirá WhatsApp con el mensaje pre-armado para <strong>+54 351 456-7890</strong>. El envío lo hace el staff desde su dispositivo.
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="close('modalNotif')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btnEnviarNotif">Enviar por email</button>
+    </div>
+  </div>
+</div>
+
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><!-- ═══════════════════════════════════════════
+     MODAL: Eliminar movimiento manual
+     ═══════════════════════════════════════════ -->
+<!--
+  PERMISOS:
+  Staff Admin → ve este modal con botón "Eliminar" directo.
+  Staff Ventas → ve el mismo modal pero el botón dice "Solicitar eliminación"
+                 y genera una tarea de aprobación para un Admin.
+  En ambos casos se requiere motivo obligatorio.
+
+  Una vez eliminado, el movimiento desaparece de la tabla.
+  No genera contra-asiento (era manual y no estaba liquidado).
+-->
+<div class="modal-backdrop" id="modalEliminar">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" style="color:var(--error);">Eliminar movimiento</span>
+      <button class="modal-close" onclick="close('modalEliminar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--surface-low);border-radius:var(--radius);padding:12px 14px;margin-bottom:4px;">
+        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Movimiento a eliminar</div>
+        <div style="font-weight:600;color:var(--on-surface);font-size:0.85rem;">Crédito — adelanto propietario</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Av. Colón 234 · 01/04/2025 · Staff: M. González · +$44.500</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Motivo <span style="color:var(--error);">*</span></label>
+        <textarea class="form-textarea" placeholder="Explicá por qué se elimina este movimiento…" style="min-height:72px;"></textarea>
+      </div>
+
+      <!-- Nota de rol: Staff Admin ve "Eliminar", Staff Ventas ve "Solicitar" -->
+      <div class="nota-info" style="border-left-color:var(--error);border-left-width:3px;">
+        <strong>Staff Admin:</strong> la eliminación es inmediata y queda registrada en el historial de auditoría.<br>
+        <strong style="opacity:0.7">Staff Ventas:</strong> se generará una tarea de aprobación para un Admin antes de ejecutarse.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="close('modalEliminar')">Cancelar</button>
+      <!-- En producción: el botón cambia según el rol del usuario logueado -->
+      <button class="btn btn-danger btn-sm">Eliminar movimiento</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  /* ── MODALES ── */
+  function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
+  function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
+  document.querySelectorAll('.modal-backdrop').forEach(bd => {
+    bd.addEventListener('click', e => { if (e.target === bd) bd.classList.remove('open'); });
+  });
+  document.querySelectorAll('.modal-close').forEach(btn => {
+    btn.addEventListener('click', () => btn.closest('.modal-backdrop')?.classList.remove('open'));
+  });
+
+  /* ── FAB ── */
+  let fabOpen = false;
+  const fabMain = document.getElementById('fabMain');
+  const fabMenu = document.getElementById('fabMenu');
+  const fabWrap = document.getElementById('fabWrap');
+
+  fabMain?.addEventListener('click', e => {
+    e.stopPropagation();
+    fabOpen = !fabOpen;
+    fabMenu?.classList.toggle('open', fabOpen);
+    fabMain?.classList.toggle('open', fabOpen);
+  });
+  document.querySelectorAll('.fab-action').forEach(action => {
+    action.addEventListener('click', e => {
+      e.stopPropagation();
+      fabOpen = false;
+      fabMenu?.classList.remove('open');
+      fabMain?.classList.remove('open');
+      const mid = action.dataset.modal;
+      if (mid) openModal(mid);
+    });
+  });
+  document.addEventListener('click', e => {
+    if (fabOpen && fabWrap && !fabWrap.contains(e.target)) {
+      fabOpen = false;
+      fabMenu?.classList.remove('open');
+      fabMain?.classList.remove('open');
+    }
+  });
+
+  /* ── BOTONES CON data-open ── */
+  document.querySelectorAll('[data-open]').forEach(el => {
+    el.addEventListener('click', e => { e.stopPropagation(); openModal(el.dataset.open); });
+  });
+
+  /* ── BOTONES CON data-chain (cerrar uno y abrir otro) ── */
+  document.querySelectorAll('[data-chain]').forEach(el => {
+    el.addEventListener('click', () => {
+      el.closest('.modal-backdrop')?.classList.remove('open');
+      openModal(el.dataset.chain);
+    });
+  });
+
+  /* ── PAPELERA ── */
+  document.querySelectorAll('.btn-trash').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); openModal('modalEliminar'); });
+  });
+
+  /* ── COMPROBANTE ── */
+  document.querySelectorAll('.mov-comprobante').forEach(el => {
+    el.addEventListener('click', e => { e.stopPropagation(); openModal('modalConfirmar'); });
+  });
+
+  /* ── CONFIRMAR / RECHAZAR inline ── */
+  document.getElementById('btnConfirmarInline')?.addEventListener('click', e => {
+    e.stopPropagation(); openModal('modalConfirmar');
+  });
+  document.getElementById('btnRechazarInline')?.addEventListener('click', e => {
+    e.stopPropagation(); openModal('modalRechazar');
+  });
+  document.getElementById('btnRechazarDesdeConfirmar')?.addEventListener('click', () => {
+    closeModal('modalConfirmar'); openModal('modalRechazar');
+  });
+
+  /* ── EXPORTAR → NOTIF encadenado ── */
+  document.getElementById('btnExportarYEnviar')?.addEventListener('click', () => {
+    closeModal('modalExportar'); openModal('modalNotif');
+  });
+
+  /* ── TOGGLE TIPO (crédito/débito) ── */
+  document.querySelectorAll('.tipo-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.tipo-toggle').querySelectorAll('.tipo-toggle-btn')
+         .forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  /* ── SELECTOR DE CANAL (notificación) ── */
+  document.getElementById('btnCanalEmail')?.addEventListener('click', () => setCanal('email'));
+  document.getElementById('btnCanalWA')?.addEventListener('click',    () => setCanal('wa'));
+
+  function setCanal(canal) {
+    const e = canal === 'email';
+    document.getElementById('btnCanalEmail')?.classList.toggle('active',  e);
+    document.getElementById('btnCanalWA')?.classList.toggle('active',    !e);
+    const tog = (id, show) => { const el = document.getElementById(id); if(el) el.style.display = show ? 'block' : 'none'; };
+    tog('warnWA', !e); tog('campoAsunto', e); tog('campoAdjunto', e); tog('notaEmail', e); tog('notaWA', !e);
+    const btn = document.getElementById('btnEnviarNotif');
+    if (btn) {
+      btn.textContent      = e ? 'Enviar por email' : 'Abrir WhatsApp';
+      btn.style.background = e ? '' : 'rgba(37,211,102,0.15)';
+      btn.style.color      = e ? '' : '#25d366';
+      btn.style.border     = e ? '' : '1px solid rgba(37,211,102,0.3)';
+    }
+  }
+
+  /* ── CHECKBOXES LIQUIDACIÓN ── */
+  document.getElementById('checkAll')?.addEventListener('change', function() {
+    document.querySelectorAll('.liq-check').forEach(cb => { cb.checked = this.checked; });
+    recalcLiq();
+  });
+  document.querySelectorAll('.liq-check').forEach(cb => cb.addEventListener('change', recalcLiq));
+
+  function recalcLiq() {
+    const checks = document.querySelectorAll('.liq-check');
+    let total = 0, sel = 0;
+    checks.forEach(cb => {
+      const row = cb.closest('.liq-check-row');
+      const m = parseFloat(row?.dataset.monto || 0);
+      const s = parseFloat(row?.dataset.sign  || 1);
+      if (cb.checked) { total += m * s; sel++; row?.classList.remove('deselected'); }
+      else            { row?.classList.add('deselected'); }
+    });
+    const fmt = new Intl.NumberFormat('es-AR', { style:'currency', currency:'ARS', minimumFractionDigits:0 });
+    const totalEl = document.getElementById('liqTotal');
+    if (totalEl) { totalEl.textContent = fmt.format(total); totalEl.style.color = total >= 0 ? 'var(--on-bg)' : 'var(--error)'; }
+    const cntEl = document.getElementById('countSelected');
+    if (cntEl) cntEl.textContent = `${sel} de ${checks.length} ítems seleccionados`;
+    const master = document.getElementById('checkAll');
+    if (master) { master.indeterminate = sel > 0 && sel < checks.length; master.checked = sel === checks.length; }
+  }
+
+}); // fin DOMContentLoaded
+</script>
+</body>
+</html>

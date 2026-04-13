@@ -45,6 +45,14 @@ export const PROPERTY_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_ad
 export const CONTRACT_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
 
 /**
+ * Permisos para la gestión de servicios
+ *
+ * Define qué roles pueden crear/editar servicios y cargar comprobantes:
+ * - `/servicios` (vista y gestión)
+ */
+export const SERVICE_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
+
+/**
  * Verifica si un rol tiene permisos para crear cláusulas
  * 
  * @param role - El rol del usuario a verificar
@@ -86,6 +94,17 @@ export function canManageProperties(role: string | null | undefined): boolean {
 export function canManageContracts(role: string | null | undefined): boolean {
   if (!role) return false;
   return CONTRACT_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
+}
+
+/**
+ * Verifica si un rol tiene permisos para gestionar servicios
+ *
+ * @param role - El rol del usuario a verificar
+ * @returns true si el rol tiene permisos, false en caso contrario
+ */
+export function canManageServices(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return SERVICE_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
 }
 
 /**
@@ -133,6 +152,11 @@ export function hasRouteAccess(
   }
 
   if (route.startsWith("/inquilinos/nuevo") && !canManageClients(role)) {
+    return false;
+  }
+
+  // Permisos para rutas de gestión de servicios
+  if (route.startsWith("/servicios") && !canManageServices(role)) {
     return false;
   }
 

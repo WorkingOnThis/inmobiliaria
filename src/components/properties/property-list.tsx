@@ -53,6 +53,7 @@ interface PropertyCounts {
   maintenance: number;
 }
 
+
 interface Pagination {
   total: number;
   page: number;
@@ -90,37 +91,39 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
 
 const STATUS_CONFIG: Record<
   string,
-  { label: string; bg: string; textColor: string; dot: string }
+  { label: string; bg: string; textColor: string; dot: string; borderLeft?: string }
 > = {
   available: {
     label: "Disponible",
-    bg: "var(--color-arce-primary-fixed)",
-    textColor: "var(--color-arce-on-primary-fixed)",
-    dot: "var(--color-arce-primary)",
+    bg: "rgba(253,222,168,0.15)",
+    textColor: "#ffdea8",
+    dot: "#ffdea8",
+    borderLeft: "#ffdea8",
   },
   rented: {
     label: "Alquilada",
-    bg: "var(--color-arce-surface-highest)",
-    textColor: "var(--color-arce-on-surface)",
-    dot: "var(--color-arce-outline)",
+    bg: "rgba(141,207,149,0.12)",
+    textColor: "#8dcf95",
+    dot: "#8dcf95",
   },
   reserved: {
     label: "Reservada",
-    bg: "var(--color-arce-secondary-container)",
-    textColor: "var(--color-arce-on-secondary-container)",
-    dot: "var(--color-arce-on-secondary-container)",
+    bg: "rgba(147,197,253,0.12)",
+    textColor: "#93c5fd",
+    dot: "#93c5fd",
   },
   maintenance: {
     label: "Mantenimiento",
-    bg: "var(--color-arce-tertiary-fixed)",
-    textColor: "var(--color-arce-on-tertiary-fixed)",
-    dot: "var(--color-arce-on-tertiary-fixed)",
+    bg: "rgba(253,186,116,0.12)",
+    textColor: "#fdba74",
+    dot: "#fdba74",
+    borderLeft: "#fdba74",
   },
   sold: {
     label: "Vendida",
-    bg: "var(--color-arce-error-container)",
-    textColor: "var(--color-arce-on-error-container)",
-    dot: "var(--color-arce-error)",
+    bg: "rgba(255,180,171,0.12)",
+    textColor: "#ffb4ab",
+    dot: "#ffb4ab",
   },
 };
 
@@ -263,7 +266,8 @@ function PaginationBtn({
 
 // ── Property row ──────────────────────────────────────────────────────────────
 
-function PropertyRowItem({ prop, even }: { prop: PropertyRow; even: boolean }) {
+function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boolean; onClick: () => void }) {
+  const cfg = STATUS_CONFIG[prop.status];
   return (
     <div
       className="grid px-4 py-3 cursor-pointer transition-colors group"
@@ -271,9 +275,11 @@ function PropertyRowItem({ prop, even }: { prop: PropertyRow; even: boolean }) {
         gridTemplateColumns: "minmax(220px,2fr) minmax(160px,1fr) minmax(180px,1fr) 140px 80px",
         background: even ? "rgba(40,42,44,0.45)" : "var(--color-arce-surface-lowest)",
         borderBottom: "1px solid rgba(160,132,126,0.07)",
+        borderLeft: cfg?.borderLeft ? `2px solid ${cfg.borderLeft}` : "2px solid transparent",
       }}
+      onClick={onClick}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "var(--color-arce-primary-fixed)";
+        (e.currentTarget as HTMLElement).style.background = "rgba(255,180,162,0.06)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLElement).style.background = even
@@ -635,7 +641,12 @@ function PropertyListContent() {
         {!isLoading &&
           !error &&
           properties.map((prop, i) => (
-            <PropertyRowItem key={prop.id} prop={prop} even={i % 2 === 1} />
+            <PropertyRowItem
+              key={prop.id}
+              prop={prop}
+              even={i % 2 === 1}
+              onClick={() => router.push(`/propiedades/${prop.id}`)}
+            />
           ))}
 
         {/* Pagination */}

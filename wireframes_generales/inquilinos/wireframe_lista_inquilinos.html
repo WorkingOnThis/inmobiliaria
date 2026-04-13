@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inquilinos — Arce Administración</title>
+
+<!--
+  ============================================================
+  WIREFRAME: Lista de Inquilinos
+  Archivo: ../inquilinos/wireframe_lista_inquilinos.html
+  Sistema de diseño: Arce Administración v2.0
+  Modo: Oscuro por defecto
+  ============================================================
+
+  DESCRIPCIÓN
+  Vista de listado global de inquilinos. Permite al staff
+  buscar, filtrar y acceder a la ficha de cualquier inquilino.
+
+  ESTADOS DE INQUILINO:
+  · Activo     → tiene contrato vigente
+  · Con mora   → alquiler vencido (alertar con --error)
+  · Sin contrato → persona sin contrato activo (ex-inquilino o pendiente)
+  · Por vencer → contrato vence en ≤ 60 días
+
+  NOTA DE NEGOCIO:
+  Un "inquilino" en Arce es una persona con contrato activo.
+  Si el contrato finaliza, la persona queda en el sistema
+  como contacto (estado "Sin contrato activo").
+  El staff puede acceder a su historial desde esta vista.
+
+  La tabla es el entry point principal; desde aquí se navega
+  a ../inquilinos/wireframe_ficha_inquilino.html.
+
+  ENDPOINTS (referencia backend)
+  GET /api/inquilinos?estado=&q=&page=
+  GET /api/inquilinos/stats
+  ============================================================
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGN SYSTEM — Arce Administración v2.0
+   ============================================================ */
+:root {
+  --bg:                       #111314;
+  --surface:                  #191c1e;
+  --surface-low:              #1d2022;
+  --surface-mid:              #222527;
+  --surface-high:             #282a2c;
+  --surface-highest:          #333537;
+  --surface-white:            #0e1011;
+  --on-bg:                    #e1e2e4;
+  --on-surface:               #e1e2e4;
+  --text-secondary:           #a8a9ac;
+  --text-muted:               #6b6d70;
+  --primary:                  #ffb4a2;
+  --primary-dark:             #6b1702;
+  --primary-dim:              rgba(255,180,162,0.12);
+  --primary-tint:             rgba(255,180,162,0.08);
+  --on-primary:               #561100;
+  --mustard:                  #ffdea8;
+  --mustard-dim:              rgba(253,222,168,0.15);
+  --on-mustard:               #271900;
+  --error:                    #ffb4ab;
+  --error-dim:                rgba(255,180,171,0.12);
+  --error-dark:               #93000a;
+  --on-error-dim:             #ffb4ab;
+  --success:                  #8dcf95;
+  --success-dim:              rgba(141,207,149,0.12);
+  --border:                   rgba(255,255,255,0.07);
+  --border-accent:            rgba(255,180,162,0.2);
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-brand:    "Montserrat", sans-serif;
+  --font-body:     "Inter", sans-serif;
+  --radius-xs:  4px;
+  --radius-sm:  6px;
+  --radius:     12px;
+  --radius-lg:  18px;
+  --radius-xl:  24px;
+  --radius-pill:9999px;
+  --transition: all 0.18s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--on-surface);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ── LAYOUT ── */
+.app-shell { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px; min-height: 100vh;
+  background: var(--surface);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.sidebar-logo {
+  padding: 20px 20px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-img { width: 32px; height: 32px; object-fit: contain; flex-shrink: 0; }
+.logo-text-name { font-family: var(--font-brand); font-size: 0.78rem; font-weight: 800; letter-spacing: -0.01em; color: var(--on-bg); line-height: 1.1; }
+.logo-text-sub { font-size: 0.52rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin-top: 1px; }
+.nav-section { padding: 18px 16px 5px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); }
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px; margin: 1px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; transition: var(--transition); text-decoration: none;
+}
+.nav-item:hover { background: var(--surface-high); color: var(--on-surface); }
+.nav-item.active { background: var(--primary-dim); color: var(--primary); font-weight: 600; }
+.nav-icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: var(--error-dim); color: var(--error); font-size: 0.6rem; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-pill); }
+.sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--border); }
+.user-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); }
+.user-row:hover { background: var(--surface-high); }
+.user-avatar { width: 30px; height: 30px; background: var(--primary-dark); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 800; color: #fff; font-family: var(--font-brand); flex-shrink: 0; }
+.user-name { font-size: 0.8rem; font-weight: 600; color: var(--on-surface); }
+.user-role { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+
+/* ── MAIN ── */
+.main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+
+/* ── TOPBAR ── */
+.topbar {
+  height: 56px; background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 28px; gap: 10px; flex-shrink: 0;
+}
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); }
+.breadcrumb a { color: var(--text-secondary); text-decoration: none; transition: var(--transition); }
+.breadcrumb a:hover { color: var(--primary); }
+.breadcrumb-current { color: var(--on-surface); font-weight: 600; }
+.breadcrumb-sep { color: var(--text-muted); }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* ── BOTONES ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; font-family: var(--font-body); font-size: 0.72rem; font-weight: 600;
+  cursor: pointer; border: none; border-radius: var(--radius); transition: var(--transition);
+}
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-secondary { background: var(--surface-highest); color: var(--on-surface); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--surface-high); }
+.btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--surface-high); color: var(--on-surface); }
+.btn-sm { padding: 5px 11px; font-size: 0.7rem; }
+.btn-xs { padding: 3px 8px; font-size: 0.67rem; border-radius: var(--radius-sm); }
+
+/* ── CONTENT ── */
+.content { flex: 1; padding: 28px; overflow-y: auto; }
+
+/* ── PAGE HEADER ── */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+.page-title { font-family: var(--font-headline); font-size: 1.35rem; font-weight: 700; color: var(--on-bg); letter-spacing: -0.02em; }
+.page-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
+
+/* ── KPIs ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px 18px;
+}
+.kpi-card.accent { border-color: var(--border-accent); background: linear-gradient(135deg, var(--surface) 0%, rgba(107,23,2,0.08) 100%); }
+.kpi-card.warn { border-color: rgba(253,222,168,0.2); background: linear-gradient(135deg, var(--surface) 0%, var(--mustard-dim) 100%); }
+.kpi-card.err { border-color: rgba(255,180,171,0.2); background: linear-gradient(135deg, var(--surface) 0%, var(--error-dim) 100%); }
+.kpi-label { font-size: 0.67rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 8px; }
+.kpi-value { font-family: var(--font-headline); font-size: 1.6rem; font-weight: 700; color: var(--on-bg); letter-spacing: -0.02em; line-height: 1; }
+.kpi-card.accent .kpi-value { color: var(--primary); }
+.kpi-card.warn .kpi-value { color: var(--mustard); }
+.kpi-card.err .kpi-value { color: var(--error); }
+.kpi-sub { font-size: 0.68rem; color: var(--text-muted); margin-top: 6px; }
+
+/* ── BARRA DE BÚSQUEDA Y FILTROS ── */
+.toolbar {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.search-wrap { display: flex; align-items: center; gap: 8px; flex: 1; }
+.search-icon { color: var(--text-muted); font-size: 0.85rem; }
+.search-input {
+  background: transparent; border: none; outline: none;
+  font-family: var(--font-body); font-size: 0.82rem; color: var(--on-surface);
+  flex: 1; min-width: 0;
+}
+.search-input::placeholder { color: var(--text-muted); }
+.toolbar-sep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+.filter-chips { display: flex; gap: 6px; flex-shrink: 0; }
+.chip-btn {
+  padding: 4px 12px; font-size: 0.68rem; font-weight: 600; font-family: var(--font-body);
+  background: var(--surface-high); color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius-pill);
+  cursor: pointer; transition: var(--transition);
+}
+.chip-btn:hover { color: var(--on-surface); border-color: rgba(255,255,255,0.15); }
+.chip-btn.active { background: var(--primary-dim); color: var(--primary); border-color: var(--border-accent); }
+.chip-btn.err-chip.active { background: var(--error-dim); color: var(--error); border-color: rgba(255,180,171,0.25); }
+.chip-btn.warn-chip.active { background: var(--mustard-dim); color: var(--mustard); border-color: rgba(253,222,168,0.25); }
+
+/* ── TABLA ── */
+.tabla-wrapper {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.tabla-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+}
+.tabla-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.tabla-count { font-size: 0.72rem; color: var(--text-muted); }
+.tabla-actions { display: flex; gap: 6px; }
+
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 10px 14px; text-align: left;
+  font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); background: var(--surface-low);
+  border-bottom: 1px solid var(--border);
+}
+tbody tr { transition: var(--transition); cursor: pointer; }
+tbody tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+tbody tr:hover td { background: var(--surface-mid); }
+tbody td {
+  padding: 11px 14px; font-size: 0.78rem; color: var(--on-surface);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+
+/* nombre + meta */
+.inq-nombre { font-weight: 600; color: var(--on-surface); font-size: 0.82rem; }
+.inq-meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+.inq-id { font-size: 0.65rem; font-family: monospace; color: var(--text-muted); }
+
+/* avatar */
+.avatar {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.68rem; font-weight: 800; font-family: var(--font-brand);
+  flex-shrink: 0; color: #fff;
+  background: var(--primary-dark);
+}
+.avatar.purple { background: #3a2a6b; }
+.avatar.teal   { background: #1a4a4a; }
+.avatar.olive  { background: #3a3a1a; }
+.avatar.blue   { background: #1a2a4a; }
+
+.inq-cell { display: flex; align-items: center; gap: 10px; }
+
+/* propiedad */
+.prop-tag {
+  display: inline-block; background: var(--surface-high);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 2px 8px; font-size: 0.67rem; color: var(--text-secondary);
+}
+
+/* estados */
+.tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: var(--radius-pill);
+  font-size: 0.67rem; font-weight: 700; letter-spacing: 0.02em;
+}
+.tag-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.tag-activo    { background: var(--success-dim); color: var(--success); }
+.tag-activo .tag-dot { background: var(--success); }
+.tag-mora      { background: var(--error-dim); color: var(--error); }
+.tag-mora .tag-dot { background: var(--error); box-shadow: 0 0 5px var(--error); }
+.tag-vencer    { background: var(--mustard-dim); color: var(--mustard); }
+.tag-vencer .tag-dot { background: var(--mustard); }
+.tag-sin-cont  { background: var(--surface-high); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* completitud mini */
+.completitud-wrap { display: flex; align-items: center; gap: 6px; }
+.completitud-bar { width: 64px; height: 4px; background: var(--surface-highest); border-radius: var(--radius-pill); overflow: hidden; }
+.completitud-fill { height: 100%; border-radius: var(--radius-pill); background: var(--primary); transition: width 0.3s; }
+.completitud-fill.mid { background: var(--mustard); }
+.completitud-fill.low { background: var(--error); }
+.completitud-pct { font-size: 0.65rem; color: var(--text-muted); min-width: 28px; }
+
+/* mora badge inline */
+.mora-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.65rem; font-weight: 700; color: var(--error);
+  background: var(--error-dim); border-radius: var(--radius-pill);
+  padding: 1px 7px;
+}
+
+/* vence pronto badge */
+.vence-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.65rem; font-weight: 700; color: var(--mustard);
+  background: var(--mustard-dim); border-radius: var(--radius-pill);
+  padding: 1px 7px;
+}
+
+/* acciones inline */
+.row-actions { display: flex; gap: 5px; opacity: 0; transition: opacity 0.15s; }
+tbody tr:hover .row-actions { opacity: 1; }
+
+/* fila en mora */
+.fila-mora td:first-child { border-left: 2px solid var(--error); }
+
+/* paginación */
+.pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; border-top: 1px solid var(--border);
+  font-size: 0.72rem; color: var(--text-muted);
+}
+.page-btns { display: flex; gap: 4px; }
+.page-btn {
+  width: 28px; height: 28px; border-radius: var(--radius-sm);
+  background: var(--surface-high); border: 1px solid var(--border);
+  color: var(--text-secondary); font-size: 0.72rem; font-family: var(--font-body);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: var(--transition);
+}
+.page-btn:hover { background: var(--surface-highest); color: var(--on-surface); }
+.page-btn.active { background: var(--primary-dim); color: var(--primary); border-color: var(--border-accent); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+    <div class="sidebar-logo">
+      <!-- Logo: PNG oficial en base64. Si no está disponible, usar SVG placeholder. -->
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#6b1702"/>
+        <path d="M16 5L6 26h4l2-5h8l2 5h4L16 5zm0 6l3 8h-6l3-8z" fill="#ffb4a2"/>
+        <path d="M16 4L18 7l2-1-1 3 2 1-3 1v2l-2-2-2 2v-2l-3-1 2-1-1-3 2 1z" fill="#ffdea8" opacity="0.8"/>
+      </svg>
+      <div>
+        <div class="logo-text-name">Arce Administración</div>
+        <div class="logo-text-sub">Gestión inmobiliaria</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Principal</div>
+    <a class="nav-item" href="../dashboard/wireframe_dashboard_staff.html">
+      <span class="nav-icon">⬛</span> Dashboard
+    </a>
+    <a class="nav-item" href="../caja/wireframe_caja_general.html">
+      <span class="nav-icon">◈</span> Caja General
+    </a>
+
+    <div class="nav-section">Entidades</div>
+    <a class="nav-item active" href="../inquilinos/wireframe_lista_inquilinos.html">
+      <span class="nav-icon">◻</span> Inquilinos
+    </a>
+    <a class="nav-item" href="../propietarios/wireframe_lista_propietarios.html">
+      <span class="nav-icon">◻</span> Propietarios
+    </a>
+    <a class="nav-item" href="../propiedades/wireframe_ficha_propiedad.html">
+      <span class="nav-icon">◻</span> Propiedades
+    </a>
+    <a class="nav-item" href="../contratos/wireframe_lista_contratos.html">
+      <span class="nav-icon">◻</span> Contratos
+    </a>
+
+    <div class="nav-section">Gestión</div>
+    <a class="nav-item" href="../tareas/wireframe_tareas.html">
+      <span class="nav-icon">◻</span> Tareas <span class="nav-badge">9</span>
+    </a>
+    <a class="nav-item" href="../v1/wireframe_bandeja_staff.html">
+      <span class="nav-icon">◻</span> Notificaciones <span class="nav-badge">3</span>
+    </a>
+    <a class="nav-item" href="../servicios/wireframe_control_servicios.html">
+      <span class="nav-icon">◻</span> Control Servicios
+    </a>
+    <a class="nav-item" href="../financiero/wireframe_motor_financiero.html">
+      <span class="nav-icon">◻</span> Motor Financiero
+    </a>
+    <a class="nav-item" href="../renovacion/wireframe_renovacion_salida.html">
+      <span class="nav-icon">◻</span> Renovación y Salida
+    </a>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">MG</div>
+        <div>
+          <div class="user-name">M. González</div>
+          <div class="user-role">Staff Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+<!-- MAIN -->
+<div class="main-content">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="breadcrumb">
+      <a href="#">Inicio</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Inquilinos</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm">⬇ Exportar</button>
+      <button class="btn btn-primary btn-sm">+ Nuevo inquilino</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Inquilinos</div>
+        <div class="page-subtitle">Todas las personas con contrato activo o historial en el sistema</div>
+      </div>
+    </div>
+
+    <!-- KPIs
+         ──────
+         Mustard solo en "en mora" — único dato crítico de esta vista.
+         Los demás KPIs usan colores secundarios.
+
+         NOTA: "En mora" implica alquiler vencido con punitorios activos.
+         El número de mora es el único que merece atención urgente
+         del staff → único uso de mustard en la vista.
+    -->
+    <div class="kpi-grid">
+      <div class="kpi-card accent">
+        <div class="kpi-label">Total inquilinos</div>
+        <div class="kpi-value">47</div>
+        <div class="kpi-sub">37 con contrato activo</div>
+      </div>
+      <!-- Mustard = mora: único uso de tertiary-fixed en esta vista -->
+      <div class="kpi-card warn">
+        <div class="kpi-label">⚠ En mora</div>
+        <div class="kpi-value">3</div>
+        <div class="kpi-sub">Alquiler vencido · punitorios activos</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Contrato por vencer</div>
+        <div class="kpi-value">5</div>
+        <div class="kpi-sub">Vencen en ≤ 60 días</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Sin contrato activo</div>
+        <div class="kpi-value">10</div>
+        <div class="kpi-sub">Ex-inquilinos en el sistema</div>
+      </div>
+    </div>
+
+    <!-- BARRA BÚSQUEDA + FILTROS
+         ──────────────────────────
+         Búsqueda en tiempo real por nombre, DNI, dirección o contrato.
+         Los chips de filtro son excluyentes (uno activo a la vez).
+         "Todos" muestra activos + mora + por vencer + sin contrato.
+    -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" type="text" placeholder="Buscar por nombre, DNI, dirección o contrato…" id="searchInput" oninput="filterTable()">
+      </div>
+      <div class="toolbar-sep"></div>
+      <div class="filter-chips">
+        <button class="chip-btn active" id="f-todos" onclick="setFilter('todos')">Todos</button>
+        <button class="chip-btn" id="f-activo" onclick="setFilter('activo')">Activos</button>
+        <button class="chip-btn err-chip" id="f-mora" onclick="setFilter('mora')">En mora</button>
+        <button class="chip-btn warn-chip" id="f-vencer" onclick="setFilter('vencer')">Por vencer</button>
+        <button class="chip-btn" id="f-sin" onclick="setFilter('sin')">Sin contrato</button>
+      </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="tabla-wrapper">
+      <div class="tabla-header">
+        <div>
+          <span class="tabla-title">Lista de inquilinos</span>
+          <span class="tabla-count" style="margin-left:10px" id="rowCount">47 registros</span>
+        </div>
+        <div class="tabla-actions">
+          <button class="btn btn-ghost btn-xs">⬇ CSV</button>
+        </div>
+      </div>
+
+      <table id="tablaInquilinos">
+        <thead>
+          <tr>
+            <th>Inquilino</th>
+            <th>Propiedad</th>
+            <th>Contrato</th>
+            <th>Vencimiento</th>
+            <th>Último pago</th>
+            <th>Completitud</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- ── ACTIVO normal ── -->
+          <tr data-estado="activo" onclick="window.location='../inquilinos/wireframe_ficha_inquilino.html'">
+            <td>
+              <div class="inq-cell">
+                <div class="avatar">ML</div>
+                <div>
+                  <div class="inq-nombre">Martínez, Lucas E.</div>
+                  <div class="inq-meta">DNI 32.441.100 · 351 4001 2200</div>
+                  <div class="inq-id">INQ-0041</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="prop-tag">Córdoba 2840, 4°B</span>
+            </td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">CON-2024-0041</td>
+            <td style="font-size:.78rem;">01/03/2026</td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">08/05/2025</td>
+            <td>
+              <div class="completitud-wrap">
+                <div class="completitud-bar"><div class="completitud-fill" style="width:88%"></div></div>
+                <span class="completitud-pct">88%</span>
+              </div>
+            </td>
+            <td><span class="tag tag-activo"><span class="tag-dot"></span>Activo</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()">Ver ficha</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── EN MORA ── -->
+          <tr data-estado="mora" class="fila-mora" onclick="window.location='../inquilinos/wireframe_ficha_inquilino.html'">
+            <td>
+              <div class="inq-cell">
+                <div class="avatar purple">DF</div>
+                <div>
+                  <div class="inq-nombre">Ferreyra, Diego M.</div>
+                  <div class="inq-meta">DNI 28.112.334 · 351 5566 9900</div>
+                  <div class="inq-id">INQ-0038</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="prop-tag">San Martín 1120</span>
+            </td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">CON-2024-0038</td>
+            <td style="font-size:.78rem;">01/08/2025</td>
+            <td>
+              <!-- mora activa: se muestra el badge en lugar de fecha -->
+              <span class="mora-badge">⚠ 14 días de mora</span>
+            </td>
+            <td>
+              <div class="completitud-wrap">
+                <div class="completitud-bar"><div class="completitud-fill mid" style="width:62%"></div></div>
+                <span class="completitud-pct">62%</span>
+              </div>
+            </td>
+            <td><span class="tag tag-mora"><span class="tag-dot"></span>En mora</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()">Ver ficha</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── ACTIVO normal ── -->
+          <tr data-estado="activo" onclick="window.location='../inquilinos/wireframe_ficha_inquilino.html'">
+            <td>
+              <div class="inq-cell">
+                <div class="avatar teal">LS</div>
+                <div>
+                  <div class="inq-nombre">Suárez, Laura M.</div>
+                  <div class="inq-meta">DNI 35.008.772 · 351 4882 1100</div>
+                  <div class="inq-id">INQ-0022</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="prop-tag">Mitre 80, 5°A</span>
+            </td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">CON-2024-0022</td>
+            <td style="font-size:.78rem;">15/11/2025</td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">04/05/2025</td>
+            <td>
+              <div class="completitud-wrap">
+                <div class="completitud-bar"><div class="completitud-fill" style="width:95%"></div></div>
+                <span class="completitud-pct">95%</span>
+              </div>
+            </td>
+            <td><span class="tag tag-activo"><span class="tag-dot"></span>Activo</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()">Ver ficha</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── POR VENCER ── -->
+          <tr data-estado="vencer" onclick="window.location='../inquilinos/wireframe_ficha_inquilino.html'">
+            <td>
+              <div class="inq-cell">
+                <div class="avatar olive">RG</div>
+                <div>
+                  <div class="inq-nombre">González, Roberto A.</div>
+                  <div class="inq-meta">DNI 26.330.001 · 351 4002 7788</div>
+                  <div class="inq-id">INQ-0031</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="prop-tag">Belgrano 490, PB</span>
+            </td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">CON-2024-0031</td>
+            <td>
+              <!-- contrato por vencer: badge de alerta -->
+              <span class="vence-badge">⚡ 22 días</span>
+            </td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">02/05/2025</td>
+            <td>
+              <div class="completitud-wrap">
+                <div class="completitud-bar"><div class="completitud-fill" style="width:79%"></div></div>
+                <span class="completitud-pct">79%</span>
+              </div>
+            </td>
+            <td><span class="tag tag-vencer"><span class="tag-dot"></span>Por vencer</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()">Ver ficha</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── EN MORA (segundo) ── -->
+          <tr data-estado="mora" class="fila-mora" onclick="window.location='../inquilinos/wireframe_ficha_inquilino.html'">
+            <td>
+              <div class="inq-cell">
+                <div class="avatar blue">CA</div>
+                <div>
+                  <div class="inq-nombre">Álvarez, Carla N.</div>
+                  <div class="inq-meta">DNI 31.554.200 · 351 6601 3300</div>
+                  <div class="inq-id">INQ-0027</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="prop-tag">Rondeau 311, 2°A</span>
+            </td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">CON-2023-0027</td>
+            <td style="font-size:.78rem;">01/06/2025</td>
+            <td>
+              <span class="mora-badge">⚠ 6 días de mora</span>
+            </td>
+            <td>
+              <div class="completitud-wrap">
+                <div class="completitud-bar"><div class="completitud-fill mid" style="width:55%"></div></div>
+                <span class="completitud-pct">55%</span>
+              </div>
+            </td>
+            <td><span class="tag tag-mora"><span class="tag-dot"></span>En mora</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()">Ver ficha</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── ACTIVO normal ── -->
+          <tr data-estado="activo" onclick="window.location='../inquilinos/wireframe_ficha_inquilino.html'">
+            <td>
+              <div class="inq-cell">
+                <div class="avatar">PR</div>
+                <div>
+                  <div class="inq-nombre">Rodríguez, Pablo S.</div>
+                  <div class="inq-meta">DNI 29.001.558 · 351 4440 5500</div>
+                  <div class="inq-id">INQ-0019</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="prop-tag">Av. Colón 920, 3°B</span>
+            </td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">CON-2024-0019</td>
+            <td style="font-size:.78rem;">01/09/2025</td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">06/05/2025</td>
+            <td>
+              <div class="completitud-wrap">
+                <div class="completitud-bar"><div class="completitud-fill" style="width:100%"></div></div>
+                <span class="completitud-pct">100%</span>
+              </div>
+            </td>
+            <td><span class="tag tag-activo"><span class="tag-dot"></span>Activo</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()">Ver ficha</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── SIN CONTRATO ACTIVO (ex-inquilino) ── -->
+          <tr data-estado="sin" onclick="window.location='../inquilinos/wireframe_ficha_inquilino.html'" style="opacity:.75">
+            <td>
+              <div class="inq-cell">
+                <div class="avatar" style="background:var(--surface-highest);color:var(--text-muted)">JM</div>
+                <div>
+                  <div class="inq-nombre" style="color:var(--text-secondary)">Mena, Joaquín L.</div>
+                  <div class="inq-meta">DNI 25.774.390 · 351 4003 0011</div>
+                  <div class="inq-id">INQ-0008</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="prop-tag" style="color:var(--text-muted)">—</span>
+            </td>
+            <td style="font-size:.72rem;color:var(--text-muted)">Finalizado</td>
+            <td style="font-size:.72rem;color:var(--text-muted)">—</td>
+            <td style="font-size:.72rem;color:var(--text-muted)">15/02/2025</td>
+            <td>
+              <div class="completitud-wrap">
+                <div class="completitud-bar"><div class="completitud-fill" style="width:72%"></div></div>
+                <span class="completitud-pct" style="color:var(--text-muted)">72%</span>
+              </div>
+            </td>
+            <td><span class="tag tag-sin-cont">Sin contrato</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()">Ver ficha</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── POR VENCER (segundo) ── -->
+          <tr data-estado="vencer" onclick="window.location='../inquilinos/wireframe_ficha_inquilino.html'">
+            <td>
+              <div class="inq-cell">
+                <div class="avatar teal">VT</div>
+                <div>
+                  <div class="inq-nombre">Torres, Valentina C.</div>
+                  <div class="inq-meta">DNI 37.221.100 · 351 4880 6601</div>
+                  <div class="inq-id">INQ-0044</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="prop-tag">España 552, 1°A</span>
+            </td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">CON-2024-0044</td>
+            <td>
+              <span class="vence-badge">⚡ 41 días</span>
+            </td>
+            <td style="font-size:.72rem;color:var(--text-secondary)">07/05/2025</td>
+            <td>
+              <div class="completitud-wrap">
+                <div class="completitud-bar"><div class="completitud-fill" style="width:83%"></div></div>
+                <span class="completitud-pct">83%</span>
+              </div>
+            </td>
+            <td><span class="tag tag-vencer"><span class="tag-dot"></span>Por vencer</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()">Ver ficha</button>
+              </div>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+
+      <!-- PAGINACIÓN -->
+      <div class="pagination">
+        <span id="paginationInfo">Mostrando 1–8 de 47 inquilinos</span>
+        <div class="page-btns">
+          <button class="page-btn">‹</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">…</button>
+          <button class="page-btn">6</button>
+          <button class="page-btn">›</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<script>
+// ── FILTRO POR ESTADO ──
+let estadoActivo = 'todos';
+
+function setFilter(estado) {
+  estadoActivo = estado;
+  document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('f-' + estado).classList.add('active');
+  applyFilters();
+}
+
+// ── BÚSQUEDA ──
+function filterTable() { applyFilters(); }
+
+function applyFilters() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  const rows = document.querySelectorAll('#tablaInquilinos tbody tr');
+  let visible = 0;
+
+  rows.forEach(row => {
+    const estado = row.dataset.estado;
+    const text = row.innerText.toLowerCase();
+    const matchesFilter = estadoActivo === 'todos' || estado === estadoActivo;
+    const matchesSearch = !query || text.includes(query);
+
+    if (matchesFilter && matchesSearch) {
+      row.style.display = '';
+      visible++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  document.getElementById('rowCount').textContent = visible + (visible === 1 ? ' registro' : ' registros');
+
+  // actualizar texto paginación (simplificado para wireframe)
+  document.getElementById('paginationInfo').textContent =
+    'Mostrando 1–' + Math.min(visible, 8) + ' de ' + visible + (visible === 1 ? ' inquilino' : ' inquilinos');
+}
+</script>
+
+</body>
+</html>

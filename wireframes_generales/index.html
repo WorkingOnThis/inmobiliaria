@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prototipo — Arce Administración</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:             #111314;
+  --surface:        #191c1e;
+  --surface-low:    #1d2022;
+  --surface-mid:    #222527;
+  --surface-high:   #282a2c;
+
+  --on-surface:     #e1e2e4;
+  --text-secondary: #a8a9ac;
+  --text-muted:     #6b6d70;
+
+  --primary:        #ffb4a2;
+  --primary-dark:   #6b1702;
+  --primary-dim:    rgba(255,180,162,0.12);
+  --primary-tint:   rgba(255,180,162,0.08);
+
+  --mustard:        #ffdea8;
+  --mustard-dim:    rgba(253,222,168,0.15);
+
+  --border:         rgba(255,255,255,0.07);
+  --border-accent:  rgba(255,180,162,0.2);
+
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-brand:    "Montserrat", sans-serif;
+  --font-body:     "Inter", sans-serif;
+
+  --radius-sm:   6px;
+  --radius:      12px;
+  --radius-pill: 9999px;
+
+  --transition: all 0.18s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--on-surface);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.page-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 40px 48px 36px;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.logo-name {
+  font-family: var(--font-brand);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--on-surface);
+  line-height: 1.1;
+}
+
+.logo-sub {
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.page-title {
+  font-family: var(--font-headline);
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--on-surface);
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.page-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  max-width: 520px;
+}
+
+.badge-proto {
+  display: inline-block;
+  margin-top: 14px;
+  background: var(--primary-dim);
+  color: var(--primary);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-accent);
+}
+
+/* ── CONTENT ── */
+.page-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px;
+}
+
+/* ── SECTION LABEL ── */
+.section-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── GRID DE MÓDULOS ── */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.module-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: var(--transition);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.module-card:hover {
+  background: var(--surface-mid);
+  border-color: var(--border-accent);
+  transform: translateY(-1px);
+}
+
+.module-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.module-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.module-tag {
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-high);
+  color: var(--text-muted);
+}
+
+.module-tag.principal {
+  background: var(--primary-dim);
+  color: var(--primary);
+}
+
+.module-tag.gestion {
+  background: var(--mustard-dim);
+  color: var(--mustard);
+}
+
+.module-name {
+  font-family: var(--font-headline);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  line-height: 1.3;
+}
+
+.module-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.module-link {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.module-card:hover .module-link { gap: 8px; }
+
+/* ── FLOWCHART SECTION ── */
+.flowchart-section {
+  background: var(--surface-low);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.flowchart-text .fc-title {
+  font-family: var(--font-headline);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  margin-bottom: 4px;
+}
+
+.flowchart-text .fc-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.btn-flowchart {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  text-decoration: none;
+  transition: var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-flowchart:hover {
+  background: var(--primary-dim);
+  border-color: var(--border-accent);
+  color: var(--primary);
+}
+
+/* ── FOOTER ── */
+.page-footer {
+  text-align: center;
+  padding: 24px 48px 40px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="page-header">
+  <div class="logo-row">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="6" fill="#6b1702"/>
+      <path d="M16 5L6 26h4l2-5h8l2 5h4L16 5zm0 6l3 8h-6l3-8z" fill="#ffb4a2"/>
+      <path d="M16 4L18 7l2-1-1 3 2 1-3 1v2l-2-2-2 2v-2l-3-1 2-1-1-3 2 1z" fill="#ffdea8" opacity="0.8"/>
+    </svg>
+    <div>
+      <div class="logo-name">Arce Administración</div>
+      <div class="logo-sub">Gestión inmobiliaria</div>
+    </div>
+  </div>
+  <div class="page-title">Prototipo navegable</div>
+  <div class="page-desc">Wireframes interconectados del sistema de gestión. Hacé click en cualquier módulo para explorar el flujo.</div>
+  <div class="badge-proto">v2.0 · Work in progress</div>
+</header>
+
+<!-- ── CONTENT ── -->
+<div class="page-content">
+
+  <!-- MÓDULOS PRINCIPALES -->
+  <div class="section-label">Principal</div>
+  <div class="modules-grid">
+
+    <a class="module-card" href="dashboard/wireframe_dashboard_staff.html">
+      <div class="module-card-header">
+        <span class="module-icon">⬛</span>
+        <span class="module-tag principal">Inicio</span>
+      </div>
+      <div class="module-name">Dashboard</div>
+      <div class="module-desc">Vista de entrada: salud del portfolio, alertas críticas y tareas urgentes del día.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+    <a class="module-card" href="caja/wireframe_caja_general.html">
+      <div class="module-card-header">
+        <span class="module-icon">◈</span>
+        <span class="module-tag principal">Finanzas</span>
+      </div>
+      <div class="module-name">Caja General</div>
+      <div class="module-desc">Movimientos de caja, registro de cobros y liquidaciones del período actual.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+  </div>
+
+  <!-- ENTIDADES -->
+  <div class="section-label">Entidades</div>
+  <div class="modules-grid">
+
+    <a class="module-card" href="inquilinos/wireframe_lista_inquilinos.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag">Lista</span>
+      </div>
+      <div class="module-name">Inquilinos</div>
+      <div class="module-desc">Listado de inquilinos activos, en mora y sin contrato. Acceso a ficha individual.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+    <a class="module-card" href="inquilinos/wireframe_ficha_inquilino.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag">Ficha</span>
+      </div>
+      <div class="module-name">Ficha de Inquilino</div>
+      <div class="module-desc">Datos del inquilino, historial de pagos, contrato activo y documentos adjuntos.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+    <a class="module-card" href="propietarios/wireframe_lista_propietarios.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag">Lista</span>
+      </div>
+      <div class="module-name">Propietarios</div>
+      <div class="module-desc">Listado de propietarios con panel lateral de resumen y acceso a ficha completa.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+    <a class="module-card" href="propietarios/wireframe_ficha_propietario.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag">Ficha</span>
+      </div>
+      <div class="module-name">Ficha de Propietario</div>
+      <div class="module-desc">Datos del propietario, propiedades asociadas, cuenta corriente y documentos.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+    <a class="module-card" href="propietarios/wireframe_cuenta_corriente_propietario.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag">Finanzas</span>
+      </div>
+      <div class="module-name">Cuenta Corriente</div>
+      <div class="module-desc">Movimientos financieros por propietario: liquidaciones, retenciones y saldo acumulado.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+    <a class="module-card" href="propiedades/wireframe_ficha_propiedad.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag">Ficha</span>
+      </div>
+      <div class="module-name">Ficha de Propiedad</div>
+      <div class="module-desc">Personas vinculadas, contratos, servicios, mantenimiento y documentos por unidad.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+    <a class="module-card" href="contratos/wireframe_lista_contratos.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag">Lista</span>
+      </div>
+      <div class="module-name">Contratos</div>
+      <div class="module-desc">Listado del ciclo de vida contractual: vigentes, por vencer, en redacción y pendientes de firma.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+  </div>
+
+  <!-- GESTIÓN -->
+  <div class="section-label">Gestión</div>
+  <div class="modules-grid">
+
+    <a class="module-card" href="tareas/wireframe_tareas.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag gestion">Gestión</span>
+      </div>
+      <div class="module-name">Tareas</div>
+      <div class="module-desc">Panel de tareas del equipo: urgentes, asignadas, automáticas y manuales.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+    <a class="module-card" href="servicios/wireframe_control_servicios.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag gestion">Gestión</span>
+      </div>
+      <div class="module-name">Control de Servicios</div>
+      <div class="module-desc">Estado global de servicios por propiedad: comprobantes pendientes, en alerta y bloqueados.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+    <a class="module-card" href="financiero/wireframe_motor_financiero.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag gestion">Finanzas</span>
+      </div>
+      <div class="module-name">Motor Financiero</div>
+      <div class="module-desc">Mora activa, proyección de deuda día a día, cartas documento y configuración de punitorios.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+    <a class="module-card" href="renovacion/wireframe_renovacion_salida.html">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag gestion">Contratos</span>
+      </div>
+      <div class="module-name">Renovación y Salida</div>
+      <div class="module-desc">Contratos próximos a vencer, gestión de renovaciones, inspección de salida y acta de entrega.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+  </div>
+
+  <!-- SISTEMA VIEJO -->
+  <div class="section-label" style="margin-top:12px;">Sistema anterior · pendiente de migración</div>
+  <div class="modules-grid">
+
+    <a class="module-card" href="v1/wireframe_bandeja_staff.html" style="border-color: rgba(253,222,168,0.15);">
+      <div class="module-card-header">
+        <span class="module-icon">◻</span>
+        <span class="module-tag" style="background:var(--mustard-dim);color:var(--mustard);">v1 · estilo distinto</span>
+      </div>
+      <div class="module-name">Notificaciones</div>
+      <div class="module-desc">Bandeja de notificaciones del staff. Diseño del sistema anterior, pendiente de migración a v2.</div>
+      <span class="module-link">Abrir →</span>
+    </a>
+
+  </div>
+
+  <!-- FLOWCHART -->
+  <div class="section-label">Documentación</div>
+  <div class="flowchart-section">
+    <div class="flowchart-text">
+      <div class="fc-title">Flowchart maestro</div>
+      <div class="fc-desc">Diagrama de flujos y estados del sistema. Referencia para entender la lógica de negocio detrás de cada módulo.</div>
+    </div>
+    <a class="btn-flowchart" href="flowchart.md">
+      📄 Ver flowchart
+    </a>
+  </div>
+
+</div>
+<!-- ── FIN CONTENT ── -->
+
+<footer class="page-footer">
+  Arce Administración · Sistema de gestión inmobiliaria · Prototipo v2.0
+</footer>
+
+</body>
+</html>

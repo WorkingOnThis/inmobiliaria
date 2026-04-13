@@ -6,7 +6,9 @@
       "Bash(bun run:*)",
       "Bash(popover)",
       "Bash(badge)",
-      "Bash(check\")"
+      "Bash(check\")",
+      "Bash(mkdir -p \"E:\\\\Ordenar\\\\Todo el escritorio\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\servicios\\\\[id]\\\\comprobante\")",
+      "Bash(mkdir -p \"E:\\\\Ordenar\\\\Todo el escritorio\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\servicios\\\\[id]\\\\omitir-bloqueo\")"
     ]
   }
 }

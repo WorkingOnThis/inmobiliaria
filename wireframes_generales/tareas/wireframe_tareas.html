@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tareas — Arce Administración</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#111314; --surface:#191c1e; --surface-low:#1d2022; --surface-mid:#222527;
+  --surface-high:#282a2c; --surface-highest:#333537;
+  --on-bg:#e1e2e4; --on-surface:#e1e2e4;
+  --text-secondary:#a8a9ac; --text-muted:#6b6d70;
+  --primary:#ffb4a2; --primary-dark:#6b1702;
+  --primary-dim:rgba(255,180,162,0.12); --primary-tint:rgba(255,180,162,0.08);
+  --on-primary:#561100;
+  --mustard:#ffdea8; --mustard-dim:rgba(253,222,168,0.15);
+  --error:#ffb4ab; --error-dim:rgba(255,180,171,0.12);
+  --green:#7fd3a0; --green-dim:rgba(127,211,160,0.12);
+  --blue:#7fb3d3; --blue-dim:rgba(127,179,211,0.12);
+  --border:rgba(255,255,255,0.07); --border-accent:rgba(255,180,162,0.2);
+  --font-headline:"Space Grotesk",sans-serif; --font-brand:"Montserrat",sans-serif;
+  --font-body:"Inter",sans-serif;
+  --radius-xs:4px; --radius-sm:6px; --radius:12px;
+  --radius-lg:18px; --radius-xl:24px; --radius-pill:9999px;
+  --transition:all 0.18s ease; --panel-w:400px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;}
+body{font-family:var(--font-body);background:var(--bg);color:var(--on-surface);font-size:0.875rem;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;}
+.app-shell{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:240px;min-height:100vh;background:var(--surface);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);}
+.sidebar-logo{padding:20px 20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.logo-mark{width:32px;height:32px;background:var(--primary-dark);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-family:var(--font-brand);font-size:1rem;font-weight:800;color:var(--primary);flex-shrink:0;}
+.logo-text-name{font-family:var(--font-brand);font-size:0.78rem;font-weight:800;letter-spacing:-0.01em;color:var(--on-bg);line-height:1.1;}
+.logo-text-sub{font-size:0.52rem;font-weight:600;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-top:1px;}
+.nav-section{padding:18px 16px 5px;font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:var(--text-muted);}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;margin:1px 8px;border-radius:var(--radius-sm);font-size:0.8rem;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:var(--transition);text-decoration:none;}
+.nav-item:hover{background:var(--surface-high);color:var(--on-surface);}
+.nav-item.active{background:var(--primary-dim);color:var(--primary);font-weight:600;}
+.nav-icon{font-size:13px;width:16px;text-align:center;flex-shrink:0;}
+.nav-badge{margin-left:auto;background:var(--error-dim);color:var(--error);font-size:0.6rem;font-weight:700;padding:1px 6px;border-radius:var(--radius-pill);}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid var(--border);}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--radius-sm);cursor:pointer;}
+.user-avatar{width:30px;height:30px;background:var(--primary-dark);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;color:#fff;font-family:var(--font-brand);flex-shrink:0;}
+.user-name{font-size:0.8rem;font-weight:600;color:var(--on-surface);}
+.user-role{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);}
+
+/* MAIN */
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+
+/* TOPBAR */
+.topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:10px;flex-shrink:0;}
+.breadcrumb-current{color:var(--on-surface);font-weight:600;font-size:0.8rem;}
+.topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center;}
+
+/* Salud widget */
+.salud-widget{display:flex;align-items:center;gap:8px;background:var(--surface-high);border:1px solid var(--border);border-radius:var(--radius-pill);padding:4px 12px 4px 8px;flex-shrink:0;cursor:default;}
+.salud-track{width:48px;height:4px;background:var(--surface-highest);border-radius:var(--radius-pill);overflow:hidden;}
+.salud-fill{height:100%;background:linear-gradient(90deg,#ffdea8,#7fd3a0);border-radius:var(--radius-pill);}
+.salud-pct{font-size:0.65rem;font-weight:700;color:var(--green);}
+.salud-text{font-size:0.6rem;color:var(--text-muted);}
+
+/* Vista toggle */
+.vista-toggle{display:flex;background:var(--surface-high);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;flex-shrink:0;}
+.vista-btn{padding:5px 12px;font-size:0.68rem;font-weight:600;background:none;border:none;cursor:pointer;color:var(--text-muted);font-family:var(--font-body);transition:var(--transition);}
+.vista-btn.active{background:var(--primary-dim);color:var(--primary);}
+
+/* Scope toggle */
+.scope-toggle{display:flex;align-items:center;gap:6px;background:var(--surface-high);border:1px solid var(--border);border-radius:var(--radius-pill);padding:4px 12px;font-size:0.68rem;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:var(--transition);}
+.scope-dot{width:7px;height:7px;border-radius:50%;background:var(--primary);}
+
+/* BOTONES */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;font-family:var(--font-body);font-size:0.72rem;font-weight:600;cursor:pointer;border:none;border-radius:var(--radius);transition:var(--transition);}
+.btn-primary{background:var(--primary);color:var(--on-primary);}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--surface-high);color:var(--on-surface);}
+.btn-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(127,211,160,0.2);}
+.btn-secondary{background:var(--surface-highest);color:var(--on-surface);border:1px solid var(--border);}
+.btn-sm{padding:5px 10px;font-size:0.68rem;}
+.btn-xs{padding:3px 8px;font-size:0.62rem;}
+
+/* BODY SPLIT */
+.body-split{flex:1;display:flex;overflow:hidden;position:relative;}
+.lista-col{flex:1;overflow-y:auto;padding:20px 28px;display:flex;flex-direction:column;gap:0;transition:margin-right 0.22s ease;min-width:0;}
+.lista-col.panel-open{margin-right:var(--panel-w);}
+
+/* FILTROS BAR */
+.filtros-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:16px;flex-shrink:0;}
+.filtros-title{font-family:var(--font-headline);font-size:1.3rem;font-weight:700;color:var(--on-bg);letter-spacing:-0.02em;margin-right:4px;}
+.filter-chip{padding:5px 12px;font-size:0.65rem;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-pill);cursor:pointer;color:var(--text-secondary);transition:var(--transition);font-family:var(--font-body);white-space:nowrap;display:flex;align-items:center;gap:5px;}
+.filter-chip:hover{color:var(--on-surface);border-color:var(--border-accent);}
+.filter-chip.active{background:var(--primary-dim);color:var(--primary);border-color:var(--border-accent);}
+.filter-chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+/* GRUPO PRIORIDAD */
+.grupo-prioridad{margin-bottom:6px;}
+.grupo-header{display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;border-radius:var(--radius-sm);transition:var(--transition);user-select:none;}
+.grupo-header:hover{background:var(--surface);}
+.grupo-chevron{font-size:0.62rem;color:var(--text-muted);transition:transform 0.18s ease;flex-shrink:0;}
+.grupo-header.collapsed .grupo-chevron{transform:rotate(-90deg);}
+.grupo-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:var(--radius-pill);font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;}
+.pill-urgente{background:var(--error-dim);color:var(--error);}
+.pill-alta{background:var(--mustard-dim);color:#c89000;}
+.pill-media{background:var(--blue-dim);color:var(--blue);}
+.pill-baja{background:var(--surface-highest);color:var(--text-muted);}
+.grupo-count{font-size:0.65rem;color:var(--text-muted);}
+.grupo-body{padding-left:4px;}
+.grupo-body.collapsed{display:none;}
+
+/* TAREA ROW */
+.tarea-row{display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);cursor:pointer;transition:var(--transition);margin-bottom:4px;border-left-width:3px;}
+.tarea-row:hover{border-color:var(--border-accent);background:var(--surface-low);}
+.tarea-row.selected{border-color:var(--primary);background:var(--primary-tint);}
+.tarea-row.prio-urgente{border-left-color:var(--error);}
+.tarea-row.prio-alta{border-left-color:#c89000;}
+.tarea-row.prio-media{border-left-color:var(--blue);}
+.tarea-row.prio-baja{border-left-color:var(--text-muted);}
+
+.tarea-check{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:var(--transition);}
+.tarea-check:hover{border-color:var(--green);background:var(--green-dim);}
+
+.tarea-info{flex:1;min-width:0;}
+.tarea-titulo{font-size:0.82rem;font-weight:600;color:var(--on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tarea-meta{display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;}
+.meta-item{font-size:0.65rem;color:var(--text-muted);}
+.meta-sep{color:var(--border);font-size:0.7rem;}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;font-size:0.58rem;font-weight:700;border-radius:var(--radius-pill);white-space:nowrap;}
+.tag-auto{background:var(--blue-dim);color:var(--blue);}
+.tag-manual{background:var(--primary-dim);color:var(--primary);}
+.tag-onboarding{background:var(--green-dim);color:var(--green);}
+
+/* Estado badge */
+.estado-badge{font-size:0.6rem;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill);white-space:nowrap;flex-shrink:0;}
+.est-pendiente{background:var(--surface-highest);color:var(--text-secondary);}
+.est-encurso{background:var(--blue-dim);color:var(--blue);}
+.est-resuelta{background:var(--green-dim);color:var(--green);}
+
+/* Fecha */
+.fecha{font-size:0.65rem;font-weight:600;white-space:nowrap;flex-shrink:0;}
+.f-vencida{color:var(--error);}
+.f-hoy{color:var(--mustard);}
+.f-proxima{color:var(--text-secondary);}
+.f-ok{color:var(--text-muted);}
+
+.avatar-mini{width:22px;height:22px;border-radius:var(--radius-xs);background:var(--primary-dark);display:flex;align-items:center;justify-content:center;font-size:0.5rem;font-weight:800;color:var(--primary);font-family:var(--font-brand);flex-shrink:0;}
+
+/* PANEL LATERAL */
+.panel-lateral{position:fixed;top:56px;right:0;width:var(--panel-w);height:calc(100vh - 56px);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.22s ease;z-index:20;overflow:hidden;}
+.panel-lateral.open{transform:translateX(0);}
+.panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;gap:12px;}
+.panel-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:4px;border-radius:var(--radius-sm);transition:var(--transition);flex-shrink:0;margin-top:2px;}
+.panel-close:hover{background:var(--surface-high);color:var(--primary);}
+.panel-body{flex:1;overflow-y:auto;}
+.panel-sec{padding:14px 20px;border-bottom:1px solid var(--border);}
+.panel-sec:last-child{border-bottom:none;}
+.panel-sec-title{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.panel-sec-title::after{content:"";flex:1;height:1px;background:var(--border);}
+.panel-label{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:3px;}
+.panel-value{font-size:0.82rem;color:var(--on-surface);font-weight:500;}
+.panel-link{color:var(--primary);cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;font-weight:600;}
+.panel-link:hover{text-decoration:underline;}
+
+/* Prioridad selector */
+.prio-select{display:flex;gap:4px;}
+.prio-opt{padding:3px 10px;font-size:0.6rem;font-weight:700;border-radius:var(--radius-pill);cursor:pointer;border:1px solid var(--border);background:var(--surface-high);color:var(--text-muted);transition:var(--transition);font-family:var(--font-body);}
+.prio-opt.u.on{background:var(--error-dim);color:var(--error);border-color:rgba(255,180,171,0.3);}
+.prio-opt.a.on{background:var(--mustard-dim);color:#c89000;border-color:rgba(253,222,168,0.3);}
+.prio-opt.m.on{background:var(--blue-dim);color:var(--blue);border-color:rgba(127,179,211,0.3);}
+.prio-opt.b.on{background:var(--surface-highest);color:var(--text-muted);}
+
+/* Estado selector */
+.estado-select{display:flex;gap:4px;}
+.est-opt{padding:3px 10px;font-size:0.6rem;font-weight:700;border-radius:var(--radius-pill);cursor:pointer;border:1px solid var(--border);background:var(--surface-high);color:var(--text-muted);transition:var(--transition);font-family:var(--font-body);}
+.est-opt.on-p{background:var(--surface-highest);color:var(--text-secondary);}
+.est-opt.on-e{background:var(--blue-dim);color:var(--blue);border-color:rgba(127,179,211,0.3);}
+.est-opt.on-r{background:var(--green-dim);color:var(--green);border-color:rgba(127,211,160,0.3);}
+
+/* Responsable row */
+.resp-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
+.resp-row:last-of-type{border-bottom:none;}
+.resp-avatar{width:28px;height:28px;border-radius:var(--radius-xs);background:var(--primary-dark);display:flex;align-items:center;justify-content:center;font-size:0.55rem;font-weight:800;color:var(--primary);font-family:var(--font-brand);flex-shrink:0;}
+.resp-name{font-size:0.78rem;font-weight:500;color:var(--on-surface);}
+.resp-role{font-size:0.62rem;color:var(--text-muted);}
+
+/* Historial */
+.hist-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.hist-item:last-child{border-bottom:none;}
+.hist-dot{width:7px;height:7px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:6px;}
+.hist-dot.blue{background:var(--blue);}
+.hist-dot.green{background:var(--green);}
+.hist-texto{font-size:0.72rem;color:var(--text-secondary);line-height:1.4;}
+.hist-fecha{font-size:0.6rem;color:var(--text-muted);margin-top:2px;}
+
+/* Adjunto */
+.adj-row{display:flex;align-items:center;gap:10px;background:var(--surface-mid);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;}
+.adj-icon{font-size:1.2rem;flex-shrink:0;}
+.adj-nombre{font-size:0.75rem;font-weight:600;color:var(--on-surface);}
+.adj-meta{font-size:0.62rem;color:var(--text-muted);}
+.adj-link{font-size:0.65rem;color:var(--primary);cursor:pointer;margin-left:auto;flex-shrink:0;}
+
+/* Comentario */
+.coment-input{width:100%;background:var(--surface-high);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-family:var(--font-body);font-size:0.8rem;color:var(--on-surface);outline:none;resize:none;min-height:60px;transition:var(--transition);}
+.coment-input:focus{border-color:var(--primary);}
+.coment-input::placeholder{color:var(--text-muted);}
+
+.panel-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+
+/* KANBAN */
+.kanban-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:20px 28px;display:flex;gap:16px;align-items:flex-start;}
+.kanban-col{width:290px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;}
+.kanban-col-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);}
+.kanban-col-title{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-secondary);}
+.kanban-col-count{font-size:0.6rem;color:var(--text-muted);background:var(--surface-highest);padding:1px 7px;border-radius:var(--radius-pill);}
+.kanban-cards{display:flex;flex-direction:column;gap:8px;}
+.kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;cursor:pointer;transition:var(--transition);border-top:3px solid transparent;}
+.kanban-card:hover{border-color:var(--border-accent);background:var(--surface-low);}
+.kanban-card.pu{border-top-color:var(--error);}
+.kanban-card.pa{border-top-color:#c89000;}
+.kanban-card.pm{border-top-color:var(--blue);}
+.kanban-card.pb{border-top-color:var(--text-muted);}
+.kc-titulo{font-size:0.78rem;font-weight:600;color:var(--on-surface);margin-bottom:6px;line-height:1.3;}
+.kc-meta{display:flex;align-items:center;justify-content:space-between;}
+.kc-entidad{font-size:0.65rem;color:var(--text-muted);}
+
+/* MODAL */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,12,13,0.78);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);width:520px;max-height:90vh;overflow-y:auto;border-top:3px solid var(--primary);}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-family:var(--font-headline);font-size:1rem;font-weight:700;color:var(--on-surface);}
+.modal-close-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:4px;border-radius:var(--radius-sm);}
+.modal-body{padding:22px 24px;display:flex;flex-direction:column;gap:14px;}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--surface-low);border-radius:0 0 var(--radius-xl) var(--radius-xl);}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);}
+.form-input,.form-select,.form-textarea{font-family:var(--font-body);font-size:0.875rem;color:var(--on-surface);background:var(--surface-high);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;outline:none;transition:var(--transition);width:100%;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary);}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--text-muted);}
+.form-textarea{resize:vertical;min-height:72px;}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+    <div class="sidebar-logo">
+      <!-- Logo: PNG oficial en base64. Si no está disponible, usar SVG placeholder. -->
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#6b1702"/>
+        <path d="M16 5L6 26h4l2-5h8l2 5h4L16 5zm0 6l3 8h-6l3-8z" fill="#ffb4a2"/>
+        <path d="M16 4L18 7l2-1-1 3 2 1-3 1v2l-2-2-2 2v-2l-3-1 2-1-1-3 2 1z" fill="#ffdea8" opacity="0.8"/>
+      </svg>
+      <div>
+        <div class="logo-text-name">Arce Administración</div>
+        <div class="logo-text-sub">Gestión inmobiliaria</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Principal</div>
+    <a class="nav-item" href="../dashboard/wireframe_dashboard_staff.html">
+      <span class="nav-icon">⬛</span> Dashboard
+    </a>
+    <a class="nav-item" href="../caja/wireframe_caja_general.html">
+      <span class="nav-icon">◈</span> Caja General
+    </a>
+
+    <div class="nav-section">Entidades</div>
+    <a class="nav-item" href="../inquilinos/wireframe_lista_inquilinos.html">
+      <span class="nav-icon">◻</span> Inquilinos
+    </a>
+    <a class="nav-item" href="../propietarios/wireframe_lista_propietarios.html">
+      <span class="nav-icon">◻</span> Propietarios
+    </a>
+    <a class="nav-item" href="../propiedades/wireframe_ficha_propiedad.html">
+      <span class="nav-icon">◻</span> Propiedades
+    </a>
+    <a class="nav-item" href="../contratos/wireframe_lista_contratos.html">
+      <span class="nav-icon">◻</span> Contratos
+    </a>
+
+    <div class="nav-section">Gestión</div>
+    <a class="nav-item active" href="../tareas/wireframe_tareas.html">
+      <span class="nav-icon">◻</span> Tareas <span class="nav-badge">9</span>
+    </a>
+    <a class="nav-item" href="../v1/wireframe_bandeja_staff.html">
+      <span class="nav-icon">◻</span> Notificaciones <span class="nav-badge">3</span>
+    </a>
+    <a class="nav-item" href="../servicios/wireframe_control_servicios.html">
+      <span class="nav-icon">◻</span> Control Servicios
+    </a>
+    <a class="nav-item" href="../financiero/wireframe_motor_financiero.html">
+      <span class="nav-icon">◻</span> Motor Financiero
+    </a>
+    <a class="nav-item" href="../renovacion/wireframe_renovacion_salida.html">
+      <span class="nav-icon">◻</span> Renovación y Salida
+    </a>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">MG</div>
+        <div>
+          <div class="user-name">M. González</div>
+          <div class="user-role">Staff Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+<!-- MAIN -->
+<div class="main-content">
+  <div class="topbar">
+    <span class="breadcrumb-current">Tareas</span>
+
+    <!-- Salud del portfolio — gamificación -->
+    <!--
+      El staff ve en tiempo real el % de propiedades sin alertas activas.
+      La idea: al resolver tareas, este número sube. Gamificación pasiva.
+    -->
+    <div class="salud-widget" title="% propiedades sin alertas activas">
+      <div class="salud-track"><div class="salud-fill" style="width:74%"></div></div>
+      <span class="salud-pct">74%</span>
+      <span class="salud-text">salud del portfolio</span>
+    </div>
+
+    <div class="topbar-actions">
+      <div class="scope-toggle" id="scopeToggle">
+        <span class="scope-dot"></span>
+        <span id="scopeLabel">Mis tareas</span>
+      </div>
+      <div class="vista-toggle">
+        <button class="vista-btn active" id="btnLista">≡ Lista</button>
+        <button class="vista-btn" id="btnKanban">⊞ Kanban</button>
+      </div>
+      <button class="btn btn-primary btn-sm" id="btnNueva">+ Nueva tarea</button>
+    </div>
+  </div>
+
+  <div class="body-split">
+
+    <!-- ═══ VISTA LISTA ═══ -->
+    <div class="lista-col panel-open" id="vistaLista">
+
+      <!-- Filtros + chips de módulo -->
+      <div class="filtros-bar">
+        <span class="filtros-title">12 tareas</span>
+        <button class="filter-chip active" data-f="todas">Todas</button>
+        <button class="filter-chip" data-f="auto">
+          <span class="filter-chip-dot" style="background:var(--blue)"></span>Automáticas
+        </button>
+        <button class="filter-chip" data-f="manual">
+          <span class="filter-chip-dot" style="background:var(--primary)"></span>Manuales
+        </button>
+        <button class="filter-chip" data-f="alquiler">Alquiler</button>
+        <button class="filter-chip" data-f="servicios">Servicios</button>
+        <button class="filter-chip" data-f="contratos">Contratos</button>
+        <button class="filter-chip" style="margin-left:auto;border-style:dashed;">⇅ Ordenar</button>
+      </div>
+
+      <!-- URGENTE -->
+      <div class="grupo-prioridad">
+        <div class="grupo-header" id="gh-u">
+          <span class="grupo-chevron">▼</span>
+          <span class="grupo-pill pill-urgente">Urgente</span>
+          <span class="grupo-count">2 tareas</span>
+        </div>
+        <div class="grupo-body" id="gb-u">
+          <div class="tarea-row prio-urgente selected" data-tid="t1">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Alquiler en mora — Bv. San Juan 890</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-auto">Auto</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Alquiler · 3er mail enviado</span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Roberto Paz</span>
+              </div>
+            </div>
+            <span class="estado-badge est-encurso">En curso</span>
+            <span class="fecha f-vencida">Vencida</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+          <div class="tarea-row prio-urgente" data-tid="t2">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Revisar borrador carta documento — CON-0102</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-auto">Auto</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Mora prolongada · 34 días</span>
+              </div>
+            </div>
+            <span class="estado-badge est-pendiente">Pendiente</span>
+            <span class="fecha f-hoy">Hoy</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALTA -->
+      <div class="grupo-prioridad">
+        <div class="grupo-header" id="gh-a">
+          <span class="grupo-chevron">▼</span>
+          <span class="grupo-pill pill-alta">Alta</span>
+          <span class="grupo-count">4 tareas</span>
+        </div>
+        <div class="grupo-body" id="gb-a">
+          <div class="tarea-row prio-alta" data-tid="t3">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Contrato por vencer — Duarte Quirós 950</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-auto">Auto</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Contratos · vence en 28 días</span>
+              </div>
+            </div>
+            <span class="estado-badge est-pendiente">Pendiente</span>
+            <span class="fecha f-proxima">en 3 días</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+          <div class="tarea-row prio-alta" data-tid="t4">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Comprobante gas faltante (2° vez) — Rondeau 1456</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-auto">Auto</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Servicios · reincidencia</span>
+              </div>
+            </div>
+            <span class="estado-badge est-pendiente">Pendiente</span>
+            <span class="fecha f-proxima">en 5 días</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+          <div class="tarea-row prio-alta" data-tid="t5">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Coordinar inspección de salida — CON-0038</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-manual">Manual</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Contratos · salida</span>
+              </div>
+            </div>
+            <span class="estado-badge est-encurso">En curso</span>
+            <span class="fecha f-proxima">en 7 días</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+          <div class="tarea-row prio-alta" data-tid="t6">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Validar 6 comprobantes de Mayo pendientes</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-auto">Auto</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Alquiler · caja general</span>
+              </div>
+            </div>
+            <span class="estado-badge est-pendiente">Pendiente</span>
+            <span class="fecha f-proxima">en 10 días</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MEDIA -->
+      <div class="grupo-prioridad">
+        <div class="grupo-header" id="gh-m">
+          <span class="grupo-chevron">▼</span>
+          <span class="grupo-pill pill-media">Media</span>
+          <span class="grupo-count">4 tareas</span>
+        </div>
+        <div class="grupo-body" id="gb-m">
+          <div class="tarea-row prio-media" data-tid="t7">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Aprobar actualización ICL — Av. Colón 234</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-auto">Auto</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Contratos · vence 01/06</span>
+              </div>
+            </div>
+            <span class="estado-badge est-pendiente">Pendiente</span>
+            <span class="fecha f-ok">en 18 días</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+          <div class="tarea-row prio-media" data-tid="t8">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Actualizar titularidad gas — Lima 320</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-auto">Auto</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Servicios · inquilino notificado</span>
+              </div>
+            </div>
+            <span class="estado-badge est-encurso">En curso</span>
+            <span class="fecha f-ok">en 20 días</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+          <div class="tarea-row prio-media" data-tid="t9">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Aprobar ICL — Fragueiro 2100</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-auto">Auto</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Contratos · vence 15/06</span>
+              </div>
+            </div>
+            <span class="estado-badge est-pendiente">Pendiente</span>
+            <span class="fecha f-ok">en 32 días</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+          <div class="tarea-row prio-media" data-tid="t10">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Llamar a Martín Gómez — Caseros 780 sin contrato</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-manual">Manual</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Sin fecha límite</span>
+              </div>
+            </div>
+            <span class="estado-badge est-pendiente">Pendiente</span>
+            <span class="fecha f-ok">sin fecha</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BAJA -->
+      <div class="grupo-prioridad">
+        <div class="grupo-header" id="gh-b">
+          <span class="grupo-chevron">▼</span>
+          <span class="grupo-pill pill-baja">Baja</span>
+          <span class="grupo-count">2 tareas</span>
+        </div>
+        <div class="grupo-body" id="gb-b">
+          <div class="tarea-row prio-baja" data-tid="t11">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Completar ficha propiedad — Caseros 780 (62%)</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-onboarding">Onboarding</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Faltan: expensas, fotos</span>
+              </div>
+            </div>
+            <span class="estado-badge est-pendiente">Pendiente</span>
+            <span class="fecha f-ok">sin fecha</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+          <div class="tarea-row prio-baja" data-tid="t12">
+            <div class="tarea-check"></div>
+            <div class="tarea-info">
+              <div class="tarea-titulo">Cargar fotos — Obispo Trejo 88</div>
+              <div class="tarea-meta">
+                <span class="meta-item"><span class="tag tag-onboarding">Onboarding</span></span>
+                <span class="meta-sep">·</span>
+                <span class="meta-item">Propiedad inactiva</span>
+              </div>
+            </div>
+            <span class="estado-badge est-pendiente">Pendiente</span>
+            <span class="fecha f-ok">sin fecha</span>
+            <div class="avatar-mini">MG</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /vistaLista -->
+
+    <!-- ═══ VISTA KANBAN ═══ -->
+    <div class="kanban-wrap" id="vistaKanban" style="display:none;">
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          <span class="kanban-col-title">Pendiente</span>
+          <span class="kanban-col-count">8</span>
+        </div>
+        <div class="kanban-cards">
+          <div class="kanban-card pu"><div class="kc-titulo">Revisar carta documento — CON-0102</div><div class="kc-meta"><span class="kc-entidad">Mora · 34 días</span><span class="fecha f-hoy" style="font-size:0.6rem">Hoy</span></div></div>
+          <div class="kanban-card pa"><div class="kc-titulo">Contrato por vencer — Duarte Quirós 950</div><div class="kc-meta"><span class="kc-entidad">Contratos</span><span class="fecha f-proxima" style="font-size:0.6rem">en 3 días</span></div></div>
+          <div class="kanban-card pa"><div class="kc-titulo">Gas faltante (2° vez) — Rondeau 1456</div><div class="kc-meta"><span class="kc-entidad">Servicios</span><span class="fecha f-proxima" style="font-size:0.6rem">en 5 días</span></div></div>
+          <div class="kanban-card pm"><div class="kc-titulo">Aprobar ICL — Av. Colón 234</div><div class="kc-meta"><span class="kc-entidad">Contratos</span><span class="fecha f-ok" style="font-size:0.6rem">en 18 días</span></div></div>
+          <div class="kanban-card pb"><div class="kc-titulo">Completar ficha — Caseros 780 (62%)</div><div class="kc-meta"><span class="kc-entidad">Onboarding</span><span class="fecha f-ok" style="font-size:0.6rem">sin fecha</span></div></div>
+        </div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          <span class="kanban-col-title" style="color:var(--blue)">En curso</span>
+          <span class="kanban-col-count">3</span>
+        </div>
+        <div class="kanban-cards">
+          <div class="kanban-card pu"><div class="kc-titulo">Alquiler en mora — Bv. San Juan 890</div><div class="kc-meta"><span class="kc-entidad">Roberto Paz · 3er mail</span><span class="fecha f-vencida" style="font-size:0.6rem">Vencida</span></div></div>
+          <div class="kanban-card pa"><div class="kc-titulo">Inspección de salida — CON-0038</div><div class="kc-meta"><span class="kc-entidad">Contratos</span><span class="fecha f-proxima" style="font-size:0.6rem">en 7 días</span></div></div>
+          <div class="kanban-card pm"><div class="kc-titulo">Titularidad gas — Lima 320</div><div class="kc-meta"><span class="kc-entidad">Servicios</span><span class="fecha f-ok" style="font-size:0.6rem">en 20 días</span></div></div>
+        </div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          <span class="kanban-col-title" style="color:var(--green)">Resuelta</span>
+          <span class="kanban-col-count">1</span>
+        </div>
+        <div class="kanban-cards">
+          <div class="kanban-card pb" style="opacity:0.45"><div class="kc-titulo" style="text-decoration:line-through">Cargar CBU — Carlos Mendoza</div><div class="kc-meta"><span class="kc-entidad">Onboarding</span><span style="font-size:0.6rem;color:var(--green)">✓ Resuelta</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PANEL LATERAL ═══ -->
+    <aside class="panel-lateral open" id="panelLateral">
+      <div class="panel-header">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:4px;">
+            <span class="tag tag-auto" style="margin-right:4px;">Auto</span> Alquiler
+          </div>
+          <div style="font-family:var(--font-headline);font-size:0.95rem;font-weight:700;color:var(--on-bg);line-height:1.3;">
+            Alquiler en mora — Bv. San Juan 890
+          </div>
+        </div>
+        <button class="panel-close" id="panelClose">✕</button>
+      </div>
+
+      <div class="panel-body">
+
+        <!-- Prioridad + Estado -->
+        <div class="panel-sec">
+          <div class="panel-sec-title">Prioridad</div>
+          <div class="prio-select">
+            <button class="prio-opt u on">Urgente</button>
+            <button class="prio-opt a">Alta</button>
+            <button class="prio-opt m">Media</button>
+            <button class="prio-opt b">Baja</button>
+          </div>
+          <div style="height:12px;"></div>
+          <div class="panel-sec-title">Estado</div>
+          <div class="estado-select">
+            <button class="est-opt">Pendiente</button>
+            <button class="est-opt on-e">En curso</button>
+            <button class="est-opt">Resuelta</button>
+          </div>
+        </div>
+
+        <!-- Entidades vinculadas -->
+        <div class="panel-sec">
+          <div class="panel-sec-title">Entidades vinculadas</div>
+          <div style="margin-bottom:8px;">
+            <div class="panel-label">Propiedad</div>
+            <a class="panel-link">🏠 Bv. San Juan 890, PB <span style="font-size:0.7rem;opacity:0.7;">↗</span></a>
+          </div>
+          <div style="margin-bottom:8px;">
+            <div class="panel-label">Contrato</div>
+            <a class="panel-link">CON-0102 <span style="font-size:0.7rem;opacity:0.7;">↗</span></a>
+          </div>
+          <div>
+            <div class="panel-label">Inquilino</div>
+            <a class="panel-link">Roberto Paz <span style="font-size:0.7rem;opacity:0.7;">↗</span></a>
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div class="panel-sec">
+          <div class="panel-sec-title">Descripción</div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;">
+            Alquiler de Mayo no registrado al 13/05. Se enviaron 3 mails automáticos sin respuesta. Deuda: $1.950.000 + punitorios (TIM×2 desde 11/05).
+          </div>
+        </div>
+
+        <!-- Responsables -->
+        <div class="panel-sec">
+          <div class="panel-sec-title">Responsables</div>
+          <div class="resp-row">
+            <div class="resp-avatar">MG</div>
+            <div style="flex:1;">
+              <div class="resp-name">M. González</div>
+              <div class="resp-role">Staff Admin</div>
+            </div>
+            <button class="btn btn-ghost btn-xs">✕</button>
+          </div>
+          <button class="btn btn-ghost btn-xs" style="width:100%;margin-top:8px;">+ Agregar responsable</button>
+        </div>
+
+        <!-- Adjuntos -->
+        <div class="panel-sec">
+          <div class="panel-sec-title">Adjuntos</div>
+          <div class="adj-row">
+            <div class="adj-icon">📄</div>
+            <div style="flex:1;min-width:0;">
+              <div class="adj-nombre">borrador_carta_doc_CON0102.pdf</div>
+              <div class="adj-meta">Generado automáticamente · 14/05/2025</div>
+            </div>
+            <span class="adj-link">↗ Ver</span>
+          </div>
+          <button class="btn btn-ghost btn-xs" style="width:100%;margin-top:4px;">+ Adjuntar archivo</button>
+        </div>
+
+        <!-- Historial -->
+        <div class="panel-sec">
+          <div class="panel-sec-title">Historial</div>
+          <div class="hist-item">
+            <div class="hist-dot blue"></div>
+            <div>
+              <div class="hist-texto">Sistema generó borrador de carta documento</div>
+              <div class="hist-fecha">Hoy · 00:01 · Automático</div>
+            </div>
+          </div>
+          <div class="hist-item">
+            <div class="hist-dot blue"></div>
+            <div>
+              <div class="hist-texto">3er mail enviado. Tarea creada automáticamente.</div>
+              <div class="hist-fecha">12/05/2025 · 00:01 · Automático</div>
+            </div>
+          </div>
+          <div class="hist-item">
+            <div class="hist-dot"></div>
+            <div>
+              <div class="hist-texto">2do mail de recordatorio al inquilino</div>
+              <div class="hist-fecha">09/05/2025 · 00:01 · Automático</div>
+            </div>
+          </div>
+          <div class="hist-item">
+            <div class="hist-dot"></div>
+            <div>
+              <div class="hist-texto">1er mail de atraso al inquilino</div>
+              <div class="hist-fecha">06/05/2025 · 00:01 · Automático</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comentarios -->
+        <div class="panel-sec">
+          <div class="panel-sec-title">Comentarios internos</div>
+          <textarea class="coment-input" placeholder="Agregá una nota…"></textarea>
+          <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px;">Agregar comentario</button>
+        </div>
+
+      </div><!-- /panel-body -->
+
+      <div class="panel-footer">
+        <button class="btn btn-ghost btn-sm" style="flex:1;">Reasignar</button>
+        <button class="btn btn-green btn-sm" style="flex:2;">✓ Marcar como resuelta</button>
+      </div>
+    </aside>
+
+  </div><!-- /body-split -->
+</div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- MODAL NUEVA TAREA -->
+<div class="modal-backdrop" id="modalNueva">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nueva tarea</span>
+      <button class="modal-close-btn" id="modalCloseBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Título <span style="color:var(--error)">*</span></label>
+        <input class="form-input" placeholder="Describí la tarea brevemente…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea class="form-textarea" placeholder="Contexto, pasos a seguir, notas…"></textarea>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Prioridad</label>
+          <select class="form-select">
+            <option>Urgente</option><option>Alta</option>
+            <option selected>Media</option><option>Baja</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha límite</label>
+          <input class="form-input" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Responsable/s</label>
+        <input class="form-input" placeholder="Buscar por nombre…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Entidad vinculada <span style="font-weight:400;text-transform:none;font-size:0.6rem;">(opcional)</span></label>
+        <select class="form-select">
+          <option value="">Sin vincular</option>
+          <option>Propiedad</option><option>Contrato</option>
+          <option>Propietario</option><option>Inquilino</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" id="modalCancelarBtn">Cancelar</button>
+      <button class="btn btn-primary btn-sm">Crear tarea</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  const panel    = document.getElementById('panelLateral');
+  const listaCol = document.getElementById('vistaLista');
+
+  /* ── SELECCIONAR TAREA ── */
+  document.querySelectorAll('.tarea-row').forEach(row => {
+    row.addEventListener('click', () => {
+      document.querySelectorAll('.tarea-row').forEach(r => r.classList.remove('selected'));
+      row.classList.add('selected');
+      panel.classList.add('open');
+      listaCol.classList.add('panel-open');
+    });
+  });
+
+  /* ── CERRAR PANEL ── */
+  document.getElementById('panelClose').addEventListener('click', () => {
+    panel.classList.remove('open');
+    listaCol.classList.remove('panel-open');
+    document.querySelectorAll('.tarea-row').forEach(r => r.classList.remove('selected'));
+  });
+
+  /* ── TOGGLE VISTA ── */
+  const vl = document.getElementById('vistaLista');
+  const vk = document.getElementById('vistaKanban');
+  document.getElementById('btnLista').addEventListener('click', function() {
+    vl.style.display = 'flex'; vk.style.display = 'none';
+    this.classList.add('active');
+    document.getElementById('btnKanban').classList.remove('active');
+    panel.classList.add('open'); listaCol.classList.add('panel-open');
+  });
+  document.getElementById('btnKanban').addEventListener('click', function() {
+    vl.style.display = 'none'; vk.style.display = 'flex';
+    this.classList.add('active');
+    document.getElementById('btnLista').classList.remove('active');
+    panel.classList.remove('open');
+  });
+
+  /* ── COLAPSAR GRUPOS ── */
+  [['gh-u','gb-u'],['gh-a','gb-a'],['gh-m','gb-m'],['gh-b','gb-b']].forEach(([hId, bId]) => {
+    document.getElementById(hId)?.addEventListener('click', function() {
+      this.classList.toggle('collapsed');
+      document.getElementById(bId)?.classList.toggle('collapsed');
+    });
+  });
+
+  /* ── SCOPE TOGGLE ── */
+  let mine = true;
+  document.getElementById('scopeToggle').addEventListener('click', () => {
+    mine = !mine;
+    document.getElementById('scopeLabel').textContent = mine ? 'Mis tareas' : 'Todo el equipo';
+  });
+
+  /* ── FILTROS ── */
+  document.querySelectorAll('.filter-chip[data-f]').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip[data-f]').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+    });
+  });
+
+  /* ── PRIORIDAD EN PANEL ── */
+  document.querySelectorAll('.prio-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.prio-select').querySelectorAll('.prio-opt').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+    });
+  });
+
+  /* ── ESTADO EN PANEL ── */
+  const estClases = ['on-p','on-e','on-r'];
+  document.querySelectorAll('.est-opt').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      btn.closest('.estado-select').querySelectorAll('.est-opt')
+         .forEach(b => estClases.forEach(c => b.classList.remove(c)));
+      btn.classList.add(estClases[i]);
+    });
+  });
+
+  /* ── MODAL ── */
+  const modal = document.getElementById('modalNueva');
+  document.getElementById('btnNueva').addEventListener('click', () => modal.classList.add('open'));
+  document.getElementById('modalCloseBtn').addEventListener('click', () => modal.classList.remove('open'));
+  document.getElementById('modalCancelarBtn').addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+});
+</script>
+</body>
+</html>

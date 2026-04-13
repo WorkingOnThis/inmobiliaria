@@ -24,6 +24,8 @@ export const client = pgTable("client", {
   address: text("address"),
   profession: text("profession"),
   birthDate: text("birthDate"), // ISO string "YYYY-MM-DD"
+  cuit: text("cuit"), // CUIT/CUIL (propietarios e inquilinos)
+  status: text("status").notNull().default("activo"), // "activo" | "suspendido" | "baja"
   // Datos bancarios (propietarios)
   cbu: text("cbu"),
   alias: text("alias"),

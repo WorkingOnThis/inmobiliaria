@@ -117,6 +117,7 @@ export async function GET(request: NextRequest) {
         rented: countsMap["rented"] ?? 0,
         reserved: countsMap["reserved"] ?? 0,
         sold: countsMap["sold"] ?? 0,
+        maintenance: countsMap["maintenance"] ?? 0,
       },
     });
   } catch (error) {

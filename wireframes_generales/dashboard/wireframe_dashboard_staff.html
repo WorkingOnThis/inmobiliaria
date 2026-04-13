@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard Staff — Arce Administración</title>
+
+<!--
+  ============================================================
+  WIREFRAME: Dashboard Staff v2.0
+  Archivo: ../dashboard/wireframe_dashboard_staff.html
+  Sistema: Arce Administración v2.0 — Modo oscuro
+  ============================================================
+
+  DESCRIPCIÓN
+  Vista de entrada para Staff Admin y Staff Ventas.
+  Muestra el estado global del portfolio, alertas críticas,
+  tareas urgentes del día y propiedades que requieren acción.
+
+  ROLES
+  - Staff Admin: ve TODOS los datos y acciones
+  - Staff Ventas: mismo layout, botones de acción restringidos
+    (sin acceso a liquidar, sin borrar movimientos, etc.)
+  El wireframe muestra la vista Staff Admin.
+  Las diferencias de Ventas están anotadas como comentarios.
+
+  LÓGICA DE SALUD DEL PORTFOLIO
+  Calculada diariamente por el cron job (00:00hs).
+  Fórmula base: (propiedades sin alertas / total) × 100
+  Jerarquía de alertas (ponderadas, mayor a menor gravedad):
+    1. Alquiler en mora activa
+    2. Contrato por vencer sin decisión (< 60 días)
+    3. Comprobante de servicio faltante (> 30 días)
+    4. Índice ICL vencido sin aprobar
+    5. Ficha incompleta (< 70%)
+  El número se muestra en mustard (único uso del color por vista).
+
+  KPI CARDS (4)
+  1. Salud del portfolio → mustard (dato más crítico)
+  2. Propiedades activas → neutral
+  3. En mora → error/rojo
+  4. Contratos por vencer → primary/terracota
+
+  LAYOUT
+  KPI cards (fila) → dos columnas:
+    Izq (60%): tabla de propiedades con semáforo de estado
+    Der (40%): tareas urgentes (top 5) + lista de mora activa
+
+  ENDPOINTS SUGERIDOS
+  GET /api/dashboard/resumen          → KPIs globales
+  GET /api/dashboard/portfolio        → tabla de propiedades con alertas
+  GET /api/tareas?prioridad=urgente&limit=5&responsable={userId}
+  GET /api/contratos/proximos-vencer?dias=60
+  GET /api/mora/activa
+  ============================================================
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGN SYSTEM — Arce Administración v2.0
+   ============================================================ */
+:root {
+  --bg:                 #111314;
+  --surface:            #191c1e;
+  --surface-low:        #1d2022;
+  --surface-mid:        #222527;
+  --surface-high:       #282a2c;
+  --surface-highest:    #333537;
+  --surface-white:      #0e1011;
+
+  --on-bg:              #e1e2e4;
+  --on-surface:         #e1e2e4;
+  --text-secondary:     #a8a9ac;
+  --text-muted:         #6b6d70;
+
+  --primary:            #ffb4a2;
+  --primary-dark:       #6b1702;
+  --primary-dim:        rgba(255,180,162,0.12);
+  --primary-tint:       rgba(255,180,162,0.08);
+  --on-primary:         #561100;
+
+  --mustard:            #ffdea8;
+  --mustard-dim:        rgba(253,222,168,0.15);
+  --on-mustard:         #271900;
+
+  --error:              #ffb4ab;
+  --error-dim:          rgba(255,180,171,0.12);
+  --on-error-dim:       #ffb4ab;
+
+  --success:            #a8d5b5;
+  --success-dim:        rgba(168,213,181,0.12);
+
+  --warning:            #f5c97a;
+  --warning-dim:        rgba(245,201,122,0.12);
+
+  --border:             rgba(255,255,255,0.07);
+  --border-accent:      rgba(255,180,162,0.2);
+
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-brand:    "Montserrat", sans-serif;
+  --font-body:     "Inter", sans-serif;
+
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius:      12px;
+  --radius-lg:   18px;
+  --radius-xl:   24px;
+  --radius-pill: 9999px;
+
+  --transition: all 0.18s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--on-surface);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ── LAYOUT ── */
+.app-shell { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.sidebar-logo {
+  padding: 20px 20px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-img { width: 32px; height: 32px; object-fit: contain; flex-shrink: 0; }
+.logo-text-name {
+  font-family: var(--font-brand);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--on-bg);
+  line-height: 1.1;
+}
+.logo-text-sub {
+  font-size: 0.52rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.nav-section {
+  padding: 18px 16px 5px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  margin: 1px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  position: relative;
+}
+.nav-item:hover { background: var(--surface-high); color: var(--on-surface); }
+.nav-item.active {
+  background: var(--primary-dim);
+  color: var(--primary);
+  font-weight: 600;
+}
+.nav-icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--error-dim);
+  color: var(--error);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+}
+.sidebar-footer {
+  margin-top: auto;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.user-row:hover { background: var(--surface-high); }
+.user-avatar {
+  width: 30px; height: 30px;
+  background: var(--primary-dark);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 800;
+  color: #fff;
+  font-family: var(--font-brand);
+  flex-shrink: 0;
+}
+.user-name { font-size: 0.8rem; font-weight: 600; color: var(--on-surface); }
+.user-role { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+
+/* ── MAIN ── */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  height: 56px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+.breadcrumb a:hover { color: var(--primary); }
+.breadcrumb-sep { color: var(--text-muted); }
+.breadcrumb-current { color: var(--on-surface); font-weight: 600; }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+  line-height: 1;
+}
+.btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { opacity: 0.9; }
+.btn-secondary {
+  background: var(--surface-high);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--surface-highest); color: var(--on-surface); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { color: var(--primary); }
+
+/* ── CONTENT ── */
+.content {
+  flex: 1;
+  padding: 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── PAGE HEADER ── */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.page-title {
+  font-family: var(--font-headline);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--on-bg);
+}
+.page-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+.page-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+.page-meta strong { color: var(--text-secondary); }
+
+/* ── KPI GRID ── */
+/*
+  4 tarjetas de igual tamaño.
+  La primera (salud portfolio) usa mustard — único uso por vista.
+  Las demás usan colores semánticos neutros.
+*/
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.kpi-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--border);
+}
+/* Salud del portfolio: mustard — el dato más crítico del dashboard */
+.kpi-card.mustard::before { background: var(--mustard); }
+.kpi-card.error::before { background: var(--error); }
+.kpi-card.primary::before { background: var(--primary); }
+.kpi-card.neutral::before { background: var(--text-muted); }
+
+.kpi-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+.kpi-value {
+  font-family: var(--font-headline);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.kpi-card.mustard .kpi-value { color: var(--mustard); }
+.kpi-card.error .kpi-value { color: var(--error); }
+.kpi-card.primary .kpi-value { color: var(--primary); }
+.kpi-card.neutral .kpi-value { color: var(--on-surface); }
+
+.kpi-sub {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.kpi-trend {
+  font-size: 0.68rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.kpi-trend.up { color: var(--success); }
+.kpi-trend.down { color: var(--error); }
+.kpi-trend.neutral { color: var(--text-muted); }
+
+/* ── TWO-COLUMN LAYOUT ── */
+.dashboard-cols {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── PANEL / CARD ── */
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.panel-header {
+  padding: 18px 20px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.panel-title {
+  font-family: var(--font-headline);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+.panel-subtitle {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.panel-actions { display: flex; gap: 8px; align-items: center; }
+
+/* ── TABLE ── */
+/*
+  Sin líneas internas — separación por fondo alternado.
+  La primera columna tiene el semáforo de estado de la propiedad.
+*/
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  padding: 8px 16px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-align: left;
+  background: var(--surface-low);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 11px 16px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+.data-table tr:nth-child(even) td { background: var(--surface-low); }
+.data-table tr:hover td { background: var(--surface-high); cursor: pointer; }
+.data-table td:first-child { color: var(--on-surface); font-weight: 500; }
+
+/* Semáforo de estado de propiedad */
+.prop-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.green { background: var(--success); }
+.status-dot.yellow { background: var(--warning); }
+.status-dot.red { background: var(--error); }
+.status-dot.gray { background: var(--text-muted); }
+
+.prop-name { font-weight: 600; color: var(--on-surface); font-size: 0.82rem; }
+.prop-address { font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
+
+/* Alert tags inline en tabla */
+.alert-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.alert-tag.mora { background: var(--error-dim); color: var(--error); }
+.alert-tag.vence { background: var(--primary-dim); color: var(--primary); }
+.alert-tag.servicio { background: var(--warning-dim); color: var(--warning); }
+.alert-tag.icl { background: rgba(168,169,172,0.12); color: var(--text-secondary); }
+.alert-tag.ok { background: var(--success-dim); color: var(--success); }
+
+/* ── RIGHT COLUMN ── */
+.right-col { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── TAREAS PANEL ── */
+/*
+  Muestra top 5 tareas urgentes del usuario logueado.
+  Staff Admin: ve tareas propias + puede ver todas desde el módulo Tareas.
+  Staff Ventas: solo ve sus tareas asignadas.
+  El contador de tareas en el nav badge se actualiza en tiempo real.
+*/
+.tarea-list { padding: 4px 0; }
+.tarea-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.tarea-item:last-child { border-bottom: none; }
+.tarea-item:hover { background: var(--surface-high); }
+
+.tarea-origin-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+/* Origin tags: Auto=azul, Manual=terracota, Onboarding=verde */
+.tarea-origin-dot.auto { background: #8ab4f8; }
+.tarea-origin-dot.manual { background: var(--primary); }
+.tarea-origin-dot.onboarding { background: var(--success); }
+
+.tarea-body { flex: 1; min-width: 0; }
+.tarea-titulo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tarea-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+.tarea-propiedad {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tarea-fecha {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tarea-prioridad {
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  align-self: center;
+}
+.tarea-prioridad.urgente { background: var(--error-dim); color: var(--error); }
+.tarea-prioridad.alta { background: var(--primary-dim); color: var(--primary); }
+.tarea-prioridad.media { background: var(--warning-dim); color: var(--warning); }
+
+.panel-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.panel-footer a {
+  font-size: 0.75rem;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.panel-footer a:hover { opacity: 0.8; }
+
+/* ── MORA PANEL ── */
+/*
+  Lista de inquilinos con mora activa.
+  Muestra nombre, propiedad, días de mora y monto adeudado.
+  Ordenado por días de mora descendente.
+  Solo visible para Staff Admin y Staff Ventas con acceso a cobros.
+*/
+.mora-list { padding: 4px 0; }
+.mora-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.mora-item:last-child { border-bottom: none; }
+.mora-item:hover { background: var(--surface-high); }
+
+.mora-avatar {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--error-dim);
+  color: var(--error);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  font-family: var(--font-brand);
+  flex-shrink: 0;
+}
+.mora-info { flex: 1; min-width: 0; }
+.mora-nombre {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mora-prop {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mora-right { text-align: right; flex-shrink: 0; }
+.mora-monto {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--error);
+}
+.mora-dias {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ── TAGS ── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.tag-neutral { background: var(--surface-highest); color: var(--text-secondary); }
+</style>
+</head>
+
+<body>
+<div class="app-shell">
+
+  <!-- ════════════════════════════════════════
+       SIDEBAR
+       ════════════════════════════════════════ -->
+   <nav class="sidebar">
+    <div class="sidebar-logo">
+      <!-- Logo: PNG oficial en base64. Si no está disponible, usar SVG placeholder. -->
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#6b1702"/>
+        <path d="M16 5L6 26h4l2-5h8l2 5h4L16 5zm0 6l3 8h-6l3-8z" fill="#ffb4a2"/>
+        <path d="M16 4L18 7l2-1-1 3 2 1-3 1v2l-2-2-2 2v-2l-3-1 2-1-1-3 2 1z" fill="#ffdea8" opacity="0.8"/>
+      </svg>
+      <div>
+        <div class="logo-text-name">Arce Administración</div>
+        <div class="logo-text-sub">Gestión inmobiliaria</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Principal</div>
+    <a class="nav-item active" href="../dashboard/wireframe_dashboard_staff.html">
+      <span class="nav-icon">⬛</span> Dashboard
+    </a>
+    <a class="nav-item" href="../caja/wireframe_caja_general.html">
+      <span class="nav-icon">◈</span> Caja General
+    </a>
+
+    <div class="nav-section">Entidades</div>
+    <a class="nav-item" href="../inquilinos/wireframe_lista_inquilinos.html">
+      <span class="nav-icon">◻</span> Inquilinos
+    </a>
+    <a class="nav-item" href="../propietarios/wireframe_lista_propietarios.html">
+      <span class="nav-icon">◻</span> Propietarios
+    </a>
+    <a class="nav-item" href="../propiedades/wireframe_ficha_propiedad.html">
+      <span class="nav-icon">◻</span> Propiedades
+    </a>
+    <a class="nav-item" href="../contratos/wireframe_lista_contratos.html">
+      <span class="nav-icon">◻</span> Contratos
+    </a>
+
+    <div class="nav-section">Gestión</div>
+    <a class="nav-item" href="../tareas/wireframe_tareas.html">
+      <span class="nav-icon">◻</span> Tareas <span class="nav-badge">9</span>
+    </a>
+    <a class="nav-item" href="../v1/wireframe_bandeja_staff.html">
+      <span class="nav-icon">◻</span> Notificaciones <span class="nav-badge">3</span>
+    </a>
+    <a class="nav-item" href="../servicios/wireframe_control_servicios.html">
+      <span class="nav-icon">◻</span> Control Servicios
+    </a>
+    <a class="nav-item" href="../financiero/wireframe_motor_financiero.html">
+      <span class="nav-icon">◻</span> Motor Financiero
+    </a>
+    <a class="nav-item" href="../renovacion/wireframe_renovacion_salida.html">
+      <span class="nav-icon">◻</span> Renovación y Salida
+    </a>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">MG</div>
+        <div>
+          <div class="user-name">M. González</div>
+          <div class="user-role">Staff Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ════════════════════════════════════════
+       MAIN CONTENT
+       ════════════════════════════════════════ -->
+  <div class="main-content">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="breadcrumb">
+        <span class="breadcrumb-current">Dashboard</span>
+      </div>
+      <div class="topbar-actions">
+        <!--
+          Botón "Nueva propiedad" → inicia wizard Captación (Módulo 1).
+          Staff Ventas: visible pero requiere aprobación de Admin.
+        -->
+        <button class="btn btn-secondary btn-sm">+ Nueva propiedad</button>
+        <!--
+          Botón "Nueva reserva" → inicia flujo Postulantes/Reservas (Módulo 3).
+          Disponible para Staff Ventas sin restricción.
+        -->
+        <button class="btn btn-primary btn-sm">+ Nueva reserva</button>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div>
+          <div class="page-title">Buen día, Marcos 👋</div>
+          <div class="page-subtitle">Resumen general del portfolio — actualizado hoy a las 00:00hs</div>
+        </div>
+        <div class="page-meta">
+          <strong>Viernes 27 de junio, 2025</strong><br>
+          Semana 26 del año
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           KPI CARDS
+           ══════════════════════════════════════
+           Regla: mustard SOLO en la card de salud del portfolio.
+           Es el único uso del color por vista (máximo 1 por pantalla).
+           Las otras cards usan colores semánticos neutros o de alerta.
+      -->
+      <div class="kpi-grid">
+
+        <!--
+          SALUD DEL PORTFOLIO — mustard
+          Único uso del color mustard en esta vista.
+          Fórmula: (propiedades sin alertas / total) × 100
+          Alertas ponderadas: mora > contrato vence > servicio faltante > ICL > ficha incompleta
+          Se recalcula diariamente en el cron job de las 00:00hs.
+        -->
+        <div class="kpi-card mustard">
+          <div class="kpi-label">Salud del portfolio</div>
+          <div class="kpi-value">84%</div>
+          <div class="kpi-sub">7 propiedades con alertas activas</div>
+          <div class="kpi-trend down">↓ −3pts vs semana anterior</div>
+        </div>
+
+        <!--
+          PROPIEDADES ACTIVAS — neutral
+          Total de propiedades con contrato activo (estado "en curso").
+          No incluye propiedades vacantes ni en captación.
+        -->
+        <div class="kpi-card neutral">
+          <div class="kpi-label">Propiedades activas</div>
+          <div class="kpi-value">47</div>
+          <div class="kpi-sub">3 vacantes · 2 en captación</div>
+          <div class="kpi-trend neutral">→ Sin cambio vs mes anterior</div>
+        </div>
+
+        <!--
+          EN MORA — error/rojo
+          Contratos con mora activa (superaron días de gracia).
+          Clickeable → lleva al módulo Motor Financiero filtrado por mora activa.
+        -->
+        <div class="kpi-card error">
+          <div class="kpi-label">En mora activa</div>
+          <div class="kpi-value">3</div>
+          <div class="kpi-sub">$486.000 adeudados en total</div>
+          <div class="kpi-trend down">↑ +1 desde ayer</div>
+        </div>
+
+        <!--
+          CONTRATOS POR VENCER — primary/terracota
+          Contratos que vencen en los próximos 60 días sin decisión (renovar/salir).
+          Clickeable → lleva al módulo Renovación y Salida.
+        -->
+        <div class="kpi-card primary">
+          <div class="kpi-label">Contratos por vencer</div>
+          <div class="kpi-value">5</div>
+          <div class="kpi-sub">2 en < 30 días · 3 entre 30–60 días</div>
+          <div class="kpi-trend neutral">→ Igual que la semana pasada</div>
+        </div>
+
+      </div>
+
+      <!-- ══════════════════════════════════════
+           DOS COLUMNAS: PORTFOLIO + LATERAL
+           ══════════════════════════════════════ -->
+      <div class="dashboard-cols">
+
+        <!-- ── IZQUIERDA: TABLA DE PROPIEDADES ── -->
+        <!--
+          Lista de propiedades activas ordenadas por severidad de alertas.
+          El semáforo de estado (dot de color) refleja la alerta más grave:
+            - Rojo: mora activa
+            - Amarillo: servicio faltante / ICL pendiente / contrato vence
+            - Verde: sin alertas
+            - Gris: vacante
+          Al hacer click en una fila → navega a la ficha de la propiedad.
+          Filtro por estado disponible en el encabezado del panel.
+        -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Portfolio de propiedades</div>
+              <div class="panel-subtitle">47 activas · ordenadas por severidad de alertas</div>
+            </div>
+            <div class="panel-actions">
+              <!--
+                Filtros rápidos: Todas | Con alertas | Sin alertas
+                Por defecto muestra "Con alertas" primero.
+              -->
+              <button class="btn btn-ghost btn-sm">Filtrar</button>
+              <button class="btn btn-secondary btn-sm">Ver todas →</button>
+            </div>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:260px">Propiedad</th>
+                <th>Inquilino</th>
+                <th>Alertas activas</th>
+                <th>Vto. contrato</th>
+                <th>Último cobro</th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <!-- FILA 1: mora activa → punto rojo -->
+              <!--
+                Al hacer click → ficha de propiedad con tab Motor Financiero activo.
+                La mora activa es la alerta de mayor severidad.
+              -->
+              <tr onclick="window.location='../propiedades/wireframe_ficha_propiedad.html'" style="cursor:pointer">
+                <td>
+                  <div class="prop-status">
+                    <div class="status-dot red"></div>
+                    <div>
+                      <div class="prop-name">Tucumán 445, 3°A</div>
+                      <div class="prop-address">Córdoba Capital</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Jorge Paz</td>
+                <td>
+                  <span class="alert-tag mora">Mora · 17 días</span>
+                </td>
+                <td>31/12/2025</td>
+                <td style="color:var(--error)">20 Feb</td>
+              </tr>
+
+              <!-- FILA 2: mora activa → punto rojo -->
+              <tr onclick="window.location='../propiedades/wireframe_ficha_propiedad.html'" style="cursor:pointer">
+                <td>
+                  <div class="prop-status">
+                    <div class="status-dot red"></div>
+                    <div>
+                      <div class="prop-name">Mitre 80, PB</div>
+                      <div class="prop-address">Villa Carlos Paz</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Laura Suárez</td>
+                <td>
+                  <span class="alert-tag mora">Mora · 32 días</span>
+                </td>
+                <td>30/06/2025</td>
+                <td style="color:var(--error)">5 Feb</td>
+              </tr>
+
+              <!-- FILA 3: contrato por vencer → punto amarillo -->
+              <!--
+                Vence en < 30 días. Sin decisión del inquilino.
+                Al hacer click → módulo Renovación y Salida para este contrato.
+              -->
+              <tr onclick="window.location='../propiedades/wireframe_ficha_propiedad.html'" style="cursor:pointer">
+                <td>
+                  <div class="prop-status">
+                    <div class="status-dot yellow"></div>
+                    <div>
+                      <div class="prop-name">Pueyrredón 3, 1°B</div>
+                      <div class="prop-address">Córdoba Capital</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Federico Molina</td>
+                <td>
+                  <span class="alert-tag vence">Vence · 28 días</span>
+                </td>
+                <td style="color:var(--primary); font-weight:600">27 Jul 2025</td>
+                <td>1 Jun</td>
+              </tr>
+
+              <!-- FILA 4: comprobante de servicio faltante → punto amarillo -->
+              <!--
+                Tiene servicio obligatorio sin comprobante > 30 días.
+                Si supera el umbral, el cobro del próximo alquiler se bloqueará.
+              -->
+              <tr onclick="window.location='../propiedades/wireframe_ficha_propiedad.html'" style="cursor:pointer">
+                <td>
+                  <div class="prop-status">
+                    <div class="status-dot yellow"></div>
+                    <div>
+                      <div class="prop-name">Av. Colón 1280, 4°C</div>
+                      <div class="prop-address">Córdoba Capital</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Sofía Ramírez</td>
+                <td>
+                  <span class="alert-tag servicio">Gas · 38 días</span>
+                </td>
+                <td>15/03/2026</td>
+                <td>3 Jun</td>
+              </tr>
+
+              <!-- FILA 5: ICL vencido sin aprobar → punto amarillo -->
+              <!--
+                El índice de actualización venció y está pendiente de aprobación del staff.
+                El staff debe aprobar antes de que se aplique al contrato.
+              -->
+              <tr onclick="window.location='../propiedades/wireframe_ficha_propiedad.html'" style="cursor:pointer">
+                <td>
+                  <div class="prop-status">
+                    <div class="status-dot yellow"></div>
+                    <div>
+                      <div class="prop-name">San Juan 88, 2°A</div>
+                      <div class="prop-address">Alta Córdoba</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Martín López</td>
+                <td>
+                  <span class="alert-tag icl">ICL pendiente</span>
+                </td>
+                <td>30/09/2025</td>
+                <td>1 Jun</td>
+              </tr>
+
+              <!-- FILA 6: sin alertas → punto verde -->
+              <tr onclick="window.location='../propiedades/wireframe_ficha_propiedad.html'" style="cursor:pointer">
+                <td>
+                  <div class="prop-status">
+                    <div class="status-dot green"></div>
+                    <div>
+                      <div class="prop-name">Bv. San Juan 450, 1°D</div>
+                      <div class="prop-address">Nueva Córdoba</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Ana Torres</td>
+                <td>
+                  <span class="alert-tag ok">Al día</span>
+                </td>
+                <td>01/02/2026</td>
+                <td>2 Jun</td>
+              </tr>
+
+              <!-- FILA 7: sin alertas → punto verde -->
+              <tr onclick="window.location='../propiedades/wireframe_ficha_propiedad.html'" style="cursor:pointer">
+                <td>
+                  <div class="prop-status">
+                    <div class="status-dot green"></div>
+                    <div>
+                      <div class="prop-name">Chacabuco 220, 3°B</div>
+                      <div class="prop-address">Güemes</div>
+                    </div>
+                  </div>
+                </td>
+                <td>Roberto Soria</td>
+                <td>
+                  <span class="alert-tag ok">Al día</span>
+                </td>
+                <td>15/11/2025</td>
+                <td>1 Jun</td>
+              </tr>
+
+            </tbody>
+          </table>
+
+          <div class="panel-footer">
+            <a href="#">Ver las 47 propiedades →</a>
+          </div>
+        </div>
+
+        <!-- ── DERECHA: TAREAS + MORA ── -->
+        <div class="right-col">
+
+          <!-- PANEL: TAREAS URGENTES -->
+          <!--
+            Muestra las top 5 tareas urgentes asignadas al usuario logueado.
+            Staff Admin: ve las del equipo también, con nombre del responsable.
+            Staff Ventas: solo sus tareas.
+            Origin dots: auto=azul, manual=terracota, onboarding=verde.
+            Prioridad: Urgente > Alta > Media > Baja
+            El link "Ver todas" lleva al módulo Tareas.
+          -->
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Tareas urgentes</div>
+                <div class="panel-subtitle">Top 5 · asignadas a vos</div>
+              </div>
+              <div class="panel-actions">
+                <button class="btn btn-secondary btn-sm">+ Nueva tarea</button>
+              </div>
+            </div>
+
+            <div class="tarea-list">
+
+              <!-- Tarea 1: mora prolongada → carta documento -->
+              <!--
+                Generada automáticamente (origin: auto, azul).
+                Al hacer click → ficha del contrato con borrador de carta documento.
+              -->
+              <div class="tarea-item">
+                <div class="tarea-origin-dot auto"></div>
+                <div class="tarea-body">
+                  <div class="tarea-titulo">Revisar borrador carta documento</div>
+                  <div class="tarea-meta">
+                    <div class="tarea-propiedad">Mitre 80 · Laura Suárez</div>
+                    <div class="tarea-fecha">Vence hoy</div>
+                  </div>
+                </div>
+                <div class="tarea-prioridad urgente">Urgente</div>
+              </div>
+
+              <!-- Tarea 2: ICL pendiente de aprobación -->
+              <!--
+                Generada automáticamente cuando el índice está listo para aplicar.
+                Staff debe revisar y aprobar el nuevo canon antes de notificar al inquilino.
+              -->
+              <div class="tarea-item">
+                <div class="tarea-origin-dot auto"></div>
+                <div class="tarea-body">
+                  <div class="tarea-titulo">Aprobar actualización ICL</div>
+                  <div class="tarea-meta">
+                    <div class="tarea-propiedad">San Juan 88 · $142.500 → $156.000</div>
+                    <div class="tarea-fecha">Mañana</div>
+                  </div>
+                </div>
+                <div class="tarea-prioridad urgente">Urgente</div>
+              </div>
+
+              <!-- Tarea 3: renovación sin respuesta -->
+              <!--
+                Generada automáticamente 60 días antes del vencimiento.
+                Contrato sin decisión del inquilino.
+              -->
+              <div class="tarea-item">
+                <div class="tarea-origin-dot auto"></div>
+                <div class="tarea-body">
+                  <div class="tarea-titulo">Confirmar intención renovación</div>
+                  <div class="tarea-meta">
+                    <div class="tarea-propiedad">Pueyrredón 3 · Vence 27 jul</div>
+                    <div class="tarea-fecha">3 días</div>
+                  </div>
+                </div>
+                <div class="tarea-prioridad alta">Alta</div>
+              </div>
+
+              <!-- Tarea 4: comprobante de servicio -->
+              <!--
+                Generada automáticamente cuando un servicio obligatorio supera 30 días sin comprobante.
+              -->
+              <div class="tarea-item">
+                <div class="tarea-origin-dot auto"></div>
+                <div class="tarea-body">
+                  <div class="tarea-titulo">Seguimiento comprobante gas</div>
+                  <div class="tarea-meta">
+                    <div class="tarea-propiedad">Av. Colón 1280 · Sofía Ramírez</div>
+                    <div class="tarea-fecha">5 días</div>
+                  </div>
+                </div>
+                <div class="tarea-prioridad alta">Alta</div>
+              </div>
+
+              <!-- Tarea 5: manual del staff -->
+              <!--
+                Creada manualmente por el staff (origin: manual, terracota).
+              -->
+              <div class="tarea-item">
+                <div class="tarea-origin-dot manual"></div>
+                <div class="tarea-body">
+                  <div class="tarea-titulo">Llamar propietario · Tucumán 445</div>
+                  <div class="tarea-meta">
+                    <div class="tarea-propiedad">Gestión de mora · R. Gómez</div>
+                    <div class="tarea-fecha">Esta semana</div>
+                  </div>
+                </div>
+                <div class="tarea-prioridad media">Media</div>
+              </div>
+
+            </div>
+
+            <div class="panel-footer">
+              <a href="../tareas/wireframe_tareas.html">Ver las 9 tareas pendientes →</a>
+            </div>
+          </div>
+
+          <!-- PANEL: MORA ACTIVA -->
+          <!--
+            Lista de inquilinos con mora activa.
+            Ordenado por días de mora descendente.
+            Al hacer click en un ítem → ficha del contrato, tab Motor Financiero.
+            Solo visible para Staff Admin y Staff Ventas con acceso a cobros.
+            Staff Ventas sin acceso a cobros: este panel no se muestra.
+          -->
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Mora activa</div>
+                <div class="panel-subtitle">3 contratos · $486.000 total</div>
+              </div>
+              <div class="panel-actions">
+                <a class="btn btn-ghost btn-sm" href="../financiero/wireframe_motor_financiero.html">Ver todas →</a>
+              </div>
+            </div>
+
+            <div class="mora-list">
+
+              <a href="../financiero/wireframe_motor_financiero.html" style="display:contents; text-decoration:none; color:inherit;">
+              <div class="mora-item">
+                <div class="mora-avatar">LS</div>
+                <div class="mora-info">
+                  <div class="mora-nombre">Laura Suárez</div>
+                  <div class="mora-prop">Mitre 80 · CON-2024-0022</div>
+                </div>
+                <div class="mora-right">
+                  <div class="mora-monto">$198.500</div>
+                  <div class="mora-dias">32 días en mora</div>
+                </div>
+              </div>
+              </a>
+
+              <a href="../financiero/wireframe_motor_financiero.html" style="display:contents; text-decoration:none; color:inherit;">
+              <div class="mora-item">
+                <div class="mora-avatar">JP</div>
+                <div class="mora-info">
+                  <div class="mora-nombre">Jorge Paz</div>
+                  <div class="mora-prop">Tucumán 445 · CON-2024-0029</div>
+                </div>
+                <div class="mora-right">
+                  <div class="mora-monto">$142.000</div>
+                  <div class="mora-dias">17 días en mora</div>
+                </div>
+              </div>
+              </a>
+
+              <a href="../financiero/wireframe_motor_financiero.html" style="display:contents; text-decoration:none; color:inherit;">
+              <div class="mora-item">
+                <div class="mora-avatar">FM</div>
+                <div class="mora-info">
+                  <div class="mora-nombre">Federico Molina</div>
+                  <div class="mora-prop">Pueyrredón 3 · CON-2025-0011</div>
+                </div>
+                <div class="mora-right">
+                  <div class="mora-monto">$145.500</div>
+                  <div class="mora-dias">8 días en mora</div>
+                </div>
+              </div>
+              </a>
+
+            </div>
+
+          </div>
+
+        </div>
+        <!-- ── FIN DERECHA ── -->
+
+      </div>
+      <!-- ── FIN DOS COLUMNAS ── -->
+
+    </div>
+    <!-- ── FIN CONTENT ── -->
+
+  </div>
+  <!-- ── FIN MAIN ── -->
+
+</div>
+<!-- ── FIN APP SHELL ── -->
+
+</body>
+</html>

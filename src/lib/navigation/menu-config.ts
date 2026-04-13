@@ -11,10 +11,11 @@ import {
   BarChart3,
   Shield,
   Landmark,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import type { MenuItem, MenuConfig, UserRole, MenuSubItem } from "./types";
-import { canManageClauses, canManageClients, canManageContracts, canManageProperties, hasRouteAccess } from "@/lib/permissions";
+import { canManageClauses, canManageClients, canManageContracts, canManageProperties, canManageServices, hasRouteAccess } from "@/lib/permissions";
 
 /**
  * Configuración de menú para rol visitor (menú básico)
@@ -137,6 +138,11 @@ const accountAdminMenuItems: MenuItem[] = [
     ],
   },
   {
+    title: "Control Servicios",
+    url: "/servicios",
+    icon: Zap,
+  },
+  {
     title: "Pagos",
     url: "/tablero/payments",
     icon: CreditCard,
@@ -248,6 +254,7 @@ const permissionFunctions: Record<string, (role: string | null | undefined) => b
   canManageClients,
   canManageContracts,
   canManageProperties,
+  canManageServices,
 };
 
 /**
