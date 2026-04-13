@@ -81,7 +81,7 @@ export function SearchableSelect({
         disabled={disabled}
         onClick={() => !disabled && setOpen((v) => !v)}
         className={cn(
-          "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background",
+          "flex h-9 w-full items-center justify-between rounded-none border-0 border-b border-input bg-muted/40 px-3 py-2 text-sm",
           "focus:outline-none focus:ring-1 focus:ring-ring",
           "disabled:cursor-not-allowed disabled:opacity-50",
           open && "ring-1 ring-ring"
@@ -97,7 +97,7 @@ export function SearchableSelect({
               tabIndex={0}
               onClick={handleClear}
               onKeyDown={(e) => e.key === "Enter" && handleClear(e as unknown as React.MouseEvent)}
-              className="rounded-sm p-0.5 hover:bg-muted transition-colors"
+              className="rounded-none p-0.5 hover:bg-muted transition-colors"
             >
               <X className="h-3 w-3 text-muted-foreground" />
             </span>
@@ -112,7 +112,7 @@ export function SearchableSelect({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover text-popover-foreground shadow-md">
+        <div className="absolute z-50 mt-1 w-full rounded-none border border-border bg-popover text-popover-foreground shadow-md">
           <div className="p-2 border-b border-border">
             <Input
               ref={inputRef}

@@ -52,10 +52,14 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
     const statusFilter = searchParams.get("status") || "";
     const q = searchParams.get("q") || "";
+    const propertyIdFilter = searchParams.get("propertyId") || "";
 
     const conditions = [];
     if (statusFilter) {
       conditions.push(eq(contract.status, statusFilter));
+    }
+    if (propertyIdFilter) {
+      conditions.push(eq(contract.propertyId, propertyIdFilter));
     }
     if (q) {
       conditions.push(

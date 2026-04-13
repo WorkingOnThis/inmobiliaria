@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
@@ -42,6 +43,7 @@ export default function PropietarioFichaPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const [pendingFocus, setPendingFocus] = useState<string | null>(null);
 
   const activeTab = (searchParams.get("tab") as Tab) ?? "datos";
 
@@ -65,13 +67,9 @@ export default function PropietarioFichaPage() {
 
   const propietario = data?.propietario;
 
-  // Scroll al campo cuando se hace click en un chip de completitud
   const handleChipClick = (fieldId: string) => {
-    const el = document.getElementById(`field-${fieldId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      (el.querySelector("input, select") as HTMLElement | null)?.focus?.();
-    }
+    setTab("datos");
+    setPendingFocus(fieldId);
   };
 
   const handleStatusChange = () => {
@@ -202,6 +200,8 @@ export default function PropietarioFichaPage() {
               <PropietarioTabDatos
                 propietario={propietario}
                 onStatusChange={handleStatusChange}
+                focusField={pendingFocus}
+                onFocusHandled={() => setPendingFocus(null)}
               />
             )}
             {activeTab === "cuenta-corriente" && (

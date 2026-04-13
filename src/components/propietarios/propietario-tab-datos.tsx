@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Edit2, Save, X, Loader2, AlertCircle } from "lucide-react";
@@ -25,6 +25,8 @@ interface Propietario {
 interface PropietarioTabDatosProps {
   propietario: Propietario;
   onStatusChange: () => void;
+  focusField?: string | null;
+  onFocusHandled?: () => void;
 }
 
 type EditableFields = Omit<Propietario, "id" | "status">;
@@ -86,6 +88,8 @@ function DataField({
 export function PropietarioTabDatos({
   propietario,
   onStatusChange,
+  focusField,
+  onFocusHandled,
 }: PropietarioTabDatosProps) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -109,6 +113,21 @@ export function PropietarioTabDatos({
 
   const setField = (key: keyof EditableFields) => (val: string) =>
     setForm((prev) => ({ ...prev, [key]: val || null }));
+
+  useEffect(() => {
+    if (!focusField) return;
+    setEditing(true);
+    // Esperamos un tick para que React renderice los inputs antes de hacer scroll
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`field-${focusField}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        (el.querySelector("input, select") as HTMLElement | null)?.focus();
+      }
+      onFocusHandled?.();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [focusField]);
 
   const handleSave = async () => {
     setSaving(true);

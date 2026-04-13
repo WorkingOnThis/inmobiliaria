@@ -10,8 +10,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
+  --font-headline: var(--font-space-grotesk);
+  --font-brand: var(--font-montserrat);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,170 +50,115 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --radius-pill: 9999px;
 }
 
 /* ============================================================
-   ARCE DESIGN SYSTEM — definición propia en Tailwind
-   @theme (sin inline): Tailwind ES la fuente de verdad.
-   Genera var(--color-arce-*) en :root automáticamente.
-   Modo oscuro: .dark sobreescribe esas mismas vars.
-
-   Uso en componentes:
-     className="bg-arce-primary text-arce-on-primary"
-     style={{ color: 'var(--color-arce-primary)' }}
-   ============================================================ */
-@theme {
-  /* ── Superficies ── */
-  --color-arce-surface:               #f8f9fb;
-  --color-arce-surface-lowest:        #ffffff;
-  --color-arce-surface-low:           #f3f4f6;
-  --color-arce-surface-container:     #edeef0;
-  --color-arce-surface-high:          #e7e8ea;
-  --color-arce-surface-highest:       #e1e2e4;
-  --color-arce-background:            #f8f9fb;
-
-  /* ── Texto sobre superficies ── */
-  --color-arce-on-surface:            #191c1e;
-  --color-arce-on-surface-variant:    #57423d;
-  --color-arce-secondary-text:        #5d5e62;
-
-  /* ── Primario — Terracota ── */
-  --color-arce-primary:               #6b1702;
-  --color-arce-primary-container:     #8b2e16;
-  --color-arce-primary-fixed:         #ffdad2;
-  --color-arce-on-primary:            #ffffff;
-  --color-arce-on-primary-fixed:      #3c0800;
-
-  /* ── Terciario — Mostaza (solo alertas críticas) ── */
-  --color-arce-tertiary-fixed:        #ffdea8;
-  --color-arce-on-tertiary-fixed:     #271900;
-
-  /* ── Contornos y contenedores secundarios ── */
-  --color-arce-outline:               #8a726c;
-  --color-arce-outline-variant:       #ddc0b9;
-  --color-arce-secondary-container:   #dfdfe3;
-  --color-arce-on-secondary-container:#616366;
-
-  /* ── Errores ── */
-  --color-arce-error:                 #ba1a1a;
-  --color-arce-error-container:       #ffdad6;
-  --color-arce-on-error-container:    #93000a;
-
-  /* ── Tipografía ── */
-  --font-arce-headline: 'Space Grotesk', sans-serif;
-  --font-arce-brand:    'Montserrat', sans-serif;
-  --font-arce-body:     'Inter', sans-serif;
-}
-
-/* ── Modo oscuro: sobreescribe las vars generadas por @theme ── */
-.dark {
-  /* Superficies */
-  --color-arce-surface:               #191c1e;
-  --color-arce-surface-lowest:        #0e1011;
-  --color-arce-surface-low:           #191c1e;
-  --color-arce-surface-container:     #1d2022;
-  --color-arce-surface-high:          #282a2c;
-  --color-arce-surface-highest:       #333537;
-  --color-arce-background:            #111314;
-
-  /* Texto */
-  --color-arce-on-surface:            #e1e2e4;
-  --color-arce-on-surface-variant:    #d8bdb8;
-  --color-arce-secondary-text:        #c6c6ca;
-
-  /* Primario — salmón (invertido en oscuro) */
-  --color-arce-primary:               #ffb4a2;
-  --color-arce-primary-container:     #8b2e16;
-  --color-arce-primary-fixed:         rgba(255, 180, 162, 0.12);
-  --color-arce-on-primary:            #561100;
-  --color-arce-on-primary-fixed:      #ffb4a2;
-
-  /* Terciario — mostaza */
-  --color-arce-tertiary-fixed:        rgba(253, 222, 168, 0.14);
-  --color-arce-on-tertiary-fixed:     #ffdea8;
-
-  /* Contornos */
-  --color-arce-outline:               #a0847e;
-  --color-arce-outline-variant:       #57423d;
-  --color-arce-secondary-container:   #44464a;
-  --color-arce-on-secondary-container:#c6c6ca;
-
-  /* Errores */
-  --color-arce-error:                 #ffb4ab;
-  --color-arce-error-container:       rgba(147, 0, 10, 0.35);
-  --color-arce-on-error-container:    #ffdad6;
-}
-
-/* ============================================================
-   SHADCN/UI — vars de :root y .dark (requeridos por @theme inline)
+   ARCE DESIGN SYSTEM — tokens unificados
+   Los tokens shadcn apuntan directamente a los valores Arce.
+   Un solo sistema. No hay bg-arce-*, solo bg-primary, etc.
    ============================================================ */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.13 0.028 261.692);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.13 0.028 261.692);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.13 0.028 261.692);
-  --primary: oklch(0.21 0.034 264.665);
-  --primary-foreground: oklch(0.985 0.002 247.839);
-  --secondary: oklch(0.967 0.003 264.542);
-  --secondary-foreground: oklch(0.21 0.034 264.665);
-  --muted: oklch(0.967 0.003 264.542);
-  --muted-foreground: oklch(0.551 0.027 264.364);
-  --accent: oklch(0.967 0.003 264.542);
-  --accent-foreground: oklch(0.21 0.034 264.665);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.928 0.006 264.531);
-  --input: oklch(0.928 0.006 264.531);
-  --ring: oklch(0.707 0.022 261.325);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0.002 247.839);
-  --sidebar-foreground: oklch(0.13 0.028 261.692);
-  --sidebar-primary: oklch(0.21 0.034 264.665);
-  --sidebar-primary-foreground: oklch(0.985 0.002 247.839);
-  --sidebar-accent: oklch(0.967 0.003 264.542);
-  --sidebar-accent-foreground: oklch(0.21 0.034 264.665);
-  --sidebar-border: oklch(0.928 0.006 264.531);
-  --sidebar-ring: oklch(0.707 0.022 261.325);
+  /* --- Radio --- */
+  --radius: 0px;    /* Esquinas vivas en todo. Excepción: --radius-pill para tags */
+
+  /* --- Superficies (modo claro) --- */
+  --background:          #f8f9fb;
+  --foreground:          #191c1e;
+
+  --card:                #ffffff;
+  --card-foreground:     #191c1e;
+
+  --popover:             #ffffff;
+  --popover-foreground:  #191c1e;
+
+  --muted:               #f3f4f6;
+  --muted-foreground:    #5d5e62;
+
+  --accent:              #edeef0;
+  --accent-foreground:   #191c1e;
+
+  --secondary:           #dfdfe3;
+  --secondary-foreground:#191c1e;
+
+  /* --- Primario: Terracota --- */
+  --primary:             #6b1702;
+  --primary-foreground:  #ffffff;
+
+  /* --- Errores --- */
+  --destructive:         #ba1a1a;
+
+  /* --- Bordes ghost (sin opacidad sólida) --- */
+  --border:              rgba(221, 192, 185, 0.2);
+  --input:               rgba(138, 114, 108, 0.3);
+  --ring:                #6b1702;
+
+  /* --- Charts (paleta cálida en lugar del arcoíris genérico) --- */
+  --chart-1: #6b1702;
+  --chart-2: #8b2e16;
+  --chart-3: #a23e25;
+  --chart-4: #ffdad2;
+  --chart-5: #f9bc42;
+
+  /* --- Sidebar (modo claro) --- */
+  --sidebar:                    #f3f4f6;
+  --sidebar-foreground:         #191c1e;
+  --sidebar-primary:            #6b1702;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent:             #ffdad2;
+  --sidebar-accent-foreground:  #6b1702;
+  --sidebar-border:             rgba(139, 46, 22, 0.12);
+  --sidebar-ring:               #6b1702;
 }
 
 .dark {
-  --background: oklch(0.13 0.028 261.692);
-  --foreground: oklch(0.985 0.002 247.839);
-  --card: oklch(0.21 0.034 264.665);
-  --card-foreground: oklch(0.985 0.002 247.839);
-  --popover: oklch(0.21 0.034 264.665);
-  --popover-foreground: oklch(0.985 0.002 247.839);
-  --primary: oklch(0.928 0.006 264.531);
-  --primary-foreground: oklch(0.21 0.034 264.665);
-  --secondary: oklch(0.278 0.033 256.848);
-  --secondary-foreground: oklch(0.985 0.002 247.839);
-  --muted: oklch(0.278 0.033 256.848);
-  --muted-foreground: oklch(0.707 0.022 261.325);
-  --accent: oklch(0.278 0.033 256.848);
-  --accent-foreground: oklch(0.985 0.002 247.839);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.034 264.665);
-  --sidebar-foreground: oklch(0.985 0.002 247.839);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0.002 247.839);
-  --sidebar-accent: oklch(0.278 0.033 256.848);
-  --sidebar-accent-foreground: oklch(0.985 0.002 247.839);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* --- Superficies (modo oscuro) --- */
+  --background:          #111314;
+  --foreground:          #e1e2e4;
+
+  --card:                #1d2022;
+  --card-foreground:     #e1e2e4;
+
+  --popover:             #1d2022;
+  --popover-foreground:  #e1e2e4;
+
+  --muted:               #282a2c;
+  --muted-foreground:    #c6c6ca;
+
+  --accent:              #282a2c;
+  --accent-foreground:   #e1e2e4;
+
+  --secondary:           #44464a;
+  --secondary-foreground:#e1e2e4;
+
+  /* --- Primario: Salmón (invertido en oscuro) --- */
+  --primary:             #ffb4a2;
+  --primary-foreground:  #561100;
+
+  /* --- Errores --- */
+  --destructive:         #ffb4ab;
+
+  /* --- Bordes ghost oscuros --- */
+  --border:              rgba(221, 192, 185, 0.1);
+  --input:               rgba(160, 132, 126, 0.25);
+  --ring:                #ffb4a2;
+
+  /* --- Charts (oscuro) --- */
+  --chart-1: #ffb4a2;
+  --chart-2: #ffdad2;
+  --chart-3: #f9bc42;
+  --chart-4: #8b2e16;
+  --chart-5: #a0847e;
+
+  /* --- Sidebar (modo oscuro) --- */
+  --sidebar:                    #191c1e;
+  --sidebar-foreground:         #e1e2e4;
+  --sidebar-primary:            #ffb4a2;
+  --sidebar-primary-foreground: #561100;
+  --sidebar-accent:             rgba(255, 180, 162, 0.1);
+  --sidebar-accent-foreground:  #ffb4a2;
+  --sidebar-border:             rgba(221, 192, 185, 0.15);
+  --sidebar-ring:               #ffb4a2;
 }
 
 @layer base {
@@ -220,5 +167,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headline, var(--font-sans));
+    letter-spacing: -0.02em;
+    line-height: 1.15;
   }
 }

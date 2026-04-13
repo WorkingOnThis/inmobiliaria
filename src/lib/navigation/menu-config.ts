@@ -72,49 +72,16 @@ const accountAdminMenuItems: MenuItem[] = [
     title: "Propietarios",
     url: "/propietarios",
     icon: UserCheck,
-    items: [
-      {
-        title: "Todos los propietarios",
-        url: "/propietarios",
-      },
-      {
-        title: "Agregar propietario",
-        url: "/propietarios/nuevo",
-        requiredPermission: "canManageClients",
-      },
-    ],
   },
   {
     title: "Inquilinos",
     url: "/inquilinos",
     icon: Users,
-    items: [
-      {
-        title: "Todos los inquilinos",
-        url: "/inquilinos",
-      },
-      {
-        title: "Agregar inquilino",
-        url: "/inquilinos/nuevo",
-        requiredPermission: "canManageClients",
-      },
-    ],
   },
   {
     title: "Propiedades",
     url: "/propiedades",
     icon: Building2,
-    items: [
-      {
-        title: "Todas las propiedades",
-        url: "/propiedades",
-      },
-      {
-        title: "Agregar propiedad",
-        url: "/propiedades/nueva",
-        requiredPermission: "canManageProperties",
-      },
-    ],
   },
   {
     title: "Contratos",
@@ -124,11 +91,6 @@ const accountAdminMenuItems: MenuItem[] = [
       {
         title: "Todos los contratos",
         url: "/contratos",
-      },
-      {
-        title: "Nuevo contrato",
-        url: "/contratos/nuevo",
-        requiredPermission: "canManageContracts",
       },
       {
         title: "Cláusulas",

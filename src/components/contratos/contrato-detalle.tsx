@@ -37,6 +37,7 @@ import {
   ReceiptText,
   Building,
   Search,
+  CheckCircle2,
 } from "lucide-react";
 import { format, differenceInMonths } from "date-fns";
 import { es } from "date-fns/locale";
@@ -308,6 +309,29 @@ export function ContratoDetalle({ id }: { id: string }) {
     },
   });
 
+  const activarMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/contracts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "active" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Error al activar el contrato");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Contrato activado");
+      queryClient.invalidateQueries({ queryKey: ["contract", id] });
+      queryClient.invalidateQueries({ queryKey: ["contracts"] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
   const startEditing = () => {
     if (!data) return;
     setEditValues({
@@ -405,6 +429,20 @@ export function ContratoDetalle({ id }: { id: string }) {
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-bold">Contrato {data.contractNumber}</h1>
           <Badge variant={statusBadgeVariant(data.status)}>{statusLabel}</Badge>
+          {data.status === "draft" && (
+            <Button
+              size="sm"
+              onClick={() => activarMutation.mutate()}
+              disabled={activarMutation.isPending}
+            >
+              {activarMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 mr-1" />
+              )}
+              Activar contrato
+            </Button>
+          )}
         </div>
         <p className="text-sm text-muted-foreground">
           {data.propertyAddress || "Sin dirección"}

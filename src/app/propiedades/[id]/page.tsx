@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { ArrowLeft, Loader2, Pencil, X, Save, ExternalLink } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, X, Save, ExternalLink, PlusCircle } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import Link from "next/link";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -219,6 +222,133 @@ function PlaceholderTab({ icon, title, description }: { icon: string; title: str
       <div className="text-4xl">{icon}</div>
       <div className="text-[0.9rem] font-semibold text-[#a8a9ac]">{title}</div>
       <div className="text-[0.75rem] text-[#6b6d70] max-w-xs">{description}</div>
+    </div>
+  );
+}
+
+// ── Contratos tab ─────────────────────────────────────────────────────────────
+
+const CONTRACT_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  active:            { label: "Vigente",            color: "#8dcf95", bg: "rgba(141,207,149,0.12)" },
+  draft:             { label: "Borrador",           color: "#a8a9ac", bg: "rgba(168,169,172,0.10)" },
+  pending_signature: { label: "Pend. de firma",     color: "#93c5fd", bg: "rgba(147,197,253,0.12)" },
+  expiring_soon:     { label: "Por vencer",         color: "#ffdea8", bg: "rgba(253,222,168,0.12)" },
+  expired:           { label: "Vencido",            color: "#ffb4ab", bg: "rgba(255,180,171,0.12)" },
+  terminated:        { label: "Rescindido",         color: "#ffb4ab", bg: "rgba(255,180,171,0.12)" },
+};
+
+function ContratosTab({ propertyId }: { propertyId: string }) {
+  const router = useRouter();
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["contracts", "property", propertyId],
+    queryFn: async () => {
+      const res = await fetch(`/api/contracts?propertyId=${propertyId}&limit=50`);
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "Error al cargar contratos");
+      }
+      return res.json();
+    },
+  });
+
+  const contracts: {
+    id: string;
+    contractNumber: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    monthlyAmount: string;
+    tenantNames: string[];
+    ownerName: string;
+  }[] = data?.contracts ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[#6b6d70]" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="px-7 py-6 text-[0.78rem] text-[#ffb4ab]">
+        {(error as Error).message}
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-7 py-6 flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70]">
+          Historial de contratos
+        </div>
+        <Link
+          href={`/contratos/nuevo?propertyId=${propertyId}`}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors"
+          style={{ background: "#282a2c", color: "#a8a9ac", border: "1px solid rgba(255,255,255,0.07)" }}
+        >
+          <PlusCircle size={12} /> Nuevo contrato
+        </Link>
+      </div>
+
+      {contracts.length === 0 ? (
+        <div
+          className="flex flex-col items-center justify-center py-16 gap-3 rounded-[12px]"
+          style={{ background: "#191c1e", border: "1px dashed rgba(255,255,255,0.07)" }}
+        >
+          <div className="text-3xl">📄</div>
+          <div className="text-[0.82rem] font-semibold text-[#a8a9ac]">Sin contratos</div>
+          <div className="text-[0.72rem] text-[#6b6d70]">Esta propiedad no tiene contratos registrados todavía.</div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {contracts.map((c) => {
+            const cfg = CONTRACT_STATUS_CONFIG[c.status] ?? CONTRACT_STATUS_CONFIG.draft;
+            return (
+              <div
+                key={c.id}
+                className="flex items-center gap-4 px-4 py-3.5 rounded-[12px] cursor-pointer transition-colors"
+                style={{ background: "#191c1e", border: "1px solid rgba(255,255,255,0.07)" }}
+                onClick={() => router.push(`/contratos/${c.id}`)}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,180,162,0.2)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)"; }}
+              >
+                {/* Número */}
+                <div className="font-mono text-[0.82rem] font-bold text-[#e1e2e4] w-24 flex-shrink-0">
+                  {c.contractNumber}
+                </div>
+
+                {/* Inquilino */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[0.78rem] font-semibold text-[#e1e2e4] truncate">
+                    {c.tenantNames.length > 0 ? c.tenantNames.join(", ") : "Sin inquilino"}
+                  </div>
+                  <div className="text-[0.62rem] text-[#6b6d70] mt-0.5">
+                    {format(new Date(c.startDate), "dd/MM/yyyy", { locale: es })}
+                    {" → "}
+                    {format(new Date(c.endDate), "dd/MM/yyyy", { locale: es })}
+                    {" · "}${parseFloat(c.monthlyAmount).toLocaleString("es-AR")}/mes
+                  </div>
+                </div>
+
+                {/* Badge de estado */}
+                <span
+                  className="px-2.5 py-0.5 rounded-full text-[0.63rem] font-bold flex-shrink-0"
+                  style={{ background: cfg.bg, color: cfg.color }}
+                >
+                  {cfg.label}
+                </span>
+
+                {/* Flecha */}
+                <ExternalLink size={13} className="text-[#6b6d70] flex-shrink-0" />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -725,11 +855,7 @@ export default function PropiedadFichaPage() {
 
           {/* ── TAB: CONTRATOS ── */}
           {activeTab === "contratos" && (
-            <PlaceholderTab
-              icon="📄"
-              title="Módulo de contratos"
-              description="Próximamente podrás ver el contrato vigente y el historial completo de contratos de esta propiedad."
-            />
+            <ContratosTab propertyId={id} />
           )}
 
           {/* ── TAB: SERVICIOS ── */}
