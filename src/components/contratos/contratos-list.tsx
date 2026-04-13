@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Clock,
   XCircle,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -60,15 +61,18 @@ export function ContratosList() {
   const [statusFilter, setStatusFilter] = useState(
     searchParams.get("status") || ""
   );
+  const [searchInput, setSearchInput] = useState(searchParams.get("q") || "");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["contracts", page, statusFilter],
+    queryKey: ["contracts", page, statusFilter, searchQuery],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
       });
       if (statusFilter) params.set("status", statusFilter);
+      if (searchQuery) params.set("q", searchQuery);
       const response = await fetch(`/api/contracts?${params.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -92,6 +96,18 @@ export function ContratosList() {
       params.set("status", status);
     } else {
       params.delete("status");
+    }
+    router.push(`/contratos?${params.toString()}`);
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", "1");
+    if (value) {
+      params.set("q", value);
+    } else {
+      params.delete("q");
     }
     router.push(`/contratos?${params.toString()}`);
   };
@@ -155,6 +171,37 @@ export function ContratosList() {
         </div>
       </div>
 
+      {/* Buscador */}
+      <div className="flex items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-within:ring-1 focus-within:ring-ring">
+        <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSearch(searchInput);
+            if (e.key === "Escape") {
+              setSearchInput("");
+              handleSearch("");
+            }
+          }}
+          placeholder="Buscar por N° contrato, propiedad, inquilino, propietario..."
+          className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+        />
+        {searchInput && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchInput("");
+              handleSearch("");
+            }}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <XCircle className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
         {STATUS_FILTERS.map((f) => (
@@ -204,18 +251,26 @@ export function ContratosList() {
                       id: string;
                       contractNumber: string;
                       propertyAddress: string | null;
-                      tenantName: string;
+                      tenantNames: string[];
                       ownerName: string;
                       startDate: string;
                       endDate: string;
                       status: string;
                     }) => (
-                      <TableRow key={c.id}>
+                      <TableRow
+                        key={c.id}
+                        className="cursor-pointer"
+                        onClick={() => router.push(`/contratos/${c.id}`)}
+                      >
                         <TableCell className="font-mono font-medium">
                           {c.contractNumber}
                         </TableCell>
                         <TableCell>{c.propertyAddress || "-"}</TableCell>
-                        <TableCell>{c.tenantName}</TableCell>
+                        <TableCell>
+                          {c.tenantNames?.length > 0
+                            ? c.tenantNames.join(", ")
+                            : "-"}
+                        </TableCell>
                         <TableCell>{c.ownerName}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(c.startDate), "dd/MM/yy", {

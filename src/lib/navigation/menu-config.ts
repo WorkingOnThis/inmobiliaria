@@ -10,6 +10,7 @@ import {
   Wrench,
   BarChart3,
   Shield,
+  Landmark,
   type LucideIcon,
 } from "lucide-react";
 import type { MenuItem, MenuConfig, UserRole, MenuSubItem } from "./types";
@@ -60,6 +61,11 @@ const accountAdminMenuItems: MenuItem[] = [
     url: "/tablero",
     icon: LayoutDashboard,
     isActive: true,
+  },
+  {
+    title: "Caja General",
+    url: "/caja",
+    icon: Landmark,
   },
   {
     title: "Propietarios",

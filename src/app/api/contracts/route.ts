@@ -2,20 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { contract } from "@/db/schema/contract";
+import { contractTenant } from "@/db/schema/contract-tenant";
 import { client } from "@/db/schema/client";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
-import {
-  CONTRACT_TYPES,
-  ADJUSTMENT_INDEXES,
-} from "@/lib/clients/constants";
+import { CONTRACT_TYPES } from "@/lib/clients/constants";
 import { z } from "zod";
-import { count, desc, eq, and } from "drizzle-orm";
+import { count, desc, eq, and, inArray, or, ilike } from "drizzle-orm";
 
 const createContractSchema = z.object({
   propertyId: z.string().min(1, "La propiedad es requerida"),
-  tenantId: z.string().min(1, "El inquilino es requerido"),
+  tenantIds: z
+    .array(z.string().min(1))
+    .min(1, "Al menos un inquilino es requerido"),
   ownerId: z.string().min(1, "El propietario es requerido"),
   contractType: z.enum(CONTRACT_TYPES, {
     errorMap: () => ({ message: "Tipo de contrato inválido" }),
@@ -27,7 +27,8 @@ const createContractSchema = z.object({
   agencyCommission: z.coerce.number().min(0).max(100).optional().nullable(),
   paymentDay: z.coerce.number().int().min(1).max(28),
   paymentModality: z.enum(["A", "B"]).default("A"),
-  adjustmentIndex: z.enum(ADJUSTMENT_INDEXES).default("sin_ajuste"),
+  adjustmentIndex: z.string().min(1).default("sin_ajuste"),
+  adjustmentFrequency: z.coerce.number().int().min(1).max(12).default(12),
 });
 
 function generateId(): string {
@@ -50,17 +51,21 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "10")));
     const offset = (page - 1) * limit;
     const statusFilter = searchParams.get("status") || "";
+    const q = searchParams.get("q") || "";
 
     const conditions = [];
     if (statusFilter) {
       conditions.push(eq(contract.status, statusFilter));
     }
+    if (q) {
+      conditions.push(
+        or(
+          ilike(contract.contractNumber, `%${q}%`),
+          ilike(property.address, `%${q}%`)
+        )
+      );
+    }
     const where = conditions.length > 0 ? and(...conditions) : undefined;
-
-    // Alias para los dos joins de client (tenant y owner)
-    const tenant = db.$with("tenant").as(
-      db.select().from(client)
-    );
 
     const [contractsData, [totalResult], statusCountsRaw] = await Promise.all([
       db
@@ -76,7 +81,6 @@ export async function GET(request: NextRequest) {
           createdAt: contract.createdAt,
           propertyAddress: property.address,
           propertyType: property.type,
-          tenantId: contract.tenantId,
           ownerId: contract.ownerId,
           propertyId: contract.propertyId,
         })
@@ -93,26 +97,36 @@ export async function GET(request: NextRequest) {
         .groupBy(contract.status),
     ]);
 
-    // Resolver nombres de tenant y owner en paralelo para cada contrato
+    // Para cada contrato: resolver propietario e inquilinos
     const enriched = await Promise.all(
       contractsData.map(async (c) => {
-        const [tenantData, ownerData] = await Promise.all([
-          db
-            .select({ firstName: client.firstName, lastName: client.lastName })
-            .from(client)
-            .where(eq(client.id, c.tenantId))
-            .limit(1),
+        // Buscar propietario e inquilinos en paralelo
+        const [ownerData, tenantsData] = await Promise.all([
           db
             .select({ firstName: client.firstName, lastName: client.lastName })
             .from(client)
             .where(eq(client.id, c.ownerId))
             .limit(1),
+          db
+            .select({
+              clientId: contractTenant.clientId,
+              role: contractTenant.role,
+              firstName: client.firstName,
+              lastName: client.lastName,
+            })
+            .from(contractTenant)
+            .innerJoin(client, eq(contractTenant.clientId, client.id))
+            .where(eq(contractTenant.contractId, c.id)),
         ]);
+
+        const tenantNames = tenantsData.map((t) =>
+          `${t.firstName} ${t.lastName || ""}`.trim()
+        );
+
         return {
           ...c,
-          tenantName: tenantData[0]
-            ? `${tenantData[0].firstName} ${tenantData[0].lastName || ""}`.trim()
-            : "-",
+          tenantNames,
+          tenantIds: tenantsData.map((t) => t.clientId),
           ownerName: ownerData[0]
             ? `${ownerData[0].firstName} ${ownerData[0].lastName || ""}`.trim()
             : "-",
@@ -180,13 +194,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "La propiedad no existe" }, { status: 400 });
     }
 
-    const [existingTenant] = await db
-      .select()
+    // Verificar todos los inquilinos
+    const existingTenants = await db
+      .select({ id: client.id })
       .from(client)
-      .where(eq(client.id, data.tenantId))
-      .limit(1);
-    if (!existingTenant) {
-      return NextResponse.json({ error: "El inquilino no existe" }, { status: 400 });
+      .where(inArray(client.id, data.tenantIds));
+    if (existingTenants.length !== data.tenantIds.length) {
+      return NextResponse.json(
+        { error: "Uno o más inquilinos no existen" },
+        { status: 400 }
+      );
     }
 
     const [existingOwner] = await db
@@ -213,29 +230,43 @@ export async function POST(request: NextRequest) {
     const contractId = generateId();
     const now = new Date();
 
-    const [newContract] = await db
-      .insert(contract)
-      .values({
-        id: contractId,
-        contractNumber,
-        propertyId: data.propertyId,
-        tenantId: data.tenantId,
-        ownerId: data.ownerId,
-        status: "draft",
-        contractType: data.contractType,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        monthlyAmount: data.monthlyAmount.toString(),
-        depositAmount: data.depositAmount?.toString() ?? null,
-        agencyCommission: data.agencyCommission?.toString() ?? null,
-        paymentDay: data.paymentDay,
-        paymentModality: data.paymentModality,
-        adjustmentIndex: data.adjustmentIndex,
-        createdBy: session.user.id,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+    // Insertar contrato e inquilinos en una transacción
+    const [newContract] = await db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(contract)
+        .values({
+          id: contractId,
+          contractNumber,
+          propertyId: data.propertyId,
+          ownerId: data.ownerId,
+          status: "draft",
+          contractType: data.contractType,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          monthlyAmount: data.monthlyAmount.toString(),
+          depositAmount: data.depositAmount?.toString() ?? null,
+          agencyCommission: data.agencyCommission?.toString() ?? null,
+          paymentDay: data.paymentDay,
+          paymentModality: data.paymentModality,
+          adjustmentIndex: data.adjustmentIndex,
+          adjustmentFrequency: data.adjustmentFrequency,
+          createdBy: session.user.id,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+
+      // Insertar un registro en contract_tenant por cada inquilino
+      await tx.insert(contractTenant).values(
+        data.tenantIds.map((clientId, index) => ({
+          contractId,
+          clientId,
+          role: index === 0 ? "principal" : "cotitular",
+        }))
+      );
+
+      return inserted;
+    });
 
     return NextResponse.json(
       { message: `Contrato ${contractNumber} creado`, contract: newContract },

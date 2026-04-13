@@ -57,10 +57,48 @@ export const ADJUSTMENT_INDEXES = [
 export type AdjustmentIndex = (typeof ADJUSTMENT_INDEXES)[number];
 
 export const ADJUSTMENT_INDEX_LABELS: Record<AdjustmentIndex, string> = {
-  ICL: "ICL",
-  IPC: "IPC",
-  CER: "CER",
-  UVA: "UVA",
+  ICL: "ICL — Índice de Contratos de Locación",
+  IPC: "IPC — Índice de Precios al Consumidor",
+  CER: "CER — Coeficiente de Estabilización de Referencia",
+  UVA: "UVA — Unidad de Valor Adquisitivo",
   manual: "Ajuste manual",
   sin_ajuste: "Sin ajuste",
 };
+
+export const ADJUSTMENT_FREQUENCIES = [1, 2, 3, 4, 6, 12] as const;
+
+export const ADJUSTMENT_FREQUENCY_LABELS: Record<number, string> = {
+  1: "Mensual",
+  2: "Bimestral",
+  3: "Trimestral",
+  4: "Cuatrimestral",
+  6: "Semestral",
+  12: "Anual",
+};
+
+export const SERVICE_RESPONSIBILITY_OPTIONS = [
+  "inquilino",
+  "propietario",
+  "na",
+] as const;
+
+export type ServiceResponsibility =
+  (typeof SERVICE_RESPONSIBILITY_OPTIONS)[number];
+
+export const SERVICE_RESPONSIBILITY_LABELS: Record<
+  ServiceResponsibility,
+  string
+> = {
+  inquilino: "Inquilino",
+  propietario: "Propietario",
+  na: "No aplica",
+};
+
+export const PROPERTY_SERVICES = [
+  { key: "serviceLuz", label: "Luz" },
+  { key: "serviceGas", label: "Gas" },
+  { key: "serviceAgua", label: "Agua" },
+  { key: "serviceMunicipalidad", label: "Municipalidad" },
+  { key: "serviceRendas", label: "Rentas" },
+  { key: "serviceExpensas", label: "Expensas" },
+] as const;

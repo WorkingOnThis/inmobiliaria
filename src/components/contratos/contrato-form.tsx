@@ -6,6 +6,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -13,12 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { toast } from "sonner";
+import { X, Users, Search, Plus, Loader2 as Spin } from "lucide-react";
 import {
   CONTRACT_TYPES,
   CONTRACT_TYPE_LABELS,
-  ADJUSTMENT_INDEXES,
   ADJUSTMENT_INDEX_LABELS,
+  ADJUSTMENT_FREQUENCY_LABELS,
   type ContractType,
   type AdjustmentIndex,
 } from "@/lib/clients/constants";
@@ -32,7 +36,7 @@ interface SelectOption {
 // Paso 1 — Partes del contrato
 interface Step1Data {
   propertyId: string;
-  tenantId: string;
+  tenantIds: string[]; // múltiples inquilinos
   ownerId: string;
   contractType: ContractType | "";
 }
@@ -46,7 +50,8 @@ interface Step2Data {
   agencyCommission: string;
   paymentDay: string;
   paymentModality: "A" | "B";
-  adjustmentIndex: AdjustmentIndex;
+  adjustmentIndex: string;
+  adjustmentFrequency: string;
 }
 
 export function ContratoForm() {
@@ -54,10 +59,12 @@ export function ContratoForm() {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [tenantSearchOpen, setTenantSearchOpen] = useState(false);
+  const [tenantSearch, setTenantSearch] = useState("");
 
   const [step1, setStep1] = useState<Step1Data>({
     propertyId: "",
-    tenantId: "",
+    tenantIds: [],
     ownerId: "",
     contractType: "",
   });
@@ -71,7 +78,12 @@ export function ContratoForm() {
     paymentDay: "1",
     paymentModality: "A",
     adjustmentIndex: "sin_ajuste",
+    adjustmentFrequency: "12",
   });
+
+  const [showNewIndexForm, setShowNewIndexForm] = useState(false);
+  const [newIndexCode, setNewIndexCode] = useState("");
+  const [newIndexLabel, setNewIndexLabel] = useState("");
 
   // Cargar propiedades disponibles
   const { data: propertiesData } = useQuery({
@@ -103,6 +115,51 @@ export function ContratoForm() {
     },
   });
 
+  // Cargar índices custom
+  const { data: customIndexesData, refetch: refetchIndexes } = useQuery({
+    queryKey: ["adjustment-indexes"],
+    queryFn: async () => {
+      const res = await fetch("/api/adjustment-indexes");
+      if (!res.ok) return { indexes: [] };
+      return res.json();
+    },
+  });
+  const customIndexes: { code: string; label: string }[] =
+    customIndexesData?.indexes ?? [];
+
+  const createIndexMutation = useMutation({
+    mutationFn: async ({ code, label }: { code: string; label: string }) => {
+      const res = await fetch("/api/adjustment-indexes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, label }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Error al crear el índice");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      refetchIndexes();
+      setStep2((s) => ({ ...s, adjustmentIndex: data.index.code }));
+      setShowNewIndexForm(false);
+      setNewIndexCode("");
+      setNewIndexLabel("");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  const allIndexOptions = [
+    ...Object.entries(ADJUSTMENT_INDEX_LABELS).map(([value, label]) => ({
+      value,
+      label,
+    })),
+    ...customIndexes.map((c) => ({ value: c.code, label: c.label })),
+  ];
+
   const properties: SelectOption[] =
     propertiesData?.properties?.map(
       (p: { id: string; address: string }) => ({
@@ -127,6 +184,27 @@ export function ContratoForm() {
       })
     ) ?? [];
 
+  // Helpers para el multi-select de inquilinos
+  const toggleTenant = (id: string) => {
+    setStep1((s) => {
+      const already = s.tenantIds.includes(id);
+      return {
+        ...s,
+        tenantIds: already
+          ? s.tenantIds.filter((t) => t !== id)
+          : [...s.tenantIds, id],
+      };
+    });
+    // Limpiar error si se selecciona al menos uno
+    setFieldErrors((e) => ({ ...e, tenantIds: "" }));
+  };
+
+  const removeTenant = (id: string) => {
+    setStep1((s) => ({ ...s, tenantIds: s.tenantIds.filter((t) => t !== id) }));
+  };
+
+  const selectedTenants = tenants.filter((t) => step1.tenantIds.includes(t.id));
+
   const mutation = useMutation({
     mutationFn: async () => {
       const response = await fetch("/api/contracts", {
@@ -134,7 +212,7 @@ export function ContratoForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           propertyId: step1.propertyId,
-          tenantId: step1.tenantId,
+          tenantIds: step1.tenantIds,
           ownerId: step1.ownerId,
           contractType: step1.contractType,
           startDate: step2.startDate,
@@ -149,6 +227,7 @@ export function ContratoForm() {
           paymentDay: parseInt(step2.paymentDay),
           paymentModality: step2.paymentModality,
           adjustmentIndex: step2.adjustmentIndex,
+          adjustmentFrequency: parseInt(step2.adjustmentFrequency),
         }),
       });
       if (!response.ok) {
@@ -171,7 +250,8 @@ export function ContratoForm() {
   const validateStep1 = (): boolean => {
     const errors: Record<string, string> = {};
     if (!step1.propertyId) errors.propertyId = "Seleccioná una propiedad";
-    if (!step1.tenantId) errors.tenantId = "Seleccioná un inquilino";
+    if (step1.tenantIds.length === 0)
+      errors.tenantIds = "Seleccioná al menos un inquilino";
     if (!step1.ownerId) errors.ownerId = "Seleccioná un propietario";
     if (!step1.contractType) errors.contractType = "Seleccioná el tipo de contrato";
     setFieldErrors(errors);
@@ -205,7 +285,6 @@ export function ContratoForm() {
   };
 
   const selectedProperty = properties.find((p) => p.id === step1.propertyId);
-  const selectedTenant = tenants.find((t) => t.id === step1.tenantId);
   const selectedOwner = owners.find((o) => o.id === step1.ownerId);
 
   return (
@@ -246,87 +325,148 @@ export function ContratoForm() {
               <Label>
                 Propiedad <span className="text-destructive">*</span>
               </Label>
-              <Select
+              <SearchableSelect
+                options={properties.map((p) => ({ value: p.id, label: p.label }))}
                 value={step1.propertyId}
-                onValueChange={(v) => setStep1((s) => ({ ...s, propertyId: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar propiedad..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties.length === 0 ? (
-                    <SelectItem value="_empty" disabled>
-                      No hay propiedades cargadas
-                    </SelectItem>
-                  ) : (
-                    properties.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.label}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                onValueChange={(v) => {
+                  setStep1((s) => ({ ...s, propertyId: v }));
+                  if (v) setFieldErrors((e) => ({ ...e, propertyId: "" }));
+                }}
+                placeholder="Seleccionar propiedad..."
+                searchPlaceholder="Buscar por dirección..."
+                emptyText="No hay propiedades cargadas"
+              />
               {fieldErrors.propertyId && (
                 <p className="text-sm text-destructive">{fieldErrors.propertyId}</p>
               )}
             </div>
 
+            {/* Multi-select de inquilinos */}
             <div className="space-y-2">
               <Label>
-                Inquilino <span className="text-destructive">*</span>
+                Inquilinos <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={step1.tenantId}
-                onValueChange={(v) => setStep1((s) => ({ ...s, tenantId: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar inquilino..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {tenants.length === 0 ? (
-                    <SelectItem value="_empty" disabled>
-                      No hay inquilinos cargados
-                    </SelectItem>
-                  ) : (
-                    tenants.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
+
+              {/* Inquilinos seleccionados como badges */}
+              {selectedTenants.length > 0 && (
+                <div className="flex flex-wrap gap-2 pb-1">
+                  {selectedTenants.map((t, i) => (
+                    <Badge key={t.id} variant="secondary" className="gap-1 pr-1">
+                      <Users className="h-3 w-3" />
+                      <span>
                         {t.label}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {fieldErrors.tenantId && (
-                <p className="text-sm text-destructive">{fieldErrors.tenantId}</p>
+                        {i === 0 && (
+                          <span className="text-muted-foreground ml-1 text-xs">
+                            (principal)
+                          </span>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeTenant(t.id)}
+                        className="ml-1 rounded-sm hover:bg-destructive/20 p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
               )}
+
+              {/* Lista de inquilinos disponibles */}
+              <button
+                type="button"
+                onClick={() => setTenantSearchOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-3 py-2 border rounded-md text-sm text-muted-foreground hover:bg-accent transition-colors"
+              >
+                <span>
+                  {tenantSearchOpen
+                    ? "Cerrar lista"
+                    : selectedTenants.length === 0
+                    ? "Seleccionar inquilinos..."
+                    : `${selectedTenants.length} seleccionado${selectedTenants.length > 1 ? "s" : ""} — agregar más`}
+                </span>
+                <span className="text-xs">{tenantSearchOpen ? "▲" : "▼"}</span>
+              </button>
+
+              {tenantSearchOpen && (
+                <div className="border rounded-md overflow-hidden">
+                  <div className="p-2 border-b flex items-center gap-2">
+                    <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <input
+                      autoFocus
+                      type="text"
+                      value={tenantSearch}
+                      onChange={(e) => setTenantSearch(e.target.value)}
+                      placeholder="Buscar inquilino..."
+                      className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                    />
+                    {tenantSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setTenantSearch("")}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="divide-y max-h-48 overflow-y-auto">
+                    {tenants.length === 0 ? (
+                      <p className="p-3 text-sm text-muted-foreground text-center">
+                        No hay inquilinos cargados
+                      </p>
+                    ) : tenants.filter((t) =>
+                        t.label.toLowerCase().includes(tenantSearch.toLowerCase())
+                      ).length === 0 ? (
+                      <p className="p-3 text-sm text-muted-foreground text-center">
+                        Sin resultados para &ldquo;{tenantSearch}&rdquo;
+                      </p>
+                    ) : (
+                      tenants
+                        .filter((t) =>
+                          t.label.toLowerCase().includes(tenantSearch.toLowerCase())
+                        )
+                        .map((t) => (
+                          <label
+                            key={t.id}
+                            className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-accent transition-colors"
+                          >
+                            <Checkbox
+                              checked={step1.tenantIds.includes(t.id)}
+                              onCheckedChange={() => toggleTenant(t.id)}
+                            />
+                            <span className="text-sm">{t.label}</span>
+                          </label>
+                        ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {fieldErrors.tenantIds && (
+                <p className="text-sm text-destructive">{fieldErrors.tenantIds}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                El primero seleccionado será el inquilino principal.
+              </p>
             </div>
 
             <div className="space-y-2">
               <Label>
                 Propietario <span className="text-destructive">*</span>
               </Label>
-              <Select
+              <SearchableSelect
+                options={owners.map((o) => ({ value: o.id, label: o.label }))}
                 value={step1.ownerId}
-                onValueChange={(v) => setStep1((s) => ({ ...s, ownerId: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar propietario..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {owners.length === 0 ? (
-                    <SelectItem value="_empty" disabled>
-                      No hay propietarios cargados
-                    </SelectItem>
-                  ) : (
-                    owners.map((o) => (
-                      <SelectItem key={o.id} value={o.id}>
-                        {o.label}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                onValueChange={(v) => {
+                  setStep1((s) => ({ ...s, ownerId: v }));
+                  if (v) setFieldErrors((e) => ({ ...e, ownerId: "" }));
+                }}
+                placeholder="Seleccionar propietario..."
+                searchPlaceholder="Buscar por nombre..."
+                emptyText="No hay propietarios cargados"
+              />
               {fieldErrors.ownerId && (
                 <p className="text-sm text-destructive">{fieldErrors.ownerId}</p>
               )}
@@ -509,21 +649,119 @@ export function ContratoForm() {
               <Select
                 value={step2.adjustmentIndex}
                 onValueChange={(v) =>
-                  setStep2((s) => ({
-                    ...s,
-                    adjustmentIndex: v as AdjustmentIndex,
-                  }))
+                  setStep2((s) => ({ ...s, adjustmentIndex: v }))
                 }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ADJUSTMENT_INDEXES.map((idx) => (
-                    <SelectItem key={idx} value={idx}>
-                      {ADJUSTMENT_INDEX_LABELS[idx]}
+                  {allIndexOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              {/* Formulario inline para agregar índice custom */}
+              {!showNewIndexForm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowNewIndexForm(true)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                  Agregar índice personalizado
+                </button>
+              ) : (
+                <div className="rounded-md border p-3 space-y-2 bg-muted/30">
+                  <p className="text-xs font-medium">Nuevo índice</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Código</Label>
+                      <Input
+                        value={newIndexCode}
+                        onChange={(e) =>
+                          setNewIndexCode(e.target.value.toUpperCase())
+                        }
+                        placeholder="Ej: RIPTE"
+                        className="h-8 text-sm"
+                        maxLength={20}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Solo mayúsculas y números
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Nombre</Label>
+                      <Input
+                        value={newIndexLabel}
+                        onChange={(e) => setNewIndexLabel(e.target.value)}
+                        placeholder="Ej: RIPTE"
+                        className="h-8 text-sm"
+                        maxLength={80}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setShowNewIndexForm(false);
+                        setNewIndexCode("");
+                        setNewIndexLabel("");
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={
+                        !newIndexCode ||
+                        !newIndexLabel ||
+                        createIndexMutation.isPending
+                      }
+                      onClick={() =>
+                        createIndexMutation.mutate({
+                          code: newIndexCode,
+                          label: newIndexLabel,
+                        })
+                      }
+                    >
+                      {createIndexMutation.isPending ? (
+                        <Spin className="h-3 w-3 mr-1 animate-spin" />
+                      ) : null}
+                      Guardar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Frecuencia de ajuste</Label>
+              <Select
+                value={step2.adjustmentFrequency}
+                onValueChange={(v) =>
+                  setStep2((s) => ({ ...s, adjustmentFrequency: v }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ADJUSTMENT_FREQUENCY_LABELS).map(
+                    ([val, label]) => (
+                      <SelectItem key={val} value={val}>
+                        {label}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -557,8 +795,21 @@ export function ContratoForm() {
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 p-4">
-              <span className="text-muted-foreground">Inquilino</span>
-              <span className="font-medium">{selectedTenant?.label ?? "-"}</span>
+              <span className="text-muted-foreground">
+                {selectedTenants.length > 1 ? "Inquilinos" : "Inquilino"}
+              </span>
+              <div className="flex flex-col gap-1">
+                {selectedTenants.map((t, i) => (
+                  <span key={t.id} className="font-medium">
+                    {t.label}
+                    {i === 0 && selectedTenants.length > 1 && (
+                      <span className="text-muted-foreground text-xs ml-1">
+                        (principal)
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2 p-4">
               <span className="text-muted-foreground">Propietario</span>
@@ -613,7 +864,16 @@ export function ContratoForm() {
             <div className="grid grid-cols-2 gap-2 p-4">
               <span className="text-muted-foreground">Índice de ajuste</span>
               <span className="font-medium">
-                {ADJUSTMENT_INDEX_LABELS[step2.adjustmentIndex]}
+                {ADJUSTMENT_INDEX_LABELS[step2.adjustmentIndex as AdjustmentIndex] ||
+                  customIndexes.find((c) => c.code === step2.adjustmentIndex)?.label ||
+                  step2.adjustmentIndex}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 p-4">
+              <span className="text-muted-foreground">Frecuencia de ajuste</span>
+              <span className="font-medium">
+                {ADJUSTMENT_FREQUENCY_LABELS[parseInt(step2.adjustmentFrequency)] ||
+                  `Cada ${step2.adjustmentFrequency} meses`}
               </span>
             </div>
           </div>

@@ -6,7 +6,8 @@ import { property } from "./property";
 /**
  * Contract Schema
  *
- * Vincula una propiedad con un inquilino y un propietario.
+ * Vincula una propiedad con uno o más inquilinos y un propietario.
+ * Los inquilinos se vinculan a través de la tabla intermedia contract_tenant.
  * status: "draft" | "pending_signature" | "active" | "expiring_soon" | "expired" | "terminated"
  * contractType: "vivienda" | "oficina" | "local" | "otro"
  * paymentModality: "A" (inmobiliaria recibe y liquida) | "B" (pago directo al propietario)
@@ -19,9 +20,6 @@ export const contract = pgTable("contract", {
   propertyId: text("propertyId")
     .notNull()
     .references(() => property.id, { onDelete: "restrict" }),
-  tenantId: text("tenantId")
-    .notNull()
-    .references(() => client.id, { onDelete: "restrict" }),
   ownerId: text("ownerId")
     .notNull()
     .references(() => client.id, { onDelete: "restrict" }),
@@ -39,6 +37,7 @@ export const contract = pgTable("contract", {
   paymentDay: integer("paymentDay").notNull(),
   paymentModality: text("paymentModality").notNull().default("A"),
   adjustmentIndex: text("adjustmentIndex").notNull().default("sin_ajuste"),
+  adjustmentFrequency: integer("adjustmentFrequency").notNull().default(12), // meses entre actualizaciones
 
   createdBy: text("createdBy")
     .notNull()
