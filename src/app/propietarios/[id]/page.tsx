@@ -8,6 +8,8 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { PropietarioCompletitudBar } from "@/components/propietarios/propietario-completitud-bar";
 import { PropietarioTabDatos } from "@/components/propietarios/propietario-tab-datos";
 import { PropietarioTabCuentaCorriente } from "@/components/propietarios/propietario-tab-cuenta-corriente";
+import { PropietarioTabPropiedades } from "@/components/propietarios/propietario-tab-propiedades";
+import { PropietarioTabDocumentos } from "@/components/propietarios/propietario-tab-documentos";
 
 interface Propietario {
   id: string;
@@ -27,6 +29,32 @@ interface Propietario {
   createdAt: string;
 }
 
+interface PropertyData {
+  id: string;
+  title: string | null;
+  address: string;
+  price: string | null;
+  type: string;
+  status: string;
+  zone: string | null;
+  floorUnit: string | null;
+  rooms: number | null;
+  bathrooms: number | null;
+  surface: string | null;
+  ownerId: string;
+}
+
+interface ContratoActivo {
+  id: string;
+  contractNumber: string;
+  propertyId: string;
+  status: string;
+  contractType: string;
+  startDate: string;
+  endDate: string;
+  monthlyAmount: string;
+}
+
 function getInitials(firstName: string, lastName: string | null) {
   return [firstName, lastName]
     .filter(Boolean)
@@ -36,7 +64,7 @@ function getInitials(firstName: string, lastName: string | null) {
     .slice(0, 2);
 }
 
-type Tab = "datos" | "cuenta-corriente";
+type Tab = "datos" | "cuenta-corriente" | "propiedades" | "documentos";
 
 export default function PropietarioFichaPage() {
   const { id } = useParams<{ id: string }>();
@@ -53,7 +81,11 @@ export default function PropietarioFichaPage() {
     router.replace(`/propietarios/${id}?${params.toString()}`, { scroll: false });
   };
 
-  const { data, isLoading, error } = useQuery<{ propietario: Propietario }>({
+  const { data, isLoading, error } = useQuery<{
+    propietario: Propietario;
+    propiedades: PropertyData[];
+    contratosActivos: ContratoActivo[];
+  }>({
     queryKey: ["propietario", id],
     queryFn: async () => {
       const res = await fetch(`/api/propietarios/${id}`);
@@ -164,6 +196,8 @@ export default function PropietarioFichaPage() {
               {[
                 { key: "datos" as Tab, label: "Datos" },
                 { key: "cuenta-corriente" as Tab, label: "Cuenta corriente" },
+                { key: "propiedades" as Tab, label: "Propiedades" },
+                { key: "documentos" as Tab, label: "Documentos" },
               ].map(({ key, label }) => (
                 <button
                   key={key}
@@ -177,20 +211,6 @@ export default function PropietarioFichaPage() {
                   {label}
                 </button>
               ))}
-              <button
-                disabled
-                className="px-4 py-3 text-[0.8rem] font-semibold border-b-2 border-transparent text-[#333537] cursor-not-allowed"
-                title="Próximamente"
-              >
-                Propiedades
-              </button>
-              <button
-                disabled
-                className="px-4 py-3 text-[0.8rem] font-semibold border-b-2 border-transparent text-[#333537] cursor-not-allowed"
-                title="Próximamente"
-              >
-                Documentos
-              </button>
             </div>
           </div>
 
@@ -206,6 +226,23 @@ export default function PropietarioFichaPage() {
             )}
             {activeTab === "cuenta-corriente" && (
               <PropietarioTabCuentaCorriente propietarioId={propietario.id} />
+            )}
+            {activeTab === "propiedades" && (
+              <PropietarioTabPropiedades
+                propietarioId={propietario.id}
+                propiedades={data?.propiedades ?? []}
+                contratosActivos={data?.contratosActivos ?? []}
+              />
+            )}
+            {activeTab === "documentos" && (
+              <PropietarioTabDocumentos
+                propietarioId={propietario.id}
+                propietarioName={
+                  propietario.lastName
+                    ? `${propietario.firstName} ${propietario.lastName}`
+                    : propietario.firstName
+                }
+              />
             )}
           </div>
         </div>

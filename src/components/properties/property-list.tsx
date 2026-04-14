@@ -16,14 +16,14 @@ import {
   ChevronRight,
   Loader2,
   X,
+  ArrowRight,
 } from "lucide-react";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerClose,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { QuickPropertyForm } from "@/components/properties/quick-property-form";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -35,12 +35,16 @@ interface PropertyRow {
   price: string;
   type: string;
   status: string;
+  zone: string | null;
   rooms: number | null;
   bathrooms: number | null;
   surface: string | null;
   ownerId: string;
   ownerFirstName: string | null;
   ownerLastName: string | null;
+  contractNumber: string | null;
+  contractEndDate: string | null;
+  contractStatus: string | null;
   createdAt: string;
 }
 
@@ -52,7 +56,6 @@ interface PropertyCounts {
   sold: number;
   maintenance: number;
 }
-
 
 interface Pagination {
   total: number;
@@ -127,12 +130,13 @@ const STATUS_CONFIG: Record<
   },
 };
 
+/** Colores activos para cada chip de filtro */
 const FILTER_TABS = [
-  { value: "", label: "Todos" },
-  { value: "rented", label: "Alquiladas" },
-  { value: "available", label: "Disponibles" },
-  { value: "reserved", label: "Reservadas" },
-  { value: "maintenance", label: "Mantenimiento" },
+  { value: "", label: "Todos", activeBg: "var(--color-arce-primary)", activeColor: "var(--color-arce-on-primary)" },
+  { value: "rented", label: "Alquiladas", activeBg: "rgba(141,207,149,0.2)", activeColor: "#8dcf95" },
+  { value: "available", label: "Disponibles", activeBg: "rgba(253,222,168,0.2)", activeColor: "#ffdea8" },
+  { value: "reserved", label: "Reservadas", activeBg: "rgba(147,197,253,0.2)", activeColor: "#93c5fd" },
+  { value: "maintenance", label: "Mantenimiento", activeBg: "rgba(253,186,116,0.2)", activeColor: "#fdba74" },
 ];
 
 function getOwnerInitials(firstName: string | null, lastName: string | null) {
@@ -150,7 +154,25 @@ function buildSubtitle(p: PropertyRow) {
   if (p.rooms) parts.push(`${p.rooms} amb`);
   const surf = formatSurface(p.surface);
   if (surf) parts.push(surf);
+  if (p.zone) parts.push(p.zone);
   return parts.join(" · ");
+}
+
+/**
+ * Calcula cuántos días faltan hasta una fecha ISO (YYYY-MM-DD).
+ * Retorna negativo si ya venció.
+ */
+function daysUntil(isoDate: string): number {
+  const end = new Date(isoDate);
+  const now = new Date();
+  end.setHours(0, 0, 0, 0);
+  now.setHours(0, 0, 0, 0);
+  return Math.round((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function formatDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}/${year}`;
 }
 
 function buildPageNumbers(current: number, total: number): (number | "…")[] {
@@ -183,7 +205,7 @@ function StatusBadge({ status }: { status: string }) {
 function OwnerAvatar({ firstName, lastName }: { firstName: string | null; lastName: string | null }) {
   return (
     <span
-      className="inline-flex items-center justify-center w-7 h-7 flex-shrink-0 text-[10px] font-extrabold font-arce-brand"
+      className="inline-flex items-center justify-center w-7 h-7 flex-shrink-0 text-[10px] font-extrabold font-arce-brand rounded-sm"
       style={{
         background: "var(--color-arce-primary-container)",
         color: "var(--color-arce-on-primary-fixed)",
@@ -194,30 +216,29 @@ function OwnerAvatar({ firstName, lastName }: { firstName: string | null; lastNa
   );
 }
 
+/** KPI card con colores específicos por tipo */
 function KpiCard({
   label,
   value,
   sub,
-  accent,
+  valueColor,
+  borderColor,
+  bgGradient,
 }: {
   label: string;
   value: number;
   sub: string;
-  accent?: "primary" | "tertiary" | "error";
+  valueColor: string;
+  borderColor: string;
+  bgGradient: string;
 }) {
-  const valueColor =
-    accent === "primary"
-      ? "var(--color-arce-primary)"
-      : accent === "tertiary"
-      ? "var(--color-arce-on-tertiary-fixed)"
-      : accent === "error"
-      ? "var(--color-arce-error)"
-      : "var(--color-arce-on-surface)";
-
   return (
     <div
-      className="px-6 py-5 flex-1 min-w-0"
-      style={{ background: "var(--color-arce-surface-lowest)" }}
+      className="px-6 py-5 flex-1 min-w-0 rounded-lg border"
+      style={{
+        background: bgGradient,
+        borderColor,
+      }}
     >
       <p
         className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3"
@@ -253,7 +274,7 @@ function PaginationBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-7 h-7 flex items-center justify-center text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+      className="w-7 h-7 flex items-center justify-center text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed rounded-sm"
       style={{
         background: active ? "var(--color-arce-primary)" : "var(--color-arce-surface-container)",
         color: active ? "var(--color-arce-on-primary)" : "var(--color-arce-on-surface)",
@@ -261,6 +282,58 @@ function PaginationBtn({
     >
       {children}
     </button>
+  );
+}
+
+/** Columna contrato: muestra número + vencimiento con alertas de color */
+function ContratoCell({ prop }: { prop: PropertyRow }) {
+  if (!prop.contractNumber) {
+    return (
+      <span
+        className="text-[11px] italic"
+        style={{ color: "var(--color-arce-outline)" }}
+      >
+        Sin contrato activo
+      </span>
+    );
+  }
+
+  // Contratos pendientes de firma o en redacción
+  const isPending = prop.contractStatus === "pending_signature" || prop.contractStatus === "draft";
+  if (isPending) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="font-mono text-[11px] font-bold" style={{ color: "#93c5fd" }}>
+          {prop.contractNumber}
+        </span>
+        <span className="text-[10px]" style={{ color: "var(--color-arce-secondary-text)" }}>
+          Pend. firma{prop.contractEndDate ? ` · Inicio ${formatDate(prop.contractEndDate)}` : ""}
+        </span>
+      </div>
+    );
+  }
+
+  // Contrato activo — verificar si vence pronto
+  const days = prop.contractEndDate ? daysUntil(prop.contractEndDate) : 999;
+  const isExpiringSoon = days <= 60;
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span
+        className="font-mono text-[11px] font-bold"
+        style={{ color: "var(--color-arce-primary)" }}
+      >
+        {prop.contractNumber}
+      </span>
+      {prop.contractEndDate && (
+        <span
+          className="text-[10px] font-semibold"
+          style={{ color: isExpiringSoon ? "#ffdea8" : "var(--color-arce-secondary-text)" }}
+        >
+          {isExpiringSoon ? `⚠ Vence en ${days} días` : `Vence ${formatDate(prop.contractEndDate)}`}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -272,7 +345,7 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
     <div
       className="grid px-4 py-3 cursor-pointer transition-colors group"
       style={{
-        gridTemplateColumns: "minmax(220px,2fr) minmax(160px,1fr) minmax(180px,1fr) 140px 80px",
+        gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 130px 60px 64px",
         background: even ? "rgba(40,42,44,0.45)" : "var(--color-arce-surface-lowest)",
         borderBottom: "1px solid rgba(160,132,126,0.07)",
         borderLeft: cfg?.borderLeft ? `2px solid ${cfg.borderLeft}` : "2px solid transparent",
@@ -290,7 +363,7 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
       {/* Propiedad */}
       <div className="flex items-center gap-3 min-w-0">
         <span
-          className="flex-shrink-0 flex items-center justify-center w-8 h-8"
+          className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-sm"
           style={{
             background: "var(--color-arce-surface-container)",
             color: "var(--color-arce-secondary-text)",
@@ -303,7 +376,7 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
             className="text-[13px] font-semibold leading-snug truncate font-arce-headline"
             style={{ color: "var(--color-arce-on-surface)" }}
           >
-            {prop.title}
+            {prop.title || prop.address}
           </p>
           <p
             className="text-[11px] leading-none mt-0.5 truncate"
@@ -323,15 +396,13 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
         >
           {prop.ownerLastName && prop.ownerFirstName
             ? `${prop.ownerLastName}, ${prop.ownerFirstName}`
-            : "—"}
+            : prop.ownerFirstName || "—"}
         </span>
       </div>
 
       {/* Contrato */}
       <div className="flex flex-col justify-center">
-        <p className="text-[11px]" style={{ color: "var(--color-arce-secondary-text)" }}>
-          Sin contrato activo
-        </p>
+        <ContratoCell prop={prop} />
       </div>
 
       {/* Estado */}
@@ -339,10 +410,21 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
         <StatusBadge status={prop.status} />
       </div>
 
-      {/* Tareas */}
-      <div className="flex items-center justify-end">
-        <span className="text-[12px]" style={{ color: "var(--color-arce-outline)" }}>
-          —
+      {/* Tareas — placeholder hasta que exista el módulo */}
+      <div className="flex items-center justify-center">
+        <span className="text-[12px]" style={{ color: "var(--color-arce-outline)" }}>—</span>
+      </div>
+
+      {/* Acción — visible en hover */}
+      <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+        <span
+          className="text-[11px] font-bold flex items-center gap-1 px-2 py-1 rounded"
+          style={{
+            color: "var(--color-arce-primary)",
+            background: "var(--color-arce-primary-dim)",
+          }}
+        >
+          Ver <ArrowRight size={12} />
         </span>
       </div>
     </div>
@@ -356,14 +438,24 @@ function PropertyListContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const page = parseInt(searchParams.get("page") || "1");
   const statusFilter = searchParams.get("status") || "";
-  const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
-  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zoneFilter = searchParams.get("zone") || "";
 
-  const queryKey = ["properties", page, statusFilter, searchParams.get("search") || ""];
+  const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
+  const [zoneInput, setZoneInput] = useState(zoneFilter);
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zoneDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const queryKey = [
+    "properties",
+    page,
+    statusFilter,
+    zoneFilter,
+    searchParams.get("search") || "",
+  ];
 
   const { data, isLoading, error, refetch } = useQuery<PropertiesResponse>({
     queryKey,
@@ -372,6 +464,7 @@ function PropertyListContent() {
         page: String(page),
         limit: "8",
         ...(statusFilter ? { status: statusFilter } : {}),
+        ...(zoneFilter ? { zone: zoneFilter } : {}),
         ...(searchParams.get("search") ? { search: searchParams.get("search")! } : {}),
       });
       const res = await fetch(`/api/properties?${params}`);
@@ -398,6 +491,21 @@ function PropertyListContent() {
     [searchParams, router]
   );
 
+  const handleZoneFilter = useCallback(
+    (value: string) => {
+      setZoneInput(value);
+      if (zoneDebounce.current) clearTimeout(zoneDebounce.current);
+      zoneDebounce.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("page", "1");
+        if (value.trim()) params.set("zone", value.trim());
+        else params.delete("zone");
+        router.push(`/propiedades?${params.toString()}`);
+      }, 350);
+    },
+    [searchParams, router]
+  );
+
   const handleStatusFilter = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", "1");
@@ -412,44 +520,52 @@ function PropertyListContent() {
     router.push(`/propiedades?${params.toString()}`);
   };
 
-  const handleFormSuccess = () => {
-    setDrawerOpen(false);
+  const handleFormSuccess = (propertyId: string) => {
+    setDialogOpen(false);
     queryClient.invalidateQueries({ queryKey: ["properties"] });
+    router.push(`/propiedades/${propertyId}`);
   };
 
   const counts = data?.counts;
   const pagination = data?.pagination;
   const properties = data?.properties ?? [];
 
+  const occupancyPct = counts?.total
+    ? Math.round((counts.rented / counts.total) * 100)
+    : 0;
+
   return (
     <div className="flex flex-col min-h-full" style={{ background: "var(--color-arce-background)" }}>
 
-      {/* Drawer — Nueva propiedad */}
-      <Drawer direction="right" open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent
-          className="flex flex-col h-full bg-[#1a1d1e] border-l border-white/10 max-w-lg ml-auto shadow-2xl"
-          style={{ 
-            borderTopLeftRadius: '1.5rem', 
-            borderBottomLeftRadius: '1.5rem',
-          }}
+      {/* Modal — Nueva propiedad */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent
+          className="max-w-lg p-0 gap-0 border-white/10 overflow-hidden"
+          style={{ background: "#1a1d1e" }}
         >
-          <DrawerHeader className="p-6 pb-2 flex justify-between items-center border-b border-white/5">
-            <DrawerTitle className="text-xl font-bold text-white font-arce-headline">
-              Nueva propiedad
-            </DrawerTitle>
-            <DrawerClose asChild>
-              <button className="text-gray-500 hover:text-white transition-colors">
-                <X size={20} />
-              </button>
-            </DrawerClose>
-          </DrawerHeader>
-          <div className="flex-1 overflow-y-auto">
-            <QuickPropertyForm onSuccess={handleFormSuccess} onCancel={() => setDrawerOpen(false)} inline />
+          <DialogHeader className="px-6 pt-6 pb-2 border-b border-white/5">
+            <div className="flex items-start justify-between">
+              <div>
+                <DialogTitle className="text-xl font-bold text-white font-arce-headline">
+                  Nueva propiedad
+                </DialogTitle>
+                <p className="text-[12px] text-gray-400 mt-1">
+                  Los campos con <span className="text-[#ffb4a2]">*</span> son obligatorios.
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[80vh]">
+            <QuickPropertyForm
+              onSuccess={handleFormSuccess}
+              onCancel={() => setDialogOpen(false)}
+              inline
+            />
           </div>
-        </DrawerContent>
-      </Drawer>
+        </DialogContent>
+      </Dialog>
 
-      {/* Header */}
+      {/* Page header */}
       <div className="px-8 pt-7 pb-5">
         <div className="flex items-start justify-between">
           <div>
@@ -463,56 +579,73 @@ function PropertyListContent() {
               Portfolio completo en administración
             </p>
           </div>
+
+          {/* Botón prominente */}
           <button
-            onClick={() => setDrawerOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors cursor-pointer border-none"
+            onClick={() => setDialogOpen(true)}
+            className="inline-flex items-center gap-2.5 px-6 py-3 text-[13px] font-bold rounded-xl transition-all cursor-pointer border-none shadow-lg"
             style={{
               background: "var(--color-arce-primary)",
               color: "var(--color-arce-on-primary)",
+              boxShadow: "0 4px 14px rgba(255,180,162,0.25)",
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background =
-                "var(--color-arce-primary-container)";
+              (e.currentTarget as HTMLElement).style.filter = "brightness(1.1)";
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "var(--color-arce-primary)";
+              (e.currentTarget as HTMLElement).style.filter = "";
             }}
           >
-            <Plus size={14} />
+            <Plus size={18} />
             Nueva propiedad
           </button>
         </div>
       </div>
 
-      {/* KPI cards */}
+      {/* KPI cards — colores diferenciados por tipo */}
       <div className="px-8 mb-5">
-        <div className="flex gap-4">
-          <KpiCard label="Total" value={counts?.total ?? 0} sub="propiedades en cartera" />
+        <div className="flex gap-3">
+          <KpiCard
+            label="Total"
+            value={counts?.total ?? 0}
+            sub="propiedades en cartera"
+            valueColor="var(--color-arce-primary)"
+            borderColor="rgba(255,180,162,0.2)"
+            bgGradient="linear-gradient(135deg, var(--color-arce-surface-lowest) 0%, rgba(107,23,2,0.08) 100%)"
+          />
           <KpiCard
             label="Alquiladas"
             value={counts?.rented ?? 0}
-            sub={
-              counts?.total
-                ? `${Math.round((counts.rented / counts.total) * 100)}% de ocupación`
-                : "0% de ocupación"
-            }
-            accent="primary"
+            sub={`${occupancyPct}% de ocupación`}
+            valueColor="#8dcf95"
+            borderColor="rgba(141,207,149,0.2)"
+            bgGradient="linear-gradient(135deg, var(--color-arce-surface-lowest) 0%, rgba(141,207,149,0.06) 100%)"
           />
-          <KpiCard label="Disponibles" value={counts?.available ?? 0} sub="sin contrato activo" />
+          <KpiCard
+            label="Disponibles"
+            value={counts?.available ?? 0}
+            sub="sin contrato activo"
+            valueColor="#ffdea8"
+            borderColor="rgba(253,222,168,0.2)"
+            bgGradient="linear-gradient(135deg, var(--color-arce-surface-lowest) 0%, rgba(253,222,168,0.06) 100%)"
+          />
           <KpiCard
             label="Mantenimiento"
             value={counts?.maintenance ?? 0}
             sub="fuera de disponibilidad"
-            accent="tertiary"
+            valueColor="#fdba74"
+            borderColor="rgba(253,186,116,0.2)"
+            bgGradient="linear-gradient(135deg, var(--color-arce-surface-lowest) 0%, rgba(253,186,116,0.06) 100%)"
           />
         </div>
       </div>
 
-      {/* Search + filter tabs */}
-      <div className="px-8 mb-4 flex items-center justify-between gap-4">
+      {/* Toolbar: búsqueda + chips de estado */}
+      <div className="px-8 mb-2 flex items-center gap-3 flex-wrap">
+        {/* Búsqueda */}
         <div
-          className="relative flex-1 max-w-lg"
-          style={{ background: "var(--color-arce-surface-container)" }}
+          className="relative flex-1 min-w-[200px] max-w-md"
+          style={{ background: "var(--color-arce-surface-container)", borderRadius: "8px" }}
         >
           <Search
             size={14}
@@ -521,30 +654,36 @@ function PropertyListContent() {
           />
           <input
             type="text"
-            placeholder="Buscar por dirección, propietario, inquilino…"
+            placeholder="Buscar por dirección, propietario, barrio…"
             value={searchInput}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-[13px] bg-transparent outline-none border-none font-arce-body"
+            className="w-full pl-9 pr-4 py-2.5 text-[13px] bg-transparent outline-none border-none font-arce-body rounded-lg"
             style={{ color: "var(--color-arce-on-surface)" }}
           />
+          {searchInput && (
+            <button
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+              onClick={() => handleSearch("")}
+              style={{ color: "var(--color-arce-secondary-text)" }}
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
 
-        <div
-          className="flex items-center"
-          style={{ background: "var(--color-arce-surface-container)" }}
-        >
+        {/* Chips de estado — cada uno con su color */}
+        <div className="flex items-center gap-1.5 flex-wrap">
           {FILTER_TABS.map((tab) => {
             const isActive = tab.value === statusFilter;
             return (
               <button
                 key={tab.value}
                 onClick={() => handleStatusFilter(tab.value)}
-                className="px-4 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors border-none cursor-pointer"
+                className="px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.07em] transition-all border rounded-full cursor-pointer"
                 style={{
-                  background: isActive ? "var(--color-arce-primary)" : "transparent",
-                  color: isActive
-                    ? "var(--color-arce-on-primary)"
-                    : "var(--color-arce-secondary-text)",
+                  background: isActive ? tab.activeBg : "transparent",
+                  color: isActive ? tab.activeColor : "var(--color-arce-secondary-text)",
+                  borderColor: isActive ? tab.activeColor + "40" : "rgba(160,132,126,0.15)",
                 }}
               >
                 {tab.label}
@@ -554,32 +693,64 @@ function PropertyListContent() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="px-8 flex-1">
-        {/* Label */}
+      {/* Filtro por barrio/zona — fila secundaria */}
+      <div className="px-8 mb-4">
         <div
-          className="flex items-center gap-3 px-4 py-2"
-          style={{ background: "var(--color-arce-surface-low)" }}
+          className="flex items-center gap-3 px-4 py-2.5 rounded-lg"
+          style={{ background: "var(--color-arce-surface-container)", border: "1px solid rgba(160,132,126,0.08)" }}
         >
           <span
-            className="text-[10px] font-bold uppercase tracking-[0.14em]"
+            className="text-[10px] font-bold uppercase tracking-[0.1em] flex-shrink-0"
             style={{ color: "var(--color-arce-secondary-text)" }}
           >
-            Propiedades
+            Barrio:
           </span>
-          {pagination && (
-            <span className="text-[10px]" style={{ color: "var(--color-arce-outline)" }}>
-              {pagination.total} propiedades
-            </span>
+          <input
+            type="text"
+            placeholder="Filtrar por barrio o zona…"
+            value={zoneInput}
+            onChange={(e) => handleZoneFilter(e.target.value)}
+            className="flex-1 text-[12px] bg-transparent outline-none border-none font-arce-body"
+            style={{ color: "var(--color-arce-on-surface)" }}
+          />
+          {zoneInput && (
+            <button onClick={() => handleZoneFilter("")} style={{ color: "var(--color-arce-secondary-text)" }}>
+              <X size={13} />
+            </button>
           )}
+          <span className="text-[10px] ml-auto flex-shrink-0" style={{ color: "var(--color-arce-outline)" }}>
+            Filtro por zona
+          </span>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="px-8 flex-1">
+        {/* Table label + count */}
+        <div
+          className="flex items-center justify-between px-4 py-2"
+          style={{ background: "var(--color-arce-surface-low)" }}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: "var(--color-arce-secondary-text)" }}
+            >
+              Propiedades
+            </span>
+            {pagination && (
+              <span className="text-[10px]" style={{ color: "var(--color-arce-outline)" }}>
+                {pagination.total} {pagination.total === 1 ? "propiedad" : "propiedades"}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Table header */}
         <div
           className="grid text-[10px] font-bold uppercase tracking-[0.12em] px-4 py-3"
           style={{
-            gridTemplateColumns:
-              "minmax(220px,2fr) minmax(160px,1fr) minmax(180px,1fr) 140px 80px",
+            gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 130px 60px 64px",
             color: "var(--color-arce-secondary-text)",
             background: "var(--color-arce-surface-low)",
             borderBottom: "1px solid rgba(160,132,126,0.12)",
@@ -589,10 +760,11 @@ function PropertyListContent() {
           <span>Propietario</span>
           <span>Contrato activo</span>
           <span>Estado</span>
-          <span className="text-right">Tareas</span>
+          <span className="text-center">Tareas</span>
+          <span />
         </div>
 
-        {/* States */}
+        {/* Loading */}
         {isLoading && (
           <div
             className="flex items-center justify-center py-20"
@@ -606,6 +778,7 @@ function PropertyListContent() {
           </div>
         )}
 
+        {/* Error */}
         {error && !isLoading && (
           <div
             className="flex flex-col items-center gap-3 py-16"
@@ -616,7 +789,7 @@ function PropertyListContent() {
             </p>
             <button
               onClick={() => refetch()}
-              className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest"
+              className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest rounded"
               style={{
                 background: "var(--color-arce-surface-container)",
                 color: "var(--color-arce-on-surface)",
@@ -627,6 +800,7 @@ function PropertyListContent() {
           </div>
         )}
 
+        {/* Empty state */}
         {!isLoading && !error && properties.length === 0 && (
           <div
             className="py-20 text-center"
@@ -638,6 +812,7 @@ function PropertyListContent() {
           </div>
         )}
 
+        {/* Rows */}
         {!isLoading &&
           !error &&
           properties.map((prop, i) => (
@@ -666,7 +841,7 @@ function PropertyListContent() {
                     pagination.page * pagination.limit,
                     pagination.total
                   )}`}{" "}
-              de {pagination.total} propiedades
+              de {pagination.total} {pagination.total === 1 ? "propiedad" : "propiedades"}
             </p>
 
             {pagination.totalPages > 1 && (

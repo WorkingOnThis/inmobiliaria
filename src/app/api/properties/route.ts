@@ -3,11 +3,12 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { property } from "@/db/schema/property";
 import { client } from "@/db/schema/client";
+import { contract } from "@/db/schema/contract";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
 import { PROPERTY_TYPES, PROPERTY_STATUSES } from "@/lib/properties/constants";
 import { z } from "zod";
-import { count, desc, eq, ilike, or, and } from "drizzle-orm";
+import { count, desc, eq, ilike, or, and, inArray } from "drizzle-orm";
 
 /**
  * Zod schema for property creation
@@ -27,6 +28,12 @@ const createPropertySchema = z.object({
   surface: z.coerce.number().optional().nullable(),
   ownerId: z.string().min(1, "El dueño es requerido"),
 });
+
+/**
+ * Statuses considered "active" for display in the property list contract column.
+ * Excludes expired and terminated contracts.
+ */
+const ACTIVE_CONTRACT_STATUSES = ["active", "expiring_soon", "pending_signature", "draft"] as const;
 
 /**
  * Generate a unique ID for database records
@@ -51,16 +58,24 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
     const statusFilter = searchParams.get("status") || "";
     const search = searchParams.get("search") || "";
+    const zone = searchParams.get("zone") || "";
 
     const conditions = [];
     if (statusFilter && PROPERTY_STATUSES.includes(statusFilter as any)) {
       conditions.push(eq(property.status, statusFilter));
     }
+    if (zone.trim()) {
+      conditions.push(ilike(property.zone, `%${zone.trim()}%`));
+    }
     if (search.trim()) {
+      const term = `%${search.trim()}%`;
       conditions.push(
         or(
-          ilike(property.title, `%${search.trim()}%`),
-          ilike(property.address, `%${search.trim()}%`)
+          ilike(property.title, term),
+          ilike(property.address, term),
+          ilike(property.zone, term),
+          ilike(client.firstName, term),
+          ilike(client.lastName, term)
         )
       );
     }
@@ -92,9 +107,62 @@ export async function GET(request: NextRequest) {
         .orderBy(desc(property.createdAt))
         .limit(limit)
         .offset(offset),
-      db.select({ value: count() }).from(property).where(where),
+      db
+        .select({ value: count() })
+        .from(property)
+        .leftJoin(client, eq(property.ownerId, client.id))
+        .where(where),
       db.select({ status: property.status, cnt: count() }).from(property).groupBy(property.status),
     ]);
+
+    // ── Fetch active contracts for this page of properties ──────────────────────
+    // One additional query for up to `limit` properties — not N+1.
+    const propertyIds = propertiesWithOwner.map((p) => p.id);
+    let contractsByPropertyId: Map<string, {
+      contractNumber: string;
+      contractEndDate: string;
+      contractStatus: string;
+    }> = new Map();
+
+    if (propertyIds.length > 0) {
+      const activeContracts = await db
+        .select({
+          propertyId: contract.propertyId,
+          contractNumber: contract.contractNumber,
+          contractEndDate: contract.endDate,
+          contractStatus: contract.status,
+        })
+        .from(contract)
+        .where(
+          and(
+            inArray(contract.propertyId, propertyIds),
+            inArray(contract.status, ACTIVE_CONTRACT_STATUSES as unknown as string[])
+          )
+        )
+        .orderBy(desc(contract.endDate));
+
+      // Keep only the most recent contract per property
+      for (const c of activeContracts) {
+        if (!contractsByPropertyId.has(c.propertyId)) {
+          contractsByPropertyId.set(c.propertyId, {
+            contractNumber: c.contractNumber,
+            contractEndDate: c.contractEndDate,
+            contractStatus: c.contractStatus,
+          });
+        }
+      }
+    }
+
+    // Merge contract info into each property row
+    const propertiesWithContract = propertiesWithOwner.map((p) => {
+      const contractInfo = contractsByPropertyId.get(p.id) ?? null;
+      return {
+        ...p,
+        contractNumber: contractInfo?.contractNumber ?? null,
+        contractEndDate: contractInfo?.contractEndDate ?? null,
+        contractStatus: contractInfo?.contractStatus ?? null,
+      };
+    });
 
     const countsMap: Record<string, number> = {};
     let grandTotal = 0;
@@ -104,7 +172,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      properties: propertiesWithOwner,
+      properties: propertiesWithContract,
       pagination: {
         total: Number(totalResult.value),
         page,
