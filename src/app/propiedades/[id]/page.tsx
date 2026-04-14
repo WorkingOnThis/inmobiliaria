@@ -66,11 +66,11 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; dot: string }> = {
-  available:    { label: "Disponible",        bg: "rgba(253,222,168,0.15)", color: "#ffdea8", dot: "#ffdea8" },
-  rented:       { label: "Alquilada",         bg: "rgba(141,207,149,0.12)", color: "#8dcf95", dot: "#8dcf95" },
-  maintenance:  { label: "En mantenimiento",  bg: "rgba(253,186,116,0.12)", color: "#fdba74", dot: "#fdba74" },
-  reserved:     { label: "Reservada",         bg: "rgba(147,197,253,0.12)", color: "#93c5fd", dot: "#93c5fd" },
-  sold:         { label: "Vendida",           bg: "rgba(255,180,171,0.12)", color: "#ffb4ab", dot: "#ffb4ab" },
+  available:    { label: "Disponible",        bg: "var(--status-available-dim)",   color: "var(--status-available)",   dot: "var(--status-available)" },
+  rented:       { label: "Alquilada",         bg: "var(--status-rented-dim)",      color: "var(--status-rented)",      dot: "var(--status-rented)" },
+  maintenance:  { label: "En mantenimiento",  bg: "var(--status-maintenance-dim)", color: "var(--status-maintenance)", dot: "var(--status-maintenance)" },
+  reserved:     { label: "Reservada",         bg: "var(--status-reserved-dim)",    color: "var(--status-reserved)",    dot: "var(--status-reserved)" },
+  sold:         { label: "Vendida",           bg: "var(--destructive-dim)",        color: "var(--destructive)",        dot: "var(--destructive)" },
 };
 
 const SERVICIO_LABEL: Record<string, string> = {
@@ -125,16 +125,13 @@ function DatoItem({
   highlight?: boolean;
 }) {
   return (
-    <div
-      className="rounded-md px-3.5 py-3"
-      style={{ background: "#191c1e", border: "1px solid rgba(255,255,255,0.07)" }}
-    >
-      <div className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-[#6b6d70] mb-1">
+    <div className="rounded-md px-3.5 py-3 bg-card border border-border">
+      <div className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground mb-1">
         {label}
       </div>
       <div
         className="text-[0.82rem] font-semibold"
-        style={{ color: highlight ? "#ffdea8" : value ? "#e1e2e4" : "#6b6d70" }}
+        style={{ color: highlight ? "var(--mustard)" : value ? "var(--foreground)" : "var(--muted-foreground)" }}
       >
         {value ?? "—"}
       </div>
@@ -159,7 +156,7 @@ function EditInput({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-[#6b6d70]">
+      <label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
         {label}
       </label>
       <input
@@ -167,13 +164,9 @@ function EditInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="rounded px-3 py-2 text-[0.82rem] text-[#e1e2e4] outline-none transition-colors"
-        style={{
-          background: "#222527",
-          border: "1px solid rgba(255,255,255,0.1)",
-        }}
-        onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(255,180,162,0.4)"; }}
-        onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+        className="rounded px-3 py-2 text-[0.82rem] text-foreground outline-none transition-colors bg-muted border border-border"
+        onFocus={(e) => { e.currentTarget.style.borderColor = "var(--border-accent)"; }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = ""; }}
       />
     </div>
   );
@@ -194,17 +187,13 @@ function EditSelect({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-[#6b6d70]">
+      <label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
         {label}
       </label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded px-3 py-2 text-[0.82rem] text-[#e1e2e4] outline-none transition-colors cursor-pointer"
-        style={{
-          background: "#222527",
-          border: "1px solid rgba(255,255,255,0.1)",
-        }}
+        className="rounded px-3 py-2 text-[0.82rem] text-foreground outline-none transition-colors cursor-pointer bg-muted border border-border"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
@@ -220,8 +209,8 @@ function PlaceholderTab({ icon, title, description }: { icon: string; title: str
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
       <div className="text-4xl">{icon}</div>
-      <div className="text-[0.9rem] font-semibold text-[#a8a9ac]">{title}</div>
-      <div className="text-[0.75rem] text-[#6b6d70] max-w-xs">{description}</div>
+      <div className="text-[0.9rem] font-semibold text-muted-foreground">{title}</div>
+      <div className="text-[0.75rem] text-muted-foreground max-w-xs">{description}</div>
     </div>
   );
 }
@@ -229,12 +218,12 @@ function PlaceholderTab({ icon, title, description }: { icon: string; title: str
 // ── Contratos tab ─────────────────────────────────────────────────────────────
 
 const CONTRACT_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  active:            { label: "Vigente",            color: "#8dcf95", bg: "rgba(141,207,149,0.12)" },
-  draft:             { label: "Borrador",           color: "#a8a9ac", bg: "rgba(168,169,172,0.10)" },
-  pending_signature: { label: "Pend. de firma",     color: "#93c5fd", bg: "rgba(147,197,253,0.12)" },
-  expiring_soon:     { label: "Por vencer",         color: "#ffdea8", bg: "rgba(253,222,168,0.12)" },
-  expired:           { label: "Vencido",            color: "#ffb4ab", bg: "rgba(255,180,171,0.12)" },
-  terminated:        { label: "Rescindido",         color: "#ffb4ab", bg: "rgba(255,180,171,0.12)" },
+  active:            { label: "Vigente",            color: "var(--status-rented)",      bg: "var(--status-rented-dim)" },
+  draft:             { label: "Borrador",           color: "var(--muted-foreground)",   bg: "var(--muted)" },
+  pending_signature: { label: "Pend. de firma",     color: "var(--status-reserved)",    bg: "var(--status-reserved-dim)" },
+  expiring_soon:     { label: "Por vencer",         color: "var(--status-available)",   bg: "var(--status-available-dim)" },
+  expired:           { label: "Vencido",            color: "var(--destructive)",        bg: "var(--destructive-dim)" },
+  terminated:        { label: "Rescindido",         color: "var(--destructive)",        bg: "var(--destructive-dim)" },
 };
 
 function ContratosTab({ propertyId }: { propertyId: string }) {
@@ -266,14 +255,14 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
   if (isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#6b6d70]" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="px-7 py-6 text-[0.78rem] text-[#ffb4ab]">
+      <div className="px-7 py-6 text-[0.78rem] text-destructive">
         {(error as Error).message}
       </div>
     );
@@ -282,13 +271,12 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
   return (
     <div className="px-7 py-6 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70]">
+        <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
           Historial de contratos
         </div>
         <Link
           href={`/contratos/nuevo?propertyId=${propertyId}`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors"
-          style={{ background: "#282a2c", color: "#a8a9ac", border: "1px solid rgba(255,255,255,0.07)" }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors bg-muted text-muted-foreground border border-border"
         >
           <PlusCircle size={12} /> Nuevo contrato
         </Link>
@@ -296,12 +284,11 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
 
       {contracts.length === 0 ? (
         <div
-          className="flex flex-col items-center justify-center py-16 gap-3 rounded-[12px]"
-          style={{ background: "#191c1e", border: "1px dashed rgba(255,255,255,0.07)" }}
+          className="flex flex-col items-center justify-center py-16 gap-3 rounded-[12px] bg-card border border-dashed border-border"
         >
           <div className="text-3xl">📄</div>
-          <div className="text-[0.82rem] font-semibold text-[#a8a9ac]">Sin contratos</div>
-          <div className="text-[0.72rem] text-[#6b6d70]">Esta propiedad no tiene contratos registrados todavía.</div>
+          <div className="text-[0.82rem] font-semibold text-muted-foreground">Sin contratos</div>
+          <div className="text-[0.72rem] text-muted-foreground">Esta propiedad no tiene contratos registrados todavía.</div>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -310,23 +297,22 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
             return (
               <div
                 key={c.id}
-                className="flex items-center gap-4 px-4 py-3.5 rounded-[12px] cursor-pointer transition-colors"
-                style={{ background: "#191c1e", border: "1px solid rgba(255,255,255,0.07)" }}
+                className="flex items-center gap-4 px-4 py-3.5 rounded-[12px] cursor-pointer transition-colors bg-card border border-border"
                 onClick={() => router.push(`/contratos/${c.id}`)}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,180,162,0.2)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)"; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-accent)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = ""; }}
               >
                 {/* Número */}
-                <div className="font-mono text-[0.82rem] font-bold text-[#e1e2e4] w-24 flex-shrink-0">
+                <div className="font-mono text-[0.82rem] font-bold text-foreground w-24 flex-shrink-0">
                   {c.contractNumber}
                 </div>
 
                 {/* Inquilino */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-[0.78rem] font-semibold text-[#e1e2e4] truncate">
+                  <div className="text-[0.78rem] font-semibold text-foreground truncate">
                     {c.tenantNames.length > 0 ? c.tenantNames.join(", ") : "Sin inquilino"}
                   </div>
-                  <div className="text-[0.62rem] text-[#6b6d70] mt-0.5">
+                  <div className="text-[0.62rem] text-muted-foreground mt-0.5">
                     {format(new Date(c.startDate), "dd/MM/yyyy", { locale: es })}
                     {" → "}
                     {format(new Date(c.endDate), "dd/MM/yyyy", { locale: es })}
@@ -343,7 +329,7 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
                 </span>
 
                 {/* Flecha */}
-                <ExternalLink size={13} className="text-[#6b6d70] flex-shrink-0" />
+                <ExternalLink size={13} className="text-muted-foreground flex-shrink-0" />
               </div>
             );
           })}
@@ -460,7 +446,7 @@ export default function PropiedadFichaPage() {
     return (
       <DashboardLayout>
         <div className="flex h-screen items-center justify-center">
-          <Loader2 className="h-7 w-7 animate-spin text-[#6b6d70]" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
         </div>
       </DashboardLayout>
     );
@@ -469,11 +455,11 @@ export default function PropiedadFichaPage() {
   if (error || !prop) {
     return (
       <DashboardLayout>
-        <div className="flex h-screen flex-col items-center justify-center gap-4 text-[#6b6d70]">
+        <div className="flex h-screen flex-col items-center justify-center gap-4 text-muted-foreground">
           <div className="text-sm">{(error as Error)?.message ?? "Propiedad no encontrada"}</div>
           <button
             onClick={() => router.push("/propiedades")}
-            className="text-[0.72rem] text-[#ffb4a2] hover:underline flex items-center gap-1"
+            className="text-[0.72rem] text-primary hover:underline flex items-center gap-1"
           >
             <ArrowLeft size={12} /> Volver a la lista
           </button>
@@ -500,37 +486,33 @@ export default function PropiedadFichaPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col min-h-full" style={{ background: "#111314" }}>
+      <div className="flex flex-col min-h-full bg-background">
 
         {/* ── Breadcrumb topbar ── */}
         <div
-          className="h-14 flex items-center px-7 gap-2.5 flex-shrink-0"
-          style={{ background: "#191c1e", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+          className="h-14 flex items-center px-7 gap-2.5 flex-shrink-0 bg-card border-b border-border"
         >
           <button
             onClick={() => router.push("/propiedades")}
-            className="text-[0.8rem] text-[#a8a9ac] hover:text-[#ffb4a2] transition-colors flex items-center gap-1"
+            className="text-[0.8rem] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
           >
             <ArrowLeft size={13} />
             Propiedades
           </button>
-          <span className="text-[#6b6d70]">›</span>
-          <span className="text-[0.8rem] font-semibold text-[#e1e2e4] truncate max-w-xs">
+          <span className="text-muted-foreground">›</span>
+          <span className="text-[0.8rem] font-semibold text-foreground truncate max-w-xs">
             {prop.address}
           </span>
         </div>
 
         {/* ── Ficha header ── */}
-        <div
-          className="flex-shrink-0"
-          style={{ background: "#191c1e", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
-        >
+        <div className="flex-shrink-0 bg-card border-b border-border">
           {/* Identity */}
           <div className="px-7 pt-5 pb-0 flex items-start gap-4">
             <div
               className="w-14 h-14 rounded-[12px] flex items-center justify-center text-2xl flex-shrink-0"
               style={{
-                background: "linear-gradient(135deg,#1a2a1a,#2a4a2a)",
+                background: "var(--gradient-property)",
                 border: "2px solid rgba(163,217,165,0.2)",
               }}
             >
@@ -539,13 +521,13 @@ export default function PropiedadFichaPage() {
 
             <div className="flex-1 min-w-0">
               <h1
-                className="text-[1.15rem] font-bold leading-tight text-[#e1e2e4] font-[Space_Grotesk] tracking-[-0.02em] mb-1"
+                className="text-[1.15rem] font-bold leading-tight text-foreground font-headline tracking-[-0.02em] mb-1"
               >
                 {prop.address}
                 {prop.floorUnit ? ` — ${prop.floorUnit}` : ""}
               </h1>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[0.75rem] text-[#a8a9ac]">{buildSubtitle(prop)}</span>
+                <span className="text-[0.75rem] text-muted-foreground">{buildSubtitle(prop)}</span>
                 <StatusBadge status={prop.status} />
               </div>
             </div>
@@ -555,8 +537,7 @@ export default function PropiedadFichaPage() {
               {activeTab === "datos" && !editing && (
                 <button
                   onClick={startEdit}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors"
-                  style={{ background: "#282a2c", color: "#a8a9ac", border: "1px solid rgba(255,255,255,0.07)" }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors bg-muted text-muted-foreground border border-border"
                 >
                   <Pencil size={12} /> Editar
                 </button>
@@ -565,16 +546,14 @@ export default function PropiedadFichaPage() {
                 <>
                   <button
                     onClick={cancelEdit}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors"
-                    style={{ background: "#282a2c", color: "#a8a9ac", border: "1px solid rgba(255,255,255,0.07)" }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors bg-muted text-muted-foreground border border-border"
                   >
                     <X size={12} /> Cancelar
                   </button>
                   <button
                     onClick={saveEdit}
                     disabled={saving}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors disabled:opacity-50"
-                    style={{ background: "#ffb4a2", color: "#561100" }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors disabled:opacity-50 bg-primary text-primary-foreground"
                   >
                     {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                     {saving ? "Guardando…" : "Guardar"}
@@ -585,61 +564,48 @@ export default function PropiedadFichaPage() {
           </div>
 
           {/* Widgets row */}
-          <div
-            className="flex mt-4"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.07)", marginLeft: 0, marginRight: 0 }}
-          >
+          <div className="flex mt-4 border-t border-border">
             {/* Widget: Propietario */}
             <button
               onClick={() => router.push(`/propietarios/${prop.ownerId}`)}
-              className="flex-1 px-5 py-3 text-left transition-colors group"
-              style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#222527"; }}
+              className="flex-1 px-5 py-3 text-left transition-colors group border-r border-border"
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--muted)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70] mb-1">Propietario</div>
-              <div className="text-[0.88rem] font-bold text-[#a8a9ac] leading-tight">{ownerName}</div>
-              <div className="text-[0.62rem] text-[#ffb4a2] mt-0.5">Ver ficha →</div>
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Propietario</div>
+              <div className="text-[0.88rem] font-bold text-muted-foreground leading-tight">{ownerName}</div>
+              <div className="text-[0.62rem] text-primary mt-0.5">Ver ficha →</div>
             </button>
 
             {/* Widget: Contrato activo */}
-            <div
-              className="flex-1 px-5 py-3"
-              style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70] mb-1">Contrato activo</div>
-              <div className="text-[0.82rem] font-bold text-[#6b6d70]">Sin contrato</div>
-              <div className="text-[0.62rem] text-[#6b6d70] mt-0.5">Módulo pendiente</div>
+            <div className="flex-1 px-5 py-3 border-r border-border">
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Contrato activo</div>
+              <div className="text-[0.82rem] font-bold text-muted-foreground">Sin contrato</div>
+              <div className="text-[0.62rem] text-muted-foreground mt-0.5">Módulo pendiente</div>
             </div>
 
             {/* Widget: Superficie */}
-            <div
-              className="flex-1 px-5 py-3"
-              style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70] mb-1">Superficie</div>
-              <div className="text-[0.88rem] font-bold text-[#e1e2e4]">
+            <div className="flex-1 px-5 py-3 border-r border-border">
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Superficie</div>
+              <div className="text-[0.88rem] font-bold text-foreground">
                 {formatSurface(prop.surface) ?? "—"}
               </div>
               {prop.rooms && (
-                <div className="text-[0.62rem] text-[#6b6d70] mt-0.5">{prop.rooms} ambientes</div>
+                <div className="text-[0.62rem] text-muted-foreground mt-0.5">{prop.rooms} ambientes</div>
               )}
             </div>
 
             {/* Widget: Tareas */}
             <div className="flex-1 px-5 py-3">
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70] mb-1">Tareas pendientes</div>
-              <div className="text-[0.88rem] font-bold text-[#6b6d70]">—</div>
-              <div className="text-[0.62rem] text-[#6b6d70] mt-0.5">Módulo pendiente</div>
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Tareas pendientes</div>
+              <div className="text-[0.88rem] font-bold text-muted-foreground">—</div>
+              <div className="text-[0.62rem] text-muted-foreground mt-0.5">Módulo pendiente</div>
             </div>
           </div>
         </div>
 
         {/* ── Tabs bar ── */}
-        <div
-          className="flex flex-shrink-0 overflow-x-auto"
-          style={{ background: "#191c1e", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
-        >
+        <div className="flex flex-shrink-0 overflow-x-auto bg-card border-b border-border">
           {TABS.map(({ key, label, disabled }) => (
             <button
               key={key}
@@ -647,10 +613,10 @@ export default function PropiedadFichaPage() {
               disabled={disabled}
               className={`px-4 py-3 text-[0.75rem] font-medium border-b-2 transition-all whitespace-nowrap ${
                 disabled
-                  ? "border-transparent text-[#333537] cursor-not-allowed"
+                  ? "border-transparent text-secondary cursor-not-allowed"
                   : activeTab === key
-                  ? "border-[#ffb4a2] text-[#ffb4a2] font-semibold"
-                  : "border-transparent text-[#6b6d70] hover:text-[#a8a9ac]"
+                  ? "border-primary text-primary font-semibold"
+                  : "border-transparent text-muted-foreground hover:text-muted-foreground"
               }`}
               title={disabled ? "Módulo en desarrollo" : undefined}
             >
@@ -667,24 +633,22 @@ export default function PropiedadFichaPage() {
             <div className="px-7 py-6">
 
               {/* Propietario */}
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] mb-3">
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
                 Propietario
               </div>
               <div
-                className="flex items-center gap-4 px-4 py-4 rounded-[12px] mb-2 transition-colors cursor-pointer"
-                style={{ background: "#191c1e", border: "1px solid rgba(255,255,255,0.07)" }}
+                className="flex items-center gap-4 px-4 py-4 rounded-[12px] mb-2 transition-colors cursor-pointer bg-card border border-border"
                 onClick={() => router.push(`/propietarios/${prop.ownerId}`)}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,180,162,0.2)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)"; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-accent)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = ""; }}
               >
                 {/* Avatar */}
                 <div
-                  className="w-10 h-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0"
+                  className="w-10 h-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0 font-brand"
                   style={{
-                    background: "linear-gradient(135deg,#1a2a30,#1a4060)",
-                    border: "1.5px solid rgba(138,180,248,0.25)",
-                    color: "#8ab4f8",
-                    fontFamily: "Montserrat, sans-serif",
+                    background: "var(--gradient-owner)",
+                    border: "1.5px solid var(--status-reserved-dim)",
+                    color: "var(--primary)",
                   }}
                 >
                   {getOwnerInitials(prop.ownerFirstName, prop.ownerLastName)}
@@ -692,9 +656,9 @@ export default function PropiedadFichaPage() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-[0.82rem] font-semibold text-[#e1e2e4] mb-0.5">{ownerName}</div>
-                  <div className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#6b6d70] mb-1">Propietario</div>
-                  <div className="flex items-center gap-3 flex-wrap text-[0.72rem] text-[#a8a9ac]">
+                  <div className="text-[0.82rem] font-semibold text-foreground mb-0.5">{ownerName}</div>
+                  <div className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-1">Propietario</div>
+                  <div className="flex items-center gap-3 flex-wrap text-[0.72rem] text-muted-foreground">
                     {prop.ownerPhone && <span>📱 {prop.ownerPhone}</span>}
                     {prop.ownerEmail && <span>{prop.ownerEmail}</span>}
                     {prop.ownerCuit && <span>CUIT {prop.ownerCuit}</span>}
@@ -705,35 +669,32 @@ export default function PropiedadFichaPage() {
                 {/* Action */}
                 <button
                   onClick={(e) => { e.stopPropagation(); router.push(`/propietarios/${prop.ownerId}`); }}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-[0.68rem] font-semibold rounded-[8px] transition-colors flex-shrink-0"
-                  style={{ background: "#282a2c", color: "#a8a9ac", border: "1px solid rgba(255,255,255,0.07)" }}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-[0.68rem] font-semibold rounded-[8px] transition-colors flex-shrink-0 bg-muted text-muted-foreground border border-border"
                 >
                   Ver ficha <ExternalLink size={10} />
                 </button>
               </div>
 
               {/* Inquilino */}
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] mb-3 mt-5">
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 mt-5">
                 Inquilino
               </div>
               <div
-                className="flex items-center gap-3 px-4 py-4 rounded-[12px] text-center justify-center"
-                style={{ background: "#191c1e", border: "1px dashed rgba(255,255,255,0.07)" }}
+                className="flex items-center gap-3 px-4 py-4 rounded-[12px] text-center justify-center bg-card border border-dashed border-border"
               >
-                <span className="text-[0.78rem] text-[#6b6d70]">Sin inquilino activo</span>
-                <span className="text-[0.65rem] text-[#333537]">· Disponible cuando haya un contrato vigente</span>
+                <span className="text-[0.78rem] text-muted-foreground">Sin inquilino activo</span>
+                <span className="text-[0.65rem] text-muted-foreground">· Disponible cuando haya un contrato vigente</span>
               </div>
 
               {/* Garantes */}
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] mb-3 mt-5">
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 mt-5">
                 Garantes
               </div>
               <div
-                className="flex items-center gap-3 px-4 py-4 rounded-[12px] text-center justify-center"
-                style={{ background: "#191c1e", border: "1px dashed rgba(255,255,255,0.07)" }}
+                className="flex items-center gap-3 px-4 py-4 rounded-[12px] text-center justify-center bg-card border border-dashed border-border"
               >
-                <span className="text-[0.78rem] text-[#6b6d70]">Sin garantes</span>
-                <span className="text-[0.65rem] text-[#333537]">· Se vinculan al contrato</span>
+                <span className="text-[0.78rem] text-muted-foreground">Sin garantes</span>
+                <span className="text-[0.65rem] text-muted-foreground">· Se vinculan al contrato</span>
               </div>
             </div>
           )}
@@ -744,8 +705,7 @@ export default function PropiedadFichaPage() {
 
               {editError && (
                 <div
-                  className="mb-4 px-4 py-3 rounded-[8px] text-[0.78rem]"
-                  style={{ background: "rgba(255,180,171,0.12)", color: "#ffb4ab", border: "1px solid rgba(255,180,171,0.2)" }}
+                  className="mb-4 px-4 py-3 rounded-[8px] text-[0.78rem] bg-destructive-dim text-destructive border border-destructive/20"
                 >
                   {editError}
                 </div>
@@ -756,7 +716,7 @@ export default function PropiedadFichaPage() {
                 <div className="flex flex-col gap-6">
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] mb-3">
+                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
                       Identificación y ubicación
                     </div>
                     <div className="grid grid-cols-3 gap-3">
@@ -795,7 +755,7 @@ export default function PropiedadFichaPage() {
                   </div>
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] mb-3">
+                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
                       Características físicas
                     </div>
                     <div className="grid grid-cols-3 gap-3">
@@ -810,7 +770,7 @@ export default function PropiedadFichaPage() {
                 <div className="flex flex-col gap-6">
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] mb-3">
+                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
                       Identificación y ubicación
                     </div>
                     <div className="grid grid-cols-3 gap-2.5">
@@ -825,7 +785,7 @@ export default function PropiedadFichaPage() {
                   </div>
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] mb-3">
+                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
                       Características físicas
                     </div>
                     <div className="grid grid-cols-3 gap-2.5">
@@ -836,7 +796,7 @@ export default function PropiedadFichaPage() {
                   </div>
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] mb-3">
+                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
                       Responsabilidad de servicios
                     </div>
                     <div className="grid grid-cols-3 gap-2.5">

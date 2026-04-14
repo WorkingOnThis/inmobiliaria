@@ -20,6 +20,7 @@ import {
   type ServicioTipo,
   type ServicioEstado,
 } from "@/lib/servicios/constants";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 // ── Tipos ──────────────────────────────────────────────────────────────
 type ServicioResumen = {
@@ -91,17 +92,17 @@ function ServicioChip({
   const diasLabel = diasSinComprobante > 0 ? ` ${diasSinComprobante}d` : "";
 
   const clases: Record<ServicioEstado, string> = {
-    al_dia: "bg-green-500/10 text-green-400 border border-green-500/20",
-    pendiente: "bg-white/5 text-muted-foreground border border-white/10",
-    en_alerta: "bg-yellow-500/10 text-yellow-300 border border-yellow-500/20",
-    bloqueado: "bg-red-500/10 text-red-400 border border-red-500/20",
+    al_dia:    "bg-income-dim text-income",
+    pendiente: "bg-muted text-muted-foreground",
+    en_alerta: "bg-mustard-dim text-mustard",
+    bloqueado: "bg-destructive-dim text-destructive",
   };
 
   const dotClases: Record<ServicioEstado, string> = {
-    al_dia: "bg-green-400",
-    pendiente: "bg-muted-foreground",
-    en_alerta: "bg-yellow-300",
-    bloqueado: "bg-red-400 shadow-[0_0_4px_theme(colors.red.400)]",
+    al_dia:    "bg-current",
+    pendiente: "bg-current",
+    en_alerta: "bg-current",
+    bloqueado: "bg-current",
   };
 
   return (
@@ -119,30 +120,22 @@ function ServicioChip({
 // ── Badge resumen de alertas ────────────────────────────────────────────
 function AlertasBadge({ estado, count }: { estado: ServicioEstado; count: number }) {
   if (estado === "al_dia") {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-bold text-green-400">
-        <CheckCircle2 className="h-3 w-3" /> Al día
-      </span>
-    );
+    return <StatusBadge variant="income">Al día</StatusBadge>;
   }
   if (estado === "bloqueado") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-bold text-red-400">
-        <Lock className="h-3 w-3" /> Bloqueado{count > 1 ? ` (${count})` : ""}
-      </span>
+      <StatusBadge variant="red">
+        Bloqueado{count > 1 ? ` (${count})` : ""}
+      </StatusBadge>
     );
   }
   if (estado === "en_alerta") {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-2 py-0.5 text-xs font-bold text-yellow-300">
-        <AlertTriangle className="h-3 w-3" /> {count} en alerta
-      </span>
-    );
+    return <StatusBadge variant="mustard">{count} en alerta</StatusBadge>;
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-xs font-semibold text-muted-foreground">
-      <Clock className="h-3 w-3" /> {count} pendiente{count > 1 ? "s" : ""}
-    </span>
+    <StatusBadge variant="muted">
+      {count} pendiente{count > 1 ? "s" : ""}
+    </StatusBadge>
   );
 }
 
@@ -278,30 +271,30 @@ export function ServiciosControlPanel() {
           <p className="mb-2 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
             Al día
           </p>
-          <p className="font-headline text-3xl font-bold tracking-tight text-green-400">
+          <p className="font-headline text-3xl font-bold tracking-tight text-income">
             {kpis?.alDia ?? "—"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Todos los comprobantes cargados</p>
         </div>
 
-        <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-5">
-          <p className="mb-2 text-[0.62rem] font-bold uppercase tracking-widest text-yellow-300/70">
+        <div className="rounded-2xl border border-mustard/20 bg-mustard-dim p-5">
+          <p className="mb-2 text-[0.62rem] font-bold uppercase tracking-widest text-mustard/70">
             ⚠ En alerta (30+ días)
           </p>
-          <p className="font-headline text-3xl font-bold tracking-tight text-yellow-300">
+          <p className="font-headline text-3xl font-bold tracking-tight text-mustard">
             {kpis?.enAlerta ?? "—"}
           </p>
-          <p className="mt-1 text-xs text-yellow-300/60">Riesgo de bloqueo de alquiler</p>
+          <p className="mt-1 text-xs text-mustard/60">Riesgo de bloqueo de alquiler</p>
         </div>
 
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-5">
-          <p className="mb-2 text-[0.62rem] font-bold uppercase tracking-widest text-red-400/70">
+        <div className="rounded-2xl border border-destructive/20 bg-destructive-dim p-5">
+          <p className="mb-2 text-[0.62rem] font-bold uppercase tracking-widest text-destructive/70">
             🔒 Bloqueados
           </p>
-          <p className="font-headline text-3xl font-bold tracking-tight text-red-400">
+          <p className="font-headline text-3xl font-bold tracking-tight text-destructive">
             {kpis?.bloqueadas ?? "—"}
           </p>
-          <p className="mt-1 text-xs text-red-400/60">Alquiler retenido — requiere acción</p>
+          <p className="mt-1 text-xs text-destructive/60">Alquiler retenido — requiere acción</p>
         </div>
       </div>
 
@@ -309,10 +302,10 @@ export function ServiciosControlPanel() {
       <div className="flex flex-wrap items-center gap-4 rounded-xl border border-white/7 bg-surface px-4 py-2.5 text-xs text-muted-foreground">
         <span className="font-semibold text-secondary-foreground">Estados:</span>
         {[
-          { color: "bg-green-400", label: "Al día" },
+          { color: "bg-income", label: "Al día" },
           { color: "bg-muted-foreground", label: "Pendiente" },
-          { color: "bg-yellow-300", label: "En alerta (30+ días)" },
-          { color: "bg-red-400", label: "Bloqueado (alquiler retenido)" },
+          { color: "bg-mustard", label: "En alerta (30+ días)" },
+          { color: "bg-destructive", label: "Bloqueado (alquiler retenido)" },
         ].map(({ color, label }) => (
           <span key={label} className="flex items-center gap-1.5">
             <span className={`h-2 w-2 shrink-0 rounded-full ${color}`} />
@@ -342,9 +335,9 @@ export function ServiciosControlPanel() {
               className={`rounded-full border px-3 py-1 text-[0.68rem] font-semibold transition-colors ${
                 filtro === key
                   ? key === "en_alerta"
-                    ? "border-yellow-500/25 bg-yellow-500/15 text-yellow-300"
+                    ? "border-mustard/25 bg-mustard-dim text-mustard"
                     : key === "bloqueado"
-                    ? "border-red-500/25 bg-red-500/15 text-red-400"
+                    ? "border-destructive/25 bg-destructive-dim text-destructive"
                     : "border-primary/30 bg-primary/10 text-primary"
                   : "border-white/10 bg-white/5 text-muted-foreground hover:text-foreground"
               }`}
@@ -399,9 +392,9 @@ export function ServiciosControlPanel() {
                   onClick={() => router.push(`/propiedades/${prop.propertyId}`)}
                   className={`group cursor-pointer transition-colors hover:bg-white/[0.03] ${
                     prop.peorEstado === "bloqueado"
-                      ? "[&>td:first-child]:border-l-2 [&>td:first-child]:border-l-red-500"
+                      ? "[&>td:first-child]:border-l-2 [&>td:first-child]:border-l-destructive"
                       : prop.peorEstado === "en_alerta"
-                      ? "[&>td:first-child]:border-l-2 [&>td:first-child]:border-l-yellow-400"
+                      ? "[&>td:first-child]:border-l-2 [&>td:first-child]:border-l-mustard"
                       : ""
                   }`}
                 >
@@ -432,7 +425,7 @@ export function ServiciosControlPanel() {
                         onClick={(e) => { e.stopPropagation(); router.push(`/propiedades/${prop.propertyId}`); }}
                         className={`rounded-md border px-2.5 py-1 text-[0.67rem] font-semibold transition-colors ${
                           prop.peorEstado === "bloqueado"
-                            ? "border-red-500/30 text-red-400 hover:bg-red-500/10"
+                            ? "border-destructive/30 text-destructive hover:bg-destructive-dim"
                             : "border-white/10 text-muted-foreground hover:text-foreground"
                         }`}
                       >

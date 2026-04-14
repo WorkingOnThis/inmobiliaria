@@ -43,12 +43,12 @@ interface Opcion {
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const C_INGRESO    = "#6ee7a0";
-const C_INGRESO_BG = "rgba(110,231,160,0.12)";
-const C_EGRESO     = "var(--color-arce-error)";
-const C_EGRESO_BG  = "var(--color-arce-error-container)";
-const C_NEUTRO     = "#8899ee";
-const C_NEUTRO_BG  = "rgba(100,130,220,0.12)";
+const C_INGRESO    = "var(--income)";
+const C_INGRESO_BG = "var(--income-dim)";
+const C_EGRESO     = "var(--destructive)";
+const C_EGRESO_BG  = "var(--destructive-dim)";
+const C_NEUTRO     = "var(--neutral)";
+const C_NEUTRO_BG  = "var(--neutral-dim)";
 
 const MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -75,18 +75,18 @@ function formatMonto(monto: string | number): string {
 // ─── Estilos compartidos (tokens Arce) ───────────────────────────────────────
 
 const S = {
-  bg:             { background: "var(--color-arce-background)" },
-  surface:        { background: "var(--color-arce-surface)" },
-  surfaceLow:     { background: "var(--color-arce-surface-container)" },
-  surfaceHigh:    { background: "var(--color-arce-surface-high)" },
-  surfaceHighest: { background: "var(--color-arce-surface-highest)" },
-  border:         "1px solid rgba(255,255,255,0.07)",
-  textOnSurface:  { color: "var(--color-arce-on-surface)" },
-  textSecondary:  { color: "var(--color-arce-secondary-text)" },
-  textMuted:      { color: "rgba(200,200,204,0.4)" },
-  textPrimary:    { color: "var(--color-arce-primary)" },
-  textError:      { color: "var(--color-arce-error)" },
-  headlineFont:   { fontFamily: "var(--font-arce-headline)" },
+  bg:             { background: "var(--background)" },
+  surface:        { background: "var(--card)" },
+  surfaceLow:     { background: "var(--card)" },
+  surfaceHigh:    { background: "var(--muted)" },
+  surfaceHighest: { background: "var(--secondary)" },
+  border:         "1px solid var(--border)",
+  textOnSurface:  { color: "var(--foreground)" },
+  textSecondary:  { color: "var(--muted-foreground)" },
+  textMuted:      { color: "var(--text-dim)" },
+  textPrimary:    { color: "var(--primary)" },
+  textError:      { color: "var(--destructive)" },
+  headlineFont:   { fontFamily: "var(--font-headline)" },
 } as const;
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -285,7 +285,7 @@ export function CajaGeneralClient() {
           </div>
           <button
             className="px-3.5 py-1.5 text-[11px] font-bold rounded-xl"
-            style={{ background: "var(--color-arce-primary)", color: "var(--color-arce-on-primary)" }}
+            style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
             onClick={() => setShowModalCrear(true)}
           >
             + Movimiento
@@ -330,8 +330,8 @@ export function CajaGeneralClient() {
                 key={f}
                 className="px-2.5 py-1 text-[10px] font-semibold rounded-full capitalize transition-colors"
                 style={filtro === f
-                  ? { background: "var(--color-arce-primary-fixed)", color: "var(--color-arce-primary)", border: "1px solid rgba(255,180,162,0.2)" }
-                  : { background: "none", border: S.border, color: "var(--color-arce-secondary-text)" }
+                  ? { background: "var(--primary-dim)", color: "var(--primary)", border: "1px solid var(--border-accent)" }
+                  : { background: "none", border: S.border, color: "var(--muted-foreground)" }
                 }
                 onClick={() => setFiltro(f)}
               >
@@ -341,7 +341,7 @@ export function CajaGeneralClient() {
           </div>
           <button
             className="ml-auto px-2.5 py-1 text-[10px] font-bold rounded-lg"
-            style={{ background: "var(--color-arce-primary)", color: "var(--color-arce-on-primary)" }}
+            style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
             onClick={() => setShowModalCrear(true)}
           >
             + Nuevo
@@ -374,12 +374,12 @@ export function CajaGeneralClient() {
             <div className="overflow-x-auto">
               <table className="w-full" style={{ borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
-                  <tr style={{ background: "var(--color-arce-surface-container)" }}>
+                  <tr style={{ background: "var(--card)" }}>
                     {["Fecha", "Descripción", "Categoría", "Vinculado a", "Tipo", "Monto"].map((h) => (
                       <th
                         key={h}
                         className="px-4 py-2.5 text-left text-[9px] font-bold uppercase tracking-[0.12em]"
-                        style={{ color: "rgba(200,200,204,0.45)", ...(h === "Monto" ? { textAlign: "right" } : {}) }}
+                        style={{ color: "var(--text-dim)", ...(h === "Monto" ? { textAlign: "right" } : {}) }}
                       >
                         {h}
                       </th>
@@ -459,11 +459,11 @@ export function CajaGeneralClient() {
 
       <style>{`
         .campo-arce {
-          font-family: var(--font-arce-body);
+          font-family: var(--font-sans);
           font-size: 0.875rem;
-          color: var(--color-arce-on-surface);
-          background: var(--color-arce-surface-high);
-          border: 1px solid rgba(255,255,255,0.07);
+          color: var(--foreground);
+          background: var(--muted);
+          border: 1px solid var(--border);
           border-radius: 0.75rem;
           padding: 8px 12px;
           outline: none;
@@ -471,13 +471,13 @@ export function CajaGeneralClient() {
           width: 100%;
         }
         .campo-arce:focus {
-          border-color: var(--color-arce-primary);
-          background: var(--color-arce-surface-highest);
+          border-color: var(--primary);
+          background: var(--secondary);
         }
-        .campo-arce::placeholder { color: rgba(200,200,204,0.35); }
+        .campo-arce::placeholder { color: var(--text-dim); }
         .campo-arce option {
-          background: var(--color-arce-surface-high);
-          color: var(--color-arce-on-surface);
+          background: var(--muted);
+          color: var(--foreground);
         }
       `}</style>
     </div>
@@ -491,7 +491,7 @@ function FilaMovimiento({ m, index, onClick }: {
   index: number;
   onClick: () => void;
 }) {
-  const bgBase = index % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)";
+  const bgBase = index % 2 === 0 ? "transparent" : "var(--border-subtle)";
 
   const tieneVinculos = m.contratoId || m.propiedadId || m.propietarioId || m.inquilinoId;
 
@@ -500,20 +500,20 @@ function FilaMovimiento({ m, index, onClick }: {
       className="transition-colors cursor-pointer"
       style={{ background: bgBase }}
       onClick={onClick}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,180,162,0.05)"; }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--primary-subtle)"; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = bgBase; }}
     >
-      <td className="px-4 py-3 text-[12px] whitespace-nowrap" style={{ color: "rgba(200,200,204,0.4)" }}>
+      <td className="px-4 py-3 text-[12px] whitespace-nowrap" style={{ color: "var(--text-dim)" }}>
         {m.fecha}
       </td>
       <td className="px-4 py-3">
-        <div className="font-medium" style={{ color: "var(--color-arce-on-surface)" }}>{m.descripcion}</div>
+        <div className="font-medium" style={{ color: "var(--foreground)" }}>{m.descripcion}</div>
         {m.comprobante && (
-          <div className="text-[11px] mt-0.5" style={{ color: "rgba(200,200,204,0.4)" }}>{m.comprobante}</div>
+          <div className="text-[11px] mt-0.5" style={{ color: "var(--text-dim)" }}>{m.comprobante}</div>
         )}
       </td>
-      <td className="px-4 py-3 text-[12px]" style={{ color: "var(--color-arce-secondary-text)" }}>
-        {m.categoria ?? <span style={{ color: "rgba(200,200,204,0.4)" }}>—</span>}
+      <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+        {m.categoria ?? <span style={{ color: "var(--text-dim)" }}>—</span>}
       </td>
       <td className="px-4 py-3">
         {tieneVinculos ? (
@@ -523,7 +523,7 @@ function FilaMovimiento({ m, index, onClick }: {
                 href="/contratos"
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold transition-opacity hover:opacity-70"
-                style={{ background: "rgba(100,130,220,0.12)", color: "#8899ee", border: "1px solid rgba(100,130,220,0.2)" }}
+                style={{ background: "var(--neutral-dim)", color: "var(--neutral)", border: "1px solid var(--neutral)" }}
               >
                 {m.contratoNumero}
               </Link>
@@ -533,7 +533,7 @@ function FilaMovimiento({ m, index, onClick }: {
                 href="/propiedades"
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold transition-opacity hover:opacity-70"
-                style={{ background: "rgba(80,180,130,0.12)", color: "#66c8a0", border: "1px solid rgba(80,180,130,0.2)" }}
+                style={{ background: "var(--green-dim)", color: "var(--green)", border: "1px solid var(--green)" }}
               >
                 {m.propiedadDireccion}
               </Link>
@@ -543,7 +543,7 @@ function FilaMovimiento({ m, index, onClick }: {
                 href="/clientes"
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold transition-opacity hover:opacity-70"
-                style={{ background: "rgba(210,170,80,0.12)", color: "#d4aa55", border: "1px solid rgba(210,170,80,0.2)" }}
+                style={{ background: "var(--mustard-dim)", color: "var(--mustard)", border: "1px solid var(--mustard)" }}
               >
                 {m.propietarioNombre}
               </Link>
@@ -553,14 +553,14 @@ function FilaMovimiento({ m, index, onClick }: {
                 href="/clientes"
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold transition-opacity hover:opacity-70"
-                style={{ background: "rgba(210,170,80,0.12)", color: "#d4aa55", border: "1px solid rgba(210,170,80,0.2)" }}
+                style={{ background: "var(--mustard-dim)", color: "var(--mustard)", border: "1px solid var(--mustard)" }}
               >
                 {m.inquilinoNombre}
               </Link>
             )}
           </div>
         ) : (
-          <span style={{ color: "rgba(200,200,204,0.4)" }}>—</span>
+          <span style={{ color: "var(--text-dim)" }}>—</span>
         )}
       </td>
       <td className="px-4 py-3">
@@ -578,7 +578,7 @@ function FilaMovimiento({ m, index, onClick }: {
         <span
           className="text-[14px] font-semibold tabular-nums"
           style={{
-            fontFamily: "var(--font-arce-headline)",
+            fontFamily: "var(--font-headline)",
             color: m.tipo === "ingreso" ? C_INGRESO : C_EGRESO,
           }}
         >
@@ -600,18 +600,18 @@ function KpiCard({ label, valor, sub, variante, isLoading }: {
 }) {
   const color = variante === "success" ? C_INGRESO : variante === "error" ? C_EGRESO : C_NEUTRO;
   return (
-    <div className="rounded-xl p-5" style={{ background: "var(--color-arce-surface)", border: "1px solid rgba(255,255,255,0.07)" }}>
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-2.5" style={{ color: "rgba(200,200,204,0.4)" }}>
+    <div className="rounded-xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-2.5" style={{ color: "var(--text-dim)" }}>
         {label}
       </p>
       {isLoading ? (
-        <div className="h-8 w-32 rounded-md animate-pulse" style={{ background: "rgba(255,255,255,0.06)" }} />
+        <div className="h-8 w-32 rounded-md animate-pulse" style={{ background: "var(--border)" }} />
       ) : (
-        <p className="text-[28px] font-bold leading-none mb-1 tabular-nums" style={{ fontFamily: "var(--font-arce-headline)", color }}>
+        <p className="text-[28px] font-bold leading-none mb-1 tabular-nums" style={{ fontFamily: "var(--font-headline)", color }}>
           {valor}
         </p>
       )}
-      <p className="text-[11px] mt-1" style={{ color: "var(--color-arce-secondary-text)" }}>{sub}</p>
+      <p className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>{sub}</p>
     </div>
   );
 }
@@ -659,7 +659,7 @@ function BuscadorSelector({
         {valor && !disabled && (
           <button
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] leading-none"
-            style={{ color: "rgba(200,200,204,0.4)" }}
+            style={{ color: "var(--text-dim)" }}
             onMouseDown={(e) => { e.preventDefault(); onCambio(""); setBusqueda(""); }}
             tabIndex={-1}
           >
@@ -672,8 +672,8 @@ function BuscadorSelector({
         <div
           className="absolute z-50 w-full mt-1 rounded-xl overflow-y-auto max-h-52"
           style={{
-            background: "var(--color-arce-surface-high)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "var(--muted)",
+            border: "1px solid var(--border)",
             boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
           }}
           onMouseDown={(e) => e.preventDefault()}
@@ -681,14 +681,14 @@ function BuscadorSelector({
           {/* Opción vacía / deseleccionar */}
           <div
             className="px-3.5 py-2.5 text-[12px] cursor-pointer"
-            style={{ color: "rgba(200,200,204,0.4)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+            style={{ color: "var(--text-dim)", borderBottom: "1px solid var(--border)" }}
             onClick={() => { onCambio(""); setBusqueda(""); setAbierto(false); }}
           >
             {vacioLabel}
           </div>
 
           {filtradas.length === 0 ? (
-            <div className="px-3.5 py-3 text-[12px] text-center" style={{ color: "rgba(200,200,204,0.35)" }}>
+            <div className="px-3.5 py-3 text-[12px] text-center" style={{ color: "var(--text-dim)" }}>
               Sin resultados para &ldquo;{busqueda}&rdquo;
             </div>
           ) : (
@@ -697,23 +697,23 @@ function BuscadorSelector({
                 key={o.value}
                 className="px-3.5 py-2.5 text-[12px] cursor-pointer"
                 style={{
-                  color: o.value === valor ? "var(--color-arce-primary)" : "var(--color-arce-on-surface)",
-                  background: o.value === valor ? "rgba(255,180,162,0.07)" : "transparent",
-                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  color: o.value === valor ? "var(--primary)" : "var(--foreground)",
+                  background: o.value === valor ? "var(--primary-subtle)" : "transparent",
+                  borderBottom: "1px solid var(--border)",
                 }}
                 onMouseEnter={(e) => {
                   if (o.value !== valor)
-                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
+                    (e.currentTarget as HTMLElement).style.background = "var(--border-subtle)";
                 }}
                 onMouseLeave={(e) => {
                   (e.currentTarget as HTMLElement).style.background =
-                    o.value === valor ? "rgba(255,180,162,0.07)" : "transparent";
+                    o.value === valor ? "var(--primary-subtle)" : "transparent";
                 }}
                 onClick={() => { onCambio(o.value); setBusqueda(""); setAbierto(false); }}
               >
                 <div className="truncate">{o.label}</div>
                 {o.searchText && (
-                  <div className="text-[10px] mt-0.5 truncate" style={{ color: "rgba(200,200,204,0.38)" }}>
+                  <div className="text-[10px] mt-0.5 truncate" style={{ color: "var(--text-dim)" }}>
                     {o.searchText}
                   </div>
                 )}
@@ -798,17 +798,17 @@ function ModalMovimiento({
       <div
         className="w-[540px] max-h-[90vh] overflow-y-auto rounded-2xl flex flex-col"
         style={{
-          background: "var(--color-arce-surface)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          borderTop: "3px solid var(--color-arce-primary)",
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderTop: "3px solid var(--primary)",
         }}
       >
         {/* Cabecera */}
-        <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-          <h2 className="text-[16px] font-bold" style={{ fontFamily: "var(--font-arce-headline)", color: "var(--color-arce-on-surface)" }}>
+        <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+          <h2 className="text-[16px] font-bold" style={{ fontFamily: "var(--font-headline)", color: "var(--foreground)" }}>
             {modo === "crear" ? "Nuevo movimiento" : "Editar movimiento"}
           </h2>
-          <button className="text-lg p-1 rounded-md" style={{ color: "rgba(200,200,204,0.4)" }} onClick={onClose}>✕</button>
+          <button className="text-lg p-1 rounded-md" style={{ color: "var(--text-dim)" }} onClick={onClose}>✕</button>
         </div>
 
         {/* Cuerpo */}
@@ -816,19 +816,19 @@ function ModalMovimiento({
 
           {/* Toggle tipo */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "rgba(200,200,204,0.4)" }}>
+            <label className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text-dim)" }}>
               Tipo
             </label>
-            <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
               {(["ingreso", "egreso"] as const).map((t) => (
                 <button
                   key={t}
                   className="flex-1 py-2 text-[12px] font-semibold capitalize transition-colors"
                   style={tipo === t
                     ? t === "ingreso"
-                      ? { background: "var(--color-arce-primary-fixed)", color: "var(--color-arce-primary)" }
-                      : { background: "var(--color-arce-error-container)", color: "var(--color-arce-error)" }
-                    : { background: "var(--color-arce-surface-high)", color: "var(--color-arce-secondary-text)" }
+                      ? { background: "var(--primary-dim)", color: "var(--primary)" }
+                      : { background: "var(--destructive-dim)", color: "var(--destructive)" }
+                    : { background: "var(--muted)", color: "var(--muted-foreground)" }
                   }
                   onClick={() => setTipo(t)}
                   disabled={ocupado}
@@ -856,7 +856,7 @@ function ModalMovimiento({
 
           {/* Categoría + chips */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "rgba(200,200,204,0.4)" }}>
+            <label className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text-dim)" }}>
               Categoría <span className="font-normal normal-case tracking-normal">(opcional)</span>
             </label>
             <input
@@ -872,8 +872,8 @@ function ModalMovimiento({
                   key={chip}
                   className="px-2.5 py-1 text-[10px] font-semibold rounded-full transition-colors"
                   style={chipActivo === chip
-                    ? { background: "var(--color-arce-primary-fixed)", color: "var(--color-arce-primary)", border: "1px solid rgba(255,180,162,0.2)" }
-                    : { background: "var(--color-arce-surface-highest)", color: "var(--color-arce-secondary-text)", border: "1px solid rgba(255,255,255,0.07)" }
+                    ? { background: "var(--primary-dim)", color: "var(--primary)", border: "1px solid var(--border-accent)" }
+                    : { background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }
                   }
                   onClick={() => { setChipActivo(chip); setCategoriaInput(chip); }}
                   disabled={ocupado}
@@ -885,8 +885,8 @@ function ModalMovimiento({
           </div>
 
           {/* Sección vínculos */}
-          <div className="flex flex-col gap-3 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] pt-2" style={{ color: "rgba(200,200,204,0.4)" }}>
+          <div className="flex flex-col gap-3 pt-1" style={{ borderTop: "1px solid var(--border)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] pt-2" style={{ color: "var(--text-dim)" }}>
               Vínculos <span className="font-normal normal-case tracking-normal">(todos opcionales)</span>
             </p>
 
@@ -946,7 +946,7 @@ function ModalMovimiento({
 
           {/* Error */}
           {error && (
-            <div className="px-4 py-3 text-[12px] rounded-lg" style={{ background: "var(--color-arce-error-container)", color: "var(--color-arce-error)" }}>
+            <div className="px-4 py-3 text-[12px] rounded-lg" style={{ background: "var(--destructive-dim)", color: "var(--destructive)" }}>
               {error}
             </div>
           )}
@@ -955,15 +955,15 @@ function ModalMovimiento({
           {confirmandoEliminar && (
             <div
               className="px-4 py-4 rounded-xl flex flex-col gap-3"
-              style={{ background: "var(--color-arce-error-container)", border: "1px solid rgba(220,50,50,0.2)" }}
+              style={{ background: "var(--destructive-dim)", border: "1px solid var(--destructive-dim)" }}
             >
-              <p className="text-[12px] font-semibold" style={{ color: "var(--color-arce-error)" }}>
+              <p className="text-[12px] font-semibold" style={{ color: "var(--destructive)" }}>
                 ¿Confirmar eliminación? Esta acción no se puede deshacer.
               </p>
               <div className="flex gap-2">
                 <button
                   className="flex-1 py-2 text-[12px] font-bold rounded-xl disabled:opacity-50"
-                  style={{ background: "var(--color-arce-error)", color: "#fff" }}
+                  style={{ background: "var(--destructive)", color: "var(--primary-foreground)" }}
                   onClick={() => onEliminar?.()}
                   disabled={eliminando}
                 >
@@ -971,7 +971,7 @@ function ModalMovimiento({
                 </button>
                 <button
                   className="flex-1 py-2 text-[12px] font-bold rounded-xl"
-                  style={{ background: "var(--color-arce-surface-highest)", border: "1px solid rgba(255,255,255,0.07)", color: "var(--color-arce-secondary-text)" }}
+                  style={{ background: "var(--secondary)", border: "1px solid var(--border)", color: "var(--muted-foreground)" }}
                   onClick={() => setConfirmandoEliminar(false)}
                   disabled={eliminando}
                 >
@@ -985,14 +985,14 @@ function ModalMovimiento({
         {/* Footer */}
         <div
           className="px-6 py-3.5 flex items-center justify-between rounded-b-2xl"
-          style={{ background: "var(--color-arce-surface-container)", borderTop: "1px solid rgba(255,255,255,0.07)" }}
+          style={{ background: "var(--card)", borderTop: "1px solid var(--border)" }}
         >
           {/* Botón eliminar — solo en modo editar y antes de confirmar */}
           <div>
             {modo === "editar" && !confirmandoEliminar && (
               <button
                 className="px-3.5 py-1.5 text-[11px] font-bold rounded-xl"
-                style={{ background: "transparent", border: "1px solid rgba(220,50,50,0.3)", color: "var(--color-arce-error)" }}
+                style={{ background: "transparent", border: "1px solid var(--destructive-dim)", color: "var(--destructive)" }}
                 onClick={() => setConfirmandoEliminar(true)}
                 disabled={ocupado}
               >
@@ -1004,7 +1004,7 @@ function ModalMovimiento({
           <div className="flex gap-2">
             <button
               className="px-3.5 py-1.5 text-[11px] font-bold rounded-xl"
-              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.07)", color: "var(--color-arce-secondary-text)" }}
+              style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--muted-foreground)" }}
               onClick={onClose}
               disabled={ocupado}
             >
@@ -1012,7 +1012,7 @@ function ModalMovimiento({
             </button>
             <button
               className="px-3.5 py-1.5 text-[11px] font-bold rounded-xl disabled:opacity-50"
-              style={{ background: "var(--color-arce-primary)", color: "var(--color-arce-on-primary)" }}
+              style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
               onClick={handleGuardar}
               disabled={ocupado}
             >
@@ -1034,7 +1034,7 @@ function Campo({ label, hint, children }: {
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "rgba(200,200,204,0.4)" }}>
+      <label className="text-[10px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text-dim)" }}>
         {label}
         {hint && <span className="font-normal normal-case tracking-normal ml-1 text-[10px]">{hint}</span>}
       </label>

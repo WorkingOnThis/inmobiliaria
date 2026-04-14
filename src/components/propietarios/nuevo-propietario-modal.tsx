@@ -109,22 +109,22 @@ export function NuevoPropietarioModal({
   return (
     <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-[3px] flex items-start justify-center px-4 py-8 overflow-y-auto">
       <div
-        className="bg-[#191c1e] border border-white/[0.07] rounded-[24px] w-full max-w-[640px] overflow-hidden my-auto flex-shrink-0"
+        className="bg-card border border-border rounded-[24px] w-full max-w-[640px] overflow-hidden my-auto flex-shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-white/[0.07] flex items-start gap-3">
+        <div className="px-6 py-5 border-b border-border flex items-start gap-3">
           <div>
-            <div className="font-bold text-[1.1rem] text-[#e1e2e4] font-[Space_Grotesk] tracking-[-0.02em]">
+            <div className="font-bold text-[1.1rem] text-foreground font-headline tracking-[-0.02em]">
               Nuevo propietario
             </div>
-            <div className="text-[0.71rem] text-[#a8a9ac] mt-0.5 leading-relaxed">
+            <div className="text-[0.71rem] text-muted-foreground mt-0.5 leading-relaxed">
               Completá los datos esenciales. El resto puede cargarse desde la ficha.
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="ml-auto flex-shrink-0 text-[#6b6d70] hover:text-[#e1e2e4] hover:bg-[#282a2c] rounded-[6px] w-8 h-8 flex items-center justify-center transition-all"
+            className="ml-auto flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-[6px] w-8 h-8 flex items-center justify-center transition-all"
           >
             <X size={18} />
           </button>
@@ -136,15 +136,15 @@ export function NuevoPropietarioModal({
             {/* Datos personales */}
             <div>
               <div className="flex items-center gap-2 mb-3.5">
-                <span className="w-3.5 h-0.5 bg-[#ffb4a2] rounded-sm block" />
-                <span className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[#6b6d70]">
+                <span className="w-3.5 h-0.5 bg-primary rounded-sm block" />
+                <span className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                   Datos personales
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#a8a9ac]">
-                    Nombre <span className="text-[#ffb4ab]">*</span>
+                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    Nombre <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="text"
@@ -152,11 +152,11 @@ export function NuevoPropietarioModal({
                     onChange={set("firstName")}
                     placeholder="Carlos"
                     required
-                    className="w-full bg-[#222527] border border-white/[0.07] rounded-[12px] text-[#e1e2e4] text-[0.82rem] px-3 py-2 outline-none focus:border-[rgba(255,180,162,0.2)] focus:bg-[#282a2c] transition-all placeholder:text-[#6b6d70]"
+                    className="w-full bg-muted border border-border rounded-[12px] text-foreground text-[0.82rem] px-3 py-2 outline-none focus:border-border-accent focus:bg-muted transition-all placeholder:text-muted-foreground"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#a8a9ac]">
+                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     Apellido
                   </label>
                   <input
@@ -164,11 +164,11 @@ export function NuevoPropietarioModal({
                     value={form.lastName}
                     onChange={set("lastName")}
                     placeholder="Mendoza"
-                    className="w-full bg-[#222527] border border-white/[0.07] rounded-[12px] text-[#e1e2e4] text-[0.82rem] px-3 py-2 outline-none focus:border-[rgba(255,180,162,0.2)] focus:bg-[#282a2c] transition-all placeholder:text-[#6b6d70]"
+                    className="w-full bg-muted border border-border rounded-[12px] text-foreground text-[0.82rem] px-3 py-2 outline-none focus:border-border-accent focus:bg-muted transition-all placeholder:text-muted-foreground"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#a8a9ac]">
+                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     DNI
                   </label>
                   <input
@@ -176,11 +176,11 @@ export function NuevoPropietarioModal({
                     value={form.dni}
                     onChange={set("dni")}
                     placeholder="28441100"
-                    className="w-full bg-[#222527] border border-white/[0.07] rounded-[12px] text-[#e1e2e4] text-[0.82rem] px-3 py-2 outline-none focus:border-[rgba(255,180,162,0.2)] focus:bg-[#282a2c] transition-all placeholder:text-[#6b6d70]"
+                    className="w-full bg-muted border border-border rounded-[12px] text-foreground text-[0.82rem] px-3 py-2 outline-none focus:border-border-accent focus:bg-muted transition-all placeholder:text-muted-foreground"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#a8a9ac]">
+                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     Teléfono
                   </label>
                   <input
@@ -188,11 +188,11 @@ export function NuevoPropietarioModal({
                     value={form.phone}
                     onChange={set("phone")}
                     placeholder="351 612-4400"
-                    className="w-full bg-[#222527] border border-white/[0.07] rounded-[12px] text-[#e1e2e4] text-[0.82rem] px-3 py-2 outline-none focus:border-[rgba(255,180,162,0.2)] focus:bg-[#282a2c] transition-all placeholder:text-[#6b6d70]"
+                    className="w-full bg-muted border border-border rounded-[12px] text-foreground text-[0.82rem] px-3 py-2 outline-none focus:border-border-accent focus:bg-muted transition-all placeholder:text-muted-foreground"
                   />
                 </div>
                 <div className="col-span-2 flex flex-col gap-1">
-                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#a8a9ac]">
+                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     Email
                   </label>
                   <input
@@ -200,7 +200,7 @@ export function NuevoPropietarioModal({
                     value={form.email}
                     onChange={set("email")}
                     placeholder="cmendoza@gmail.com"
-                    className="w-full bg-[#222527] border border-white/[0.07] rounded-[12px] text-[#e1e2e4] text-[0.82rem] px-3 py-2 outline-none focus:border-[rgba(255,180,162,0.2)] focus:bg-[#282a2c] transition-all placeholder:text-[#6b6d70]"
+                    className="w-full bg-muted border border-border rounded-[12px] text-foreground text-[0.82rem] px-3 py-2 outline-none focus:border-border-accent focus:bg-muted transition-all placeholder:text-muted-foreground"
                   />
                 </div>
               </div>
@@ -209,17 +209,17 @@ export function NuevoPropietarioModal({
             {/* Datos bancarios */}
             <div>
               <div className="flex items-center gap-2 mb-3.5">
-                <span className="w-3.5 h-0.5 bg-[#ffb4a2] rounded-sm block" />
-                <span className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-[#6b6d70]">
+                <span className="w-3.5 h-0.5 bg-primary rounded-sm block" />
+                <span className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                   Datos bancarios{" "}
-                  <span className="font-normal text-[0.6rem] tracking-normal lowercase text-[#6b6d70]">
+                  <span className="font-normal text-[0.6rem] tracking-normal lowercase text-muted-foreground">
                     — opcionales, necesarios para liquidar
                   </span>
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="col-span-2 flex flex-col gap-1">
-                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#a8a9ac]">
+                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     CBU / CVU
                   </label>
                   <input
@@ -228,11 +228,11 @@ export function NuevoPropietarioModal({
                     onChange={set("cbu")}
                     placeholder="0000003100012345678900"
                     maxLength={22}
-                    className="w-full bg-[#222527] border border-white/[0.07] rounded-[12px] text-[#e1e2e4] text-[0.82rem] px-3 py-2 outline-none focus:border-[rgba(255,180,162,0.2)] focus:bg-[#282a2c] transition-all placeholder:text-[#6b6d70] font-mono"
+                    className="w-full bg-muted border border-border rounded-[12px] text-foreground text-[0.82rem] px-3 py-2 outline-none focus:border-border-accent focus:bg-muted transition-all placeholder:text-muted-foreground font-mono"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#a8a9ac]">
+                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     Alias
                   </label>
                   <input
@@ -240,11 +240,11 @@ export function NuevoPropietarioModal({
                     value={form.alias}
                     onChange={set("alias")}
                     placeholder="carlos.mendoza.mp"
-                    className="w-full bg-[#222527] border border-white/[0.07] rounded-[12px] text-[#e1e2e4] text-[0.82rem] px-3 py-2 outline-none focus:border-[rgba(255,180,162,0.2)] focus:bg-[#282a2c] transition-all placeholder:text-[#6b6d70]"
+                    className="w-full bg-muted border border-border rounded-[12px] text-foreground text-[0.82rem] px-3 py-2 outline-none focus:border-border-accent focus:bg-muted transition-all placeholder:text-muted-foreground"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#a8a9ac]">
+                  <label className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     Banco
                   </label>
                   <input
@@ -252,7 +252,7 @@ export function NuevoPropietarioModal({
                     value={form.banco}
                     onChange={set("banco")}
                     placeholder="Banco Nación"
-                    className="w-full bg-[#222527] border border-white/[0.07] rounded-[12px] text-[#e1e2e4] text-[0.82rem] px-3 py-2 outline-none focus:border-[rgba(255,180,162,0.2)] focus:bg-[#282a2c] transition-all placeholder:text-[#6b6d70]"
+                    className="w-full bg-muted border border-border rounded-[12px] text-foreground text-[0.82rem] px-3 py-2 outline-none focus:border-border-accent focus:bg-muted transition-all placeholder:text-muted-foreground"
                   />
                 </div>
               </div>
@@ -260,19 +260,19 @@ export function NuevoPropietarioModal({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-white/[0.07] flex items-center justify-end gap-2">
+          <div className="px-6 py-4 border-t border-border flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="px-3.5 py-2 text-[0.72rem] font-semibold text-[#a8a9ac] bg-[#333537] border border-white/[0.07] rounded-[12px] hover:bg-[#282a2c] transition-all disabled:opacity-50"
+              className="px-3.5 py-2 text-[0.72rem] font-semibold text-muted-foreground bg-secondary border border-border rounded-[12px] hover:bg-muted transition-all disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-3.5 py-2 text-[0.72rem] font-semibold bg-[#ffb4a2] text-[#561100] rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50 flex items-center gap-1.5"
+              className="px-3.5 py-2 text-[0.72rem] font-semibold bg-primary text-primary-foreground rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50 flex items-center gap-1.5"
             >
               {loading && <Loader2 size={12} className="animate-spin" />}
               Guardar propietario

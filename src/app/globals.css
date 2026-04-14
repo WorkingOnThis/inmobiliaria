@@ -14,6 +14,29 @@
   --font-mono: var(--font-geist-mono);
   --font-headline: var(--font-space-grotesk);
   --font-brand: var(--font-montserrat);
+  /* --- Tokens Arce extendidos --- */
+  --color-avatar-a:              var(--avatar-a);
+  --color-avatar-b:              var(--avatar-b);
+  --color-green:                 var(--green);
+  --color-green-dim:             var(--green-dim);
+  --color-mustard:               var(--mustard);
+  --color-mustard-dim:           var(--mustard-dim);
+  --color-income:                var(--income);
+  --color-income-dim:            var(--income-dim);
+  --color-neutral:               var(--neutral);
+  --color-neutral-dim:           var(--neutral-dim);
+  --color-primary-dim:           var(--primary-dim);
+  --color-border-accent:         var(--border-accent);
+  --color-destructive-dim:       var(--destructive-dim);
+  --color-text-dim:              var(--text-dim);
+  --color-status-available:      var(--status-available);
+  --color-status-available-dim:  var(--status-available-dim);
+  --color-status-rented:         var(--status-rented);
+  --color-status-rented-dim:     var(--status-rented-dim);
+  --color-status-maintenance:    var(--status-maintenance);
+  --color-status-maintenance-dim: var(--status-maintenance-dim);
+  --color-status-reserved:       var(--status-reserved);
+  --color-status-reserved-dim:   var(--status-reserved-dim);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -109,6 +132,35 @@
   --sidebar-accent-foreground:  #6b1702;
   --sidebar-border:             rgba(139, 46, 22, 0.12);
   --sidebar-ring:               #6b1702;
+
+  /* --- Tokens Arce extendidos --- */
+  --avatar-a:               #2d3f4e;
+  --avatar-b:               #2e4038;
+  --green:                  #7fd3a0;
+  --green-dim:              rgba(127,211,160,0.12);
+  --mustard:                #ffdea8;
+  --mustard-dim:            rgba(253,222,168,0.15);
+  --income:                 #6ee7a0;
+  --income-dim:             rgba(110,231,160,0.12);
+  --expense:                var(--destructive);
+  --neutral:                #8899ee;
+  --neutral-dim:            rgba(100,130,220,0.12);
+  --primary-dim:            rgba(255,180,162,0.12);
+  --border-accent:          rgba(255,180,162,0.2);
+  --destructive-dim:        rgba(255,180,171,0.12);
+  --text-dim:               rgba(200,200,204,0.4);
+  --status-available:       #ffdea8;
+  --status-available-dim:   rgba(253,222,168,0.15);
+  --status-rented:          #8dcf95;
+  --status-rented-dim:      rgba(141,207,149,0.12);
+  --status-maintenance:     #fdba74;
+  --status-maintenance-dim: rgba(253,186,116,0.12);
+  --status-reserved:        #93c5fd;
+  --status-reserved-dim:    rgba(147,197,253,0.12);
+  --border-subtle:          rgba(255,255,255,0.02);
+  --primary-subtle:         rgba(255,180,162,0.05);
+  --gradient-property:      linear-gradient(135deg, #1a2a1a, #2a4a2a);
+  --gradient-owner:         linear-gradient(135deg, #1a2a30, #1a4060);
 }
 
 .dark {
@@ -159,6 +211,35 @@
   --sidebar-accent-foreground:  #ffb4a2;
   --sidebar-border:             rgba(221, 192, 185, 0.15);
   --sidebar-ring:               #ffb4a2;
+
+  /* --- Tokens Arce extendidos (oscuro) --- */
+  --avatar-a:               #2d3f4e;
+  --avatar-b:               #2e4038;
+  --green:                  #7fd3a0;
+  --green-dim:              rgba(127,211,160,0.12);
+  --mustard:                #ffdea8;
+  --mustard-dim:            rgba(253,222,168,0.15);
+  --income:                 #6ee7a0;
+  --income-dim:             rgba(110,231,160,0.12);
+  --expense:                var(--destructive);
+  --neutral:                #8899ee;
+  --neutral-dim:            rgba(100,130,220,0.12);
+  --primary-dim:            rgba(255,180,162,0.12);
+  --border-accent:          rgba(255,180,162,0.2);
+  --destructive-dim:        rgba(255,180,171,0.12);
+  --text-dim:               rgba(200,200,204,0.4);
+  --status-available:       #ffdea8;
+  --status-available-dim:   rgba(253,222,168,0.15);
+  --status-rented:          #8dcf95;
+  --status-rented-dim:      rgba(141,207,149,0.12);
+  --status-maintenance:     #fdba74;
+  --status-maintenance-dim: rgba(253,186,116,0.12);
+  --status-reserved:        #93c5fd;
+  --status-reserved-dim:    rgba(147,197,253,0.12);
+  --border-subtle:          rgba(255,255,255,0.02);
+  --primary-subtle:         rgba(255,180,162,0.05);
+  --gradient-property:      linear-gradient(135deg, #1a2a1a, #2a4a2a);
+  --gradient-owner:         linear-gradient(135deg, #1a2a30, #1a4060);
 }
 
 @layer base {

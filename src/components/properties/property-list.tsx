@@ -98,45 +98,45 @@ const STATUS_CONFIG: Record<
 > = {
   available: {
     label: "Disponible",
-    bg: "rgba(253,222,168,0.15)",
-    textColor: "#ffdea8",
-    dot: "#ffdea8",
-    borderLeft: "#ffdea8",
+    bg: "var(--status-available-dim)",
+    textColor: "var(--status-available)",
+    dot: "var(--status-available)",
+    borderLeft: "var(--status-available)",
   },
   rented: {
     label: "Alquilada",
-    bg: "rgba(141,207,149,0.12)",
-    textColor: "#8dcf95",
-    dot: "#8dcf95",
+    bg: "var(--status-rented-dim)",
+    textColor: "var(--status-rented)",
+    dot: "var(--status-rented)",
   },
   reserved: {
     label: "Reservada",
-    bg: "rgba(147,197,253,0.12)",
-    textColor: "#93c5fd",
-    dot: "#93c5fd",
+    bg: "var(--status-reserved-dim)",
+    textColor: "var(--status-reserved)",
+    dot: "var(--status-reserved)",
   },
   maintenance: {
     label: "Mantenimiento",
-    bg: "rgba(253,186,116,0.12)",
-    textColor: "#fdba74",
-    dot: "#fdba74",
-    borderLeft: "#fdba74",
+    bg: "var(--status-maintenance-dim)",
+    textColor: "var(--status-maintenance)",
+    dot: "var(--status-maintenance)",
+    borderLeft: "var(--status-maintenance)",
   },
   sold: {
     label: "Vendida",
-    bg: "rgba(255,180,171,0.12)",
-    textColor: "#ffb4ab",
-    dot: "#ffb4ab",
+    bg: "var(--destructive-dim)",
+    textColor: "var(--destructive)",
+    dot: "var(--destructive)",
   },
 };
 
 /** Colores activos para cada chip de filtro */
 const FILTER_TABS = [
-  { value: "", label: "Todos", activeBg: "var(--color-arce-primary)", activeColor: "var(--color-arce-on-primary)" },
-  { value: "rented", label: "Alquiladas", activeBg: "rgba(141,207,149,0.2)", activeColor: "#8dcf95" },
-  { value: "available", label: "Disponibles", activeBg: "rgba(253,222,168,0.2)", activeColor: "#ffdea8" },
-  { value: "reserved", label: "Reservadas", activeBg: "rgba(147,197,253,0.2)", activeColor: "#93c5fd" },
-  { value: "maintenance", label: "Mantenimiento", activeBg: "rgba(253,186,116,0.2)", activeColor: "#fdba74" },
+  { value: "", label: "Todos", activeBg: "var(--primary)", activeColor: "var(--primary-foreground)" },
+  { value: "rented", label: "Alquiladas", activeBg: "var(--status-rented-dim)", activeColor: "var(--status-rented)" },
+  { value: "available", label: "Disponibles", activeBg: "var(--status-available-dim)", activeColor: "var(--status-available)" },
+  { value: "reserved", label: "Reservadas", activeBg: "var(--status-reserved-dim)", activeColor: "var(--status-reserved)" },
+  { value: "maintenance", label: "Mantenimiento", activeBg: "var(--status-maintenance-dim)", activeColor: "var(--status-maintenance)" },
 ];
 
 function getOwnerInitials(firstName: string | null, lastName: string | null) {
@@ -205,10 +205,10 @@ function StatusBadge({ status }: { status: string }) {
 function OwnerAvatar({ firstName, lastName }: { firstName: string | null; lastName: string | null }) {
   return (
     <span
-      className="inline-flex items-center justify-center w-7 h-7 flex-shrink-0 text-[10px] font-extrabold font-arce-brand rounded-sm"
+      className="inline-flex items-center justify-center w-7 h-7 flex-shrink-0 text-[10px] font-extrabold font-brand rounded-sm"
       style={{
-        background: "var(--color-arce-primary-container)",
-        color: "var(--color-arce-on-primary-fixed)",
+        background: "var(--primary-dim)",
+        color: "var(--primary)",
       }}
     >
       {getOwnerInitials(firstName, lastName)}
@@ -242,17 +242,17 @@ function KpiCard({
     >
       <p
         className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3"
-        style={{ color: "var(--color-arce-secondary-text)" }}
+        style={{ color: "var(--muted-foreground)" }}
       >
         {label}
       </p>
       <p
-        className="text-4xl font-bold leading-none mb-1 tabular-nums font-arce-headline"
+        className="text-4xl font-bold leading-none mb-1 tabular-nums font-headline"
         style={{ color: valueColor }}
       >
         {value}
       </p>
-      <p className="text-[11px]" style={{ color: "var(--color-arce-secondary-text)" }}>
+      <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
         {sub}
       </p>
     </div>
@@ -276,8 +276,8 @@ function PaginationBtn({
       disabled={disabled}
       className="w-7 h-7 flex items-center justify-center text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed rounded-sm"
       style={{
-        background: active ? "var(--color-arce-primary)" : "var(--color-arce-surface-container)",
-        color: active ? "var(--color-arce-on-primary)" : "var(--color-arce-on-surface)",
+        background: active ? "var(--primary)" : "var(--muted)",
+        color: active ? "var(--primary-foreground)" : "var(--foreground)",
       }}
     >
       {children}
@@ -291,7 +291,7 @@ function ContratoCell({ prop }: { prop: PropertyRow }) {
     return (
       <span
         className="text-[11px] italic"
-        style={{ color: "var(--color-arce-outline)" }}
+        style={{ color: "var(--muted-foreground)" }}
       >
         Sin contrato activo
       </span>
@@ -303,10 +303,10 @@ function ContratoCell({ prop }: { prop: PropertyRow }) {
   if (isPending) {
     return (
       <div className="flex flex-col gap-0.5">
-        <span className="font-mono text-[11px] font-bold" style={{ color: "#93c5fd" }}>
+        <span className="font-mono text-[11px] font-bold" style={{ color: "var(--status-reserved)" }}>
           {prop.contractNumber}
         </span>
-        <span className="text-[10px]" style={{ color: "var(--color-arce-secondary-text)" }}>
+        <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
           Pend. firma{prop.contractEndDate ? ` · Inicio ${formatDate(prop.contractEndDate)}` : ""}
         </span>
       </div>
@@ -321,14 +321,14 @@ function ContratoCell({ prop }: { prop: PropertyRow }) {
     <div className="flex flex-col gap-0.5">
       <span
         className="font-mono text-[11px] font-bold"
-        style={{ color: "var(--color-arce-primary)" }}
+        style={{ color: "var(--primary)" }}
       >
         {prop.contractNumber}
       </span>
       {prop.contractEndDate && (
         <span
           className="text-[10px] font-semibold"
-          style={{ color: isExpiringSoon ? "#ffdea8" : "var(--color-arce-secondary-text)" }}
+          style={{ color: isExpiringSoon ? "var(--status-available)" : "var(--muted-foreground)" }}
         >
           {isExpiringSoon ? `⚠ Vence en ${days} días` : `Vence ${formatDate(prop.contractEndDate)}`}
         </span>
@@ -346,18 +346,18 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
       className="grid px-4 py-3 cursor-pointer transition-colors group"
       style={{
         gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 130px 60px 64px",
-        background: even ? "rgba(40,42,44,0.45)" : "var(--color-arce-surface-lowest)",
+        background: even ? "rgba(40,42,44,0.45)" : "var(--background)",
         borderBottom: "1px solid rgba(160,132,126,0.07)",
         borderLeft: cfg?.borderLeft ? `2px solid ${cfg.borderLeft}` : "2px solid transparent",
       }}
       onClick={onClick}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "rgba(255,180,162,0.06)";
+        (e.currentTarget as HTMLElement).style.background = "var(--primary-subtle)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLElement).style.background = even
           ? "rgba(40,42,44,0.45)"
-          : "var(--color-arce-surface-lowest)";
+          : "var(--background)";
       }}
     >
       {/* Propiedad */}
@@ -365,22 +365,22 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
         <span
           className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-sm"
           style={{
-            background: "var(--color-arce-surface-container)",
-            color: "var(--color-arce-secondary-text)",
+            background: "var(--muted)",
+            color: "var(--muted-foreground)",
           }}
         >
           {TYPE_ICON[prop.type] ?? <Building2 size={16} />}
         </span>
         <div className="min-w-0">
           <p
-            className="text-[13px] font-semibold leading-snug truncate font-arce-headline"
-            style={{ color: "var(--color-arce-on-surface)" }}
+            className="text-[13px] font-semibold leading-snug truncate font-headline"
+            style={{ color: "var(--foreground)" }}
           >
             {prop.title || prop.address}
           </p>
           <p
             className="text-[11px] leading-none mt-0.5 truncate"
-            style={{ color: "var(--color-arce-secondary-text)" }}
+            style={{ color: "var(--muted-foreground)" }}
           >
             {buildSubtitle(prop)}
           </p>
@@ -392,7 +392,7 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
         <OwnerAvatar firstName={prop.ownerFirstName} lastName={prop.ownerLastName} />
         <span
           className="text-[12px] font-medium truncate"
-          style={{ color: "var(--color-arce-on-surface)" }}
+          style={{ color: "var(--foreground)" }}
         >
           {prop.ownerLastName && prop.ownerFirstName
             ? `${prop.ownerLastName}, ${prop.ownerFirstName}`
@@ -412,7 +412,7 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
 
       {/* Tareas — placeholder hasta que exista el módulo */}
       <div className="flex items-center justify-center">
-        <span className="text-[12px]" style={{ color: "var(--color-arce-outline)" }}>—</span>
+        <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>—</span>
       </div>
 
       {/* Acción — visible en hover */}
@@ -420,8 +420,8 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
         <span
           className="text-[11px] font-bold flex items-center gap-1 px-2 py-1 rounded"
           style={{
-            color: "var(--color-arce-primary)",
-            background: "var(--color-arce-primary-dim)",
+            color: "var(--primary)",
+            background: "var(--primary-dim)",
           }}
         >
           Ver <ArrowRight size={12} />
@@ -535,21 +535,21 @@ function PropertyListContent() {
     : 0;
 
   return (
-    <div className="flex flex-col min-h-full" style={{ background: "var(--color-arce-background)" }}>
+    <div className="flex flex-col min-h-full" style={{ background: "var(--background)" }}>
 
       {/* Modal — Nueva propiedad */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
           className="max-w-lg p-0 gap-0 border-white/10 overflow-hidden"
-          style={{ background: "#1a1d1e" }}
+          style={{ background: "var(--card)" }}
         >
           <DialogHeader className="px-6 pt-6 pb-2 border-b border-white/5">
             <div className="flex items-start justify-between">
               <div>
-                <DialogTitle className="text-xl font-bold text-white font-arce-headline">
+                <DialogTitle className="text-xl font-bold text-white font-headline">
                   Nueva propiedad
                 </DialogTitle>
-                <p className="text-[12px] text-gray-400 mt-1">
+                <p className="text-[12px] text-muted-foreground mt-1">
                   Los campos con <span className="text-[#ffb4a2]">*</span> son obligatorios.
                 </p>
               </div>
@@ -570,12 +570,12 @@ function PropertyListContent() {
         <div className="flex items-start justify-between">
           <div>
             <h1
-              className="text-[28px] font-bold tracking-tight leading-none mb-1 font-arce-headline"
-              style={{ color: "var(--color-arce-on-surface)" }}
+              className="text-[28px] font-bold tracking-tight leading-none mb-1 font-headline"
+              style={{ color: "var(--foreground)" }}
             >
               Propiedades
             </h1>
-            <p className="text-[13px]" style={{ color: "var(--color-arce-secondary-text)" }}>
+            <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
               Portfolio completo en administración
             </p>
           </div>
@@ -585,8 +585,8 @@ function PropertyListContent() {
             onClick={() => setDialogOpen(true)}
             className="inline-flex items-center gap-2.5 px-6 py-3 text-[13px] font-bold rounded-xl transition-all cursor-pointer border-none shadow-lg"
             style={{
-              background: "var(--color-arce-primary)",
-              color: "var(--color-arce-on-primary)",
+              background: "var(--primary)",
+              color: "var(--primary-foreground)",
               boxShadow: "0 4px 14px rgba(255,180,162,0.25)",
             }}
             onMouseEnter={(e) => {
@@ -609,33 +609,33 @@ function PropertyListContent() {
             label="Total"
             value={counts?.total ?? 0}
             sub="propiedades en cartera"
-            valueColor="var(--color-arce-primary)"
+            valueColor="var(--primary)"
             borderColor="rgba(255,180,162,0.2)"
-            bgGradient="linear-gradient(135deg, var(--color-arce-surface-lowest) 0%, rgba(107,23,2,0.08) 100%)"
+            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(107,23,2,0.08) 100%)"
           />
           <KpiCard
             label="Alquiladas"
             value={counts?.rented ?? 0}
             sub={`${occupancyPct}% de ocupación`}
-            valueColor="#8dcf95"
+            valueColor="var(--status-rented)"
             borderColor="rgba(141,207,149,0.2)"
-            bgGradient="linear-gradient(135deg, var(--color-arce-surface-lowest) 0%, rgba(141,207,149,0.06) 100%)"
+            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(141,207,149,0.06) 100%)"
           />
           <KpiCard
             label="Disponibles"
             value={counts?.available ?? 0}
             sub="sin contrato activo"
-            valueColor="#ffdea8"
+            valueColor="var(--status-available)"
             borderColor="rgba(253,222,168,0.2)"
-            bgGradient="linear-gradient(135deg, var(--color-arce-surface-lowest) 0%, rgba(253,222,168,0.06) 100%)"
+            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(253,222,168,0.06) 100%)"
           />
           <KpiCard
             label="Mantenimiento"
             value={counts?.maintenance ?? 0}
             sub="fuera de disponibilidad"
-            valueColor="#fdba74"
+            valueColor="var(--status-maintenance)"
             borderColor="rgba(253,186,116,0.2)"
-            bgGradient="linear-gradient(135deg, var(--color-arce-surface-lowest) 0%, rgba(253,186,116,0.06) 100%)"
+            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(253,186,116,0.06) 100%)"
           />
         </div>
       </div>
@@ -645,26 +645,26 @@ function PropertyListContent() {
         {/* Búsqueda */}
         <div
           className="relative flex-1 min-w-[200px] max-w-md"
-          style={{ background: "var(--color-arce-surface-container)", borderRadius: "8px" }}
+          style={{ background: "var(--muted)", borderRadius: "8px" }}
         >
           <Search
             size={14}
             className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ color: "var(--color-arce-secondary-text)" }}
+            style={{ color: "var(--muted-foreground)" }}
           />
           <input
             type="text"
             placeholder="Buscar por dirección, propietario, barrio…"
             value={searchInput}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-[13px] bg-transparent outline-none border-none font-arce-body rounded-lg"
-            style={{ color: "var(--color-arce-on-surface)" }}
+            className="w-full pl-9 pr-4 py-2.5 text-[13px] bg-transparent outline-none border-none rounded-lg"
+            style={{ color: "var(--foreground)" }}
           />
           {searchInput && (
             <button
               className="absolute right-3 top-1/2 -translate-y-1/2"
               onClick={() => handleSearch("")}
-              style={{ color: "var(--color-arce-secondary-text)" }}
+              style={{ color: "var(--muted-foreground)" }}
             >
               <X size={13} />
             </button>
@@ -682,7 +682,7 @@ function PropertyListContent() {
                 className="px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.07em] transition-all border rounded-full cursor-pointer"
                 style={{
                   background: isActive ? tab.activeBg : "transparent",
-                  color: isActive ? tab.activeColor : "var(--color-arce-secondary-text)",
+                  color: isActive ? tab.activeColor : "var(--muted-foreground)",
                   borderColor: isActive ? tab.activeColor + "40" : "rgba(160,132,126,0.15)",
                 }}
               >
@@ -697,11 +697,11 @@ function PropertyListContent() {
       <div className="px-8 mb-4">
         <div
           className="flex items-center gap-3 px-4 py-2.5 rounded-lg"
-          style={{ background: "var(--color-arce-surface-container)", border: "1px solid rgba(160,132,126,0.08)" }}
+          style={{ background: "var(--muted)", border: "1px solid rgba(160,132,126,0.08)" }}
         >
           <span
             className="text-[10px] font-bold uppercase tracking-[0.1em] flex-shrink-0"
-            style={{ color: "var(--color-arce-secondary-text)" }}
+            style={{ color: "var(--muted-foreground)" }}
           >
             Barrio:
           </span>
@@ -710,15 +710,15 @@ function PropertyListContent() {
             placeholder="Filtrar por barrio o zona…"
             value={zoneInput}
             onChange={(e) => handleZoneFilter(e.target.value)}
-            className="flex-1 text-[12px] bg-transparent outline-none border-none font-arce-body"
-            style={{ color: "var(--color-arce-on-surface)" }}
+            className="flex-1 text-[12px] bg-transparent outline-none border-none"
+            style={{ color: "var(--foreground)" }}
           />
           {zoneInput && (
-            <button onClick={() => handleZoneFilter("")} style={{ color: "var(--color-arce-secondary-text)" }}>
+            <button onClick={() => handleZoneFilter("")} style={{ color: "var(--muted-foreground)" }}>
               <X size={13} />
             </button>
           )}
-          <span className="text-[10px] ml-auto flex-shrink-0" style={{ color: "var(--color-arce-outline)" }}>
+          <span className="text-[10px] ml-auto flex-shrink-0" style={{ color: "var(--muted-foreground)" }}>
             Filtro por zona
           </span>
         </div>
@@ -729,17 +729,17 @@ function PropertyListContent() {
         {/* Table label + count */}
         <div
           className="flex items-center justify-between px-4 py-2"
-          style={{ background: "var(--color-arce-surface-low)" }}
+          style={{ background: "var(--muted)" }}
         >
           <div className="flex items-center gap-3">
             <span
               className="text-[10px] font-bold uppercase tracking-[0.14em]"
-              style={{ color: "var(--color-arce-secondary-text)" }}
+              style={{ color: "var(--muted-foreground)" }}
             >
               Propiedades
             </span>
             {pagination && (
-              <span className="text-[10px]" style={{ color: "var(--color-arce-outline)" }}>
+              <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
                 {pagination.total} {pagination.total === 1 ? "propiedad" : "propiedades"}
               </span>
             )}
@@ -751,8 +751,8 @@ function PropertyListContent() {
           className="grid text-[10px] font-bold uppercase tracking-[0.12em] px-4 py-3"
           style={{
             gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 130px 60px 64px",
-            color: "var(--color-arce-secondary-text)",
-            background: "var(--color-arce-surface-low)",
+            color: "var(--muted-foreground)",
+            background: "var(--muted)",
             borderBottom: "1px solid rgba(160,132,126,0.12)",
           }}
         >
@@ -768,12 +768,12 @@ function PropertyListContent() {
         {isLoading && (
           <div
             className="flex items-center justify-center py-20"
-            style={{ background: "var(--color-arce-surface-lowest)" }}
+            style={{ background: "var(--background)" }}
           >
             <Loader2
               size={28}
               className="animate-spin"
-              style={{ color: "var(--color-arce-secondary-text)" }}
+              style={{ color: "var(--muted-foreground)" }}
             />
           </div>
         )}
@@ -782,17 +782,17 @@ function PropertyListContent() {
         {error && !isLoading && (
           <div
             className="flex flex-col items-center gap-3 py-16"
-            style={{ background: "var(--color-arce-surface-lowest)" }}
+            style={{ background: "var(--background)" }}
           >
-            <p className="text-sm" style={{ color: "var(--color-arce-error)" }}>
+            <p className="text-sm" style={{ color: "var(--destructive)" }}>
               {(error as Error).message}
             </p>
             <button
               onClick={() => refetch()}
               className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest rounded"
               style={{
-                background: "var(--color-arce-surface-container)",
-                color: "var(--color-arce-on-surface)",
+                background: "var(--muted)",
+                color: "var(--foreground)",
               }}
             >
               Reintentar
@@ -804,9 +804,9 @@ function PropertyListContent() {
         {!isLoading && !error && properties.length === 0 && (
           <div
             className="py-20 text-center"
-            style={{ background: "var(--color-arce-surface-lowest)" }}
+            style={{ background: "var(--background)" }}
           >
-            <p className="text-sm" style={{ color: "var(--color-arce-secondary-text)" }}>
+            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
               No se encontraron propiedades.
             </p>
           </div>
@@ -829,11 +829,11 @@ function PropertyListContent() {
           <div
             className="flex items-center justify-between px-4 py-3"
             style={{
-              background: "var(--color-arce-surface-lowest)",
+              background: "var(--background)",
               borderTop: "1px solid rgba(160,132,126,0.1)",
             }}
           >
-            <p className="text-[11px]" style={{ color: "var(--color-arce-secondary-text)" }}>
+            <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
               Mostrando{" "}
               {pagination.total === 0
                 ? "0"
@@ -857,7 +857,7 @@ function PropertyListContent() {
                     <span
                       key={`e-${idx}`}
                       className="px-2 text-[12px]"
-                      style={{ color: "var(--color-arce-secondary-text)" }}
+                      style={{ color: "var(--muted-foreground)" }}
                     >
                       …
                     </span>
@@ -897,7 +897,7 @@ export function PropertyList() {
         <div className="flex h-64 items-center justify-center">
           <Loader2
             className="animate-spin"
-            style={{ color: "var(--color-arce-secondary-text)" }}
+            style={{ color: "var(--muted-foreground)" }}
           />
         </div>
       }

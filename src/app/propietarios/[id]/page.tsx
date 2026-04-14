@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { PropietarioCompletitudBar } from "@/components/propietarios/propietario-completitud-bar";
 import { PropietarioTabDatos } from "@/components/propietarios/propietario-tab-datos";
 import { PropietarioTabCuentaCorriente } from "@/components/propietarios/propietario-tab-cuenta-corriente";
@@ -159,22 +160,21 @@ export default function PropietarioFichaPage() {
                       ? `${propietario.firstName} ${propietario.lastName}`
                       : propietario.firstName}
                   </h1>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-[0.6rem] font-bold rounded-full ${
+                  <StatusBadge
+                    variant={
                       propietario.status === "activo"
-                        ? "bg-[rgba(127,211,160,0.12)] text-[#7fd3a0]"
+                        ? "green"
                         : propietario.status === "suspendido"
-                        ? "bg-[rgba(253,222,168,0.15)] text-[#ffdea8]"
-                        : "bg-[#333537] text-[#6b6d70]"
-                    }`}
+                        ? "mustard"
+                        : "muted"
+                    }
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-current block" />
                     {propietario.status === "activo"
                       ? "Activo"
                       : propietario.status === "suspendido"
                       ? "Suspendido"
                       : "Baja"}
-                  </span>
+                  </StatusBadge>
                   {propietario.dni && (
                     <span className="text-[0.72rem] text-[#6b6d70]">
                       DNI {propietario.dni}

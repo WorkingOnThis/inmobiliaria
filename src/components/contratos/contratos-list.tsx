@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { ClientPagination } from "@/components/clients/client-pagination";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -36,19 +36,19 @@ const STATUS_FILTERS = [
   { value: "terminated", label: "Rescindidos" },
 ];
 
-function statusBadgeVariant(
-  status: string
-): "default" | "secondary" | "destructive" | "outline" {
+function statusBadgeVariant(status: string): StatusBadgeVariant {
   switch (status) {
     case "active":
-      return "default";
+      return "green";
     case "expiring_soon":
-      return "outline";
+      return "blue";
+    case "draft":
+      return "mustard";
     case "terminated":
     case "expired":
-      return "destructive";
+      return "red";
     default:
-      return "secondary";
+      return "muted";
   }
 }
 
@@ -282,10 +282,10 @@ export function ContratosList() {
                           })}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={statusBadgeVariant(c.status)}>
+                          <StatusBadge variant={statusBadgeVariant(c.status)}>
                             {CONTRACT_STATUS_LABELS[c.status as ContractStatus] ||
                               c.status}
-                          </Badge>
+                          </StatusBadge>
                         </TableCell>
                       </TableRow>
                     )

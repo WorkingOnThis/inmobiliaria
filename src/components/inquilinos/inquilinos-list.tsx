@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -74,14 +74,14 @@ interface InquilinosResponse {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
-  "bg-blue-500",
-  "bg-emerald-500",
-  "bg-violet-500",
-  "bg-orange-500",
-  "bg-rose-500",
-  "bg-cyan-500",
-  "bg-amber-500",
-  "bg-indigo-500",
+  "bg-avatar-a",
+  "bg-avatar-b",
+  "bg-neutral",
+  "bg-income",
+  "bg-destructive",
+  "bg-status-reserved",
+  "bg-mustard",
+  "bg-primary",
 ];
 
 function getAvatarColor(name: string): string {
@@ -112,49 +112,35 @@ function EstadoBadge({
   diasMora: number;
 }) {
   if (estado === "activo") {
-    return (
-      <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200">
-        Activo
-      </Badge>
-    );
+    return <StatusBadge variant="green">Activo</StatusBadge>;
   }
   if (estado === "en_mora") {
     return (
       <div className="flex flex-col items-start gap-1">
-        <span className="flex items-center gap-1 text-xs text-orange-600 font-medium">
+        <span className="flex items-center gap-1 text-xs text-mustard font-medium">
           <AlertTriangle className="h-3 w-3" />
           {diasMora} días de mora
         </span>
-        <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">
-          En mora
-        </Badge>
+        <StatusBadge variant="red">En mora</StatusBadge>
       </div>
     );
   }
   if (estado === "por_vencer") {
-    return (
-      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200">
-        Por vencer
-      </Badge>
-    );
+    return <StatusBadge variant="mustard">Por vencer</StatusBadge>;
   }
-  return (
-    <Badge className="bg-gray-100 text-gray-600 hover:bg-gray-100 border-gray-200">
-      Sin contrato
-    </Badge>
-  );
+  return <StatusBadge variant="muted">Sin contrato</StatusBadge>;
 }
 
 function ProgressBar({ value }: { value: number }) {
   const color =
     value >= 90
-      ? "bg-rose-400"
+      ? "bg-destructive"
       : value >= 70
-        ? "bg-amber-400"
-        : "bg-blue-500";
+        ? "bg-mustard"
+        : "bg-neutral";
   return (
     <div className="flex items-center gap-2 min-w-[100px]">
-      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
         <div
           className={cn("h-full rounded-full transition-all", color)}
           style={{ width: `${value}%` }}
@@ -334,14 +320,14 @@ export function InquilinosList() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 En mora
               </p>
-              <p className="mt-1 text-3xl font-bold text-orange-600">
+              <p className="mt-1 text-3xl font-bold text-mustard">
                 {isLoading ? "—" : (stats?.enMora ?? 0)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 con pagos atrasados
               </p>
             </div>
-            <AlertCircle className="h-5 w-5 text-orange-400" />
+            <AlertCircle className="h-5 w-5 text-mustard" />
           </div>
         </div>
 
@@ -352,14 +338,14 @@ export function InquilinosList() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Contrato por vencer
               </p>
-              <p className="mt-1 text-3xl font-bold text-amber-600">
+              <p className="mt-1 text-3xl font-bold text-mustard">
                 {isLoading ? "—" : (stats?.porVencer ?? 0)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 vencen en ≤ 90 días
               </p>
             </div>
-            <Clock className="h-5 w-5 text-amber-400" />
+            <Clock className="h-5 w-5 text-mustard" />
           </div>
         </div>
 

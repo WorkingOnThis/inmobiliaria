@@ -255,51 +255,51 @@ export function PropietarioTabCuentaCorriente({
   };
 
   const inputClass =
-    "w-full bg-[#222527] border border-white/[0.07] rounded-[12px] text-[#e1e2e4] text-[0.82rem] px-3 py-2 outline-none focus:border-[rgba(255,180,162,0.2)] focus:bg-[#282a2c] transition-all placeholder:text-[#6b6d70]";
+    "w-full bg-muted border border-border rounded-[12px] text-foreground text-[0.82rem] px-3 py-2 outline-none focus:border-border-accent focus:bg-muted transition-all placeholder:text-muted-foreground";
   const labelClass =
-    "text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#a8a9ac] mb-0.5 block";
+    "text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-0.5 block";
 
   return (
     <div className="p-7 flex flex-col gap-5 pb-20 relative">
       {/* KPIs */}
       {data && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-[#191c1e] border border-white/[0.07] rounded-[18px] p-4">
-            <div className="text-[0.62rem] font-semibold text-[#6b6d70] uppercase tracking-[0.08em] mb-1">
+          <div className="bg-card border border-border rounded-[18px] p-4">
+            <div className="text-[0.62rem] font-semibold text-muted-foreground uppercase tracking-[0.08em] mb-1">
               Liquidado acumulado · {new Date().getFullYear()}
             </div>
-            <div className="text-[1.4rem] font-bold text-[#e1e2e4] font-[Space_Grotesk]">
+            <div className="text-[1.4rem] font-bold text-foreground font-headline">
               {formatMoney(data.kpis.liquidadoAcumulado)}
             </div>
-            <div className="text-[0.65rem] text-[#6b6d70] mt-0.5">Total enviado al propietario</div>
+            <div className="text-[0.65rem] text-muted-foreground mt-0.5">Total enviado al propietario</div>
           </div>
-          <div className="bg-[#191c1e] border border-white/[0.07] rounded-[18px] p-4">
-            <div className="text-[0.62rem] font-semibold text-[#6b6d70] uppercase tracking-[0.08em] mb-1">
+          <div className="bg-card border border-border rounded-[18px] p-4">
+            <div className="text-[0.62rem] font-semibold text-muted-foreground uppercase tracking-[0.08em] mb-1">
               Próxima liquidación estimada
             </div>
-            <div className="text-[1.4rem] font-bold text-[#e1e2e4] font-[Space_Grotesk]">
+            <div className="text-[1.4rem] font-bold text-foreground font-headline">
               {formatMoney(data.kpis.proximaLiquidacionEstimada)}
             </div>
-            <div className="text-[0.65rem] text-[#6b6d70] mt-0.5">Ingresos pendientes de liquidar</div>
+            <div className="text-[0.65rem] text-muted-foreground mt-0.5">Ingresos pendientes de liquidar</div>
           </div>
           <div
             className={`border rounded-[18px] p-4 ${
               data.kpis.pendienteConfirmar > 0
-                ? "bg-[rgba(253,222,168,0.06)] border-[rgba(253,222,168,0.15)]"
-                : "bg-[#191c1e] border-white/[0.07]"
+                ? "bg-mustard/[0.06] border-mustard/20"
+                : "bg-card border-border"
             }`}
           >
-            <div className="text-[0.62rem] font-semibold text-[#6b6d70] uppercase tracking-[0.08em] mb-1">
+            <div className="text-[0.62rem] font-semibold text-muted-foreground uppercase tracking-[0.08em] mb-1">
               ⏳ Pendiente de confirmar
             </div>
             <div
-              className={`text-[1.4rem] font-bold font-[Space_Grotesk] ${
-                data.kpis.pendienteConfirmar > 0 ? "text-[#ffdea8]" : "text-[#e1e2e4]"
+              className={`text-[1.4rem] font-bold font-headline ${
+                data.kpis.pendienteConfirmar > 0 ? "text-mustard" : "text-foreground"
               }`}
             >
               {formatMoney(data.kpis.pendienteConfirmar)}
             </div>
-            <div className="text-[0.65rem] text-[#6b6d70] mt-0.5">
+            <div className="text-[0.65rem] text-muted-foreground mt-0.5">
               Transferencias sin confirmar · Modalidad B
             </div>
           </div>
@@ -307,30 +307,30 @@ export function PropietarioTabCuentaCorriente({
       )}
 
       {/* Tabla */}
-      <div className="bg-[#191c1e] border border-white/[0.07] rounded-[18px] overflow-hidden">
+      <div className="bg-card border border-border rounded-[18px] overflow-hidden">
         {/* Toolbar */}
-        <div className="px-5 py-3 flex items-center gap-3 border-b border-white/[0.07] flex-wrap">
-          <span className="text-[0.78rem] font-semibold text-[#e1e2e4]">Movimientos</span>
+        <div className="px-5 py-3 flex items-center gap-3 border-b border-border flex-wrap">
+          <span className="text-[0.78rem] font-semibold text-foreground">Movimientos</span>
           <div className="w-px h-4 bg-white/[0.07]" />
 
           {/* Selector de período */}
           <div className="flex items-center gap-1">
             <button
               onClick={handlePeriodoPrev}
-              className="w-6 h-6 flex items-center justify-center text-[#6b6d70] hover:text-[#e1e2e4] transition-colors"
+              className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
             >
               <ChevronLeft size={14} />
             </button>
             <button
               onClick={() => setPeriodoFiltro("")}
-              className="text-[0.72rem] font-semibold text-[#a8a9ac] hover:text-[#e1e2e4] transition-colors px-2 min-w-[120px] text-center"
+              className="text-[0.72rem] font-semibold text-muted-foreground hover:text-foreground transition-colors px-2 min-w-[120px] text-center"
             >
               {periodoLabel}
             </button>
             <button
               onClick={handlePeriodoNext}
               disabled={!periodoFiltro}
-              className="w-6 h-6 flex items-center justify-center text-[#6b6d70] hover:text-[#e1e2e4] transition-colors disabled:opacity-30"
+              className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
             >
               <ChevronRight size={14} />
             </button>
@@ -353,9 +353,9 @@ export function PropietarioTabCuentaCorriente({
                 onClick={() => setMovFilter(key)}
                 className={`px-2.5 py-1 text-[0.62rem] font-semibold rounded-[6px] transition-all ${
                   movFilter === key
-                    ? "bg-[rgba(255,180,162,0.12)] text-[#ffb4a2] border border-[rgba(255,180,162,0.2)]"
-                    : "text-[#6b6d70] hover:text-[#a8a9ac] border border-transparent"
-                } ${key === "confirmar" ? "text-[#a89000]" : ""}`}
+                    ? "bg-primary-dim text-primary border border-border-accent"
+                    : "text-muted-foreground hover:text-muted-foreground border border-transparent"
+                } ${key === "confirmar" ? "text-mustard" : ""}`}
               >
                 {label}
               </button>
@@ -363,7 +363,7 @@ export function PropietarioTabCuentaCorriente({
           </div>
 
           <div className="ml-auto">
-            <button className="text-[0.62rem] text-[#6b6d70] hover:text-[#a8a9ac] border border-white/[0.07] rounded-[6px] px-2 py-1 transition-all">
+            <button className="text-[0.62rem] text-muted-foreground hover:text-muted-foreground border border-border rounded-[6px] px-2 py-1 transition-all">
               ⬇ CSV
             </button>
           </div>
@@ -372,14 +372,14 @@ export function PropietarioTabCuentaCorriente({
         {/* Tabla de movimientos */}
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
-            <Loader2 size={24} className="animate-spin text-[#6b6d70]" />
+            <Loader2 size={24} className="animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-[#ffb4ab] text-sm">
+          <div className="p-8 text-center text-destructive text-sm">
             Error al cargar los movimientos
           </div>
         ) : movimientosFiltrados.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-[#6b6d70]">
+          <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
             <div className="text-sm">Sin movimientos en este período</div>
           </div>
         ) : (
@@ -388,19 +388,19 @@ export function PropietarioTabCuentaCorriente({
               <table className="w-full border-collapse text-[0.8rem]">
                 <thead>
                   <tr>
-                    <th className="px-4 py-2.5 text-left text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] bg-[#1d2022] w-[34%]">
+                    <th className="px-4 py-2.5 text-left text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground bg-card w-[34%]">
                       Concepto
                     </th>
-                    <th className="px-4 py-2.5 text-left text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] bg-[#1d2022] w-[14%]">
+                    <th className="px-4 py-2.5 text-left text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground bg-card w-[14%]">
                       Propiedad
                     </th>
-                    <th className="px-4 py-2.5 text-left text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] bg-[#1d2022] w-[10%]">
+                    <th className="px-4 py-2.5 text-left text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground bg-card w-[10%]">
                       Fecha
                     </th>
-                    <th className="px-4 py-2.5 text-left text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] bg-[#1d2022] w-[12%]">
+                    <th className="px-4 py-2.5 text-left text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground bg-card w-[12%]">
                       Origen
                     </th>
-                    <th className="px-4 py-2.5 text-right text-[0.6rem] font-bold uppercase tracking-[0.12em] text-[#6b6d70] bg-[#1d2022] w-[14%]">
+                    <th className="px-4 py-2.5 text-right text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground bg-card w-[14%]">
                       Monto
                     </th>
                   </tr>
@@ -409,14 +409,14 @@ export function PropietarioTabCuentaCorriente({
                   {gruposOrdenados.map(([periodo, items]) => (
                     <React.Fragment key={periodo}>
                       {/* Header de grupo */}
-                      <tr className="bg-[#1d2022]">
+                      <tr className="bg-card">
                         <td colSpan={4} className="px-4 py-2">
-                          <span className="text-[0.72rem] font-bold text-[#a8a9ac]">
+                          <span className="text-[0.72rem] font-bold text-muted-foreground">
                             {periodo !== "sin-periodo" ? formatMonthYear(periodo) : "Sin período"}
                           </span>
                         </td>
                         <td className="px-4 py-2 text-right">
-                          <span className="text-[0.78rem] font-bold text-[#7fd3a0]">
+                          <span className="text-[0.78rem] font-bold text-green">
                             +
                             {formatMoney(
                               items
@@ -431,35 +431,35 @@ export function PropietarioTabCuentaCorriente({
                       {items.map((m, idx) => (
                         <tr
                           key={m.id}
-                          className={`transition-colors hover:bg-[rgba(255,255,255,0.02)] ${
+                          className={`transition-colors hover:bg-foreground/[0.02] ${
                             m.categoria === "pendiente_confirmacion"
-                              ? "bg-[rgba(253,222,168,0.04)]"
+                              ? "bg-mustard/[0.04]"
                               : idx % 2 === 1
-                              ? "bg-[rgba(255,255,255,0.01)]"
+                              ? "bg-foreground/[0.01]"
                               : ""
                           }`}
                         >
                           <td className="px-4 py-3 align-middle">
-                            <div className="font-medium text-[#e1e2e4]">{m.descripcion}</div>
+                            <div className="font-medium text-foreground">{m.descripcion}</div>
                             {m.categoria && m.categoria !== "pendiente_confirmacion" && (
-                              <div className="text-[0.65rem] text-[#6b6d70] mt-0.5">
+                              <div className="text-[0.65rem] text-muted-foreground mt-0.5">
                                 {m.categoria}
                               </div>
                             )}
                             {m.categoria === "pendiente_confirmacion" && (
-                              <div className="text-[0.65rem] text-[#ffdea8] mt-0.5">
+                              <div className="text-[0.65rem] text-mustard mt-0.5">
                                 ⏳ Pendiente de confirmación
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-3 align-middle text-[0.72rem] text-[#6b6d70]">
+                          <td className="px-4 py-3 align-middle text-[0.72rem] text-muted-foreground">
                             {m.propiedadAddress
                               ? m.propiedadAddress.length > 20
                                 ? m.propiedadAddress.slice(0, 20) + "…"
                                 : m.propiedadAddress
                               : "—"}
                           </td>
-                          <td className="px-4 py-3 align-middle text-[0.72rem] text-[#6b6d70]">
+                          <td className="px-4 py-3 align-middle text-[0.72rem] text-muted-foreground">
                             {m.fecha
                               ? format(new Date(m.fecha), "dd/MM/yyyy", { locale: es })
                               : "—"}
@@ -468,10 +468,10 @@ export function PropietarioTabCuentaCorriente({
                             <span
                               className={`inline-flex items-center px-2 py-0.5 text-[0.6rem] font-bold rounded-full ${
                                 m.origen === "liquidacion"
-                                  ? "bg-[rgba(127,211,160,0.12)] text-[#7fd3a0]"
+                                  ? "bg-green-dim text-green"
                                   : m.origen === "manual"
-                                  ? "bg-[#333537] text-[#a8a9ac]"
-                                  : "bg-[rgba(255,180,162,0.12)] text-[#ffb4a2]"
+                                  ? "bg-secondary text-muted-foreground"
+                                  : "bg-primary-dim text-primary"
                               }`}
                             >
                               {m.origen === "liquidacion"
@@ -482,8 +482,8 @@ export function PropietarioTabCuentaCorriente({
                             </span>
                           </td>
                           <td
-                            className={`px-4 py-3 align-middle text-right font-bold font-[Space_Grotesk] text-[0.9rem] ${
-                              m.tipo === "ingreso" ? "text-[#7fd3a0]" : "text-[#ffb4ab]"
+                            className={`px-4 py-3 align-middle text-right font-bold font-headline text-[0.9rem] ${
+                              m.tipo === "ingreso" ? "text-green" : "text-destructive"
                             }`}
                           >
                             {m.tipo === "ingreso" ? "+" : "−"}
@@ -498,35 +498,35 @@ export function PropietarioTabCuentaCorriente({
             </div>
 
             {/* Barra de totales */}
-            <div className="bg-[#1d2022] border-t border-white/[0.07] px-5 py-3 flex items-center justify-between">
-              <span className="text-[0.72rem] text-[#6b6d70]">
+            <div className="bg-card border-t border-border px-5 py-3 flex items-center justify-between">
+              <span className="text-[0.72rem] text-muted-foreground">
                 {movimientosFiltrados.length} movimiento
                 {movimientosFiltrados.length !== 1 ? "s" : ""}
               </span>
               <div className="flex gap-5">
                 <div className="text-right">
-                  <div className="text-[0.6rem] text-[#6b6d70] uppercase tracking-[0.08em]">
+                  <div className="text-[0.6rem] text-muted-foreground uppercase tracking-[0.08em]">
                     Ingresos
                   </div>
-                  <div className="text-[0.85rem] font-bold text-[#7fd3a0] font-[Space_Grotesk]">
+                  <div className="text-[0.85rem] font-bold text-green font-headline">
                     +{formatMoney(totalIngresos)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[0.6rem] text-[#6b6d70] uppercase tracking-[0.08em]">
+                  <div className="text-[0.6rem] text-muted-foreground uppercase tracking-[0.08em]">
                     Egresos
                   </div>
-                  <div className="text-[0.85rem] font-bold text-[#ffb4ab] font-[Space_Grotesk]">
+                  <div className="text-[0.85rem] font-bold text-destructive font-headline">
                     −{formatMoney(totalEgresos)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[0.6rem] text-[#6b6d70] uppercase tracking-[0.08em]">
+                  <div className="text-[0.6rem] text-muted-foreground uppercase tracking-[0.08em]">
                     Neto
                   </div>
                   <div
-                    className={`text-[0.85rem] font-bold font-[Space_Grotesk] ${
-                      totalIngresos - totalEgresos >= 0 ? "text-[#7fd3a0]" : "text-[#ffb4ab]"
+                    className={`text-[0.85rem] font-bold font-headline ${
+                      totalIngresos - totalEgresos >= 0 ? "text-green" : "text-destructive"
                     }`}
                   >
                     {totalIngresos - totalEgresos >= 0 ? "+" : ""}
@@ -548,7 +548,7 @@ export function PropietarioTabCuentaCorriente({
                 setFabAction("liquidacion");
                 setFabOpen(false);
               }}
-              className="flex items-center gap-2 bg-[#191c1e] border border-white/[0.07] rounded-[12px] px-4 py-2.5 text-[0.78rem] font-semibold text-[#e1e2e4] shadow-xl hover:border-[rgba(255,180,162,0.2)] hover:text-[#ffb4a2] transition-all whitespace-nowrap"
+              className="flex items-center gap-2 bg-card border border-border rounded-[12px] px-4 py-2.5 text-[0.78rem] font-semibold text-foreground shadow-xl hover:border-border-accent hover:text-primary transition-all whitespace-nowrap"
             >
               💸 Generar liquidación
             </button>
@@ -557,7 +557,7 @@ export function PropietarioTabCuentaCorriente({
                 setFabAction("movimiento");
                 setFabOpen(false);
               }}
-              className="flex items-center gap-2 bg-[#191c1e] border border-white/[0.07] rounded-[12px] px-4 py-2.5 text-[0.78rem] font-semibold text-[#e1e2e4] shadow-xl hover:border-[rgba(255,180,162,0.2)] hover:text-[#ffb4a2] transition-all whitespace-nowrap"
+              className="flex items-center gap-2 bg-card border border-border rounded-[12px] px-4 py-2.5 text-[0.78rem] font-semibold text-foreground shadow-xl hover:border-border-accent hover:text-primary transition-all whitespace-nowrap"
             >
               ➕ Agregar movimiento manual
             </button>
@@ -565,7 +565,7 @@ export function PropietarioTabCuentaCorriente({
         )}
         <button
           onClick={() => setFabOpen((o) => !o)}
-          className={`w-14 h-14 rounded-full bg-[#ffb4a2] text-[#561100] flex items-center justify-center shadow-[0_6px_24px_rgba(255,180,162,0.35)] hover:shadow-[0_8px_28px_rgba(255,180,162,0.5)] transition-all text-xl font-bold ${
+          className={`w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_6px_24px_rgba(255,180,162,0.35)] hover:shadow-[0_8px_28px_rgba(255,180,162,0.5)] transition-all text-xl font-bold ${
             fabOpen ? "rotate-45" : ""
           }`}
           style={{ transition: "transform 0.22s ease, box-shadow 0.2s ease" }}
@@ -577,19 +577,19 @@ export function PropietarioTabCuentaCorriente({
       {/* Modal: Agregar movimiento manual */}
       {fabAction === "movimiento" && (
         <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-[3px] flex items-center justify-center px-4">
-          <div className="bg-[#191c1e] border border-white/[0.07] rounded-[24px] w-full max-w-[480px] overflow-hidden">
-            <div className="px-6 py-5 border-b border-white/[0.07] flex items-start justify-between">
+          <div className="bg-card border border-border rounded-[24px] w-full max-w-[480px] overflow-hidden">
+            <div className="px-6 py-5 border-b border-border flex items-start justify-between">
               <div>
-                <div className="font-bold text-[1.05rem] text-[#e1e2e4] font-[Space_Grotesk]">
+                <div className="font-bold text-[1.05rem] text-foreground font-headline">
                   Agregar movimiento
                 </div>
-                <div className="text-[0.71rem] text-[#a8a9ac] mt-0.5">
+                <div className="text-[0.71rem] text-muted-foreground mt-0.5">
                   Crédito o débito manual en la cuenta corriente
                 </div>
               </div>
               <button
                 onClick={() => setFabAction(null)}
-                className="text-[#6b6d70] hover:text-[#e1e2e4] hover:bg-[#282a2c] rounded-[6px] w-8 h-8 flex items-center justify-center transition-all"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-[6px] w-8 h-8 flex items-center justify-center transition-all"
               >
                 <X size={18} />
               </button>
@@ -606,9 +606,9 @@ export function PropietarioTabCuentaCorriente({
                       className={`flex-1 py-2 text-[0.72rem] font-semibold rounded-[10px] border transition-all ${
                         movForm.tipo === t
                           ? t === "ingreso"
-                            ? "bg-[rgba(127,211,160,0.12)] border-[rgba(127,211,160,0.2)] text-[#7fd3a0]"
-                            : "bg-[rgba(255,180,171,0.12)] border-[rgba(255,180,171,0.2)] text-[#ffb4ab]"
-                          : "border-white/[0.07] text-[#6b6d70] hover:text-[#a8a9ac]"
+                            ? "bg-green-dim border-green/20 text-green"
+                            : "bg-destructive-dim border-destructive/20 text-destructive"
+                          : "border-border text-muted-foreground hover:text-muted-foreground"
                       }`}
                     >
                       {t === "ingreso" ? "↑ Ingreso" : "↓ Egreso"}
@@ -619,7 +619,7 @@ export function PropietarioTabCuentaCorriente({
 
               <div>
                 <label className={labelClass}>
-                  Descripción <span className="text-[#ffb4ab]">*</span>
+                  Descripción <span className="text-destructive">*</span>
                 </label>
                 <input
                   type="text"
@@ -632,7 +632,7 @@ export function PropietarioTabCuentaCorriente({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>
-                    Monto <span className="text-[#ffb4ab]">*</span>
+                    Monto <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="number"
@@ -645,7 +645,7 @@ export function PropietarioTabCuentaCorriente({
                 </div>
                 <div>
                   <label className={labelClass}>
-                    Fecha <span className="text-[#ffb4ab]">*</span>
+                    Fecha <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="date"
@@ -676,18 +676,18 @@ export function PropietarioTabCuentaCorriente({
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-white/[0.07] flex justify-end gap-2">
+            <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
               <button
                 onClick={() => setFabAction(null)}
                 disabled={saving}
-                className="px-3.5 py-2 text-[0.72rem] font-semibold text-[#a8a9ac] bg-[#333537] border border-white/[0.07] rounded-[12px] hover:bg-[#282a2c] transition-all"
+                className="px-3.5 py-2 text-[0.72rem] font-semibold text-muted-foreground bg-secondary border border-border rounded-[12px] hover:bg-muted transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveMovimiento}
                 disabled={saving}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold bg-[#ffb4a2] text-[#561100] rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold bg-primary text-primary-foreground rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50"
               >
                 {saving && <Loader2 size={12} className="animate-spin" />}
                 Guardar
@@ -700,35 +700,35 @@ export function PropietarioTabCuentaCorriente({
       {/* Modal: Generar liquidación */}
       {fabAction === "liquidacion" && (
         <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-[3px] flex items-center justify-center px-4">
-          <div className="bg-[#191c1e] border border-white/[0.07] rounded-[24px] w-full max-w-[480px] overflow-hidden">
-            <div className="px-6 py-5 border-b border-white/[0.07] flex items-start justify-between">
+          <div className="bg-card border border-border rounded-[24px] w-full max-w-[480px] overflow-hidden">
+            <div className="px-6 py-5 border-b border-border flex items-start justify-between">
               <div>
-                <div className="font-bold text-[1.05rem] text-[#e1e2e4] font-[Space_Grotesk]">
+                <div className="font-bold text-[1.05rem] text-foreground font-headline">
                   Generar liquidación
                 </div>
-                <div className="text-[0.71rem] text-[#a8a9ac] mt-0.5">
+                <div className="text-[0.71rem] text-muted-foreground mt-0.5">
                   Registrá el pago enviado al propietario
                 </div>
               </div>
               <button
                 onClick={() => setFabAction(null)}
-                className="text-[#6b6d70] hover:text-[#e1e2e4] hover:bg-[#282a2c] rounded-[6px] w-8 h-8 flex items-center justify-center transition-all"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-[6px] w-8 h-8 flex items-center justify-center transition-all"
               >
                 <X size={18} />
               </button>
             </div>
             <div className="px-6 py-5 flex flex-col gap-3.5">
               {data && (
-                <div className="bg-[#222527] rounded-[12px] px-4 py-3 border border-white/[0.07]">
-                  <div className="text-[0.65rem] text-[#6b6d70]">Estimado a liquidar</div>
-                  <div className="text-[1.2rem] font-bold text-[#e1e2e4] font-[Space_Grotesk]">
+                <div className="bg-muted rounded-[12px] px-4 py-3 border border-border">
+                  <div className="text-[0.65rem] text-muted-foreground">Estimado a liquidar</div>
+                  <div className="text-[1.2rem] font-bold text-foreground font-headline">
                     {formatMoney(data.kpis.proximaLiquidacionEstimada)}
                   </div>
                 </div>
               )}
               <div>
                 <label className={labelClass}>
-                  Descripción <span className="text-[#ffb4ab]">*</span>
+                  Descripción <span className="text-destructive">*</span>
                 </label>
                 <input
                   type="text"
@@ -741,7 +741,7 @@ export function PropietarioTabCuentaCorriente({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>
-                    Monto a liquidar <span className="text-[#ffb4ab]">*</span>
+                    Monto a liquidar <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="number"
@@ -754,7 +754,7 @@ export function PropietarioTabCuentaCorriente({
                 </div>
                 <div>
                   <label className={labelClass}>
-                    Fecha <span className="text-[#ffb4ab]">*</span>
+                    Fecha <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="date"
@@ -775,18 +775,18 @@ export function PropietarioTabCuentaCorriente({
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-white/[0.07] flex justify-end gap-2">
+            <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
               <button
                 onClick={() => setFabAction(null)}
                 disabled={saving}
-                className="px-3.5 py-2 text-[0.72rem] font-semibold text-[#a8a9ac] bg-[#333537] border border-white/[0.07] rounded-[12px] hover:bg-[#282a2c] transition-all"
+                className="px-3.5 py-2 text-[0.72rem] font-semibold text-muted-foreground bg-secondary border border-border rounded-[12px] hover:bg-muted transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveLiquidacion}
                 disabled={saving}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold bg-[#ffb4a2] text-[#561100] rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold bg-primary text-primary-foreground rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50"
               >
                 {saving && <Loader2 size={12} className="animate-spin" />}
                 Ejecutar liquidación
