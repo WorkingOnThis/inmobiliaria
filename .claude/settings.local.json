@@ -35,7 +35,9 @@
       "Bash(head -50 /f/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/route.ts)",
       "Bash(~/.bun/bin/bunx tsc *)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(xargs grep *)",
+      "Bash(grep -l \"DashboardLayout\" f:/Documentos/Proyectos/inmobiliaria/src/app/**/*.tsx f:/Documentos/Proyectos/inmobiliaria/src/app/**/**/*.tsx)"
     ]
   }
 }
