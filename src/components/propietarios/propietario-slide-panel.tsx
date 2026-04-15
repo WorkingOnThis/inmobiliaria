@@ -100,7 +100,7 @@ export function PropietarioSlidePanel({
 
       {/* Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-[380px] bg-[#191c1e] border-l border-white/[0.07] z-50 flex flex-col transition-transform duration-[280ms] cubic-bezier-[0.4,0,0.2,1] ${
+        className={`fixed top-0 right-0 h-full w-[380px] bg-surface border-l border-white/7 z-50 flex flex-col transition-transform duration-[280ms] cubic-bezier-[0.4,0,0.2,1] ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
         style={{ transition: "transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)" }}
@@ -108,26 +108,26 @@ export function PropietarioSlidePanel({
         {!propietario ? null : (
           <>
             {/* Header */}
-            <div className="p-5 border-b border-white/[0.07] bg-[#1d2022] flex-shrink-0">
+            <div className="p-5 border-b border-white/7 bg-card flex-shrink-0">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-[12px] bg-[#6b1702] flex items-center justify-center text-[0.85rem] font-extrabold text-white font-[Montserrat] flex-shrink-0">
+                <div className="w-10 h-10 rounded-[12px] bg-primary-dark flex items-center justify-center text-[0.85rem] font-extrabold text-white font-brand flex-shrink-0">
                   {getInitials(propietario.firstName, propietario.lastName)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-[#e1e2e4] text-[0.95rem] leading-tight truncate">
+                  <div className="font-semibold text-on-surface text-[0.95rem] leading-tight truncate">
                     {propietario.lastName
                       ? `${propietario.lastName}, ${propietario.firstName}`
                       : propietario.firstName}
                   </div>
                   {propietario.dni && (
-                    <div className="text-[0.68rem] text-[#6b6d70] mt-1">
+                    <div className="text-[0.68rem] text-text-muted mt-1">
                       DNI {propietario.dni}
                     </div>
                   )}
                 </div>
                 <button
                   onClick={onClose}
-                  className="text-[#6b6d70] hover:text-[#e1e2e4] hover:bg-[#282a2c] rounded-[6px] p-1 transition-all"
+                  className="text-text-muted hover:text-on-surface hover:bg-surface-high rounded-[6px] p-1 transition-all"
                 >
                   <X size={18} />
                 </button>
@@ -136,34 +136,34 @@ export function PropietarioSlidePanel({
               <div className="flex gap-4 mt-3 flex-wrap">
                 {propietario.phone && (
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70]">
+                    <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-text-muted">
                       Teléfono
                     </span>
-                    <span className="text-[0.75rem] text-[#a8a9ac]">{propietario.phone}</span>
+                    <span className="text-[0.75rem] text-text-secondary">{propietario.phone}</span>
                   </div>
                 )}
                 {propietario.cbu ? (
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70]">
+                    <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-text-muted">
                       CBU
                     </span>
-                    <span className="text-[0.72rem] text-[#a8a9ac] font-mono tracking-[0.02em]">
+                    <span className="text-[0.72rem] text-text-secondary font-mono tracking-[0.02em]">
                       {propietario.cbu.slice(0, 8)}…
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70]">
+                    <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-text-muted">
                       CBU
                     </span>
-                    <span className="text-[0.72rem] text-[#ffdea8] italic">Sin CBU</span>
+                    <span className="text-[0.72rem] text-mustard italic">Sin CBU</span>
                   </div>
                 )}
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70]">
+                  <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-text-muted">
                     Propiedades
                   </span>
-                  <span className="text-[0.75rem] text-[#a8a9ac]">
+                  <span className="text-[0.75rem] text-text-secondary">
                     {propietario.propiedadesCount}
                   </span>
                 </div>
@@ -173,27 +173,27 @@ export function PropietarioSlidePanel({
             {/* Body */}
             <div className="flex-1 overflow-y-auto">
               {ccLoading ? (
-                <div className="flex items-center justify-center h-32 text-[#6b6d70] text-sm">
+                <div className="flex items-center justify-center h-32 text-text-muted text-sm">
                   Cargando…
                 </div>
               ) : ccData ? (
                 <>
                   {/* Período actual */}
-                  <div className="p-4 border-b border-white/[0.07]">
-                    <div className="text-[0.58rem] font-bold uppercase tracking-[0.14em] text-[#6b6d70] flex items-center gap-2 mb-3">
-                      <span className="w-3 h-0.5 bg-[#ffb4a2] rounded-sm block" />
+                  <div className="p-4 border-b border-white/7">
+                    <div className="text-[0.58rem] font-bold uppercase tracking-[0.14em] text-text-muted flex items-center gap-2 mb-3">
+                      <span className="w-3 h-0.5 bg-primary rounded-sm block" />
                       Período actual
                     </div>
-                    <div className="bg-[#222527] border border-white/[0.07] rounded-[12px] p-3 mb-3">
+                    <div className="bg-surface-mid border border-white/7 rounded-[12px] p-3 mb-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-[0.68rem] font-semibold text-[#a8a9ac] uppercase tracking-[0.06em]">
+                          <div className="text-[0.68rem] font-semibold text-text-secondary uppercase tracking-[0.06em]">
                             A liquidar
                           </div>
-                          <div className="text-[1.3rem] font-bold text-[#e1e2e4] font-[Space_Grotesk]">
+                          <div className="text-[1.3rem] font-bold text-on-surface font-headline">
                             {formatMoney(ccData.kpis.proximaLiquidacionEstimada)}
                           </div>
-                          <div className="text-[0.65rem] text-[#6b6d70] mt-0.5">
+                          <div className="text-[0.65rem] text-text-muted mt-0.5">
                             Ingresos pendientes de liquidación
                           </div>
                         </div>
@@ -201,16 +201,16 @@ export function PropietarioSlidePanel({
                     </div>
 
                     {ccData.kpis.pendienteConfirmar > 0 && (
-                      <div className="flex items-center justify-between py-2 border-b border-white/[0.07]">
+                      <div className="flex items-center justify-between py-2 border-b border-white/7">
                         <div>
-                          <div className="text-[0.78rem] text-[#ffdea8] font-medium">
+                          <div className="text-[0.78rem] text-mustard font-medium">
                             ⏳ Pendiente de confirmar
                           </div>
-                          <div className="text-[0.65rem] text-[#6b6d70] mt-0.5">
+                          <div className="text-[0.65rem] text-text-muted mt-0.5">
                             Transferencia sin confirmar
                           </div>
                         </div>
-                        <div className="text-[0.9rem] font-bold text-[#ffdea8] font-[Space_Grotesk]">
+                        <div className="text-[0.9rem] font-bold text-mustard font-headline">
                           {formatMoney(ccData.kpis.pendienteConfirmar)}
                         </div>
                       </div>
@@ -218,14 +218,14 @@ export function PropietarioSlidePanel({
                   </div>
 
                   {/* Historial */}
-                  <div className="p-4 border-b border-white/[0.07]">
-                    <div className="text-[0.58rem] font-bold uppercase tracking-[0.14em] text-[#6b6d70] flex items-center gap-2 mb-3">
-                      <span className="w-3 h-0.5 bg-[#ffb4a2] rounded-sm block" />
+                  <div className="p-4 border-b border-white/7">
+                    <div className="text-[0.58rem] font-bold uppercase tracking-[0.14em] text-text-muted flex items-center gap-2 mb-3">
+                      <span className="w-3 h-0.5 bg-primary rounded-sm block" />
                       Historial
                     </div>
 
                     {ultimasLiquidaciones.length === 0 ? (
-                      <div className="text-[0.75rem] text-[#6b6d70] italic">
+                      <div className="text-[0.75rem] text-text-muted italic">
                         Sin liquidaciones registradas
                       </div>
                     ) : (
@@ -233,24 +233,24 @@ export function PropietarioSlidePanel({
                         {ultimasLiquidaciones.map((m) => (
                           <div
                             key={m.id}
-                            className="flex items-start gap-2.5 py-2.5 border-b border-white/[0.07] last:border-0"
+                            className="flex items-start gap-2.5 py-2.5 border-b border-white/7 last:border-0"
                           >
-                            <div className="w-2 h-2 rounded-full bg-[#7fd3a0] mt-1 flex-shrink-0" />
+                            <div className="w-2 h-2 rounded-full bg-green mt-1 flex-shrink-0" />
                             <div className="flex-1">
-                              <div className="text-[0.78rem] font-semibold text-[#e1e2e4]">
+                              <div className="text-[0.78rem] font-semibold text-on-surface">
                                 {m.descripcion}
                               </div>
-                              <div className="text-[0.65rem] text-[#6b6d70] mt-0.5">
+                              <div className="text-[0.65rem] text-text-muted mt-0.5">
                                 {m.fecha
                                   ? format(new Date(m.fecha), "dd/MM/yyyy", { locale: es })
                                   : "—"}
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-[0.88rem] font-bold text-[#e1e2e4] font-[Space_Grotesk]">
+                              <div className="text-[0.88rem] font-bold text-on-surface font-headline">
                                 {formatMoney(Number(m.monto))}
                               </div>
-                              <div className="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-[rgba(127,211,160,0.12)] text-[#7fd3a0] mt-1 inline-block">
+                              <div className="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-green-dim text-green mt-1 inline-block">
                                 Liquidado
                               </div>
                             </div>
@@ -259,26 +259,26 @@ export function PropietarioSlidePanel({
                       </div>
                     )}
 
-                    <div className="mt-2 text-[0.68rem] text-[#6b6d70]">
+                    <div className="mt-2 text-[0.68rem] text-text-muted">
                       Acumulado {new Date().getFullYear()}:{" "}
-                      <span className="text-[#e1e2e4] font-semibold">
+                      <span className="text-on-surface font-semibold">
                         {formatMoney(ccData.kpis.liquidadoAcumulado)}
                       </span>
                     </div>
                   </div>
                 </>
               ) : (
-                <div className="flex items-center justify-center h-32 text-[#6b6d70] text-sm">
+                <div className="flex items-center justify-center h-32 text-text-muted text-sm">
                   Sin datos
                 </div>
               )}
             </div>
 
             {/* Footer */}
-            <div className="p-3.5 border-t border-white/[0.07] bg-[#1d2022] flex flex-col gap-2 flex-shrink-0">
+            <div className="p-3.5 border-t border-white/7 bg-card flex flex-col gap-2 flex-shrink-0">
               <button
                 onClick={handleVerFicha}
-                className="w-full flex items-center justify-center gap-2 bg-[#ffb4a2] text-[#561100] text-[0.72rem] font-semibold px-3.5 py-2 rounded-[12px] hover:brightness-110 transition-all"
+                className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground text-[0.72rem] font-semibold px-3.5 py-2 rounded-[12px] hover:brightness-110 transition-all"
               >
                 Ver ficha completa
                 <ChevronRight size={14} />

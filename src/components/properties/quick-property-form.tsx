@@ -155,13 +155,13 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
         initialName={ownerSearch}
       />
 
-      <div className={`relative w-full ${inline ? "bg-transparent" : "max-w-lg bg-[#1a1d1e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl transition-all"}`}>
+      <div className={`relative w-full ${inline ? "bg-transparent" : "max-w-lg bg-surface border border-white/10 rounded-2xl overflow-hidden shadow-2xl transition-all"}`}>
 
         {!inline && (
           <div className="p-6 pb-0">
-            <h2 className="text-xl font-semibold text-white">Nueva propiedad</h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Los campos con <span className="text-[#ffb4a2]">*</span> son obligatorios. El resto se completa en la ficha.
+            <h2 className="text-xl font-semibold text-on-surface">Nueva propiedad</h2>
+            <p className="text-sm text-text-muted mt-1">
+              Los campos con <span className="text-primary">*</span> son obligatorios. El resto se completa en la ficha.
             </p>
           </div>
         )}
@@ -170,31 +170,31 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
 
           {/* Dirección */}
           <div className="space-y-2">
-            <Label htmlFor="address" className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
-              Dirección <span className="text-[#ffb4a2]">*</span>
+            <Label htmlFor="address" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              Dirección <span className="text-primary">*</span>
             </Label>
             <Input
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Ej: Godoy Cruz 2814, 3B"
-              className="bg-[#242729] border-none text-white h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-[#ffb4a2] placeholder:text-gray-600"
+              className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Tipo */}
             <div className="space-y-2">
-              <Label htmlFor="type" className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
-                Tipo <span className="text-[#ffb4a2]">*</span>
+              <Label htmlFor="type" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                Tipo <span className="text-primary">*</span>
               </Label>
               <Select value={type} onValueChange={(v: PropertyType) => setType(v)}>
-                <SelectTrigger className="bg-[#242729] border-none text-white h-12 rounded-xl focus:ring-1 focus:ring-[#ffb4a2]">
+                <SelectTrigger className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus:ring-1 focus:ring-primary">
                   <SelectValue placeholder="Seleccionar..." />
                 </SelectTrigger>
-                <SelectContent className="bg-[#242729] border-white/10 text-white">
+                <SelectContent className="bg-surface-mid border-white/10 text-on-surface">
                   {PROPERTY_TYPES.map((t) => (
-                    <SelectItem key={t} value={t} className="focus:bg-white/10 focus:text-white">
+                    <SelectItem key={t} value={t} className="focus:bg-white/10 focus:text-on-surface">
                       {PROPERTY_TYPE_LABELS[t]}
                     </SelectItem>
                   ))}
@@ -204,7 +204,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
 
             {/* Barrio / Zona */}
             <div className="space-y-2">
-              <Label htmlFor="zone" className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+              <Label htmlFor="zone" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
                 Barrio / Zona
               </Label>
               <Input
@@ -212,14 +212,14 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
                 value={zone}
                 onChange={(e) => setZone(e.target.value)}
                 placeholder="Ej: Nueva Córdoba"
-                className="bg-[#242729] border-none text-white h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-[#ffb4a2] placeholder:text-gray-600"
+                className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted"
               />
             </div>
           </div>
 
           {/* Piso / Unidad — ocupa todo el ancho (superficie eliminada del alta rápida) */}
           <div className="space-y-2">
-            <Label htmlFor="floorUnit" className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+            <Label htmlFor="floorUnit" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
               Piso / Unidad
             </Label>
             <Input
@@ -227,14 +227,14 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
               value={floorUnit}
               onChange={(e) => setFloorUnit(e.target.value)}
               placeholder="Ej: 3° B"
-              className="bg-[#242729] border-none text-white h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-[#ffb4a2] placeholder:text-gray-600"
+              className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted"
             />
           </div>
 
           {/* Propietario */}
           <div className="space-y-2 pt-2 border-t border-white/5">
-            <Label htmlFor="owner" className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
-              Propietario <span className="text-[#ffb4a2]">*</span>
+            <Label htmlFor="owner" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              Propietario <span className="text-primary">*</span>
             </Label>
             <div className="relative">
               <Input
@@ -245,14 +245,14 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
                   if (selectedOwner) handleClearOwner();
                 }}
                 placeholder="Buscar por nombre o DNI..."
-                className="bg-[#242729] border-none text-white h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-[#ffb4a2] placeholder:text-gray-600 pr-10"
+                className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted pr-10"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted">
                 {isSearchingOwners ? (
                   <Loader2 size={17} className="animate-spin" />
                 ) : selectedOwner ? (
                   <button type="button" onClick={handleClearOwner}>
-                    <UserMinus size={17} className="text-[#ffb4a2]" />
+                    <UserMinus size={17} className="text-primary" />
                   </button>
                 ) : (
                   <Search size={17} />
@@ -261,19 +261,19 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
 
               {/* Dropdown de resultados */}
               {showDropdown && (
-                <div className="absolute z-10 w-full top-full mt-1 bg-[#242729] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+                <div className="absolute z-10 w-full top-full mt-1 bg-surface-mid border border-white/10 rounded-xl shadow-2xl overflow-hidden">
                   {/* Resultados (máximo 3) */}
                   {owners.map((o) => (
                     <button
                       key={o.id}
                       type="button"
                       onClick={() => handleSelectOwner(o)}
-                      className="w-full px-4 py-3 text-left hover:bg-white/5 text-white flex flex-col gap-0.5 transition-colors"
+                      className="w-full px-4 py-3 text-left hover:bg-white/5 text-on-surface flex flex-col gap-0.5 transition-colors"
                     >
                       <span className="text-[13px] font-medium">
                         {o.firstName} {o.lastName}
                       </span>
-                      <span className="text-[11px] text-gray-400">
+                      <span className="text-[11px] text-text-muted">
                         {o.dni ? `DNI ${o.dni}` : o.email || o.whatsapp || "Sin más datos"}
                       </span>
                     </button>
@@ -288,8 +288,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
                   <button
                     type="button"
                     onClick={() => setShowCreateOwnerPopup(true)}
-                    className="w-full px-4 py-3 text-left hover:bg-white/5 flex items-center gap-2 transition-colors"
-                    style={{ color: "#ffb4a2" }}
+                    className="w-full px-4 py-3 text-left hover:bg-white/5 flex items-center gap-2 transition-colors text-primary"
                   >
                     <UserPlus size={14} />
                     <span className="text-[12px] font-semibold">Crear nuevo propietario</span>
@@ -299,8 +298,8 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
             </div>
 
             {selectedOwner && (
-              <p className="text-[11px] text-green-400/70 mt-1 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+              <p className="text-[11px] text-green/70 mt-1 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green inline-block" />
                 Propietario vinculado: {selectedOwner.firstName} {selectedOwner.lastName}
               </p>
             )}
@@ -312,14 +311,14 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
               type="button"
               variant="ghost"
               onClick={onCancel}
-              className="text-gray-500 hover:text-white hover:bg-white/5 rounded-xl px-6 h-12"
+              className="text-text-muted hover:text-on-surface hover:bg-white/5 rounded-xl px-6 h-12"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={isPropertySaving || !ownerId}
-              className="bg-[#ffdad2] text-[#3c0800] hover:bg-[#ffcdc0] font-bold rounded-full px-8 h-12 flex items-center justify-center gap-2 group transition-all"
+              className="bg-primary text-primary-foreground hover:brightness-110 font-bold rounded-full px-8 h-12 flex items-center justify-center gap-2 group transition-all"
             >
               {isPropertySaving ? (
                 <Loader2 size={18} className="animate-spin" />

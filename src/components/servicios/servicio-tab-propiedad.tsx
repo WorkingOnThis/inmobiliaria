@@ -80,8 +80,8 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
     <div>
       {/* Nota de alerta */}
       {hayAlertas && (
-        <div className="mb-4 flex items-start gap-2 rounded-r-lg border border-white/10 border-l-4 border-l-yellow-400 bg-white/5 px-4 py-3 text-sm text-muted-foreground">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-300 mt-0.5" />
+        <div className="mb-4 flex items-start gap-2 rounded-r-lg border border-white/10 border-l-4 border-l-mustard bg-mustard-dim px-4 py-3 text-sm text-muted-foreground">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-mustard mt-0.5" />
           <div>
             {serviciosEnAlerta.map((s) => (
               <p key={s.id}>
@@ -90,7 +90,7 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
                 </strong>{" "}
                 lleva {s.diasSinComprobante} días sin comprobante cargado.
                 {s.estado === "bloqueado" && (
-                  <span className="text-red-400"> El cobro del alquiler está bloqueado.</span>
+                  <span className="text-error"> El cobro del alquiler está bloqueado.</span>
                 )}
               </p>
             ))}
@@ -154,9 +154,9 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
                 onClick={() => setDrawerServicioId(s.id)}
                 className={`flex cursor-pointer items-center gap-3.5 rounded-xl border bg-[#1d2022] p-3.5 transition-colors hover:border-primary/30 hover:bg-[#222527] ${
                   s.estado === "bloqueado"
-                    ? "border-red-500/30 border-l-4 border-l-red-500"
+                    ? "border-error/30 border-l-4 border-l-error"
                     : s.estado === "en_alerta"
-                    ? "border-yellow-500/20 border-l-4 border-l-yellow-400"
+                    ? "border-mustard/20 border-l-4 border-l-mustard"
                     : "border-white/7"
                 }`}
               >
@@ -188,7 +188,7 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
                     {s.activaBloqueo ? "Activa bloqueo" : "No bloquea"}
                   </span>
                   {s.diasSinComprobante > 0 && (
-                    <span className={`text-[0.63rem] ${s.estado === "en_alerta" ? "text-yellow-300" : "text-muted-foreground"}`}>
+                    <span className={`text-[0.63rem] ${s.estado === "en_alerta" ? "text-mustard" : "text-muted-foreground"}`}>
                       {s.diasSinComprobante} días sin comprobante
                     </span>
                   )}

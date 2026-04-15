@@ -38,10 +38,10 @@ function periodoLabel(periodo: string): string {
 function EstadoBox({ estado, diasSinComprobante, periodo }: { estado: ServicioEstado; diasSinComprobante: number; periodo: string }) {
   if (estado === "al_dia") {
     return (
-      <div className="flex items-start gap-3 rounded-xl border border-green-500/20 bg-green-500/10 p-3.5 mb-3">
-        <CheckCircle2 className="h-5 w-5 shrink-0 text-green-400 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-xl border border-income/20 bg-income-dim p-3.5 mb-3">
+        <CheckCircle2 className="h-5 w-5 shrink-0 text-income mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-green-400">Al día</p>
+          <p className="text-sm font-semibold text-income">Al día</p>
           <p className="mt-0.5 text-[0.67rem] text-muted-foreground">Comprobante cargado para {periodoLabel(periodo)}.</p>
         </div>
       </div>
@@ -60,11 +60,11 @@ function EstadoBox({ estado, diasSinComprobante, periodo }: { estado: ServicioEs
   }
   if (estado === "en_alerta") {
     return (
-      <div className="flex items-start gap-3 rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-3.5 mb-3">
-        <AlertTriangle className="h-5 w-5 shrink-0 text-yellow-300 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-xl border border-mustard/20 bg-mustard-dim p-3.5 mb-3">
+        <AlertTriangle className="h-5 w-5 shrink-0 text-mustard mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-yellow-300">En alerta — {diasSinComprobante} días sin comprobante</p>
-          <p className="mt-0.5 text-[0.67rem] text-yellow-300/70">
+          <p className="text-sm font-semibold text-mustard">En alerta — {diasSinComprobante} días sin comprobante</p>
+          <p className="mt-0.5 text-[0.67rem] text-mustard/70">
             Riesgo inminente de bloqueo de alquiler. Cargá el comprobante o indicá el motivo para omitir el bloqueo.
           </p>
         </div>
@@ -73,11 +73,11 @@ function EstadoBox({ estado, diasSinComprobante, periodo }: { estado: ServicioEs
   }
   if (estado === "bloqueado") {
     return (
-      <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3.5 mb-3">
-        <Lock className="h-5 w-5 shrink-0 text-red-400 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-xl border border-error/20 bg-error-dim p-3.5 mb-3">
+        <Lock className="h-5 w-5 shrink-0 text-error mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-red-400">Bloqueado — {diasSinComprobante} días sin comprobante</p>
-          <p className="mt-0.5 text-[0.67rem] text-red-400/70">
+          <p className="text-sm font-semibold text-error">Bloqueado — {diasSinComprobante} días sin comprobante</p>
+          <p className="mt-0.5 text-[0.67rem] text-error/70">
             El cobro del alquiler de esta propiedad está bloqueado hasta regularizar el comprobante o registrar una omisión.
           </p>
         </div>
@@ -311,7 +311,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                   <div>
                     {historial.map((comp: { id: string; periodo: string; monto: string | null; cargadoEl: string }) => (
                       <div key={comp.id} className="flex items-start gap-3 border-b border-white/7 py-2.5 last:border-0">
-                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-400" />
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-income" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold capitalize">
                             {(() => {
@@ -345,8 +345,8 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                   <p className="mb-3 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
                     Acciones de emergencia
                   </p>
-                  <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4">
-                    <p className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-red-400">
+                  <div className="rounded-xl border border-error/20 bg-error-dim p-4">
+                    <p className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-error">
                       🔓 Omitir bloqueo de alquiler — {periodoLabel(periodo)}
                     </p>
                     <p className="mb-3 text-[0.68rem] text-muted-foreground leading-relaxed">
@@ -357,13 +357,13 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                       onChange={(e) => setMotivoOmision(e.target.value)}
                       placeholder="Motivo de la omisión (ej: el propietario está tramitando la reconexión, comprobante en trámite…)"
                       rows={3}
-                      className="w-full resize-y rounded-lg border border-white/10 bg-[#222527] px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-red-500/30"
+                      className="w-full resize-y rounded-lg border border-white/10 bg-[#222527] px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-error/30"
                     />
                     <div className="mt-2.5 flex justify-end">
                       <button
                         onClick={() => omitirBloqueo.mutate()}
                         disabled={omitirBloqueo.isPending || motivoOmision.length < 10}
-                        className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-1.5 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+                        className="rounded-xl border border-error/20 bg-error-dim px-4 py-1.5 text-sm font-semibold text-error transition-colors hover:bg-error/20 disabled:opacity-50"
                       >
                         {omitirBloqueo.isPending ? "Registrando…" : "Confirmar omisión"}
                       </button>
