@@ -9,9 +9,10 @@ import { z } from "zod";
 import { calcularEstadoServicio } from "@/lib/servicios/constants";
 
 const actualizarServicioSchema = z.object({
-  empresa: z.string().optional(),
-  numeroCuenta: z.string().optional(),
-  titular: z.string().optional(),
+  empresa: z.string().optional().nullable(),
+  numeroCuenta: z.string().optional().nullable(),
+  metadatos: z.record(z.string()).optional().nullable(),
+  titular: z.string().optional().nullable(),
   titularTipo: z.enum(["propietario", "inquilino", "otro"]).optional(),
   responsablePago: z.enum(["propietario", "inquilino"]).optional(),
   vencimientoDia: z.number().int().min(1).max(31).optional().nullable(),
@@ -111,6 +112,7 @@ export async function PUT(
     .set({
       ...(data.empresa !== undefined && { empresa: data.empresa }),
       ...(data.numeroCuenta !== undefined && { numeroCuenta: data.numeroCuenta }),
+      ...(data.metadatos !== undefined && { metadatos: data.metadatos }),
       ...(data.titular !== undefined && { titular: data.titular }),
       ...(data.titularTipo !== undefined && { titularTipo: data.titularTipo }),
       ...(data.responsablePago !== undefined && { responsablePago: data.responsablePago }),

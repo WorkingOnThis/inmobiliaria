@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, Pencil, X, Save, ExternalLink, PlusCircle } from "l
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
+import { ServicioTabPropiedad } from "@/components/servicios/servicio-tab-propiedad";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -471,7 +472,7 @@ export default function PropiedadFichaPage() {
     { key: "personas",      label: "Personas vinculadas" },
     { key: "datos",         label: "Datos" },
     { key: "contratos",     label: "Contratos",    disabled: false },
-    { key: "servicios",     label: "Servicios",    disabled: true },
+    { key: "servicios",     label: "Servicios" },
     { key: "mantenimiento", label: "Mantenimiento",disabled: true },
     { key: "documentos",    label: "Documentos",   disabled: true },
     { key: "tareas",        label: "Tareas",       disabled: true },
@@ -814,11 +815,7 @@ export default function PropiedadFichaPage() {
 
           {/* ── TAB: SERVICIOS ── */}
           {activeTab === "servicios" && (
-            <PlaceholderTab
-              icon="⚡"
-              title="Control de servicios"
-              description="ABL, gas, luz, agua y expensas. Próximamente."
-            />
+            <ServicioTabPropiedad propertyId={id} />
           )}
 
           {/* ── TAB: MANTENIMIENTO ── */}

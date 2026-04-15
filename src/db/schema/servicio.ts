@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, decimal, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, decimal, boolean, jsonb } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 import { property } from "./property";
 
@@ -15,7 +15,8 @@ export const servicio = pgTable("servicio", {
     .references(() => property.id, { onDelete: "cascade" }),
   tipo: text("tipo").notNull(), // "luz" | "gas" | "agua" | "expensas" | "abl" | "inmobiliario" | "seguro" | "otro"
   empresa: text("empresa"), // Nombre de la empresa prestadora
-  numeroCuenta: text("numeroCuenta"), // Nro de cuenta / partida / póliza
+  numeroCuenta: text("numeroCuenta"), // Primer identificador (N° cuenta / póliza / catastral). Se mantiene en sincronía con el primer campo de metadatos para mostrarlo en listas.
+  metadatos: jsonb("metadatos").$type<Record<string, string>>(), // Campos específicos por tipo de servicio (ej: {numeroCuenta, numeroContrato})
   titular: text("titular"), // Nombre del titular del servicio
   titularTipo: text("titularTipo").notNull().default("propietario"), // "propietario" | "inquilino" | "otro"
   responsablePago: text("responsablePago").notNull().default("propietario"), // "propietario" | "inquilino"

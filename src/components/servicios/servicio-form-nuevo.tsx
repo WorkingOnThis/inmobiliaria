@@ -4,13 +4,16 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   SERVICIO_TIPOS,
-  SERVICIO_TIPO_LABELS,
+  SERVICIO_TIPO_LABELS_CORTOS,
   SERVICIO_TIPO_ICONS,
   TITULAR_TIPOS,
   TITULAR_TIPO_LABELS,
   RESPONSABLE_PAGO_TIPOS,
   RESPONSABLE_PAGO_LABELS,
+  type ServicioTipo,
 } from "@/lib/servicios/constants";
+import { EmpresaCombobox } from "./empresa-combobox";
+import { CamposServicio } from "./campos-servicio";
 
 type Props = {
   propertyId: string;
@@ -21,9 +24,9 @@ type Props = {
 export function ServicioFormNuevo({ propertyId, onSuccess, onCancel }: Props) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    tipo: "luz",
+    tipo: "luz" as ServicioTipo,
     empresa: "",
-    numeroCuenta: "",
+    metadatos: {} as Record<string, string>,
     titular: "",
     titularTipo: "propietario",
     responsablePago: "propietario",
@@ -31,13 +34,17 @@ export function ServicioFormNuevo({ propertyId, onSuccess, onCancel }: Props) {
     activaBloqueo: true,
   });
 
-  const set = (key: string, value: string | boolean) =>
+  const set = (key: string, value: string | boolean | Record<string, string>) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
+      // El primer campo de metadatos se copia a numeroCuenta para mostrarlo en listas
+      const primerCampoKey = Object.keys(form.metadatos)[0];
+      const numeroCuenta = primerCampoKey ? (form.metadatos[primerCampoKey] || undefined) : undefined;
+
       const res = await fetch("/api/servicios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -45,7 +52,8 @@ export function ServicioFormNuevo({ propertyId, onSuccess, onCancel }: Props) {
           propertyId,
           tipo: form.tipo,
           empresa: form.empresa || undefined,
-          numeroCuenta: form.numeroCuenta || undefined,
+          numeroCuenta,
+          metadatos: Object.keys(form.metadatos).length > 0 ? form.metadatos : undefined,
           titular: form.titular || undefined,
           titularTipo: form.titularTipo,
           responsablePago: form.responsablePago,
@@ -76,15 +84,15 @@ export function ServicioFormNuevo({ propertyId, onSuccess, onCancel }: Props) {
             <button
               key={t}
               type="button"
-              onClick={() => set("tipo", t)}
+              onClick={() => setForm((prev) => ({ ...prev, tipo: t, metadatos: {} }))}
               className={`flex flex-col items-center gap-1 rounded-xl border p-2 text-[0.65rem] font-semibold transition-colors ${
                 form.tipo === t
-                  ? "border-primary/30 bg-primary/10 text-primary"
-                  : "border-white/10 bg-white/5 text-muted-foreground hover:text-foreground"
+                  ? "border-border-accent bg-primary-dim text-primary"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
               }`}
             >
               <span className="text-base">{SERVICIO_TIPO_ICONS[t]}</span>
-              {SERVICIO_TIPO_LABELS[t].replace("Energía eléctrica", "Luz").replace("Gas natural", "Gas").replace("ABL / Impuesto inmobiliario", "ABL").replace("Seguro del inmueble", "Seguro")}
+              {SERVICIO_TIPO_LABELS_CORTOS[t]}
             </button>
           ))}
         </div>
@@ -95,28 +103,18 @@ export function ServicioFormNuevo({ propertyId, onSuccess, onCancel }: Props) {
         <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
           Empresa prestadora
         </label>
-        <input
-          type="text"
+        <EmpresaCombobox
           value={form.empresa}
-          onChange={(e) => set("empresa", e.target.value)}
-          placeholder="Ej: EPEC, Ecogas, Aguas Cordobesas…"
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
+          onChange={(v) => set("empresa", v)}
         />
       </div>
 
-      {/* Número de cuenta */}
-      <div>
-        <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
-          N° de cuenta / póliza / partida
-        </label>
-        <input
-          type="text"
-          value={form.numeroCuenta}
-          onChange={(e) => set("numeroCuenta", e.target.value)}
-          placeholder="Ej: 4412-8890-2"
-          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
-        />
-      </div>
+      {/* Campos por tipo (cuenta, contrato, medidor, etc.) */}
+      <CamposServicio
+        tipo={form.tipo}
+        valores={form.metadatos}
+        onChange={(v) => set("metadatos", v)}
+      />
 
       {/* Titular */}
       <div className="grid grid-cols-2 gap-3">

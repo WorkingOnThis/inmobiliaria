@@ -17,9 +17,21 @@ export const SERVICIO_TIPO_LABELS: Record<ServicioTipo, string> = {
   gas: "Gas natural",
   agua: "Agua",
   expensas: "Expensas",
-  abl: "ABL / Impuesto inmobiliario",
+  abl: "Provincial / Rentas",
   inmobiliario: "Inmobiliario",
   seguro: "Seguro del inmueble",
+  otro: "Otro",
+};
+
+// Label corto para usar en tiles y cards (sin subetiquetas)
+export const SERVICIO_TIPO_LABELS_CORTOS: Record<ServicioTipo, string> = {
+  luz: "Luz",
+  gas: "Gas",
+  agua: "Agua",
+  expensas: "Expensas",
+  abl: "Provincial",
+  inmobiliario: "Inmobiliario",
+  seguro: "Seguro",
   otro: "Otro",
 };
 
@@ -32,6 +44,45 @@ export const SERVICIO_TIPO_ICONS: Record<ServicioTipo, string> = {
   inmobiliario: "🏠",
   seguro: "🛡",
   otro: "📋",
+};
+
+// Campos específicos que se guardan por tipo de servicio en la columna metadatos.
+// El primer campo es siempre el identificador principal (se copia a numeroCuenta).
+export type CampoServicio = {
+  key: string;
+  label: string;
+  placeholder?: string;
+  mono?: boolean; // true → fuente monoespaciada (para números de cuenta, códigos)
+};
+
+export const CAMPOS_SERVICIO: Record<ServicioTipo, CampoServicio[]> = {
+  luz: [
+    { key: "numeroCuenta", label: "N° de cuenta", placeholder: "Ej: 123456789", mono: true },
+    { key: "numeroContrato", label: "N° de contrato", placeholder: "Ej: CTR-0012", mono: true },
+  ],
+  gas: [
+    { key: "numeroCuenta", label: "N° de cuenta", placeholder: "Ej: 1234567", mono: true },
+    { key: "numeroMedidor", label: "N° de medidor", placeholder: "Ej: G4-0012345", mono: true },
+  ],
+  agua: [
+    { key: "numeroCuenta", label: "N° de cuenta", placeholder: "Ej: 98765432", mono: true },
+  ],
+  expensas: [
+    { key: "numeroCuenta", label: "N° de unidad / depto", placeholder: "Ej: 3°A" },
+    { key: "contactoAdmin", label: "Contacto de la administración", placeholder: "Ej: mail, teléfono, nombre" },
+  ],
+  abl: [
+    { key: "numeroCuenta", label: "N° de cuenta", placeholder: "Ej: 1234-5678-90", mono: true },
+  ],
+  inmobiliario: [
+    { key: "nomenclaturaCatastral", label: "Nomenclatura catastral", placeholder: "Ej: 01-01-01-001-0000-000", mono: true },
+  ],
+  seguro: [
+    { key: "numeroPoliza", label: "N° de póliza", placeholder: "Ej: POL-20251234", mono: true },
+  ],
+  otro: [
+    { key: "referencia", label: "N° de referencia", placeholder: "Ej: 12345", mono: true },
+  ],
 };
 
 // Estados posibles de un servicio en un período dado

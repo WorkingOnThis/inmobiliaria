@@ -3,12 +3,17 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { X, Upload, CheckCircle2, AlertTriangle, Lock, Clock } from "lucide-react";
+import { X, Upload, CheckCircle2, AlertTriangle, Lock, Clock, Pencil, Save } from "lucide-react";
 import {
+  SERVICIO_TIPOS,
   SERVICIO_TIPO_LABELS,
+  SERVICIO_TIPO_LABELS_CORTOS,
   SERVICIO_TIPO_ICONS,
+  CAMPOS_SERVICIO,
   TITULAR_TIPO_LABELS,
   RESPONSABLE_PAGO_LABELS,
+  TITULAR_TIPOS,
+  RESPONSABLE_PAGO_TIPOS,
   type ServicioTipo,
   type ServicioEstado,
   type TitularTipo,
@@ -17,7 +22,10 @@ import {
 import {
   Drawer,
   DrawerContent,
+  DrawerTitle,
 } from "@/components/ui/drawer";
+import { EmpresaCombobox } from "./empresa-combobox";
+import { CamposServicio } from "./campos-servicio";
 
 type Props = {
   servicioId: string | null;
@@ -49,7 +57,7 @@ function EstadoBox({ estado, diasSinComprobante, periodo }: { estado: ServicioEs
   }
   if (estado === "pendiente") {
     return (
-      <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3.5 mb-3">
+      <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3.5 mb-3">
         <Clock className="h-5 w-5 shrink-0 text-muted-foreground mt-0.5" />
         <div>
           <p className="text-sm font-semibold">Pendiente — {diasSinComprobante} días sin comprobante</p>
@@ -87,10 +95,32 @@ function EstadoBox({ estado, diasSinComprobante, periodo }: { estado: ServicioEs
   return null;
 }
 
+type EditForm = {
+  tipo: ServicioTipo;
+  empresa: string;
+  metadatos: Record<string, string>;
+  titular: string;
+  titularTipo: TitularTipo;
+  responsablePago: ResponsablePagoTipo;
+  vencimientoDia: string;
+  activaBloqueo: boolean;
+};
+
 export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, onClose }: Props) {
   const queryClient = useQueryClient();
   const [motivoOmision, setMotivoOmision] = useState("");
   const [montoComprobante, setMontoComprobante] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<EditForm>({
+    tipo: "luz",
+    empresa: "",
+    metadatos: {},
+    titular: "",
+    titularTipo: "propietario",
+    responsablePago: "propietario",
+    vencimientoDia: "",
+    activaBloqueo: true,
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["servicio-detalle", servicioId, periodo],
@@ -166,6 +196,52 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
     onError: (err) => toast.error(err.message),
   });
 
+  // Mutation: guardar edición de datos del servicio
+  const guardarEdicion = useMutation({
+    mutationFn: async () => {
+      // El primer valor de metadatos se copia a numeroCuenta para mostrarlo en listas
+      const primerValor = Object.values(editForm.metadatos)[0] ?? null;
+      const res = await fetch(`/api/servicios/${servicioId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empresa: editForm.empresa || null,
+          numeroCuenta: primerValor || null,
+          metadatos: Object.keys(editForm.metadatos).length > 0 ? editForm.metadatos : null,
+          titular: editForm.titular || null,
+          titularTipo: editForm.titularTipo,
+          responsablePago: editForm.responsablePago,
+          vencimientoDia: editForm.vencimientoDia ? parseInt(editForm.vencimientoDia) : null,
+          activaBloqueo: editForm.activaBloqueo,
+        }),
+      });
+      if (!res.ok) throw new Error("Error al guardar");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["servicio-detalle", servicioId] });
+      queryClient.invalidateQueries({ queryKey: ["servicios", propertyId] });
+      setEditing(false);
+      toast.success("Datos actualizados");
+    },
+    onError: () => toast.error("Error al guardar los datos"),
+  });
+
+  function startEditing(item: typeof s) {
+    if (!item) return;
+    setEditForm({
+      tipo: (item.tipo as ServicioTipo) ?? "luz",
+      empresa: item.empresa ?? "",
+      metadatos: (item.metadatos as Record<string, string> | null) ?? {},
+      titular: item.titular ?? "",
+      titularTipo: (item.titularTipo as TitularTipo) ?? "propietario",
+      responsablePago: (item.responsablePago as ResponsablePagoTipo) ?? "propietario",
+      vencimientoDia: item.vencimientoDia ? String(item.vencimientoDia) : "",
+      activaBloqueo: item.activaBloqueo ?? true,
+    });
+    setEditing(true);
+  }
+
   const s = data?.item;
   const estado: ServicioEstado = data?.estado ?? "pendiente";
   const diasSinComprobante: number = data?.diasSinComprobante ?? 0;
@@ -177,12 +253,13 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
   const nombre = tipo ? SERVICIO_TIPO_LABELS[tipo] : "Servicio";
 
   return (
-    <Drawer direction="right" open={open} onOpenChange={(v) => !v && onClose()}>
-      <DrawerContent className="ml-auto flex h-full w-[460px] max-w-[95vw] flex-col rounded-l-2xl border-l border-white/7 bg-surface p-0">
+    <Drawer direction="right" open={open} onOpenChange={(v) => { if (!v) { setEditing(false); onClose(); } }}>
+      <DrawerContent className="ml-auto flex h-full w-[460px] max-w-[95vw] flex-col rounded-l-2xl border-l border-border bg-surface p-0">
+        <DrawerTitle className="sr-only">{nombre} — detalle del servicio</DrawerTitle>
         {/* Header */}
-        <div className="flex shrink-0 items-start justify-between border-b border-white/7 px-6 py-5">
+        <div className="flex shrink-0 items-start justify-between border-b border-border px-6 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/8 text-xl">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-mid text-xl">
               {icon}
             </div>
             <div>
@@ -194,7 +271,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
           </div>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-white/8 hover:text-foreground"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-mid hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -209,7 +286,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
           ) : (
             <>
               {/* Estado actual */}
-              <div className="border-b border-white/7 px-6 py-5">
+              <div className="border-b border-border px-6 py-5">
                 <p className="mb-3 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
                   Estado del período — {periodoLabel(periodo)}
                 </p>
@@ -224,13 +301,13 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                         placeholder="Monto (opcional)"
                         value={montoComprobante}
                         onChange={(e) => setMontoComprobante(e.target.value)}
-                        className="w-36 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
+                        className="w-36 rounded-lg border border-border bg-surface-mid px-3 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
                       />
                     </div>
                     <button
                       onClick={() => cargarComprobante.mutate()}
                       disabled={cargarComprobante.isPending}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2 text-sm font-semibold text-[#561100] transition-opacity hover:brightness-110 disabled:opacity-60"
+                      className="btn btn-primary w-full flex items-center justify-center gap-2"
                     >
                       <Upload className="h-4 w-4" />
                       {cargarComprobante.isPending ? "Registrando…" : `Cargar comprobante de ${periodoLabel(periodo)}`}
@@ -242,39 +319,76 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                 )}
               </div>
 
-              {/* Datos del servicio */}
-              {s && (
-                <div className="border-b border-white/7 px-6 py-5">
+              {/* Datos del servicio / Formulario de edición */}
+              {s && !editing && (
+                <div className="border-b border-border px-6 py-5">
                   <p className="mb-3 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
                     Datos del servicio
                   </p>
                   <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { label: "Empresa prestadora", value: s.empresa ?? "—" },
-                      { label: "N° de cuenta", value: s.numeroCuenta ?? "—", mono: true },
-                      { label: "Titular", value: s.titular ?? "—" },
-                      { label: "Tipo de titular", value: s.titularTipo ? TITULAR_TIPO_LABELS[s.titularTipo as TitularTipo] : "—" },
-                      { label: "Responsable de pago", value: s.responsablePago ? RESPONSABLE_PAGO_LABELS[s.responsablePago as ResponsablePagoTipo] : "—" },
-                      { label: "Vencimiento mensual", value: s.vencimientoDia ? `Día ${s.vencimientoDia} de cada mes` : "—" },
-                    ].map(({ label, value, mono }) => (
-                      <div key={label}>
-                        <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
-                          {label}
-                        </p>
-                        <p className={`text-sm font-medium ${mono ? "font-mono text-xs" : ""}`}>{value}</p>
-                      </div>
-                    ))}
+                    {/* Empresa */}
+                    <div>
+                      <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Empresa prestadora
+                      </p>
+                      <p className="text-sm font-medium">{s.empresa ?? "—"}</p>
+                    </div>
+                    {/* Campos específicos del tipo */}
+                    {tipo && (CAMPOS_SERVICIO[tipo] ?? []).map((campo) => {
+                      const valor = (s.metadatos as Record<string, string> | null)?.[campo.key] ?? s.numeroCuenta ?? "—";
+                      return (
+                        <div key={campo.key}>
+                          <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
+                            {campo.label}
+                          </p>
+                          <p className={`text-sm font-medium ${campo.mono ? "font-mono text-xs" : ""}`}>
+                            {valor || "—"}
+                          </p>
+                        </div>
+                      );
+                    })}
+                    {/* Datos comunes */}
+                    <div>
+                      <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Titular
+                      </p>
+                      <p className="text-sm font-medium">{s.titular ?? "—"}</p>
+                    </div>
+                    <div>
+                      <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Tipo de titular
+                      </p>
+                      <p className="text-sm font-medium">
+                        {s.titularTipo ? TITULAR_TIPO_LABELS[s.titularTipo as TitularTipo] : "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Responsable de pago
+                      </p>
+                      <p className="text-sm font-medium">
+                        {s.responsablePago ? RESPONSABLE_PAGO_LABELS[s.responsablePago as ResponsablePagoTipo] : "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Vencimiento mensual
+                      </p>
+                      <p className="text-sm font-medium">
+                        {s.vencimientoDia ? `Día ${s.vencimientoDia} de cada mes` : "—"}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Toggle obligatoriedad */}
-              {s && (
-                <div className="border-b border-white/7 px-6 py-5">
+              {/* Configuración — solo en modo lectura */}
+              {s && !editing && (
+                <div className="border-b border-border px-6 py-5">
                   <p className="mb-3 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
                     Configuración
                   </p>
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-3.5">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-3.5">
                     <div>
                       <p className="text-sm font-semibold">Activa bloqueo de alquiler</p>
                       <p className="mt-0.5 max-w-[260px] text-[0.67rem] text-muted-foreground">
@@ -289,7 +403,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                         type="button"
                         disabled={toggleBloqueo.isPending}
                         onClick={() => toggleBloqueo.mutate(!s.activaBloqueo)}
-                        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50 ${s.activaBloqueo ? "bg-primary" : "bg-white/20"}`}
+                        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50 ${s.activaBloqueo ? "bg-primary" : "bg-surface-highest"}`}
                       >
                         <span
                           className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${s.activaBloqueo ? "left-[18px]" : "left-0.5"}`}
@@ -300,8 +414,147 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                 </div>
               )}
 
+              {/* Formulario de edición — mismo layout que "Nuevo servicio" */}
+              {s && editing && (
+                <div className="border-b border-border px-6 py-5">
+                  <p className="mb-4 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
+                    Editar servicio
+                  </p>
+                  <div className="flex flex-col gap-4">
+                    {/* Tipo — bloqueado, solo muestra el actual activo */}
+                    <div>
+                      <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
+                        Tipo de servicio
+                      </label>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {SERVICIO_TIPOS.map((t) => {
+                          const esActual = t === editForm.tipo;
+                          return (
+                            <div
+                              key={t}
+                              className={`flex flex-col items-center gap-1 rounded-xl border p-2 text-[0.65rem] font-semibold transition-colors ${
+                                esActual
+                                  ? "border-border-accent bg-primary-dim text-primary"
+                                  : "border-border bg-card text-muted-foreground opacity-35"
+                              }`}
+                            >
+                              <span className="text-base">{SERVICIO_TIPO_ICONS[t]}</span>
+                              {SERVICIO_TIPO_LABELS_CORTOS[t]}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Empresa */}
+                    <div>
+                      <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
+                        Empresa prestadora
+                      </label>
+                      <EmpresaCombobox
+                        value={editForm.empresa}
+                        onChange={(v) => setEditForm((f) => ({ ...f, empresa: v }))}
+                      />
+                    </div>
+
+                    {/* Campos específicos por tipo */}
+                    <CamposServicio
+                      tipo={editForm.tipo}
+                      valores={editForm.metadatos}
+                      onChange={(v) => setEditForm((f) => ({ ...f, metadatos: v }))}
+                    />
+
+                    {/* Titular + Tipo */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
+                          Titular
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.titular}
+                          onChange={(e) => setEditForm((f) => ({ ...f, titular: e.target.value }))}
+                          placeholder="Nombre del titular"
+                          className="w-full rounded-lg border border-border bg-surface-mid px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
+                          Tipo de titular
+                        </label>
+                        <select
+                          value={editForm.titularTipo}
+                          onChange={(e) => setEditForm((f) => ({ ...f, titularTipo: e.target.value as TitularTipo }))}
+                          className="w-full rounded-lg border border-border bg-surface-mid px-3 py-2 text-sm outline-none focus:border-primary/40"
+                        >
+                          {TITULAR_TIPOS.map((t) => (
+                            <option key={t} value={t}>{TITULAR_TIPO_LABELS[t]}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Responsable + Vencimiento */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
+                          Responsable de pago
+                        </label>
+                        <select
+                          value={editForm.responsablePago}
+                          onChange={(e) => setEditForm((f) => ({ ...f, responsablePago: e.target.value as ResponsablePagoTipo }))}
+                          className="w-full rounded-lg border border-border bg-surface-mid px-3 py-2 text-sm outline-none focus:border-primary/40"
+                        >
+                          {RESPONSABLE_PAGO_TIPOS.map((t) => (
+                            <option key={t} value={t}>{RESPONSABLE_PAGO_LABELS[t]}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
+                          Día de vencimiento
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={31}
+                          value={editForm.vencimientoDia}
+                          onChange={(e) => setEditForm((f) => ({ ...f, vencimientoDia: e.target.value }))}
+                          placeholder="Ej: 10"
+                          className="w-full rounded-lg border border-border bg-surface-mid px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Toggle bloqueo */}
+                    <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-3.5">
+                      <div>
+                        <p className="text-sm font-semibold">Activa bloqueo de alquiler</p>
+                        <p className="mt-0.5 max-w-[260px] text-[0.67rem] text-muted-foreground">
+                          Si está activo y el comprobante lleva más de 30 días sin cargarse, el sistema bloquea el registro del pago de alquiler.
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-[0.68rem] text-muted-foreground min-w-[20px] text-right">
+                          {editForm.activaBloqueo ? "Sí" : "No"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setEditForm((f) => ({ ...f, activaBloqueo: !f.activaBloqueo }))}
+                          className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${editForm.activaBloqueo ? "bg-primary" : "bg-surface-highest"}`}
+                        >
+                          <span
+                            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${editForm.activaBloqueo ? "left-[18px]" : "left-0.5"}`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Historial de comprobantes */}
-              <div className="border-b border-white/7 px-6 py-5">
+              <div className="border-b border-border px-6 py-5">
                 <p className="mb-3 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
                   Historial de comprobantes
                 </p>
@@ -310,7 +563,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                 ) : (
                   <div>
                     {historial.map((comp: { id: string; periodo: string; monto: string | null; cargadoEl: string }) => (
-                      <div key={comp.id} className="flex items-start gap-3 border-b border-white/7 py-2.5 last:border-0">
+                      <div key={comp.id} className="flex items-start gap-3 border-b border-border py-2.5 last:border-0">
                         <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-income" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold capitalize">
@@ -332,7 +585,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                 )}
 
                 {/* Zona de upload (placeholder) */}
-                <div className="mt-3 cursor-pointer rounded-xl border-2 border-dashed border-white/10 p-4 text-center text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary">
+                <div className="mt-3 cursor-pointer rounded-xl border-2 border-dashed border-border p-4 text-center text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary">
                   <Upload className="mx-auto mb-1.5 h-5 w-5" />
                   <p>Arrastrá el comprobante aquí o <strong>hacé click para seleccionar</strong></p>
                   <p className="mt-1 text-[0.62rem]">PDF, JPG, PNG — máx. 5 MB</p>
@@ -357,13 +610,13 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                       onChange={(e) => setMotivoOmision(e.target.value)}
                       placeholder="Motivo de la omisión (ej: el propietario está tramitando la reconexión, comprobante en trámite…)"
                       rows={3}
-                      className="w-full resize-y rounded-lg border border-white/10 bg-[#222527] px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-error/30"
+                      className="w-full resize-y rounded-lg border border-border bg-surface-mid px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-error/30"
                     />
                     <div className="mt-2.5 flex justify-end">
                       <button
                         onClick={() => omitirBloqueo.mutate()}
                         disabled={omitirBloqueo.isPending || motivoOmision.length < 10}
-                        className="rounded-xl border border-error/20 bg-error-dim px-4 py-1.5 text-sm font-semibold text-error transition-colors hover:bg-error/20 disabled:opacity-50"
+                        className="btn btn-danger btn-sm"
                       >
                         {omitirBloqueo.isPending ? "Registrando…" : "Confirmar omisión"}
                       </button>
@@ -374,7 +627,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
 
               {tieneOmision && (
                 <div className="px-6 py-4">
-                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
                     Bloqueo omitido para este período. El alquiler puede cobrarse normalmente.
                   </div>
@@ -385,22 +638,54 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
         </div>
 
         {/* Footer */}
-        <div className="flex shrink-0 items-center justify-between border-t border-white/7 px-6 py-4">
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-white/10 px-4 py-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-white/5"
-          >
-            Cerrar
-          </button>
-          {estado !== "al_dia" && (
-            <button
-              onClick={() => cargarComprobante.mutate()}
-              disabled={cargarComprobante.isPending}
-              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-1.5 text-sm font-semibold text-[#561100] transition-opacity hover:brightness-110 disabled:opacity-60"
-            >
-              <Upload className="h-3.5 w-3.5" />
-              {cargarComprobante.isPending ? "Registrando…" : "Cargar comprobante"}
-            </button>
+        <div className="flex shrink-0 items-center justify-between border-t border-border px-6 py-4">
+          {editing ? (
+            <>
+              <button
+                onClick={() => setEditing(false)}
+                className="btn btn-ghost btn-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => guardarEdicion.mutate()}
+                disabled={guardarEdicion.isPending}
+                className="btn btn-primary btn-sm flex items-center gap-2"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {guardarEdicion.isPending ? "Guardando…" : "Guardar cambios"}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={onClose}
+                className="btn btn-ghost btn-sm"
+              >
+                Cerrar
+              </button>
+              <div className="flex items-center gap-2">
+                {s && (
+                  <button
+                    onClick={() => startEditing(s)}
+                    className="btn btn-secondary btn-sm flex items-center gap-2"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Editar
+                  </button>
+                )}
+                {estado !== "al_dia" && (
+                  <button
+                    onClick={() => cargarComprobante.mutate()}
+                    disabled={cargarComprobante.isPending}
+                    className="btn btn-primary btn-sm flex items-center gap-2"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    {cargarComprobante.isPending ? "Registrando…" : "Cargar comprobante"}
+                  </button>
+                )}
+              </div>
+            </>
           )}
         </div>
       </DrawerContent>

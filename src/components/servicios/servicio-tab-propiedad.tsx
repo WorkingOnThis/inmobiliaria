@@ -80,7 +80,7 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
     <div>
       {/* Nota de alerta */}
       {hayAlertas && (
-        <div className="mb-4 flex items-start gap-2 rounded-r-lg border border-white/10 border-l-4 border-l-mustard bg-mustard-dim px-4 py-3 text-sm text-muted-foreground">
+        <div className="mb-4 flex items-start gap-2 rounded-r-lg border border-border border-l-4 border-l-mustard bg-mustard-dim px-4 py-3 text-sm text-muted-foreground">
           <AlertTriangle className="h-4 w-4 shrink-0 text-mustard mt-0.5" />
           <div>
             {serviciosEnAlerta.map((s) => (
@@ -105,7 +105,7 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
         </p>
         <button
           onClick={() => setMostrarFormNuevo(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-[#561100] transition-opacity hover:brightness-110"
+          className="btn btn-primary btn-xs flex items-center gap-1.5"
         >
           <Plus className="h-3.5 w-3.5" />
           Agregar servicio
@@ -132,7 +132,7 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
       {isLoading ? (
         <div className="py-8 text-center text-sm text-muted-foreground">Cargando…</div>
       ) : servicios.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/10 py-10">
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border py-10">
           <p className="text-sm text-muted-foreground">No hay servicios configurados para esta propiedad</p>
           <button
             onClick={() => setMostrarFormNuevo(true)}
@@ -152,16 +152,16 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
               <div
                 key={s.id}
                 onClick={() => setDrawerServicioId(s.id)}
-                className={`flex cursor-pointer items-center gap-3.5 rounded-xl border bg-[#1d2022] p-3.5 transition-colors hover:border-primary/30 hover:bg-[#222527] ${
+                className={`flex cursor-pointer items-center gap-3.5 rounded-xl border bg-card p-3.5 transition-colors hover:border-primary/30 hover:bg-surface-mid ${
                   s.estado === "bloqueado"
                     ? "border-error/30 border-l-4 border-l-error"
                     : s.estado === "en_alerta"
                     ? "border-mustard/20 border-l-4 border-l-mustard"
-                    : "border-white/7"
+                    : "border-border"
                 }`}
               >
                 {/* Icono */}
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/8 text-lg">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-mid text-lg">
                   {icon}
                 </div>
 
@@ -184,7 +184,7 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
                   <StatusBadge variant={ESTADO_CONFIG[s.estado].variant}>
                     {ESTADO_CONFIG[s.estado].label}
                   </StatusBadge>
-                  <span className={`text-[0.6rem] font-bold rounded-full px-2 py-0.5 ${s.activaBloqueo ? "bg-primary/10 text-primary" : "bg-white/5 text-muted-foreground"}`}>
+                  <span className={`text-[0.6rem] font-bold rounded-full px-2 py-0.5 ${s.activaBloqueo ? "bg-primary/10 text-primary" : "bg-card text-muted-foreground"}`}>
                     {s.activaBloqueo ? "Activa bloqueo" : "No bloquea"}
                   </span>
                   {s.diasSinComprobante > 0 && (
