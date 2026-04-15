@@ -163,10 +163,10 @@ export default function PropietarioFichaPage() {
                   <StatusBadge
                     variant={
                       propietario.status === "activo"
-                        ? "green"
+                        ? "active"
                         : propietario.status === "suspendido"
-                        ? "mustard"
-                        : "muted"
+                        ? "suspended"
+                        : "baja"
                     }
                   >
                     {propietario.status === "activo"

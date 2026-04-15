@@ -124,16 +124,16 @@ function AlertasBadge({ estado, count }: { estado: ServicioEstado; count: number
   }
   if (estado === "bloqueado") {
     return (
-      <StatusBadge variant="red">
+      <StatusBadge variant="baja">
         Bloqueado{count > 1 ? ` (${count})` : ""}
       </StatusBadge>
     );
   }
   if (estado === "en_alerta") {
-    return <StatusBadge variant="mustard">{count} en alerta</StatusBadge>;
+    return <StatusBadge variant="suspended">{count} en alerta</StatusBadge>;
   }
   return (
-    <StatusBadge variant="muted">
+    <StatusBadge variant="draft">
       {count} pendiente{count > 1 ? "s" : ""}
     </StatusBadge>
   );

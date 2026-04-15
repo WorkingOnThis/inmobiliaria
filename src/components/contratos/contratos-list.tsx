@@ -39,16 +39,16 @@ const STATUS_FILTERS = [
 function statusBadgeVariant(status: string): StatusBadgeVariant {
   switch (status) {
     case "active":
-      return "green";
+      return "active";
     case "expiring_soon":
-      return "blue";
+      return "expiring";
     case "draft":
-      return "mustard";
+      return "draft";
     case "terminated":
     case "expired":
-      return "red";
+      return "baja";
     default:
-      return "muted";
+      return "draft";
   }
 }
 

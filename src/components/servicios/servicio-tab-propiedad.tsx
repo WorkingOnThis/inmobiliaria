@@ -15,6 +15,14 @@ import {
 } from "@/lib/servicios/constants";
 import { ServicioDrawerDetalle } from "./servicio-drawer-detalle";
 import { ServicioFormNuevo } from "./servicio-form-nuevo";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+
+const ESTADO_CONFIG: Record<ServicioEstado, { label: string; variant: StatusBadgeVariant }> = {
+  al_dia:    { label: "Al día",    variant: "income" },
+  pendiente: { label: "Pendiente", variant: "draft" },
+  en_alerta: { label: "En alerta", variant: "suspended" },
+  bloqueado: { label: "Bloqueado", variant: "baja" },
+};
 
 type Props = {
   propertyId: string;
@@ -48,20 +56,6 @@ function periodoLabel(periodo: string): string {
   });
 }
 
-function EstadoPill({ estado }: { estado: ServicioEstado }) {
-  const config: Record<ServicioEstado, { text: string; cls: string }> = {
-    al_dia:    { text: "✓ Al día",     cls: "bg-green-500/10 text-green-400 border border-green-500/20" },
-    pendiente: { text: "⏳ Pendiente", cls: "bg-white/5 text-muted-foreground border border-white/10" },
-    en_alerta: { text: "⚠ En alerta", cls: "bg-yellow-500/10 text-yellow-300 border border-yellow-500/20" },
-    bloqueado: { text: "🔒 Bloqueado", cls: "bg-red-500/10 text-red-400 border border-red-500/20" },
-  };
-  const { text, cls } = config[estado];
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold ${cls}`}>
-      {text}
-    </span>
-  );
-}
 
 export function ServicioTabPropiedad({ propertyId }: Props) {
   const queryClient = useQueryClient();
@@ -187,7 +181,9 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
 
                 {/* Estado */}
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <EstadoPill estado={s.estado} />
+                  <StatusBadge variant={ESTADO_CONFIG[s.estado].variant}>
+                    {ESTADO_CONFIG[s.estado].label}
+                  </StatusBadge>
                   <span className={`text-[0.6rem] font-bold rounded-full px-2 py-0.5 ${s.activaBloqueo ? "bg-primary/10 text-primary" : "bg-white/5 text-muted-foreground"}`}>
                     {s.activaBloqueo ? "Activa bloqueo" : "No bloquea"}
                   </span>

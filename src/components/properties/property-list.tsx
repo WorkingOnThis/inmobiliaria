@@ -25,6 +25,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { QuickPropertyForm } from "@/components/properties/quick-property-form";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+import { EntityAvatar } from "@/components/ui/entity-avatar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -92,42 +94,20 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
   otro: <Building2 size={16} />,
 };
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; bg: string; textColor: string; dot: string; borderLeft?: string }
-> = {
-  available: {
-    label: "Disponible",
-    bg: "var(--status-available-dim)",
-    textColor: "var(--status-available)",
-    dot: "var(--status-available)",
-    borderLeft: "var(--status-available)",
-  },
-  rented: {
-    label: "Alquilada",
-    bg: "var(--status-rented-dim)",
-    textColor: "var(--status-rented)",
-    dot: "var(--status-rented)",
-  },
-  reserved: {
-    label: "Reservada",
-    bg: "var(--status-reserved-dim)",
-    textColor: "var(--status-reserved)",
-    dot: "var(--status-reserved)",
-  },
-  maintenance: {
-    label: "Mantenimiento",
-    bg: "var(--status-maintenance-dim)",
-    textColor: "var(--status-maintenance)",
-    dot: "var(--status-maintenance)",
-    borderLeft: "var(--status-maintenance)",
-  },
-  sold: {
-    label: "Vendida",
-    bg: "var(--destructive-dim)",
-    textColor: "var(--destructive)",
-    dot: "var(--destructive)",
-  },
+const STATUS_CONFIG: Record<string, { label: string; borderLeft?: string }> = {
+  available:   { label: "Disponible",    borderLeft: "var(--status-available)" },
+  rented:      { label: "Alquilada" },
+  reserved:    { label: "Reservada" },
+  maintenance: { label: "Mantenimiento", borderLeft: "var(--status-maintenance)" },
+  sold:        { label: "Vendida" },
+};
+
+const STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
+  available:   "available",
+  rented:      "rented",
+  reserved:    "reserved",
+  maintenance: "maintenance",
+  sold:        "baja",
 };
 
 /** Colores activos para cada chip de filtro */
@@ -185,35 +165,6 @@ function buildPageNumbers(current: number, total: number): (number | "…")[] {
   if (current < total - 2) pages.push("…");
   pages.push(total);
   return pages;
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.available;
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap"
-      style={{ background: cfg.bg, color: cfg.textColor }}
-    >
-      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
-      {cfg.label}
-    </span>
-  );
-}
-
-function OwnerAvatar({ firstName, lastName }: { firstName: string | null; lastName: string | null }) {
-  return (
-    <span
-      className="inline-flex items-center justify-center w-7 h-7 flex-shrink-0 text-[10px] font-extrabold font-brand rounded-sm"
-      style={{
-        background: "var(--primary-dim)",
-        color: "var(--primary)",
-      }}
-    >
-      {getOwnerInitials(firstName, lastName)}
-    </span>
-  );
 }
 
 /** KPI card con colores específicos por tipo */
@@ -389,7 +340,11 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
 
       {/* Propietario */}
       <div className="flex items-center gap-2 min-w-0">
-        <OwnerAvatar firstName={prop.ownerFirstName} lastName={prop.ownerLastName} />
+        <EntityAvatar
+          initials={getOwnerInitials(prop.ownerFirstName, prop.ownerLastName)}
+          size="sm"
+          colorSeed={prop.ownerFirstName ?? undefined}
+        />
         <span
           className="text-[12px] font-medium truncate"
           style={{ color: "var(--foreground)" }}
@@ -407,7 +362,9 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
 
       {/* Estado */}
       <div className="flex items-center">
-        <StatusBadge status={prop.status} />
+        <StatusBadge variant={STATUS_VARIANT[prop.status] ?? "available"}>
+          {STATUS_CONFIG[prop.status]?.label ?? prop.status}
+        </StatusBadge>
       </div>
 
       {/* Tareas — placeholder hasta que exista el módulo */}

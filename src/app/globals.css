@@ -399,6 +399,47 @@
     border-color: color-mix(in srgb, var(--error) 20%, transparent);
   }
 
+  /* Status pills — dominio propiedad */
+  .status-rented {
+    background-color: var(--status-rented-dim);
+    color: var(--status-rented);
+    border-color: color-mix(in srgb, var(--status-rented) 20%, transparent);
+  }
+  .status-available {
+    background-color: var(--status-available-dim);
+    color: var(--status-available);
+    border-color: color-mix(in srgb, var(--status-available) 20%, transparent);
+  }
+  .status-reserved {
+    background-color: var(--status-reserved-dim);
+    color: var(--status-reserved);
+    border-color: color-mix(in srgb, var(--status-reserved) 20%, transparent);
+  }
+  .status-maintenance {
+    background-color: var(--status-maintenance-dim);
+    color: var(--status-maintenance);
+    border-color: color-mix(in srgb, var(--status-maintenance) 20%, transparent);
+  }
+
+  /* Status pills — dominio contrato / genérico */
+  .status-expiring {
+    background-color: var(--status-reserved-dim);
+    color: var(--status-reserved);
+    border-color: color-mix(in srgb, var(--status-reserved) 20%, transparent);
+  }
+  .status-draft {
+    background-color: var(--muted);
+    color: var(--muted-foreground);
+    border-color: transparent;
+  }
+
+  /* Status pills — dominio financiero */
+  .status-income {
+    background-color: var(--income-dim);
+    color: var(--income);
+    border-color: color-mix(in srgb, var(--income) 20%, transparent);
+  }
+
   /* --- Campos de dato en fichas --- */
   .field-value {
     font-size: 0.875rem;

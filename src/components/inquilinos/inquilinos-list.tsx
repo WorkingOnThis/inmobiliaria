@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { EntityAvatar } from "@/components/ui/entity-avatar";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -73,20 +74,6 @@ interface InquilinosResponse {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const AVATAR_COLORS = [
-  "bg-avatar-a",
-  "bg-avatar-b",
-  "bg-neutral",
-  "bg-income",
-  "bg-destructive",
-  "bg-status-reserved",
-  "bg-mustard",
-  "bg-primary",
-];
-
-function getAvatarColor(name: string): string {
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
-}
 
 function getInitials(firstName: string, lastName: string | null): string {
   const f = firstName[0]?.toUpperCase() ?? "";
@@ -112,7 +99,7 @@ function EstadoBadge({
   diasMora: number;
 }) {
   if (estado === "activo") {
-    return <StatusBadge variant="green">Activo</StatusBadge>;
+    return <StatusBadge variant="active">Activo</StatusBadge>;
   }
   if (estado === "en_mora") {
     return (
@@ -121,14 +108,14 @@ function EstadoBadge({
           <AlertTriangle className="h-3 w-3" />
           {diasMora} días de mora
         </span>
-        <StatusBadge variant="red">En mora</StatusBadge>
+        <StatusBadge variant="baja">En mora</StatusBadge>
       </div>
     );
   }
   if (estado === "por_vencer") {
-    return <StatusBadge variant="mustard">Por vencer</StatusBadge>;
+    return <StatusBadge variant="expiring">Por vencer</StatusBadge>;
   }
-  return <StatusBadge variant="muted">Sin contrato</StatusBadge>;
+  return <StatusBadge variant="draft">Sin contrato</StatusBadge>;
 }
 
 function ProgressBar({ value }: { value: number }) {
@@ -446,14 +433,11 @@ export function InquilinosList() {
                         {/* Inquilino */}
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div
-                              className={cn(
-                                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white",
-                                getAvatarColor(inq.firstName)
-                              )}
-                            >
-                              {getInitials(inq.firstName, inq.lastName)}
-                            </div>
+                            <EntityAvatar
+                              initials={getInitials(inq.firstName, inq.lastName)}
+                              size="md"
+                              colorSeed={inq.firstName}
+                            />
                             <div className="min-w-0">
                               <p className="font-medium text-sm leading-tight truncate">
                                 {nombre}

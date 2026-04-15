@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Search, User, Loader2 } from "lucide-react";
 import { PropietarioSlidePanel } from "./propietario-slide-panel";
 import { NuevoPropietarioModal } from "./nuevo-propietario-modal";
+import { EntityAvatar } from "@/components/ui/entity-avatar";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 
 interface Propietario {
   id: string;
@@ -35,11 +37,16 @@ function getInitials(firstName: string, lastName: string | null) {
     .slice(0, 2);
 }
 
-const AVATAR_COLORS = ["var(--avatar-a)", "var(--avatar-b)"];
+function propietarioStatusVariant(status: string): StatusBadgeVariant {
+  if (status === "activo") return "active";
+  if (status === "suspendido") return "suspended";
+  return "baja";
+}
 
-function avatarColor(name: string) {
-  const idx = name.charCodeAt(0) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[idx];
+function propietarioStatusLabel(status: string): string {
+  if (status === "activo") return "Activo";
+  if (status === "suspendido") return "Suspendido";
+  return "Baja";
 }
 
 export function PropietariosList() {
@@ -182,12 +189,11 @@ export function PropietariosList() {
                     handleRowClick(p);
                   }}
                 >
-                  <div
-                    className="w-7 h-7 rounded-[6px] flex items-center justify-center text-[0.62rem] font-extrabold text-white font-brand flex-shrink-0"
-                    style={{ background: avatarColor(p.firstName) }}
-                  >
-                    {getInitials(p.firstName, p.lastName)}
-                  </div>
+                  <EntityAvatar
+                    initials={getInitials(p.firstName, p.lastName)}
+                    size="sm"
+                    colorSeed={p.firstName}
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="text-[0.8rem] font-semibold text-foreground">
                       {p.lastName ? `${p.lastName}, ${p.firstName}` : p.firstName}
@@ -319,12 +325,11 @@ export function PropietariosList() {
                       >
                         <td className="px-3.5 py-3 align-middle">
                           <div className="flex items-center gap-2.5">
-                            <div
-                              className="w-8 h-8 rounded-[6px] flex items-center justify-center text-[0.68rem] font-extrabold text-white font-brand flex-shrink-0"
-                              style={{ background: avatarColor(p.firstName) }}
-                            >
-                              {getInitials(p.firstName, p.lastName)}
-                            </div>
+                            <EntityAvatar
+                              initials={getInitials(p.firstName, p.lastName)}
+                              size="md"
+                              colorSeed={p.firstName}
+                            />
                             <div>
                               <div className="font-semibold text-foreground whitespace-nowrap flex items-center gap-1.5">
                                 {p.lastName
@@ -375,22 +380,9 @@ export function PropietariosList() {
                           </span>
                         </td>
                         <td className="px-3.5 py-3 align-middle">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 text-[0.6rem] font-bold rounded-full ${
-                              p.status === "activo"
-                                ? "bg-green-dim text-green"
-                                : p.status === "suspendido"
-                                ? "bg-mustard-dim text-mustard"
-                                : "bg-secondary text-muted-foreground"
-                            }`}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-current block" />
-                            {p.status === "activo"
-                              ? "Activo"
-                              : p.status === "suspendido"
-                              ? "Suspendido"
-                              : "Baja"}
-                          </span>
+                          <StatusBadge variant={propietarioStatusVariant(p.status)}>
+                            {propietarioStatusLabel(p.status)}
+                          </StatusBadge>
                         </td>
                         <td className="px-3.5 py-3 align-middle">
                           <div
