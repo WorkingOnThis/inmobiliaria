@@ -38,6 +38,7 @@ import {
   ADJUSTMENT_INDEX_LABELS,
   ADJUSTMENT_FREQUENCY_LABELS,
   SERVICE_RESPONSIBILITY_LABELS,
+  SERVICE_RESPONSIBILITY_OPTIONS,
   PROPERTY_SERVICES,
   type ContractStatus,
   type ContractType,
@@ -103,6 +104,12 @@ interface EditableConditions {
   paymentModality: "A" | "B";
   adjustmentIndex: string;
   adjustmentFrequency: string;
+  serviceLuz: string;
+  serviceGas: string;
+  serviceAgua: string;
+  serviceMunicipalidad: string;
+  serviceRendas: string;
+  serviceExpensas: string;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -340,6 +347,23 @@ export function ContratoDetalle({ id }: { id: string }) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Error al guardar");
       }
+
+      // También actualizar responsabilidad de servicios en la propiedad
+      if (data?.propertyId) {
+        await fetch(`/api/properties/${data.propertyId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            serviceLuz: values.serviceLuz,
+            serviceGas: values.serviceGas,
+            serviceAgua: values.serviceAgua,
+            serviceMunicipalidad: values.serviceMunicipalidad,
+            serviceRendas: values.serviceRendas,
+            serviceExpensas: values.serviceExpensas,
+          }),
+        });
+      }
+
       return res.json();
     },
     onSuccess: () => {
@@ -385,6 +409,12 @@ export function ContratoDetalle({ id }: { id: string }) {
       paymentModality: data.paymentModality as "A" | "B",
       adjustmentIndex: data.adjustmentIndex,
       adjustmentFrequency: String(data.adjustmentFrequency),
+      serviceLuz: data.serviceLuz || "inquilino",
+      serviceGas: data.serviceGas || "inquilino",
+      serviceAgua: data.serviceAgua || "inquilino",
+      serviceMunicipalidad: data.serviceMunicipalidad || "inquilino",
+      serviceRendas: data.serviceRendas || "inquilino",
+      serviceExpensas: data.serviceExpensas || "na",
     });
     setIsEditing(true);
   };
@@ -464,6 +494,41 @@ export function ContratoDetalle({ id }: { id: string }) {
     otro: "📄",
   };
 
+  const serviciosItems = serviciosData?.items ?? [];
+
+  // Mapeo entre clave de propiedad y tipo de servicio en la tabla servicio
+  const SERVICE_KEY_TO_TIPO: Record<string, string> = {
+    serviceLuz: "luz",
+    serviceGas: "gas",
+    serviceAgua: "agua",
+    serviceMunicipalidad: "abl",
+    serviceRendas: "inmobiliario",
+    serviceExpensas: "expensas",
+  };
+
+  const getServiceValue = (key: string): string => {
+    const map: Record<string, string> = {
+      serviceLuz: data.serviceLuz,
+      serviceGas: data.serviceGas,
+      serviceAgua: data.serviceAgua,
+      serviceMunicipalidad: data.serviceMunicipalidad,
+      serviceRendas: data.serviceRendas,
+      serviceExpensas: data.serviceExpensas,
+    };
+    return map[key] || "na";
+  };
+
+  // Lista unificada: servicios aplicables (no "na") con o sin registro en la tabla servicio
+  const combinedServicios = PROPERTY_SERVICES
+    .filter(({ key }) => getServiceValue(key) !== "na")
+    .map(({ key, label }) => {
+      const tipo = SERVICE_KEY_TO_TIPO[key];
+      const existingServicio = serviciosItems.find((s) => s.tipo === tipo);
+      const responsableKey = getServiceValue(key) as ServiceResponsibility;
+      const responsableLabel = SERVICE_RESPONSIBILITY_LABELS[responsableKey] || responsableKey;
+      return { key, label, tipo, existingServicio, responsableLabel };
+    });
+
   const ESTADO_COLOR: Record<string, { bg: string; text: string; dot: string }> = {
     al_dia:    { bg: "bg-income-dim",      text: "text-income",      dot: "bg-income" },
     pendiente: { bg: "bg-surface-highest", text: "text-text-muted",  dot: "bg-text-muted" },
@@ -474,8 +539,6 @@ export function ContratoDetalle({ id }: { id: string }) {
   const ESTADO_LABEL: Record<string, string> = {
     al_dia: "Al día", pendiente: "Pendiente", en_alerta: "En alerta", bloqueado: "Bloqueado",
   };
-
-  const serviciosItems = serviciosData?.items ?? [];
 
   /* ── RENDER ── */
   return (
@@ -739,7 +802,36 @@ export function ContratoDetalle({ id }: { id: string }) {
                     </Select>
                   </div>
                 </div>
-                <div className="flex gap-2 justify-end">
+                {/* Responsabilidad de servicios e impuestos */}
+                <div className="col-span-2 border-t border-border pt-3">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.09em] text-text-muted mb-2.5">
+                    Servicios e impuestos — ¿quién paga?
+                  </p>
+                  <div className="space-y-2">
+                    {PROPERTY_SERVICES.map(({ key, label }) => (
+                      <div key={key} className="flex items-center gap-3">
+                        <span className="text-[0.75rem] text-text-secondary w-[110px] shrink-0">{label}</span>
+                        <Select
+                          value={editValues[key as keyof EditableConditions]}
+                          onValueChange={(v) => setEditValues((p) => p ? { ...p, [key]: v } : p)}
+                        >
+                          <SelectTrigger className="h-7 text-xs flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SERVICE_RESPONSIBILITY_OPTIONS.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {SERVICE_RESPONSIBILITY_LABELS[opt]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 justify-end col-span-2">
                   <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setEditValues(null); }} disabled={patchMutation.isPending}>
                     <X className="h-3 w-3 mr-1" /> Cancelar
                   </Button>
@@ -1089,47 +1181,67 @@ export function ContratoDetalle({ id }: { id: string }) {
             </button>
           </div>
 
-          {serviciosItems.length === 0 ? (
+          {combinedServicios.length === 0 ? (
             <div className="px-[18px] py-5 text-center">
-              <p className="text-[0.75rem] text-text-muted">No hay servicios configurados para esta propiedad</p>
+              <p className="text-[0.75rem] text-text-muted">No hay servicios aplicables configurados</p>
               <button
-                onClick={() => router.push(`/propiedades/${data.propertyId}?tab=servicios`)}
+                onClick={() => setIsEditing(true)}
                 className="mt-2 text-[0.72rem] text-primary hover:underline"
               >
-                + Configurar servicios
+                Editar condiciones para configurar →
               </button>
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {serviciosItems.map((s) => {
-                const estadoInfo = ESTADO_COLOR[s.estado] ?? ESTADO_COLOR.pendiente;
-                const icon = SERVICIO_TIPO_ICON[s.tipo] ?? "📄";
-                const nombre = SERVICIO_TIPO_SHORT[s.tipo] ?? s.tipo;
+              {combinedServicios.map(({ key, label, tipo, existingServicio, responsableLabel }) => {
+                if (existingServicio) {
+                  const s = existingServicio;
+                  const estadoInfo = ESTADO_COLOR[s.estado] ?? ESTADO_COLOR.pendiente;
+                  const icon = SERVICIO_TIPO_ICON[s.tipo] ?? "📄";
+                  const nombre = SERVICIO_TIPO_SHORT[s.tipo] ?? s.tipo;
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => router.push(`/propiedades/${data.propertyId}?tab=servicios&servicioId=${s.id}`)}
+                      className="flex items-center gap-3 px-[18px] py-3 cursor-pointer hover:bg-surface-mid transition-colors"
+                    >
+                      <span className="text-base w-6 text-center flex-shrink-0">{icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[0.78rem] font-semibold text-on-surface">{nombre}</p>
+                        {s.empresa && (
+                          <p className="text-[0.66rem] text-text-muted truncate">{s.empresa}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {s.diasSinComprobante > 0 && (
+                          <span className="text-[0.63rem] text-text-muted">
+                            {s.diasSinComprobante}d sin comprobante
+                          </span>
+                        )}
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.63rem] font-bold ${estadoInfo.bg} ${estadoInfo.text}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${estadoInfo.dot}`} />
+                          {ESTADO_LABEL[s.estado] ?? s.estado}
+                        </span>
+                      </div>
+                      <ChevronRight className="h-3.5 w-3.5 text-text-muted flex-shrink-0" />
+                    </div>
+                  );
+                }
+
+                // Tarjeta fantasma: servicio aplicable pero sin datos cargados
+                const icon = SERVICIO_TIPO_ICON[tipo] ?? "📄";
                 return (
                   <div
-                    key={s.id}
-                    onClick={() => router.push(`/propiedades/${data.propertyId}?tab=servicios&servicioId=${s.id}`)}
-                    className="flex items-center gap-3 px-[18px] py-3 cursor-pointer hover:bg-surface-mid transition-colors"
+                    key={key}
+                    onClick={() => router.push(`/propiedades/${data.propertyId}?tab=servicios`)}
+                    className="flex items-center gap-3 px-[18px] py-3 cursor-pointer hover:bg-surface-mid transition-colors opacity-45 hover:opacity-75"
                   >
                     <span className="text-base w-6 text-center flex-shrink-0">{icon}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[0.78rem] font-semibold text-on-surface">{nombre}</p>
-                      {s.empresa && (
-                        <p className="text-[0.66rem] text-text-muted truncate">{s.empresa}</p>
-                      )}
+                      <p className="text-[0.78rem] font-semibold text-text-muted">{label}</p>
+                      <p className="text-[0.66rem] text-text-muted">Paga: {responsableLabel} · sin datos cargados</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {s.diasSinComprobante > 0 && (
-                        <span className="text-[0.63rem] text-text-muted">
-                          {s.diasSinComprobante}d sin comprobante
-                        </span>
-                      )}
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.63rem] font-bold ${estadoInfo.bg} ${estadoInfo.text}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${estadoInfo.dot}`} />
-                        {ESTADO_LABEL[s.estado] ?? s.estado}
-                      </span>
-                    </div>
-                    <ChevronRight className="h-3.5 w-3.5 text-text-muted flex-shrink-0" />
+                    <span className="text-[0.63rem] text-primary flex-shrink-0">+ Configurar →</span>
                   </div>
                 );
               })}

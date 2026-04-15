@@ -77,11 +77,12 @@ export async function GET(request: NextRequest) {
 
   // Batch-fetch inquilino name per property (active/expiring_soon contracts)
   const propertyIds = [...new Set(servicios.map((s) => s.propertyId))];
-  const inquilinoMap = new Map<string, string>();
+  const inquilinoMap = new Map<string, { nombre: string; clientId: string }>();
   if (propertyIds.length > 0) {
     const activeContracts = await db
       .select({
         propertyId: contract.propertyId,
+        clientId: client.id,
         firstName: client.firstName,
         lastName: client.lastName,
       })
@@ -99,7 +100,10 @@ export async function GET(request: NextRequest) {
       );
     for (const c of activeContracts) {
       if (!inquilinoMap.has(c.propertyId)) {
-        inquilinoMap.set(c.propertyId, `${c.firstName} ${c.lastName ?? ""}`.trim());
+        inquilinoMap.set(c.propertyId, {
+          nombre: `${c.firstName} ${c.lastName ?? ""}`.trim(),
+          clientId: c.clientId,
+        });
       }
     }
   }
@@ -136,7 +140,8 @@ export async function GET(request: NextRequest) {
         diasSinComprobante: comprobante ? 0 : diasTranscurridos,
         ultimoComprobante: comprobante ?? null,
         tieneOmision: !!omision,
-        inquilinoNombre: inquilinoMap.get(s.propertyId) ?? null,
+        inquilinoNombre: inquilinoMap.get(s.propertyId)?.nombre ?? null,
+        inquilinoId: inquilinoMap.get(s.propertyId)?.clientId ?? null,
       };
     })
   );

@@ -35,6 +35,7 @@ type PropiedadResumen = {
   propertyId: string;
   propertyAddress: string | null;
   inquilinoNombre?: string;
+  inquilinoId?: string;
   servicios: ServicioResumen[];
   peorEstado: ServicioEstado;
   alertasCount: number;
@@ -110,7 +111,8 @@ function ServicioChip({
   return (
     <span
       onClick={onClick}
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.63rem] font-bold transition-opacity ${clases[estado]} ${onClick ? "cursor-pointer hover:opacity-75" : ""}`}
+      title={onClick ? `Ver detalle de ${label}` : undefined}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.63rem] font-bold transition-all ${clases[estado]} ${onClick ? "cursor-pointer ring-1 ring-transparent hover:ring-current/30 hover:scale-105 active:scale-95" : ""}`}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClases[estado]}`} />
       {label}
@@ -175,6 +177,7 @@ export function ServiciosControlPanel() {
           propertyId: string;
           propertyAddress: string | null;
           inquilinoNombre: string | null;
+          inquilinoId: string | null;
         })[];
         pagination: { total: number; page: number; limit: number; totalPages: number };
       }>;
@@ -191,6 +194,7 @@ export function ServiciosControlPanel() {
         propertyId: item.propertyId,
         propertyAddress: item.propertyAddress,
         inquilinoNombre: item.inquilinoNombre ?? undefined,
+        inquilinoId: item.inquilinoId ?? undefined,
         servicios: [],
         peorEstado: "al_dia",
         alertasCount: 0,
@@ -406,8 +410,19 @@ export function ServiciosControlPanel() {
                   <td className="border-b border-border px-3.5 py-3">
                     <div className="font-semibold">{prop.propertyAddress ?? "Sin dirección"}</div>
                   </td>
-                  <td className="border-b border-border px-3.5 py-3">
-                    {prop.inquilinoNombre ? (
+                  <td
+                    className="border-b border-border px-3.5 py-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {prop.inquilinoNombre && prop.inquilinoId ? (
+                      <button
+                        onClick={() => router.push(`/inquilinos/${prop.inquilinoId}`)}
+                        className="group/inq flex items-center gap-1 text-sm text-primary underline-offset-2 hover:underline"
+                      >
+                        {prop.inquilinoNombre}
+                        <ArrowRight className="h-3 w-3 opacity-0 transition-opacity group-hover/inq:opacity-100" />
+                      </button>
+                    ) : prop.inquilinoNombre ? (
                       <span className="text-sm text-on-bg">{prop.inquilinoNombre}</span>
                     ) : (
                       <span className="text-[0.75rem] text-text-muted italic">Sin inquilino</span>

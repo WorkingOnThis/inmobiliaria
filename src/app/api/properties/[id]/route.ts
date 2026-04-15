@@ -19,6 +19,12 @@ const updatePropertySchema = z.object({
   bathrooms: z.coerce.number().int().min(0).optional().nullable(),
   surface: z.coerce.number().optional().nullable(),
   price: z.coerce.number().optional().nullable(),
+  serviceLuz: z.enum(["inquilino", "propietario", "na"]).optional(),
+  serviceGas: z.enum(["inquilino", "propietario", "na"]).optional(),
+  serviceAgua: z.enum(["inquilino", "propietario", "na"]).optional(),
+  serviceMunicipalidad: z.enum(["inquilino", "propietario", "na"]).optional(),
+  serviceRendas: z.enum(["inquilino", "propietario", "na"]).optional(),
+  serviceExpensas: z.enum(["inquilino", "propietario", "na"]).optional(),
 });
 
 export async function GET(
@@ -113,6 +119,12 @@ export async function PATCH(
     if (data.bathrooms !== undefined) updateData.bathrooms = data.bathrooms;
     if (data.surface !== undefined) updateData.surface = data.surface != null ? String(data.surface) : null;
     if (data.price !== undefined) updateData.price = data.price != null ? String(data.price) : null;
+    if (data.serviceLuz !== undefined) updateData.serviceLuz = data.serviceLuz;
+    if (data.serviceGas !== undefined) updateData.serviceGas = data.serviceGas;
+    if (data.serviceAgua !== undefined) updateData.serviceAgua = data.serviceAgua;
+    if (data.serviceMunicipalidad !== undefined) updateData.serviceMunicipalidad = data.serviceMunicipalidad;
+    if (data.serviceRendas !== undefined) updateData.serviceRendas = data.serviceRendas;
+    if (data.serviceExpensas !== undefined) updateData.serviceExpensas = data.serviceExpensas;
 
     const [updated] = await db
       .update(property)
