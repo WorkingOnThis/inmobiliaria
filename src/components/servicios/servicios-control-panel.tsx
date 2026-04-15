@@ -174,6 +174,7 @@ export function ServiciosControlPanel() {
         items: (ServicioResumen & {
           propertyId: string;
           propertyAddress: string | null;
+          inquilinoNombre: string | null;
         })[];
         pagination: { total: number; page: number; limit: number; totalPages: number };
       }>;
@@ -189,6 +190,7 @@ export function ServiciosControlPanel() {
       mapaProps.set(item.propertyId, {
         propertyId: item.propertyId,
         propertyAddress: item.propertyAddress,
+        inquilinoNombre: item.inquilinoNombre ?? undefined,
         servicios: [],
         peorEstado: "al_dia",
         alertasCount: 0,
@@ -405,7 +407,11 @@ export function ServiciosControlPanel() {
                     <div className="font-semibold">{prop.propertyAddress ?? "Sin dirección"}</div>
                   </td>
                   <td className="border-b border-border px-3.5 py-3">
-                    <span className="field-value empty"></span>
+                    {prop.inquilinoNombre ? (
+                      <span className="text-sm text-on-bg">{prop.inquilinoNombre}</span>
+                    ) : (
+                      <span className="text-[0.75rem] text-text-muted italic">Sin inquilino</span>
+                    )}
                   </td>
                   <td
                     className="border-b border-border px-3.5 py-3"

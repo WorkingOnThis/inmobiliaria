@@ -7,8 +7,9 @@ import { InquilinoTabCuentaCorriente } from "@/components/inquilinos/inquilino-t
 import { InquilinoTabContrato } from "@/components/inquilinos/inquilino-tab-contrato";
 import { InquilinoTabPropiedad } from "@/components/inquilinos/inquilino-tab-propiedad";
 import { InquilinoTabPropietario } from "@/components/inquilinos/inquilino-tab-propietario";
+import { ServicioTabPropiedad } from "@/components/servicios/servicio-tab-propiedad";
 
-type Tab = "cc" | "contrato" | "propiedad" | "propietario" | "tareas" | "documentos" | "notificaciones";
+type Tab = "cc" | "contrato" | "propiedad" | "propietario" | "servicios" | "tareas" | "documentos" | "notificaciones";
 
 function getInitials(firstName: string, lastName: string | null) {
   return [firstName, lastName]
@@ -128,6 +129,7 @@ export default function InquilinoFichaPage() {
     { key: "contrato", label: "📄 Contrato" },
     { key: "propiedad", label: "🏢 Propiedad" },
     { key: "propietario", label: "🏠 Propietario" },
+    { key: "servicios", label: "⚡ Servicios" },
     { key: "tareas", label: "✅ Tareas" },
     { key: "documentos", label: "📁 Documentos" },
     { key: "notificaciones", label: "🔔 Notificaciones" },
@@ -303,6 +305,18 @@ export default function InquilinoFichaPage() {
                 propietario={data?.propietario ?? null}
                 contrato={data?.contrato ?? null}
               />
+            )}
+
+            {activeTab === "servicios" && data?.propiedad?.id && (
+              <div className="p-7">
+                <ServicioTabPropiedad propertyId={data.propiedad.id} />
+              </div>
+            )}
+            {activeTab === "servicios" && !data?.propiedad?.id && (
+              <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-text-muted">
+                <div className="text-3xl opacity-30">⚡</div>
+                <div className="text-[0.85rem]">Este inquilino no tiene propiedad vinculada</div>
+              </div>
             )}
 
             {(activeTab === "tareas" || activeTab === "documentos" || activeTab === "notificaciones") && (

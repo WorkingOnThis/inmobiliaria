@@ -27,6 +27,7 @@ import {
   Search,
   X,
   Pencil,
+  ChevronRight,
 } from "lucide-react";
 import { format, differenceInMonths } from "date-fns";
 import { es } from "date-fns/locale";
@@ -227,6 +228,29 @@ export function ContratoDetalle({ id }: { id: string }) {
   });
   const customIndexes: { code: string; label: string }[] = customIndexesData?.indexes ?? [];
 
+  const { data: serviciosData } = useQuery({
+    queryKey: ["servicios", data?.propertyId],
+    queryFn: async () => {
+      if (!data?.propertyId) return null;
+      const hoy = new Date();
+      const periodo = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+      const res = await fetch(`/api/servicios?propertyId=${data.propertyId}&periodo=${periodo}&limit=20`);
+      if (!res.ok) return null;
+      return res.json() as Promise<{
+        items: {
+          id: string;
+          tipo: string;
+          empresa: string | null;
+          estado: string;
+          diasSinComprobante: number;
+          responsablePago: string;
+          activaBloqueo: boolean;
+        }[];
+      }>;
+    },
+    enabled: !!data?.propertyId,
+  });
+
   const { data: tenantsData } = useQuery({
     queryKey: ["clients", "inquilino", "select"],
     queryFn: async () => {
@@ -417,6 +441,41 @@ export function ContratoDetalle({ id }: { id: string }) {
 
   const showStepper = data.status === "draft" || data.status === "pending_signature";
   const stepStates = getStepStates(data.status);
+
+  const SERVICIO_TIPO_SHORT: Record<string, string> = {
+    luz: "Luz",
+    gas: "Gas",
+    agua: "Agua",
+    expensas: "Expensas",
+    abl: "ABL",
+    inmobiliario: "Inmobiliario",
+    seguro: "Seguro",
+    otro: "Otro",
+  };
+
+  const SERVICIO_TIPO_ICON: Record<string, string> = {
+    luz: "⚡",
+    gas: "🔥",
+    agua: "💧",
+    expensas: "🏢",
+    abl: "🏛",
+    inmobiliario: "📋",
+    seguro: "🛡",
+    otro: "📄",
+  };
+
+  const ESTADO_COLOR: Record<string, { bg: string; text: string; dot: string }> = {
+    al_dia:    { bg: "bg-income-dim",      text: "text-income",      dot: "bg-income" },
+    pendiente: { bg: "bg-surface-highest", text: "text-text-muted",  dot: "bg-text-muted" },
+    en_alerta: { bg: "bg-mustard-dim",     text: "text-mustard",     dot: "bg-mustard" },
+    bloqueado: { bg: "bg-error-dim",       text: "text-error",       dot: "bg-error" },
+  };
+
+  const ESTADO_LABEL: Record<string, string> = {
+    al_dia: "Al día", pendiente: "Pendiente", en_alerta: "En alerta", bloqueado: "Bloqueado",
+  };
+
+  const serviciosItems = serviciosData?.items ?? [];
 
   /* ── RENDER ── */
   return (
@@ -1015,32 +1074,67 @@ export function ContratoDetalle({ id }: { id: string }) {
 
         {/* ── Servicios ─────────────────────────────────────── */}
         <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
-          <div className="flex items-center gap-2 px-[18px] py-[14px] border-b border-border">
-            <Zap className="h-4 w-4 text-text-muted" />
-            <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">
-              Servicios e impuestos
-            </p>
-            <span className="text-[0.68rem] text-text-muted">(datos de la propiedad)</span>
+          <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-text-muted" />
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">
+                Servicios e impuestos
+              </p>
+            </div>
+            <button
+              onClick={() => router.push(`/propiedades/${data.propertyId}?tab=servicios`)}
+              className="text-[0.68rem] text-primary hover:underline flex items-center gap-1"
+            >
+              Ver todos →
+            </button>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
-            {PROPERTY_SERVICES.map(({ key, label }) => {
-              const value = data[key as keyof PropertyServices] as string;
-              const Icon = SERVICE_ICONS[key];
-              const resp = value as ServiceResponsibility;
-              const respLabel = SERVICE_RESPONSIBILITY_LABELS[resp] ?? value;
-              return (
-                <div key={key} className="px-[18px] py-3 flex items-center gap-3">
-                  {Icon && <Icon className="h-4 w-4 text-text-muted flex-shrink-0" />}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[0.67rem] text-text-muted">{label}</p>
-                    <p className={`text-[0.78rem] font-medium ${resp === "na" ? "text-text-muted" : "text-on-surface"}`}>
-                      {respLabel}
-                    </p>
+
+          {serviciosItems.length === 0 ? (
+            <div className="px-[18px] py-5 text-center">
+              <p className="text-[0.75rem] text-text-muted">No hay servicios configurados para esta propiedad</p>
+              <button
+                onClick={() => router.push(`/propiedades/${data.propertyId}?tab=servicios`)}
+                className="mt-2 text-[0.72rem] text-primary hover:underline"
+              >
+                + Configurar servicios
+              </button>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {serviciosItems.map((s) => {
+                const estadoInfo = ESTADO_COLOR[s.estado] ?? ESTADO_COLOR.pendiente;
+                const icon = SERVICIO_TIPO_ICON[s.tipo] ?? "📄";
+                const nombre = SERVICIO_TIPO_SHORT[s.tipo] ?? s.tipo;
+                return (
+                  <div
+                    key={s.id}
+                    onClick={() => router.push(`/propiedades/${data.propertyId}?tab=servicios&servicioId=${s.id}`)}
+                    className="flex items-center gap-3 px-[18px] py-3 cursor-pointer hover:bg-surface-mid transition-colors"
+                  >
+                    <span className="text-base w-6 text-center flex-shrink-0">{icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[0.78rem] font-semibold text-on-surface">{nombre}</p>
+                      {s.empresa && (
+                        <p className="text-[0.66rem] text-text-muted truncate">{s.empresa}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {s.diasSinComprobante > 0 && (
+                        <span className="text-[0.63rem] text-text-muted">
+                          {s.diasSinComprobante}d sin comprobante
+                        </span>
+                      )}
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.63rem] font-bold ${estadoInfo.bg} ${estadoInfo.text}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${estadoInfo.dot}`} />
+                        {ESTADO_LABEL[s.estado] ?? s.estado}
+                      </span>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-text-muted flex-shrink-0" />
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* ── Actions footer ───────────────────────────────── */}

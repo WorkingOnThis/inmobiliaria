@@ -3,8 +3,8 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { canManageServices } from "@/lib/permissions";
-import { servicio, servicioComprobante, servicioOmision, property } from "@/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { servicio, servicioComprobante, servicioOmision, property, contract, contractTenant, client } from "@/db/schema";
+import { eq, and, desc, sql, inArray, or } from "drizzle-orm";
 import { z } from "zod";
 import { calcularEstadoServicio } from "@/lib/servicios/constants";
 
@@ -75,6 +75,35 @@ export async function GET(request: NextRequest) {
     .limit(limit)
     .offset(offset);
 
+  // Batch-fetch inquilino name per property (active/expiring_soon contracts)
+  const propertyIds = [...new Set(servicios.map((s) => s.propertyId))];
+  const inquilinoMap = new Map<string, string>();
+  if (propertyIds.length > 0) {
+    const activeContracts = await db
+      .select({
+        propertyId: contract.propertyId,
+        firstName: client.firstName,
+        lastName: client.lastName,
+      })
+      .from(contract)
+      .innerJoin(
+        contractTenant,
+        and(eq(contractTenant.contractId, contract.id), eq(contractTenant.role, "principal"))
+      )
+      .innerJoin(client, eq(client.id, contractTenant.clientId))
+      .where(
+        and(
+          inArray(contract.propertyId, propertyIds),
+          or(eq(contract.status, "active"), eq(contract.status, "expiring_soon"))
+        )
+      );
+    for (const c of activeContracts) {
+      if (!inquilinoMap.has(c.propertyId)) {
+        inquilinoMap.set(c.propertyId, `${c.firstName} ${c.lastName ?? ""}`.trim());
+      }
+    }
+  }
+
   // Para cada servicio, obtener el comprobante del período y la omisión si existe
   const serviciosConEstado = await Promise.all(
     servicios.map(async (s) => {
@@ -107,6 +136,7 @@ export async function GET(request: NextRequest) {
         diasSinComprobante: comprobante ? 0 : diasTranscurridos,
         ultimoComprobante: comprobante ?? null,
         tieneOmision: !!omision,
+        inquilinoNombre: inquilinoMap.get(s.propertyId) ?? null,
       };
     })
   );
