@@ -31,7 +31,11 @@
       "Bash('~/.bun/bin/bun' --eval ' *)",
       "Bash(~/.bun/bin/bun run *)",
       "Bash(pg_isready -h localhost -p 5432)",
-      "Bash(psql \"postgresql://postgres:soygenial@localhost:5432/inmobiliaria\" -c \"SELECT tablename FROM pg_tables WHERE schemaname='public';\")"
+      "Bash(psql \"postgresql://postgres:soygenial@localhost:5432/inmobiliaria\" -c \"SELECT tablename FROM pg_tables WHERE schemaname='public';\")",
+      "Bash(head -50 /f/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/route.ts)",
+      "Bash(~/.bun/bin/bunx tsc *)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
     ]
   }
 }
