@@ -53,6 +53,14 @@ export const CONTRACT_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_ad
 export const SERVICE_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
 
 /**
+ * Permisos para la gestión de tareas
+ *
+ * Define qué roles pueden crear/editar/resolver tareas:
+ * - `/tareas` (vista y gestión)
+ */
+export const TASK_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
+
+/**
  * Verifica si un rol tiene permisos para crear cláusulas
  * 
  * @param role - El rol del usuario a verificar
@@ -108,6 +116,17 @@ export function canManageServices(role: string | null | undefined): boolean {
 }
 
 /**
+ * Verifica si un rol tiene permisos para gestionar tareas
+ *
+ * @param role - El rol del usuario a verificar
+ * @returns true si el rol tiene permisos, false en caso contrario
+ */
+export function canManageTasks(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return TASK_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
+}
+
+/**
  * Verifica si un rol tiene acceso a una ruta específica
  * 
  * @param route - La ruta a verificar (ej: "/contratos/clausulas")
@@ -157,6 +176,11 @@ export function hasRouteAccess(
 
   // Permisos para rutas de gestión de servicios
   if (route.startsWith("/servicios") && !canManageServices(role)) {
+    return false;
+  }
+
+  // Permisos para rutas de gestión de tareas
+  if (route.startsWith("/tareas") && !canManageTasks(role)) {
     return false;
   }
 

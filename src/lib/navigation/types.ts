@@ -15,7 +15,9 @@ export type PermissionFunction =
   | "canManageClauses"
   | "canManageClients"
   | "canManageProperties"
-  | "canManageContracts";
+  | "canManageContracts"
+  | "canManageServices"
+  | "canManageTasks";
 
 /**
  * Tipo para un item de menú individual

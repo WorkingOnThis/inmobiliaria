@@ -381,6 +381,13 @@
   }
   .btn-danger:hover:not(:disabled) { background-color: var(--error); color: var(--primary-foreground); }
 
+  .btn-green {
+    background-color: var(--green-dim);
+    color: var(--green);
+    border-color: rgba(127, 211, 160, 0.2);
+  }
+  .btn-green:hover:not(:disabled) { filter: brightness(1.08); }
+
   .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
   .btn-xs { padding: 0.25rem 0.5rem;  font-size: 0.75rem; }
 

@@ -16,3 +16,4 @@ export * from "./contract-tenant";
 export * from "./custom-adjustment-index";
 export * from "./property";
 export * from "./servicio";
+export * from "./tarea";
