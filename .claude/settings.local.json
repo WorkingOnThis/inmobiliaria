@@ -13,7 +13,25 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(curl:*)",
       "Bash(mkdir -p \"C:/Users/guill/.claude/skills/frontend-design\")",
-      "Bash(mv \"C:/Users/guill/.claude/skills/frontend-design.md\" \"C:/Users/guill/.claude/skills/frontend-design/SKILL.md\")"
+      "Bash(mv \"C:/Users/guill/.claude/skills/frontend-design.md\" \"C:/Users/guill/.claude/skills/frontend-design/SKILL.md\")",
+      "Bash(bun dev *)",
+      "Bash(where bun *)",
+      "Read(//c/Users/guill/.bun/**)",
+      "Read(//c/Users/guill/AppData/Local/**)",
+      "Read(//c/Users/guill/AppData/Roaming/**)",
+      "Bash(cmd.exe /c \"where bun\")",
+      "Bash(cmd.exe *)",
+      "Bash(bun install *)",
+      "Bash(export PATH=\"$PATH:/c/Users/guill/.bun/bin\")",
+      "Bash(ls *)",
+      "Bash(grep -o \"DATABASE_URL=.\\\\{0,30\\\\}\" F:\\\\Documentos\\\\Proyectos\\\\inmobiliaria\\\\.env)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash('~/.bun/bin/bun' run -e ' *)",
+      "Bash(~/.bun/bin/bun scripts/seed.ts)",
+      "Bash('~/.bun/bin/bun' --eval ' *)",
+      "Bash(~/.bun/bin/bun run *)",
+      "Bash(pg_isready -h localhost -p 5432)",
+      "Bash(psql \"postgresql://postgres:soygenial@localhost:5432/inmobiliaria\" -c \"SELECT tablename FROM pg_tables WHERE schemaname='public';\")"
     ]
   }
 }

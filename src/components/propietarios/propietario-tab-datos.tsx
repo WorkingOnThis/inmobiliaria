@@ -54,7 +54,7 @@ function DataField({
 }) {
   return (
     <div id={`field-${id}`} className="flex flex-col gap-1">
-      <div className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#6b6d70] mb-0.5">
+      <div className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
         {label}
       </div>
       {editing ? (
@@ -63,7 +63,7 @@ function DataField({
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`w-full bg-[#222527] border border-[rgba(255,180,162,0.2)] rounded-[12px] text-[#e1e2e4] text-[0.85rem] px-3 py-2 outline-none focus:border-[#ffb4a2] transition-all placeholder:text-[#6b6d70] ${
+          className={`w-full bg-surface-mid border border-border-accent rounded-[12px] text-on-surface text-[0.85rem] px-3 py-2 outline-none focus:border-primary transition-all placeholder:text-text-muted ${
             mono ? "font-mono text-[0.82rem]" : ""
           }`}
         />
@@ -72,9 +72,9 @@ function DataField({
           className={`text-[0.875rem] font-medium ${
             !value
               ? alert
-                ? "text-[#ffdea8] italic font-normal flex items-center gap-1.5"
-                : "text-[#6b6d70] italic font-normal"
-              : `text-[#e1e2e4] ${mono ? "font-mono text-[0.82rem]" : ""}`
+                ? "text-mustard italic font-normal flex items-center gap-1.5"
+                : "text-text-muted italic font-normal"
+              : `text-on-surface ${mono ? "font-mono text-[0.82rem]" : ""}`
           }`}
         >
           {!value && alert && <AlertCircle size={13} className="flex-shrink-0" />}
@@ -207,7 +207,7 @@ export function PropietarioTabDatos({
   };
 
   const cardClass =
-    "bg-[#191c1e] border border-white/[0.07] rounded-[18px] p-5";
+    "bg-surface border border-border rounded-[18px] p-5";
 
   return (
     <div className="p-7 flex flex-col gap-5">
@@ -218,14 +218,14 @@ export function PropietarioTabDatos({
             <button
               onClick={handleCancelEdit}
               disabled={saving}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold text-[#a8a9ac] bg-[#333537] border border-white/[0.07] rounded-[12px] hover:bg-[#282a2c] transition-all disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold text-text-secondary bg-surface-highest border border-border rounded-[12px] hover:bg-surface-high transition-all disabled:opacity-50"
             >
               <X size={13} /> Cancelar
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold bg-[#ffb4a2] text-[#561100] rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold bg-primary text-primary-foreground rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50"
             >
               {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
               Guardar cambios
@@ -234,7 +234,7 @@ export function PropietarioTabDatos({
         ) : (
           <button
             onClick={() => setEditing(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold text-[#a8a9ac] bg-[#333537] border border-white/[0.07] rounded-[12px] hover:bg-[#282a2c] transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold text-text-secondary bg-surface-highest border border-border rounded-[12px] hover:bg-surface-high transition-all"
           >
             <Edit2 size={13} /> Editar datos
           </button>
@@ -245,7 +245,7 @@ export function PropietarioTabDatos({
         {/* Card: Datos personales */}
         <div className={cardClass}>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70]">
+            <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-muted">
               Datos personales
             </span>
           </div>
@@ -284,7 +284,7 @@ export function PropietarioTabDatos({
                 placeholder="20-28441100-4"
               />
             </div>
-            <div className="h-px bg-white/[0.07]" />
+            <div className="h-px bg-border" />
             <DataField
               id="email"
               label="Email"
@@ -326,7 +326,7 @@ export function PropietarioTabDatos({
         {/* Card: Datos bancarios */}
         <div className={cardClass}>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70]">
+            <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-muted">
               Datos bancarios
             </span>
           </div>
@@ -349,7 +349,7 @@ export function PropietarioTabDatos({
               onChange={setField("alias")}
               placeholder="carlos.mendoza.mp"
             />
-            <div className="h-px bg-white/[0.07]" />
+            <div className="h-px bg-border" />
             <div className="grid grid-cols-2 gap-3.5">
               <DataField
                 id="banco"
@@ -360,7 +360,7 @@ export function PropietarioTabDatos({
                 placeholder="Banco Nación"
               />
               <div className="flex flex-col gap-1">
-                <div className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-[#6b6d70] mb-0.5">
+                <div className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                   Tipo de cuenta
                 </div>
                 {editing ? (
@@ -372,7 +372,7 @@ export function PropietarioTabDatos({
                         tipoCuenta: e.target.value || null,
                       }))
                     }
-                    className="w-full bg-[#222527] border border-[rgba(255,180,162,0.2)] rounded-[12px] text-[#e1e2e4] text-[0.85rem] px-3 py-2 outline-none focus:border-[#ffb4a2] transition-all"
+                    className="w-full bg-surface-mid border border-border-accent rounded-[12px] text-on-surface text-[0.85rem] px-3 py-2 outline-none focus:border-primary transition-all"
                   >
                     <option value="">Sin especificar</option>
                     <option value="caja_ahorro">Caja de ahorro</option>
@@ -381,7 +381,7 @@ export function PropietarioTabDatos({
                 ) : (
                   <div
                     className={`text-[0.875rem] font-medium ${
-                      !form.tipoCuenta ? "text-[#6b6d70] italic font-normal" : "text-[#e1e2e4]"
+                      !form.tipoCuenta ? "text-text-muted italic font-normal" : "text-on-surface"
                     }`}
                   >
                     {form.tipoCuenta === "caja_ahorro"
@@ -400,21 +400,21 @@ export function PropietarioTabDatos({
       {/* Card: Estado del propietario */}
       <div className={cardClass}>
         <div className="flex items-center justify-between mb-4">
-          <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70]">
+          <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-muted">
             Estado del propietario
           </span>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex-1">
-            <div className="text-[0.875rem] text-[#e1e2e4]">
+            <div className="text-[0.875rem] text-on-surface">
               Estado actual:{" "}
               <span
                 className={`font-semibold ${
                   propietario.status === "activo"
-                    ? "text-[#7fd3a0]"
+                    ? "text-green"
                     : propietario.status === "suspendido"
-                    ? "text-[#ffdea8]"
-                    : "text-[#ffb4ab]"
+                    ? "text-mustard"
+                    : "text-error"
                 }`}
               >
                 {propietario.status === "activo"
@@ -424,7 +424,7 @@ export function PropietarioTabDatos({
                   : "Dado de baja"}
               </span>
             </div>
-            <div className="text-[0.72rem] text-[#6b6d70] mt-1">
+            <div className="text-[0.72rem] text-text-muted mt-1">
               {propietario.status === "activo"
                 ? "El propietario está activo y puede recibir liquidaciones."
                 : propietario.status === "suspendido"
@@ -435,7 +435,7 @@ export function PropietarioTabDatos({
           {propietario.status !== "activo" && (
             <button
               onClick={handleReactivar}
-              className="px-3.5 py-2 text-[0.72rem] font-semibold bg-[rgba(127,211,160,0.12)] text-[#7fd3a0] border border-[rgba(127,211,160,0.2)] rounded-[12px] hover:bg-[rgba(127,211,160,0.2)] transition-all"
+              className="px-3.5 py-2 text-[0.72rem] font-semibold bg-green-dim text-green border border-green/20 rounded-[12px] hover:bg-green/20 transition-all"
             >
               Reactivar
             </button>
@@ -445,26 +445,26 @@ export function PropietarioTabDatos({
 
       {/* Danger zone */}
       {propietario.status === "activo" && (
-        <div className="bg-[#191c1e] border border-[rgba(255,180,171,0.15)] rounded-[18px] p-5">
-          <div className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-[#ffb4ab] mb-3">
+        <div className="bg-surface border border-error-dim rounded-[18px] p-5">
+          <div className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-error mb-3">
             Zona de riesgo
           </div>
           {confirmStatus ? (
             <div className="flex flex-col gap-3">
-              <div className="text-[0.82rem] text-[#e1e2e4]">
+              <div className="text-[0.82rem] text-on-surface">
                 ¿Estás seguro de que querés{" "}
                 <strong>
                   {confirmStatus === "suspendido" ? "suspender" : "dar de baja"}
                 </strong>{" "}
                 a este propietario?
                 {confirmStatus === "baja" && (
-                  <span className="text-[#ffb4ab]"> Esta acción es difícil de revertir.</span>
+                  <span className="text-error"> Esta acción es difícil de revertir.</span>
                 )}
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setConfirmStatus(null)}
-                  className="px-3.5 py-2 text-[0.72rem] font-semibold text-[#a8a9ac] bg-[#333537] border border-white/[0.07] rounded-[12px] hover:bg-[#282a2c] transition-all"
+                  className="px-3.5 py-2 text-[0.72rem] font-semibold text-text-secondary bg-surface-highest border border-border rounded-[12px] hover:bg-surface-high transition-all"
                 >
                   Cancelar
                 </button>
@@ -472,8 +472,8 @@ export function PropietarioTabDatos({
                   onClick={() => handleStatusChange(confirmStatus)}
                   className={`px-3.5 py-2 text-[0.72rem] font-semibold rounded-[12px] transition-all ${
                     confirmStatus === "baja"
-                      ? "bg-[rgba(255,180,171,0.12)] text-[#ffb4ab] border border-[rgba(255,180,171,0.2)] hover:bg-[rgba(255,180,171,0.2)]"
-                      : "bg-[rgba(253,222,168,0.15)] text-[#ffdea8] border border-[rgba(253,222,168,0.2)] hover:bg-[rgba(253,222,168,0.25)]"
+                      ? "bg-error-dim text-error border border-error/20 hover:bg-error/20"
+                      : "bg-mustard-dim text-mustard border border-mustard/20 hover:bg-mustard/25"
                   }`}
                 >
                   Confirmar
@@ -485,22 +485,22 @@ export function PropietarioTabDatos({
               <div>
                 <button
                   onClick={() => setConfirmStatus("suspendido")}
-                  className="px-3.5 py-2 text-[0.72rem] font-semibold bg-[rgba(253,222,168,0.15)] text-[#ffdea8] border border-[rgba(253,222,168,0.2)] rounded-[12px] hover:bg-[rgba(253,222,168,0.25)] transition-all"
+                  className="px-3.5 py-2 text-[0.72rem] font-semibold bg-mustard-dim text-mustard border border-mustard/20 rounded-[12px] hover:bg-mustard/25 transition-all"
                 >
                   Suspender temporalmente
                 </button>
-                <div className="text-[0.65rem] text-[#6b6d70] mt-1.5">
+                <div className="text-[0.65rem] text-text-muted mt-1.5">
                   Pausa las liquidaciones, se puede revertir
                 </div>
               </div>
               <div>
                 <button
                   onClick={() => setConfirmStatus("baja")}
-                  className="px-3.5 py-2 text-[0.72rem] font-semibold bg-[rgba(255,180,171,0.12)] text-[#ffb4ab] border border-[rgba(255,180,171,0.2)] rounded-[12px] hover:bg-[rgba(255,180,171,0.2)] transition-all"
+                  className="px-3.5 py-2 text-[0.72rem] font-semibold bg-error-dim text-error border border-error/20 rounded-[12px] hover:bg-error/20 transition-all"
                 >
                   Dar de baja
                 </button>
-                <div className="text-[0.65rem] text-[#6b6d70] mt-1.5">
+                <div className="text-[0.65rem] text-text-muted mt-1.5">
                   Cierra la relación comercial
                 </div>
               </div>

@@ -14,7 +14,23 @@
   --font-mono: var(--font-geist-mono);
   --font-headline: var(--font-space-grotesk);
   --font-brand: var(--font-montserrat);
-  /* --- Tokens Arce extendidos --- */
+  /* --- Tokens Arce: superficies y texto (wireframe) --- */
+  --color-bg:                    var(--bg);
+  --color-surface:               var(--surface);
+  --color-surface-mid:           var(--surface-mid);
+  --color-surface-high:          var(--surface-high);
+  --color-surface-highest:       var(--surface-highest);
+  --color-on-bg:                 var(--on-bg);
+  --color-on-surface:            var(--on-surface);
+  --color-text-secondary:        var(--text-secondary);
+  --color-text-muted:            var(--text-muted);
+  /* --- Tokens Arce: primario extendido --- */
+  --color-primary-dark:          var(--primary-dark);
+  --color-primary-dim:           var(--primary-dim);
+  /* --- Tokens Arce: errores (alias semántico de destructive) --- */
+  --color-error:                 var(--error);
+  --color-error-dim:             var(--error-dim);
+  /* --- Tokens Arce: semánticos de estado --- */
   --color-avatar-a:              var(--avatar-a);
   --color-avatar-b:              var(--avatar-b);
   --color-green:                 var(--green);
@@ -25,7 +41,6 @@
   --color-income-dim:            var(--income-dim);
   --color-neutral:               var(--neutral);
   --color-neutral-dim:           var(--neutral-dim);
-  --color-primary-dim:           var(--primary-dim);
   --color-border-accent:         var(--border-accent);
   --color-destructive-dim:       var(--destructive-dim);
   --color-text-dim:              var(--text-dim);
@@ -66,13 +81,13 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  /* --- Radios: valores fijos del wireframe (no calculados) --- */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   18px;
+  --radius-xl:   24px;
+  --radius-2xl:  32px;
   --radius-pill: 9999px;
 }
 
@@ -82,8 +97,8 @@
    Un solo sistema. No hay bg-arce-*, solo bg-primary, etc.
    ============================================================ */
 :root {
-  /* --- Radio --- */
-  --radius: 0px;    /* Esquinas vivas en todo. Excepción: --radius-pill para tags */
+  /* --- Radio base (shadcn lo usa internamente; los tokens fijos están en @theme inline) --- */
+  --radius: 12px;
 
   /* --- Superficies (modo claro) --- */
   --background:          #f8f9fb;
@@ -133,7 +148,28 @@
   --sidebar-border:             rgba(139, 46, 22, 0.12);
   --sidebar-ring:               #6b1702;
 
-  /* --- Tokens Arce extendidos --- */
+  /* --- Tokens Arce: superficies semánticas (modo claro) --- */
+  --bg:                     #f8f9fb;
+  --surface:                #ffffff;
+  --surface-mid:            #f0f1f3;
+  --surface-high:           #f3f4f6;
+  --surface-highest:        #e8e9eb;
+
+  /* --- Tokens Arce: texto semántico (modo claro) --- */
+  --on-bg:                  #191c1e;
+  --on-surface:             #191c1e;
+  --text-secondary:         #5d5e62;
+  --text-muted:             #8a8b8e;
+
+  /* --- Tokens Arce: primario extendido --- */
+  --primary-dark:           #6b1702;
+  --primary-dim:            rgba(107,23,2,0.08);
+
+  /* --- Tokens Arce: errores semánticos (modo claro) --- */
+  --error:                  #ba1a1a;
+  --error-dim:              rgba(186,26,26,0.10);
+
+  /* --- Tokens Arce: semánticos de estado --- */
   --avatar-a:               #2d3f4e;
   --avatar-b:               #2e4038;
   --green:                  #7fd3a0;
@@ -145,10 +181,9 @@
   --expense:                var(--destructive);
   --neutral:                #8899ee;
   --neutral-dim:            rgba(100,130,220,0.12);
-  --primary-dim:            rgba(255,180,162,0.12);
-  --border-accent:          rgba(255,180,162,0.2);
-  --destructive-dim:        rgba(255,180,171,0.12);
-  --text-dim:               rgba(200,200,204,0.4);
+  --border-accent:          rgba(107,23,2,0.25);
+  --destructive-dim:        rgba(186,26,26,0.10);
+  --text-dim:               rgba(100,100,104,0.4);
   --status-available:       #ffdea8;
   --status-available-dim:   rgba(253,222,168,0.15);
   --status-rented:          #8dcf95;
@@ -157,8 +192,8 @@
   --status-maintenance-dim: rgba(253,186,116,0.12);
   --status-reserved:        #93c5fd;
   --status-reserved-dim:    rgba(147,197,253,0.12);
-  --border-subtle:          rgba(255,255,255,0.02);
-  --primary-subtle:         rgba(255,180,162,0.05);
+  --border-subtle:          rgba(0,0,0,0.04);
+  --primary-subtle:         rgba(107,23,2,0.04);
   --gradient-property:      linear-gradient(135deg, #1a2a1a, #2a4a2a);
   --gradient-owner:         linear-gradient(135deg, #1a2a30, #1a4060);
 }
@@ -212,7 +247,28 @@
   --sidebar-border:             rgba(221, 192, 185, 0.15);
   --sidebar-ring:               #ffb4a2;
 
-  /* --- Tokens Arce extendidos (oscuro) --- */
+  /* --- Tokens Arce: superficies semánticas (oscuro) --- */
+  --bg:                     #111314;
+  --surface:                #191c1e;
+  --surface-mid:            #222527;
+  --surface-high:           #282a2c;
+  --surface-highest:        #333537;
+
+  /* --- Tokens Arce: texto semántico (oscuro) --- */
+  --on-bg:                  #e1e2e4;
+  --on-surface:             #e1e2e4;
+  --text-secondary:         #a8a9ac;
+  --text-muted:             #6b6d70;
+
+  /* --- Tokens Arce: primario extendido --- */
+  --primary-dark:           #6b1702;
+  --primary-dim:            rgba(255,180,162,0.12);
+
+  /* --- Tokens Arce: errores semánticos (oscuro) --- */
+  --error:                  #ffb4ab;
+  --error-dim:              rgba(255,180,171,0.12);
+
+  /* --- Tokens Arce: semánticos de estado --- */
   --avatar-a:               #2d3f4e;
   --avatar-b:               #2e4038;
   --green:                  #7fd3a0;
@@ -224,7 +280,6 @@
   --expense:                var(--destructive);
   --neutral:                #8899ee;
   --neutral-dim:            rgba(100,130,220,0.12);
-  --primary-dim:            rgba(255,180,162,0.12);
   --border-accent:          rgba(255,180,162,0.2);
   --destructive-dim:        rgba(255,180,171,0.12);
   --text-dim:               rgba(200,200,204,0.4);
@@ -255,5 +310,146 @@
     font-family: var(--font-headline, var(--font-sans));
     letter-spacing: -0.02em;
     line-height: 1.15;
+  }
+}
+
+/* ============================================================
+   ARCE DESIGN SYSTEM — clases de componente
+   Definidas aquí una sola vez. Usar en JSX en lugar de
+   replicar las mismas clases Tailwind en cada componente.
+   ============================================================ */
+@layer components {
+
+  /* --- Botones --- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+  }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-primary {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+  }
+  .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+
+  .btn-secondary {
+    background-color: var(--surface-mid);
+    color: var(--on-surface);
+    border-color: var(--border);
+  }
+  .btn-secondary:hover:not(:disabled) { background-color: var(--surface-high); }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border-color: transparent;
+  }
+  .btn-ghost:hover:not(:disabled) { background-color: var(--surface-mid); color: var(--on-surface); }
+
+  .btn-danger {
+    background-color: var(--error-dim);
+    color: var(--error);
+    border-color: var(--error);
+  }
+  .btn-danger:hover:not(:disabled) { background-color: var(--error); color: var(--primary-foreground); }
+
+  .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
+  .btn-xs { padding: 0.25rem 0.5rem;  font-size: 0.75rem; }
+
+  /* --- Status pills --- */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.2em 0.65em;
+    border-radius: var(--radius-pill);
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+
+  .status-active {
+    background-color: var(--green-dim);
+    color: var(--green);
+    border-color: color-mix(in srgb, var(--green) 20%, transparent);
+  }
+
+  .status-suspended {
+    background-color: var(--mustard-dim);
+    color: var(--mustard);
+    border-color: color-mix(in srgb, var(--mustard) 20%, transparent);
+  }
+
+  .status-baja {
+    background-color: var(--error-dim);
+    color: var(--error);
+    border-color: color-mix(in srgb, var(--error) 20%, transparent);
+  }
+
+  /* --- Campos de dato en fichas --- */
+  .field-value {
+    font-size: 0.875rem;
+    color: var(--on-surface);
+    line-height: 1.5;
+  }
+
+  .field-value.empty {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  /* Usado junto a .field-value.empty para reemplazar el contenido con texto genérico */
+  .field-value.empty::before {
+    content: "Sin cargar";
+  }
+  /* Si el campo tiene contenido pero igual necesita el estilo vacío, usá el texto directamente */
+
+  .field-value.alert {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--mustard);
+    font-size: 0.8125rem;
+  }
+
+  /* --- Modo edición inline --- */
+  /* Aplicar .edit-mode al contenedor padre para activar la vista de edición */
+  .field-input-wrap {
+    display: none;
+  }
+  .edit-mode .field-value {
+    display: none;
+  }
+  .edit-mode .field-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .field-input {
+    width: 100%;
+    background-color: var(--surface-mid);
+    color: var(--on-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.375rem 0.625rem;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field-input:focus {
+    border-color: var(--primary);
   }
 }

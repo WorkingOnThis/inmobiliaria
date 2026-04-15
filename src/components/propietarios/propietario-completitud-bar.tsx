@@ -47,21 +47,21 @@ export function PropietarioCompletitudBar({
 
   // Gradiente: rojo (≤30%) → amarillo (60%) → verde (100%)
   function getGradient(pct: number) {
-    if (pct < 40) return "linear-gradient(90deg, #ff8a80, #ffb4a2)";
-    if (pct < 70) return "linear-gradient(90deg, #ffb4a2, #ffdea8)";
-    return "linear-gradient(90deg, #ffdea8, #7fd3a0)";
+    if (pct < 40) return "linear-gradient(90deg, var(--destructive), var(--primary))";
+    if (pct < 70) return "linear-gradient(90deg, var(--primary), var(--mustard))";
+    return "linear-gradient(90deg, var(--mustard), var(--green))";
   }
 
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-[#6b6d70]">
+        <span className="text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-text-muted">
           Completitud de la ficha
         </span>
-        <span className="text-[0.72rem] font-bold text-[#e1e2e4]">{pct}%</span>
+        <span className="text-[0.72rem] font-bold text-on-bg">{pct}%</span>
       </div>
 
-      <div className="h-1.5 bg-[#222527] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-surface-mid rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{
@@ -73,14 +73,14 @@ export function PropietarioCompletitudBar({
 
       {missing.length > 0 && (
         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-          <span className="text-[0.62rem] text-[#6b6d70] flex-shrink-0">Falta:</span>
+          <span className="text-[0.62rem] text-text-muted flex-shrink-0">Falta:</span>
           {missing.map((f) => (
             <button
               key={f.id}
               onClick={() => onChipClick?.(f.id)}
-              className="flex items-center gap-1 px-2 py-0.5 text-[0.62rem] font-medium text-[#a8a9ac] bg-[#222527] border border-white/[0.07] rounded-full hover:border-[rgba(255,180,162,0.2)] hover:text-[#ffb4a2] transition-all"
+              className="flex items-center gap-1 px-2 py-0.5 text-[0.62rem] font-medium text-text-secondary bg-surface-mid border border-border rounded-full hover:border-border-accent hover:text-primary transition-all"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ffb4a2] block flex-shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary block flex-shrink-0" />
               {f.label}
             </button>
           ))}

@@ -113,14 +113,14 @@ export default function PropietarioFichaPage() {
     <DashboardLayout>
       {isLoading ? (
         <div className="flex h-screen items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#6b6d70]" />
+          <Loader2 className="h-8 w-8 animate-spin text-text-muted" />
         </div>
       ) : error || !propietario ? (
-        <div className="flex h-screen flex-col items-center justify-center gap-4 text-[#6b6d70]">
+        <div className="flex h-screen flex-col items-center justify-center gap-4 text-text-muted">
           <div className="text-sm">{(error as Error)?.message ?? "Propietario no encontrado"}</div>
           <button
             onClick={() => router.push("/propietarios")}
-            className="text-[0.72rem] text-[#ffb4a2] hover:underline flex items-center gap-1"
+            className="text-[0.72rem] text-primary hover:underline flex items-center gap-1"
           >
             <ArrowLeft size={12} /> Volver a la lista
           </button>
@@ -128,16 +128,16 @@ export default function PropietarioFichaPage() {
       ) : (
         <div className="flex flex-col min-h-full">
           {/* Topbar / breadcrumb */}
-          <div className="h-14 bg-[#191c1e] border-b border-white/[0.07] flex items-center px-7 gap-2.5 flex-shrink-0">
+          <div className="h-14 bg-surface border-b border-border flex items-center px-7 gap-2.5 flex-shrink-0">
             <button
               onClick={() => router.push("/propietarios")}
-              className="text-[0.8rem] text-[#a8a9ac] hover:text-[#ffb4a2] transition-colors flex items-center gap-1"
+              className="text-[0.8rem] text-text-secondary hover:text-primary transition-colors flex items-center gap-1"
             >
               <ArrowLeft size={13} />
               Propietarios
             </button>
-            <span className="text-[#6b6d70]">›</span>
-            <span className="text-[0.8rem] font-semibold text-[#e1e2e4]">
+            <span className="text-text-muted">›</span>
+            <span className="text-[0.8rem] font-semibold text-on-bg">
               {propietario.lastName
                 ? `${propietario.firstName} ${propietario.lastName}`
                 : propietario.firstName}
@@ -145,17 +145,17 @@ export default function PropietarioFichaPage() {
           </div>
 
           {/* Profile header */}
-          <div className="bg-[#191c1e] border-b border-white/[0.07] px-7 py-5">
+          <div className="bg-surface border-b border-border px-7 py-5">
             <div className="flex items-start gap-4">
               {/* Avatar */}
-              <div className="w-12 h-12 rounded-[12px] bg-[#6b1702] flex items-center justify-center text-[1rem] font-extrabold text-white font-[Montserrat] flex-shrink-0">
+              <div className="w-12 h-12 rounded-[12px] bg-primary-dark flex items-center justify-center text-[1rem] font-extrabold text-white font-brand flex-shrink-0">
                 {getInitials(propietario.firstName, propietario.lastName)}
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-[1.3rem] font-bold text-[#e1e2e4] font-[Space_Grotesk] tracking-[-0.02em]">
+                  <h1 className="text-[1.3rem] font-bold text-on-bg font-headline tracking-[-0.02em]">
                     {propietario.lastName
                       ? `${propietario.firstName} ${propietario.lastName}`
                       : propietario.firstName}
@@ -176,7 +176,7 @@ export default function PropietarioFichaPage() {
                       : "Baja"}
                   </StatusBadge>
                   {propietario.dni && (
-                    <span className="text-[0.72rem] text-[#6b6d70]">
+                    <span className="text-[0.72rem] text-text-muted">
                       DNI {propietario.dni}
                     </span>
                   )}
@@ -191,7 +191,7 @@ export default function PropietarioFichaPage() {
           </div>
 
           {/* Tabs */}
-          <div className="bg-[#191c1e] border-b border-white/[0.07] px-7">
+          <div className="bg-surface border-b border-border px-7">
             <div className="flex gap-0">
               {[
                 { key: "datos" as Tab, label: "Datos" },
@@ -204,8 +204,8 @@ export default function PropietarioFichaPage() {
                   onClick={() => setTab(key)}
                   className={`px-4 py-3 text-[0.8rem] font-semibold border-b-2 transition-all ${
                     activeTab === key
-                      ? "border-[#ffb4a2] text-[#ffb4a2]"
-                      : "border-transparent text-[#6b6d70] hover:text-[#a8a9ac]"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-text-muted hover:text-text-secondary"
                   }`}
                 >
                   {label}
@@ -215,7 +215,7 @@ export default function PropietarioFichaPage() {
           </div>
 
           {/* Tab content */}
-          <div className="flex-1 overflow-y-auto bg-[#111314]">
+          <div className="flex-1 overflow-y-auto bg-bg">
             {activeTab === "datos" && (
               <PropietarioTabDatos
                 propietario={propietario}
