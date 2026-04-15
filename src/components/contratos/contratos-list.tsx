@@ -210,8 +210,8 @@ export function ContratosList() {
             onClick={() => handleStatusFilter(f.value)}
             className={`px-3 py-1 rounded-full text-sm border transition-colors ${
               statusFilter === f.value
-                ? "bg-foreground text-background border-foreground"
-                : "border-border hover:bg-accent"
+                ? "bg-primary text-primary-foreground border-primary/30"
+                : "border-border text-text-muted hover:text-text-secondary hover:bg-surface-mid"
             }`}
           >
             {f.label}
@@ -265,11 +265,13 @@ export function ContratosList() {
                         <TableCell className="font-mono font-medium">
                           {c.contractNumber}
                         </TableCell>
-                        <TableCell>{c.propertyAddress || "-"}</TableCell>
+                        <TableCell>
+                          {c.propertyAddress || <span className="field-value empty"></span>}
+                        </TableCell>
                         <TableCell>
                           {c.tenantNames?.length > 0
                             ? c.tenantNames.join(", ")
-                            : "-"}
+                            : <span className="field-value empty"></span>}
                         </TableCell>
                         <TableCell>{c.ownerName}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">

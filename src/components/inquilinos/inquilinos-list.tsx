@@ -476,7 +476,7 @@ export function InquilinosList() {
                         <TableCell>
                           <span className="text-sm">
                             {inq.propiedad ?? (
-                              <span className="text-muted-foreground">—</span>
+                              <span className="field-value empty"></span>
                             )}
                           </span>
                         </TableCell>
@@ -488,7 +488,7 @@ export function InquilinosList() {
                               {inq.contrato.numero}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground text-sm">—</span>
+                            <span className="field-value empty"></span>
                           )}
                         </TableCell>
 
@@ -499,7 +499,7 @@ export function InquilinosList() {
                               {formatFecha(inq.contrato.endDate)}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground text-sm">—</span>
+                            <span className="field-value empty"></span>
                           )}
                         </TableCell>
 
@@ -510,7 +510,7 @@ export function InquilinosList() {
                               {formatFecha(inq.ultimoPago)}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground text-sm">—</span>
+                            <span className="field-value empty"></span>
                           )}
                         </TableCell>
 
@@ -519,7 +519,7 @@ export function InquilinosList() {
                           {inq.contrato?.completitud != null ? (
                             <ProgressBar value={inq.contrato.completitud} />
                           ) : (
-                            <span className="text-muted-foreground text-sm">—</span>
+                            <span className="field-value empty"></span>
                           )}
                         </TableCell>
 

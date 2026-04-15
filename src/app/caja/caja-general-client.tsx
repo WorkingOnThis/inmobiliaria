@@ -513,7 +513,7 @@ function FilaMovimiento({ m, index, onClick }: {
         )}
       </td>
       <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-foreground)" }}>
-        {m.categoria ?? <span style={{ color: "var(--text-dim)" }}>—</span>}
+        {m.categoria ?? <span className="field-value empty"></span>}
       </td>
       <td className="px-4 py-3">
         {tieneVinculos ? (
@@ -560,7 +560,7 @@ function FilaMovimiento({ m, index, onClick }: {
             )}
           </div>
         ) : (
-          <span style={{ color: "var(--text-dim)" }}>—</span>
+          <span className="field-value empty"></span>
         )}
       </td>
       <td className="px-4 py-3">

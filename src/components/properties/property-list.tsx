@@ -346,7 +346,7 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
       className="grid px-4 py-3 cursor-pointer transition-colors group"
       style={{
         gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 130px 60px 64px",
-        background: even ? "rgba(40,42,44,0.45)" : "var(--background)",
+        background: even ? "var(--surface-mid)" : "var(--background)",
         borderBottom: "1px solid rgba(160,132,126,0.07)",
         borderLeft: cfg?.borderLeft ? `2px solid ${cfg.borderLeft}` : "2px solid transparent",
       }}
@@ -356,7 +356,7 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLElement).style.background = even
-          ? "rgba(40,42,44,0.45)"
+          ? "var(--surface-mid)"
           : "var(--background)";
       }}
     >
@@ -396,7 +396,7 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
         >
           {prop.ownerLastName && prop.ownerFirstName
             ? `${prop.ownerLastName}, ${prop.ownerFirstName}`
-            : prop.ownerFirstName || "—"}
+            : prop.ownerFirstName ?? "Sin cargar"}
         </span>
       </div>
 
@@ -540,17 +540,17 @@ function PropertyListContent() {
       {/* Modal — Nueva propiedad */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="max-w-lg p-0 gap-0 border-white/10 overflow-hidden"
+          className="max-w-lg p-0 gap-0 border-border overflow-hidden"
           style={{ background: "var(--card)" }}
         >
-          <DialogHeader className="px-6 pt-6 pb-2 border-b border-white/5">
+          <DialogHeader className="px-6 pt-6 pb-2 border-b border-border">
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="text-xl font-bold text-white font-headline">
                   Nueva propiedad
                 </DialogTitle>
                 <p className="text-[12px] text-muted-foreground mt-1">
-                  Los campos con <span className="text-[#ffb4a2]">*</span> son obligatorios.
+                  Los campos con <span className="text-primary">*</span> son obligatorios.
                 </p>
               </div>
             </div>

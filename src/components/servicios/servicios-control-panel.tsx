@@ -239,16 +239,16 @@ export function ServiciosControlPanel() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setPeriodo(periodoAnterior(periodo)); setPage(1); }}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-mid text-text-muted transition-colors hover:bg-surface-high hover:text-on-bg"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <div className="min-w-[140px] rounded-xl border border-white/10 bg-white/5 px-4 py-1.5 text-center text-sm font-semibold capitalize">
+          <div className="min-w-[140px] rounded-xl border border-border bg-surface-mid px-4 py-1.5 text-center text-sm font-semibold capitalize">
             {periodoLabel(periodo)}
           </div>
           <button
             onClick={() => { setPeriodo(periodoSiguiente(periodo)); setPage(1); }}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-mid text-text-muted transition-colors hover:bg-surface-high hover:text-on-bg"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -257,17 +257,17 @@ export function ServiciosControlPanel() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-transparent bg-[#6b1702] p-5">
-          <p className="mb-2 text-[0.62rem] font-bold uppercase tracking-widest text-[rgba(255,180,162,0.6)]">
+        <div className="rounded-2xl border border-transparent bg-primary-dark p-5">
+          <p className="mb-2 text-[0.62rem] font-bold uppercase tracking-widest text-primary/60">
             Propiedades con servicio
           </p>
           <p className="font-headline text-3xl font-bold tracking-tight text-white">
             {kpis?.totalPropiedades ?? "—"}
           </p>
-          <p className="mt-1 text-xs text-[rgba(255,180,162,0.5)]">Servicios activos este período</p>
+          <p className="mt-1 text-xs text-primary/50">Servicios activos este período</p>
         </div>
 
-        <div className="rounded-2xl border border-white/7 bg-surface p-5">
+        <div className="rounded-2xl border border-border bg-surface p-5">
           <p className="mb-2 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
             Al día
           </p>
@@ -299,7 +299,7 @@ export function ServiciosControlPanel() {
       </div>
 
       {/* Leyenda */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-white/7 bg-surface px-4 py-2.5 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-surface px-4 py-2.5 text-xs text-muted-foreground">
         <span className="font-semibold text-secondary-foreground">Estados:</span>
         {[
           { color: "bg-income", label: "Al día" },
@@ -315,7 +315,7 @@ export function ServiciosControlPanel() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3 rounded-xl border border-white/7 bg-surface px-3.5 py-2.5">
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-2.5">
         <div className="flex flex-1 items-center gap-2">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
           <input
@@ -326,7 +326,7 @@ export function ServiciosControlPanel() {
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
-        <div className="mx-1 h-5 w-px bg-white/10" />
+        <div className="mx-1 h-5 w-px bg-border" />
         <div className="flex gap-1.5">
           {filtros.map(({ key, label }) => (
             <button
@@ -339,7 +339,7 @@ export function ServiciosControlPanel() {
                     : key === "bloqueado"
                     ? "border-destructive/25 bg-destructive-dim text-destructive"
                     : "border-primary/30 bg-primary/10 text-primary"
-                  : "border-white/10 bg-white/5 text-muted-foreground hover:text-foreground"
+                  : "border-border bg-transparent text-text-muted hover:text-text-secondary"
               }`}
             >
               {label}
@@ -349,8 +349,8 @@ export function ServiciosControlPanel() {
       </div>
 
       {/* Tabla */}
-      <div className="overflow-hidden rounded-2xl border border-white/7 bg-surface">
-        <div className="flex items-center justify-between border-b border-white/7 px-4 py-3">
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
             Propiedades
           </span>
@@ -378,7 +378,7 @@ export function ServiciosControlPanel() {
                 {["Propiedad", "Inquilino", "Servicios del período", "Alertas", ""].map((h) => (
                   <th
                     key={h}
-                    className="border-b border-white/7 bg-[#1d2022] px-3.5 py-2.5 text-left text-[0.67rem] font-bold uppercase tracking-widest text-muted-foreground"
+                    className="border-b border-border bg-surface-mid px-3.5 py-2.5 text-left text-[0.67rem] font-bold uppercase tracking-widest text-muted-foreground"
                   >
                     {h}
                   </th>
@@ -390,7 +390,7 @@ export function ServiciosControlPanel() {
                 <tr
                   key={prop.propertyId}
                   onClick={() => router.push(`/propiedades/${prop.propertyId}`)}
-                  className={`group cursor-pointer transition-colors hover:bg-white/[0.03] ${
+                  className={`group cursor-pointer transition-colors hover:bg-border/50 ${
                     prop.peorEstado === "bloqueado"
                       ? "[&>td:first-child]:border-l-2 [&>td:first-child]:border-l-destructive"
                       : prop.peorEstado === "en_alerta"
@@ -398,13 +398,13 @@ export function ServiciosControlPanel() {
                       : ""
                   }`}
                 >
-                  <td className="border-b border-white/7 px-3.5 py-3">
+                  <td className="border-b border-border px-3.5 py-3">
                     <div className="font-semibold">{prop.propertyAddress ?? "Sin dirección"}</div>
                   </td>
-                  <td className="border-b border-white/7 px-3.5 py-3 text-sm text-muted-foreground">
-                    —
+                  <td className="border-b border-border px-3.5 py-3">
+                    <span className="field-value empty"></span>
                   </td>
-                  <td className="border-b border-white/7 px-3.5 py-3">
+                  <td className="border-b border-border px-3.5 py-3">
                     <div className="flex flex-wrap gap-1.5">
                       {prop.servicios.map((s) => (
                         <ServicioChip
@@ -416,17 +416,17 @@ export function ServiciosControlPanel() {
                       ))}
                     </div>
                   </td>
-                  <td className="border-b border-white/7 px-3.5 py-3">
+                  <td className="border-b border-border px-3.5 py-3">
                     <AlertasBadge estado={prop.peorEstado} count={prop.alertasCount} />
                   </td>
-                  <td className="border-b border-white/7 px-3.5 py-3">
+                  <td className="border-b border-border px-3.5 py-3">
                     <div className="flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
                       <button
                         onClick={(e) => { e.stopPropagation(); router.push(`/propiedades/${prop.propertyId}`); }}
                         className={`rounded-md border px-2.5 py-1 text-[0.67rem] font-semibold transition-colors ${
                           prop.peorEstado === "bloqueado"
                             ? "border-destructive/30 text-destructive hover:bg-destructive-dim"
-                            : "border-white/10 text-muted-foreground hover:text-foreground"
+                            : "border-border text-text-muted hover:text-text-secondary"
                         }`}
                       >
                         {prop.peorEstado === "bloqueado" ? "Resolver" : prop.peorEstado === "en_alerta" ? "Gestionar" : "Ver detalle"}
@@ -441,7 +441,7 @@ export function ServiciosControlPanel() {
 
         {/* Paginación */}
         {pagination && pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-white/7 px-4 py-3">
+          <div className="flex items-center justify-between border-t border-border px-4 py-3">
             <span className="text-xs text-muted-foreground">
               Mostrando {(page - 1) * limit + 1}–{Math.min(page * limit, pagination.total)} de {pagination.total} propiedades
             </span>
@@ -449,7 +449,7 @@ export function ServiciosControlPanel() {
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className="flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 disabled:opacity-30"
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-mid text-text-muted transition-colors hover:bg-surface-high disabled:opacity-30"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
@@ -460,7 +460,7 @@ export function ServiciosControlPanel() {
                   className={`flex h-7 w-7 items-center justify-center rounded-md border text-xs font-semibold transition-colors ${
                     p === page
                       ? "border-primary/30 bg-primary/10 text-primary"
-                      : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10"
+                      : "border-border bg-surface-mid text-text-muted hover:bg-surface-high"
                   }`}
                 >
                   {p}
@@ -469,7 +469,7 @@ export function ServiciosControlPanel() {
               <button
                 disabled={page === pagination.totalPages}
                 onClick={() => setPage(page + 1)}
-                className="flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/5 text-muted-foreground transition-colors hover:bg-white/10 disabled:opacity-30"
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-mid text-text-muted transition-colors hover:bg-surface-high disabled:opacity-30"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
