@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, ChevronRight, AlertTriangle } from "lucide-react";
 import {
@@ -26,6 +26,7 @@ const ESTADO_CONFIG: Record<ServicioEstado, { label: string; variant: StatusBadg
 
 type Props = {
   propertyId: string;
+  initialServicioId?: string | null;
 };
 
 type ServicioItem = {
@@ -57,7 +58,7 @@ function periodoLabel(periodo: string): string {
 }
 
 
-export function ServicioTabPropiedad({ propertyId }: Props) {
+export function ServicioTabPropiedad({ propertyId, initialServicioId }: Props) {
   const queryClient = useQueryClient();
   const periodo = periodoActual();
   const [drawerServicioId, setDrawerServicioId] = useState<string | null>(null);
@@ -75,6 +76,13 @@ export function ServicioTabPropiedad({ propertyId }: Props) {
   const servicios = data?.items ?? [];
   const hayAlertas = servicios.some((s) => s.estado === "en_alerta" || s.estado === "bloqueado");
   const serviciosEnAlerta = servicios.filter((s) => s.estado === "en_alerta" || s.estado === "bloqueado");
+
+  // Abrir el drawer automáticamente si se llegó con un servicioId en la URL
+  useEffect(() => {
+    if (initialServicioId && servicios.some((s) => s.id === initialServicioId)) {
+      setDrawerServicioId(initialServicioId);
+    }
+  }, [initialServicioId, servicios]);
 
   return (
     <div>

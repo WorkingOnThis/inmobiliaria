@@ -77,10 +77,12 @@ function ServicioChip({
   tipo,
   estado,
   diasSinComprobante,
+  onClick,
 }: {
   tipo: ServicioTipo;
   estado: ServicioEstado;
   diasSinComprobante: number;
+  onClick?: (e: React.MouseEvent) => void;
 }) {
   const icon = SERVICIO_TIPO_ICONS[tipo] ?? "📋";
   const label = (SERVICIO_TIPO_LABELS[tipo] ?? tipo)
@@ -107,7 +109,8 @@ function ServicioChip({
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.63rem] font-bold ${clases[estado]}`}
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.63rem] font-bold transition-opacity ${clases[estado]} ${onClick ? "cursor-pointer hover:opacity-75" : ""}`}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClases[estado]}`} />
       {label}
@@ -404,7 +407,10 @@ export function ServiciosControlPanel() {
                   <td className="border-b border-border px-3.5 py-3">
                     <span className="field-value empty"></span>
                   </td>
-                  <td className="border-b border-border px-3.5 py-3">
+                  <td
+                    className="border-b border-border px-3.5 py-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex flex-wrap gap-1.5">
                       {prop.servicios.map((s) => (
                         <ServicioChip
@@ -412,6 +418,9 @@ export function ServiciosControlPanel() {
                           tipo={s.tipo as ServicioTipo}
                           estado={s.estado}
                           diasSinComprobante={s.diasSinComprobante}
+                          onClick={() => {
+                            router.push(`/propiedades/${prop.propertyId}?tab=servicios&servicioId=${s.id}`);
+                          }}
                         />
                       ))}
                     </div>

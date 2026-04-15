@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Pencil, X, Save, ExternalLink, PlusCircle } from "lucide-react";
@@ -341,7 +341,7 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function PropiedadFichaPage() {
+function PropiedadFichaContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -366,6 +366,30 @@ export default function PropiedadFichaPage() {
       return res.json();
     },
   });
+
+  const { data: activeContractData } = useQuery({
+    queryKey: ["contracts", "property", id, "active"],
+    queryFn: async () => {
+      const res = await fetch(`/api/contracts?propertyId=${id}&status=activos&limit=5`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!id,
+  });
+
+  const activeContract: {
+    id: string;
+    contractNumber: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    monthlyAmount: string;
+    tenantNames: string[];
+    tenantIds: string[];
+  } | null =
+    activeContractData?.contracts?.find(
+      (c: { status: string }) => c.status === "active" || c.status === "expiring_soon"
+    ) ?? null;
 
   const prop = data?.property;
 
@@ -573,11 +597,26 @@ export default function PropiedadFichaPage() {
             </button>
 
             {/* Widget: Contrato activo */}
-            <div className="flex-1 px-5 py-3 border-r border-border">
+            <button
+              onClick={() => activeContract && router.push(`/contratos/${activeContract.id}`)}
+              className="flex-1 px-5 py-3 text-left border-r border-border transition-colors"
+              style={{ cursor: activeContract ? "pointer" : "default" }}
+              onMouseEnter={(e) => { if (activeContract) (e.currentTarget as HTMLElement).style.background = "var(--muted)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            >
               <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Contrato activo</div>
-              <div className="text-[0.82rem] font-bold text-muted-foreground">Sin contrato</div>
-              <div className="text-[0.62rem] text-muted-foreground mt-0.5">Módulo pendiente</div>
-            </div>
+              {activeContract ? (
+                <>
+                  <div className="text-[0.82rem] font-bold text-foreground">{activeContract.contractNumber}</div>
+                  <div className="text-[0.62rem] text-primary mt-0.5">Ver contrato →</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-[0.82rem] font-bold text-muted-foreground">Sin contrato</div>
+                  <div className="text-[0.62rem] text-muted-foreground mt-0.5">Sin contrato vigente</div>
+                </>
+              )}
+            </button>
 
             {/* Widget: Superficie */}
             <div className="flex-1 px-5 py-3 border-r border-border">
@@ -674,12 +713,55 @@ export default function PropiedadFichaPage() {
               <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 mt-5">
                 Inquilino
               </div>
-              <div
-                className="flex items-center gap-3 px-4 py-4 rounded-[12px] text-center justify-center bg-card border border-dashed border-border"
-              >
-                <span className="text-[0.78rem] text-muted-foreground">Sin inquilino activo</span>
-                <span className="text-[0.65rem] text-muted-foreground">· Disponible cuando haya un contrato vigente</span>
-              </div>
+              {activeContract && activeContract.tenantNames.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {activeContract.tenantNames.map((name, i) => {
+                    const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase() || "?";
+                    return (
+                      <div
+                        key={activeContract.tenantIds[i] ?? i}
+                        className="flex items-center gap-4 px-4 py-4 rounded-[12px] transition-colors bg-card border border-border cursor-pointer"
+                        onClick={() => activeContract.tenantIds[i] && router.push(`/inquilinos/${activeContract.tenantIds[i]}`)}
+                        onMouseEnter={(e) => { if (activeContract.tenantIds[i]) (e.currentTarget as HTMLElement).style.borderColor = "var(--border-accent)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = ""; }}
+                      >
+                        <div
+                          className="w-10 h-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0 font-brand"
+                          style={{
+                            background: "var(--gradient-tenant, var(--muted))",
+                            border: "1.5px solid var(--border)",
+                            color: "var(--foreground)",
+                          }}
+                        >
+                          {initials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[0.82rem] font-semibold text-foreground mb-0.5">{name}</div>
+                          <div className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-1">
+                            {i === 0 ? "Inquilino principal" : "Co-titular"}
+                          </div>
+                          <div className="text-[0.62rem] text-muted-foreground">
+                            Contrato {activeContract.contractNumber}
+                          </div>
+                        </div>
+                        {activeContract.tenantIds[i] && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); router.push(`/inquilinos/${activeContract.tenantIds[i]}`); }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-[0.68rem] font-semibold rounded-[8px] transition-colors flex-shrink-0 bg-muted text-muted-foreground border border-border"
+                          >
+                            Ver ficha <ExternalLink size={10} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 px-4 py-4 rounded-[12px] text-center justify-center bg-card border border-dashed border-border">
+                  <span className="text-[0.78rem] text-muted-foreground">Sin inquilino activo</span>
+                  <span className="text-[0.65rem] text-muted-foreground">· Disponible cuando haya un contrato vigente</span>
+                </div>
+              )}
 
               {/* Garantes */}
               <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 mt-5">
@@ -815,7 +897,10 @@ export default function PropiedadFichaPage() {
 
           {/* ── TAB: SERVICIOS ── */}
           {activeTab === "servicios" && (
-            <ServicioTabPropiedad propertyId={id} />
+            <ServicioTabPropiedad
+              propertyId={id}
+              initialServicioId={searchParams.get("servicioId")}
+            />
           )}
 
           {/* ── TAB: MANTENIMIENTO ── */}
@@ -846,5 +931,17 @@ export default function PropiedadFichaPage() {
           )}
         </div>
       </div>
+  );
+}
+
+export default function PropiedadFichaPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <PropiedadFichaContent />
+    </Suspense>
   );
 }
