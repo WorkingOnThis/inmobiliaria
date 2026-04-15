@@ -180,6 +180,9 @@ export function ServicioTabPropiedad({ propertyId, initialServicioId }: Props) {
                     {s.empresa ?? "Sin empresa"}
                     {s.titular && ` · Titular: ${s.titular} (${TITULAR_TIPO_LABELS[s.titularTipo as TitularTipo] ?? s.titularTipo})`}
                   </p>
+                  <p className="text-[0.65rem] text-muted-foreground">
+                    Paga: {RESPONSABLE_PAGO_LABELS[s.responsablePago as ResponsablePagoTipo] ?? s.responsablePago}
+                  </p>
                   {s.numeroCuenta && (
                     <p className="mt-0.5 font-mono text-[0.66rem] text-muted-foreground">
                       N° cuenta: {s.numeroCuenta}

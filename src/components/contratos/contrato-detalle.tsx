@@ -362,6 +362,29 @@ export function ContratoDetalle({ id }: { id: string }) {
             serviceExpensas: values.serviceExpensas,
           }),
         });
+
+        // También propagar a los registros de la tabla servicio (responsablePago)
+        const TIPO_COND_KEY: Record<string, keyof EditableConditions> = {
+          luz: "serviceLuz",
+          gas: "serviceGas",
+          agua: "serviceAgua",
+          abl: "serviceMunicipalidad",
+          inmobiliario: "serviceRendas",
+          expensas: "serviceExpensas",
+        };
+        await Promise.all(
+          (serviciosData?.items ?? []).map((srv) => {
+            const condKey = TIPO_COND_KEY[srv.tipo];
+            if (!condKey) return Promise.resolve();
+            const newVal = values[condKey];
+            if (!newVal || newVal === "na" || newVal === srv.responsablePago) return Promise.resolve();
+            return fetch(`/api/servicios/${srv.id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ responsablePago: newVal }),
+            });
+          })
+        );
       }
 
       return res.json();
@@ -1208,9 +1231,9 @@ export function ContratoDetalle({ id }: { id: string }) {
                       <span className="text-base w-6 text-center flex-shrink-0">{icon}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-[0.78rem] font-semibold text-on-surface">{nombre}</p>
-                        {s.empresa && (
-                          <p className="text-[0.66rem] text-text-muted truncate">{s.empresa}</p>
-                        )}
+                        <p className="text-[0.66rem] text-text-muted truncate">
+                          {s.empresa ? `${s.empresa} · ` : ""}Paga: {responsableLabel}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {s.diasSinComprobante > 0 && (

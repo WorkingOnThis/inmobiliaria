@@ -106,11 +106,22 @@ type EditForm = {
   activaBloqueo: boolean;
 };
 
+// Mapeo tipo de servicio → clave en la tabla property
+const TIPO_TO_PROPERTY_KEY: Record<string, string> = {
+  luz: "serviceLuz",
+  gas: "serviceGas",
+  agua: "serviceAgua",
+  abl: "serviceMunicipalidad",
+  inmobiliario: "serviceRendas",
+  expensas: "serviceExpensas",
+};
+
 export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, onClose }: Props) {
   const queryClient = useQueryClient();
   const [motivoOmision, setMotivoOmision] = useState("");
   const [montoComprobante, setMontoComprobante] = useState("");
   const [editing, setEditing] = useState(false);
+  const [showContractWarning, setShowContractWarning] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
     tipo: "luz",
     empresa: "",
@@ -218,7 +229,19 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
       if (!res.ok) throw new Error("Error al guardar");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Si cambió responsablePago, propagar a property.serviceX y al contrato
+      if (s && editForm.responsablePago !== s.responsablePago) {
+        const propertyKey = TIPO_TO_PROPERTY_KEY[s.tipo];
+        if (propertyKey) {
+          await fetch(`/api/properties/${propertyId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ [propertyKey]: editForm.responsablePago }),
+          });
+          queryClient.invalidateQueries({ queryKey: ["contract"] });
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["servicio-detalle", servicioId] });
       queryClient.invalidateQueries({ queryKey: ["servicios", propertyId] });
       setEditing(false);
@@ -637,6 +660,41 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
           )}
         </div>
 
+        {/* Modal de advertencia: el cambio de responsablePago también afecta al contrato */}
+        {showContractWarning && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 rounded-[inherit]">
+            <div className="mx-5 w-full max-w-sm rounded-2xl border border-border bg-surface p-5 shadow-2xl">
+              <div className="mb-4 flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 shrink-0 text-mustard mt-0.5" />
+                <div>
+                  <p className="font-semibold text-on-surface mb-1.5 text-[0.9rem]">
+                    Cambio afecta al contrato
+                  </p>
+                  <p className="text-[0.75rem] text-text-secondary leading-relaxed">
+                    Modificar el responsable de pago de este servicio también actualizará ese dato en el contrato asociado a esta propiedad.
+                    <br /><br />
+                    <strong className="text-on-surface">¿Querés continuar?</strong>
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowContractWarning(false)}
+                  className="btn btn-ghost btn-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => { setShowContractWarning(false); guardarEdicion.mutate(); }}
+                  className="btn btn-primary btn-sm"
+                >
+                  Confirmar y guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex shrink-0 items-center justify-between border-t border-border px-6 py-4">
           {editing ? (
@@ -648,7 +706,14 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                 Cancelar
               </button>
               <button
-                onClick={() => guardarEdicion.mutate()}
+                onClick={() => {
+                  // Si cambió el responsablePago, mostrar advertencia antes de guardar
+                  if (s && editForm.responsablePago !== s.responsablePago) {
+                    setShowContractWarning(true);
+                  } else {
+                    guardarEdicion.mutate();
+                  }
+                }}
                 disabled={guardarEdicion.isPending}
                 className="btn btn-primary btn-sm flex items-center gap-2"
               >
