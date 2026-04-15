@@ -55,7 +55,9 @@ export async function GET(request: NextRequest) {
     const propertyIdFilter = searchParams.get("propertyId") || "";
 
     const conditions = [];
-    if (statusFilter) {
+    if (statusFilter === "activos") {
+      conditions.push(inArray(contract.status, ["active", "expiring_soon"]));
+    } else if (statusFilter) {
       conditions.push(eq(contract.status, statusFilter));
     }
     if (propertyIdFilter) {
@@ -81,6 +83,8 @@ export async function GET(request: NextRequest) {
           startDate: contract.startDate,
           endDate: contract.endDate,
           monthlyAmount: contract.monthlyAmount,
+          adjustmentIndex: contract.adjustmentIndex,
+          adjustmentFrequency: contract.adjustmentFrequency,
           paymentModality: contract.paymentModality,
           createdAt: contract.createdAt,
           propertyAddress: property.address,

@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Select,
@@ -18,18 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ArrowLeft,
   Loader2,
-  Building2,
-  User,
-  Users,
-  CalendarRange,
-  DollarSign,
-  Percent,
-  CalendarClock,
-  TrendingUp,
-  Pencil,
-  X,
   Zap,
   Flame,
   Droplets,
@@ -37,7 +25,8 @@ import {
   ReceiptText,
   Building,
   Search,
-  CheckCircle2,
+  X,
+  Pencil,
 } from "lucide-react";
 import { format, differenceInMonths } from "date-fns";
 import { es } from "date-fns/locale";
@@ -54,6 +43,10 @@ import {
   type AdjustmentIndex,
   type ServiceResponsibility,
 } from "@/lib/clients/constants";
+
+/* ──────────────────────────────────────────────────────────
+   TYPES
+   ────────────────────────────────────────────────────────── */
 
 interface PropertyServices {
   serviceLuz: string;
@@ -111,25 +104,59 @@ interface EditableConditions {
   adjustmentFrequency: string;
 }
 
-function statusBadgeVariant(
-  status: string
-): "default" | "secondary" | "destructive" | "outline" {
-  switch (status) {
-    case "active":
-      return "default";
-    case "expiring_soon":
-      return "outline";
-    case "terminated":
-    case "expired":
-      return "destructive";
-    default:
-      return "secondary";
-  }
-}
+/* ──────────────────────────────────────────────────────────
+   HELPERS
+   ────────────────────────────────────────────────────────── */
 
 function formatMoney(value: string | null | undefined): string {
   if (!value) return "—";
   return `$${parseFloat(value).toLocaleString("es-AR")}`;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(/[\s,]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+const AVATAR_PALETTE = [
+  "bg-primary-dark",
+  "bg-[#3a2a6b]",
+  "bg-[#1a4a4a]",
+  "bg-[#1a2a4a]",
+  "bg-[#3a3a1a]",
+];
+
+function avatarColor(name: string): string {
+  const idx = (name.charCodeAt(0) || 0) % AVATAR_PALETTE.length;
+  return AVATAR_PALETTE[idx];
+}
+
+function statusTagClasses(status: string): string {
+  switch (status) {
+    case "active": return "bg-green-dim text-green";
+    case "expiring_soon": return "bg-mustard-dim text-mustard";
+    case "expired": return "bg-error-dim text-error";
+    case "terminated": return "bg-surface-highest text-text-muted border border-border";
+    case "draft": return "bg-info-dim text-info";
+    case "pending_signature": return "bg-primary-dim text-primary";
+    default: return "bg-surface-highest text-text-muted";
+  }
+}
+
+function statusDotClass(status: string): string {
+  switch (status) {
+    case "active": return "bg-green";
+    case "expiring_soon": return "bg-mustard";
+    case "expired": return "bg-error";
+    case "terminated": return "bg-text-muted";
+    case "draft": return "bg-info";
+    case "pending_signature": return "bg-primary shadow-[0_0_5px_rgba(255,180,162,0.5)]";
+    default: return "bg-text-muted";
+  }
 }
 
 const SERVICE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -141,12 +168,37 @@ const SERVICE_ICONS: Record<string, React.ComponentType<{ className?: string }>>
   serviceExpensas: Building,
 };
 
+/* ──────────────────────────────────────────────────────────
+   STEPPER CONFIG
+   ────────────────────────────────────────────────────────── */
+
+const STEPS = [
+  { num: "01", name: "Legajo aprobado", statusText: { done: "Completado", active: "En revisión", pending: "Pendiente" } },
+  { num: "02", name: "Borrador generado", statusText: { done: "Completado", active: "Generando", pending: "Pendiente" } },
+  { num: "03", name: "Firma electrónica", statusText: { done: "Completado", active: "En curso", pending: "Pendiente" } },
+  { num: "04", name: "Acta de entrega", statusText: { done: "Completado", active: "En curso", pending: "Pendiente" } },
+  { num: "05", name: "Inquilino activo", statusText: { done: "Completado", active: "Activando", pending: "Pendiente" } },
+];
+
+function getStepStates(status: string): Array<"done" | "active" | "pending"> {
+  if (status === "draft") {
+    return ["done", "active", "pending", "pending", "pending"];
+  }
+  if (status === "pending_signature") {
+    return ["done", "done", "active", "pending", "pending"];
+  }
+  return ["done", "done", "done", "done", "done"];
+}
+
+/* ──────────────────────────────────────────────────────────
+   COMPONENT
+   ────────────────────────────────────────────────────────── */
+
 export function ContratoDetalle({ id }: { id: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editValues, setEditValues] = useState<EditableConditions | null>(null);
-
   const [isEditingPartes, setIsEditingPartes] = useState(false);
   const [editOwnerId, setEditOwnerId] = useState("");
   const [editTenantIds, setEditTenantIds] = useState<string[]>([]);
@@ -165,7 +217,6 @@ export function ContratoDetalle({ id }: { id: string }) {
     },
   });
 
-  // Cargar índices custom desde la API
   const { data: customIndexesData } = useQuery({
     queryKey: ["adjustment-indexes"],
     queryFn: async () => {
@@ -174,10 +225,8 @@ export function ContratoDetalle({ id }: { id: string }) {
       return res.json();
     },
   });
-  const customIndexes: { code: string; label: string }[] =
-    customIndexesData?.indexes ?? [];
+  const customIndexes: { code: string; label: string }[] = customIndexesData?.indexes ?? [];
 
-  // Queries para el selector de partes (solo se usan cuando se edita)
   const { data: tenantsData } = useQuery({
     queryKey: ["clients", "inquilino", "select"],
     queryFn: async () => {
@@ -198,39 +247,28 @@ export function ContratoDetalle({ id }: { id: string }) {
   });
 
   const availableTenants: { id: string; label: string }[] =
-    tenantsData?.clients?.map(
-      (c: { id: string; firstName: string; lastName: string | null }) => ({
-        id: c.id,
-        label: `${c.firstName} ${c.lastName || ""}`.trim(),
-      })
-    ) ?? [];
+    tenantsData?.clients?.map((c: { id: string; firstName: string; lastName: string | null }) => ({
+      id: c.id,
+      label: `${c.firstName} ${c.lastName || ""}`.trim(),
+    })) ?? [];
 
   const availableOwners: { value: string; label: string }[] =
-    ownersData?.clients?.map(
-      (c: { id: string; firstName: string; lastName: string | null }) => ({
-        value: c.id,
-        label: `${c.firstName} ${c.lastName || ""}`.trim(),
-      })
-    ) ?? [];
+    ownersData?.clients?.map((c: { id: string; firstName: string; lastName: string | null }) => ({
+      value: c.id,
+      label: `${c.firstName} ${c.lastName || ""}`.trim(),
+    })) ?? [];
 
-  const selectedTenantObjects = availableTenants.filter((t) =>
-    editTenantIds.includes(t.id)
-  );
+  const selectedTenantObjects = availableTenants.filter((t) => editTenantIds.includes(t.id));
 
-  const toggleEditTenant = (id: string) => {
+  const toggleEditTenant = (tenantId: string) => {
     setEditTenantIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+      prev.includes(tenantId) ? prev.filter((t) => t !== tenantId) : [...prev, tenantId]
     );
   };
 
+  /* mutations */
   const patchPartesMutation = useMutation({
-    mutationFn: async ({
-      ownerId,
-      tenantIds,
-    }: {
-      ownerId: string;
-      tenantIds: string[];
-    }) => {
+    mutationFn: async ({ ownerId, tenantIds }: { ownerId: string; tenantIds: string[] }) => {
       const res = await fetch(`/api/contracts/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -250,23 +288,8 @@ export function ContratoDetalle({ id }: { id: string }) {
       setTenantSearch("");
       setTenantSearchOpen(false);
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
-
-  const startEditingPartes = () => {
-    if (!data) return;
-    setEditOwnerId(data.owner?.id ?? "");
-    setEditTenantIds(data.tenants.map((t) => t.id));
-    setIsEditingPartes(true);
-  };
-
-  const cancelEditingPartes = () => {
-    setIsEditingPartes(false);
-    setTenantSearch("");
-    setTenantSearchOpen(false);
-  };
 
   const patchMutation = useMutation({
     mutationFn: async (values: EditableConditions) => {
@@ -279,11 +302,9 @@ export function ContratoDetalle({ id }: { id: string }) {
         adjustmentIndex: values.adjustmentIndex,
         adjustmentFrequency: parseInt(values.adjustmentFrequency),
       };
-      if (values.depositAmount)
-        body.depositAmount = parseFloat(values.depositAmount);
+      if (values.depositAmount) body.depositAmount = parseFloat(values.depositAmount);
       else body.depositAmount = null;
-      if (values.agencyCommission)
-        body.agencyCommission = parseFloat(values.agencyCommission);
+      if (values.agencyCommission) body.agencyCommission = parseFloat(values.agencyCommission);
       else body.agencyCommission = null;
 
       const res = await fetch(`/api/contracts/${id}`, {
@@ -304,9 +325,7 @@ export function ContratoDetalle({ id }: { id: string }) {
       setIsEditing(false);
       setEditValues(null);
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const activarMutation = useMutation({
@@ -327,9 +346,7 @@ export function ContratoDetalle({ id }: { id: string }) {
       queryClient.invalidateQueries({ queryKey: ["contract", id] });
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
     },
-    onError: (err: Error) => {
-      toast.error(err.message);
-    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const startEditing = () => {
@@ -348,15 +365,18 @@ export function ContratoDetalle({ id }: { id: string }) {
     setIsEditing(true);
   };
 
-  const cancelEditing = () => {
-    setIsEditing(false);
-    setEditValues(null);
+  const startEditingPartes = () => {
+    if (!data) return;
+    setEditOwnerId(data.owner?.id ?? "");
+    setEditTenantIds(data.tenants.map((t) => t.id));
+    setIsEditingPartes(true);
   };
 
+  /* ── loading / error ── */
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-text-muted" />
       </div>
     );
   }
@@ -364,11 +384,11 @@ export function ContratoDetalle({ id }: { id: string }) {
   if (error || !data) {
     return (
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="rounded-md bg-destructive/10 border border-destructive/20 p-6 text-center">
-          <p className="text-destructive mb-4">
+        <div className="rounded-xl bg-error-dim border border-error/20 p-6 text-center">
+          <p className="text-error mb-4 text-sm">
             {(error as Error)?.message || "Contrato no encontrado"}
           </p>
-          <Button variant="outline" onClick={() => router.push("/contratos")}>
+          <Button variant="outline" size="sm" onClick={() => router.push("/contratos")}>
             Volver a la lista
           </Button>
         </div>
@@ -376,669 +396,684 @@ export function ContratoDetalle({ id }: { id: string }) {
     );
   }
 
-  const durationMonths = differenceInMonths(
-    new Date(data.endDate),
-    new Date(data.startDate)
-  );
+  /* ── derived data ── */
+  const durationMonths = differenceInMonths(new Date(data.endDate), new Date(data.startDate));
+  const statusLabel = CONTRACT_STATUS_LABELS[data.status as ContractStatus] || data.status;
+  const contractTypeLabel = CONTRACT_TYPE_LABELS[data.contractType as ContractType] || data.contractType;
 
-  const statusLabel =
-    CONTRACT_STATUS_LABELS[data.status as ContractStatus] || data.status;
-  const contractTypeLabel =
-    CONTRACT_TYPE_LABELS[data.contractType as ContractType] || data.contractType;
-
-  // Etiqueta del índice: puede ser estándar, custom, o el código crudo
   const getIndexLabel = (code: string) => {
-    if (ADJUSTMENT_INDEX_LABELS[code as AdjustmentIndex]) {
-      return ADJUSTMENT_INDEX_LABELS[code as AdjustmentIndex];
-    }
+    if (ADJUSTMENT_INDEX_LABELS[code as AdjustmentIndex]) return ADJUSTMENT_INDEX_LABELS[code as AdjustmentIndex];
     const custom = customIndexes.find((c) => c.code === code);
     return custom ? custom.label : code;
   };
 
   const adjustmentLabel = getIndexLabel(data.adjustmentIndex);
-  const frequencyLabel =
-    ADJUSTMENT_FREQUENCY_LABELS[data.adjustmentFrequency] ||
-    `Cada ${data.adjustmentFrequency} meses`;
+  const frequencyLabel = ADJUSTMENT_FREQUENCY_LABELS[data.adjustmentFrequency] || `Cada ${data.adjustmentFrequency} meses`;
 
-  // Todos los índices disponibles para el selector de edición
   const allIndexOptions = [
-    ...Object.entries(ADJUSTMENT_INDEX_LABELS).map(([value, label]) => ({
-      value,
-      label,
-    })),
+    ...Object.entries(ADJUSTMENT_INDEX_LABELS).map(([value, label]) => ({ value, label })),
     ...customIndexes.map((c) => ({ value: c.code, label: c.label })),
   ];
 
-  return (
-    <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
-      {/* Botón volver */}
-      <div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/contratos")}
-          className="-ml-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Contratos
-        </Button>
-      </div>
+  const showStepper = data.status === "draft" || data.status === "pending_signature";
+  const stepStates = getStepStates(data.status);
 
-      {/* Encabezado */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-2xl font-bold">Contrato {data.contractNumber}</h1>
-          <Badge variant={statusBadgeVariant(data.status)}>{statusLabel}</Badge>
+  /* ── RENDER ── */
+  return (
+    <div className="flex flex-1 flex-col">
+
+      {/* ── Page header + topbar actions ─────────────────── */}
+      <div className="flex items-start justify-between px-7 pt-6 pb-5">
+        <div>
+          <div className="flex items-center gap-[10px] mb-1.5">
+            <h1 className="font-headline text-[1.35rem] font-bold text-on-bg tracking-tight leading-none">
+              Contrato {data.contractNumber}
+            </h1>
+            <span
+              className={`inline-flex items-center gap-[5px] px-[9px] py-[3px] rounded-full text-[0.67rem] font-bold tracking-[0.02em] whitespace-nowrap ${statusTagClasses(data.status)}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusDotClass(data.status)}`} />
+              {statusLabel}
+            </span>
+          </div>
+          <p className="text-[0.78rem] text-text-muted">
+            {data.propertyAddress || "Sin dirección"}
+            {data.tenants.length > 0 && (
+              <> · {data.tenants.length === 1 ? "Inquilino" : "Inquilinos"}: {data.tenants.map((t) => t.name).join(", ")}</>
+            )}
+            {data.owner && ` · Propietario: ${data.owner.name}`}
+            {" · "}
+            {format(new Date(data.startDate), "dd/MM/yyyy", { locale: es })} → {format(new Date(data.endDate), "dd/MM/yyyy", { locale: es })}
+          </p>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button className="px-[14px] py-[7px] text-[0.72rem] font-semibold border border-border rounded-xl text-text-secondary bg-transparent hover:bg-surface-high transition-colors">
+            ↓ Borrador PDF
+          </button>
+          <button className="px-[14px] py-[7px] text-[0.72rem] font-semibold border border-border rounded-xl text-text-secondary bg-transparent hover:bg-surface-high transition-colors">
+            Ver legajo
+          </button>
           {data.status === "draft" && (
-            <Button
-              size="sm"
+            <button
               onClick={() => activarMutation.mutate()}
               disabled={activarMutation.isPending}
+              className="px-[14px] py-[7px] text-[0.72rem] font-semibold rounded-xl bg-primary text-primary-foreground hover:brightness-110 transition-all disabled:opacity-60 flex items-center gap-1.5"
             >
-              {activarMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4 mr-1" />
-              )}
-              Activar contrato
-            </Button>
+              {activarMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+              Aprobar y enviar a firma →
+            </button>
           )}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {data.propertyAddress || "Sin dirección"}
-          {data.tenants.length > 0 && (
-            <>
-              {" · "}
-              {data.tenants.length === 1 ? "Inquilino" : "Inquilinos"}:{" "}
-              {data.tenants.map((t) => t.name).join(", ")}
-            </>
-          )}
-          {data.owner && ` · Propietario: ${data.owner.name}`}
-          {" · "}
-          {format(new Date(data.startDate), "dd/MM/yyyy", { locale: es })}
-          {" → "}
-          {format(new Date(data.endDate), "dd/MM/yyyy", { locale: es })}
-        </p>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="rounded-lg border p-4 flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <DollarSign className="h-4 w-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">
-              Alquiler base
-            </span>
-          </div>
-          <p className="text-2xl font-bold">{formatMoney(data.monthlyAmount)}</p>
-          <p className="text-xs text-muted-foreground">por mes</p>
-        </div>
-
-        <div className="rounded-lg border p-4 flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <DollarSign className="h-4 w-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">
-              Depósito
-            </span>
-          </div>
-          <p className="text-2xl font-bold">{formatMoney(data.depositAmount)}</p>
-          <p className="text-xs text-muted-foreground">garantía</p>
-        </div>
-
-        <div className="rounded-lg border p-4 flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <CalendarRange className="h-4 w-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">
-              Duración
-            </span>
-          </div>
-          <p className="text-2xl font-bold">{durationMonths} meses</p>
-          <p className="text-xs text-muted-foreground">
-            {format(new Date(data.startDate), "MMM yyyy", { locale: es })} →{" "}
-            {format(new Date(data.endDate), "MMM yyyy", { locale: es })}
-          </p>
-        </div>
-
-        <div className="rounded-lg border p-4 flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <CalendarClock className="h-4 w-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">
-              Día de pago
-            </span>
-          </div>
-          <p className="text-2xl font-bold">Día {data.paymentDay}</p>
-          <p className="text-xs text-muted-foreground">
-            Modalidad {data.paymentModality === "A" ? "A — inmobiliaria" : "B — directo"}
-          </p>
-        </div>
-      </div>
-
-      {/* Condiciones + Partes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-        {/* Condiciones del contrato */}
-        <div className="rounded-lg border overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Condiciones
-              </h2>
-            </div>
-            {!isEditing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={startEditing}
-                className="h-7 px-2 text-xs gap-1"
-              >
-                <Pencil className="h-3 w-3" />
-                Editar
-              </Button>
-            )}
-          </div>
-
-          {isEditing && editValues ? (
-            <div className="p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Inicio</Label>
-                  <Input
-                    type="date"
-                    value={editValues.startDate}
-                    onChange={(e) =>
-                      setEditValues((v) => v && { ...v, startDate: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Fin</Label>
-                  <Input
-                    type="date"
-                    value={editValues.endDate}
-                    onChange={(e) =>
-                      setEditValues((v) => v && { ...v, endDate: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Monto mensual ($)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={editValues.monthlyAmount}
-                    onChange={(e) =>
-                      setEditValues((v) => v && { ...v, monthlyAmount: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Depósito ($)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={editValues.depositAmount}
-                    onChange={(e) =>
-                      setEditValues((v) => v && { ...v, depositAmount: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Comisión (%)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.5"
-                    value={editValues.agencyCommission}
-                    onChange={(e) =>
-                      setEditValues((v) =>
-                        v && { ...v, agencyCommission: e.target.value }
-                      )
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Día de pago</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="28"
-                    value={editValues.paymentDay}
-                    onChange={(e) =>
-                      setEditValues((v) => v && { ...v, paymentDay: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <Label className="text-xs">Modalidad de pago</Label>
-                  <Select
-                    value={editValues.paymentModality}
-                    onValueChange={(v) =>
-                      setEditValues((prev) =>
-                        prev ? { ...prev, paymentModality: v as "A" | "B" } : prev
-                      )
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="A">
-                        Modalidad A (inmobiliaria recibe y liquida)
-                      </SelectItem>
-                      <SelectItem value="B">
-                        Modalidad B (pago directo al propietario)
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Índice de ajuste</Label>
-                  <Select
-                    value={editValues.adjustmentIndex}
-                    onValueChange={(v) =>
-                      setEditValues((prev) =>
-                        prev ? { ...prev, adjustmentIndex: v } : prev
-                      )
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allIndexOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Frecuencia de ajuste</Label>
-                  <Select
-                    value={editValues.adjustmentFrequency}
-                    onValueChange={(v) =>
-                      setEditValues((prev) =>
-                        prev ? { ...prev, adjustmentFrequency: v } : prev
-                      )
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(ADJUSTMENT_FREQUENCY_LABELS).map(
-                        ([val, label]) => (
-                          <SelectItem key={val} value={val}>
-                            {label}
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={cancelEditing}
-                  disabled={patchMutation.isPending}
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Cancelar
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => editValues && patchMutation.mutate(editValues)}
-                  disabled={patchMutation.isPending}
-                >
-                  {patchMutation.isPending ? (
-                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  ) : null}
-                  Guardar cambios
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="divide-y text-sm">
-              <div className="grid grid-cols-2 gap-2 px-4 py-3">
-                <span className="text-muted-foreground">Propiedad</span>
-                <span className="font-medium">{data.propertyAddress || "—"}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 px-4 py-3">
-                <span className="text-muted-foreground">Tipo</span>
-                <span className="font-medium">{contractTypeLabel}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 px-4 py-3">
-                <span className="text-muted-foreground">Período</span>
-                <span className="font-medium">
-                  {format(new Date(data.startDate), "dd/MM/yyyy", { locale: es })}{" "}
-                  →{" "}
-                  {format(new Date(data.endDate), "dd/MM/yyyy", { locale: es })}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 px-4 py-3">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" /> Índice de ajuste
-                </span>
-                <span className="font-medium">{adjustmentLabel}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 px-4 py-3">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <CalendarRange className="h-3 w-3" /> Frecuencia
-                </span>
-                <span className="font-medium">{frequencyLabel}</span>
-              </div>
-              {data.agencyCommission && (
-                <div className="grid grid-cols-2 gap-2 px-4 py-3">
-                  <span className="text-muted-foreground flex items-center gap-1">
-                    <Percent className="h-3 w-3" /> Comisión
-                  </span>
-                  <span className="font-medium">{data.agencyCommission}%</span>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-2 px-4 py-3">
-                <span className="text-muted-foreground">N° contrato</span>
-                <span className="font-mono text-muted-foreground">
-                  {data.contractNumber}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Partes */}
-        <div className="rounded-lg border overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Partes
-              </h2>
-            </div>
-            {!isEditingPartes && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={startEditingPartes}
-                className="h-7 px-2 text-xs gap-1"
-              >
-                <Pencil className="h-3 w-3" />
-                Editar
-              </Button>
-            )}
-          </div>
-
-          {isEditingPartes ? (
-            <div className="p-4 space-y-4">
-              {/* Selector de propietario */}
-              <div className="space-y-1">
-                <Label className="text-xs">Propietario</Label>
-                <SearchableSelect
-                  options={availableOwners}
-                  value={editOwnerId}
-                  onValueChange={setEditOwnerId}
-                  placeholder="Seleccionar propietario..."
-                  searchPlaceholder="Buscar por nombre..."
-                  emptyText="No hay propietarios cargados"
-                />
-              </div>
-
-              {/* Multi-select de inquilinos */}
-              <div className="space-y-1">
-                <Label className="text-xs">Inquilinos</Label>
-
-                {/* Badges de seleccionados */}
-                {selectedTenantObjects.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pb-1">
-                    {selectedTenantObjects.map((t, i) => (
-                      <Badge key={t.id} variant="secondary" className="gap-1 pr-1 text-xs">
-                        <span>
-                          {t.label}
-                          {i === 0 && (
-                            <span className="text-muted-foreground ml-1 text-xs">
-                              (principal)
-                            </span>
-                          )}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => toggleEditTenant(t.id)}
-                          className="ml-1 rounded-sm hover:bg-destructive/20 p-0.5"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {/* Botón para desplegar lista */}
-                <button
-                  type="button"
-                  onClick={() => setTenantSearchOpen((v) => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2 border rounded-md text-xs text-muted-foreground hover:bg-accent transition-colors"
-                >
-                  <span>
-                    {tenantSearchOpen
-                      ? "Cerrar lista"
-                      : selectedTenantObjects.length === 0
-                      ? "Seleccionar inquilinos..."
-                      : `${selectedTenantObjects.length} seleccionado${selectedTenantObjects.length > 1 ? "s" : ""} — agregar más`}
-                  </span>
-                  <span>{tenantSearchOpen ? "▲" : "▼"}</span>
-                </button>
-
-                {tenantSearchOpen && (
-                  <div className="border rounded-md overflow-hidden">
-                    <div className="p-2 border-b flex items-center gap-2">
-                      <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                      <input
-                        autoFocus
-                        type="text"
-                        value={tenantSearch}
-                        onChange={(e) => setTenantSearch(e.target.value)}
-                        placeholder="Buscar inquilino..."
-                        className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
-                      />
-                      {tenantSearch && (
-                        <button
-                          type="button"
-                          onClick={() => setTenantSearch("")}
-                          className="text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="divide-y max-h-48 overflow-y-auto">
-                      {availableTenants.length === 0 ? (
-                        <p className="p-3 text-xs text-muted-foreground text-center">
-                          No hay inquilinos cargados
-                        </p>
-                      ) : availableTenants.filter((t) =>
-                          t.label.toLowerCase().includes(tenantSearch.toLowerCase())
-                        ).length === 0 ? (
-                        <p className="p-3 text-xs text-muted-foreground text-center">
-                          Sin resultados
-                        </p>
-                      ) : (
-                        availableTenants
-                          .filter((t) =>
-                            t.label.toLowerCase().includes(tenantSearch.toLowerCase())
-                          )
-                          .map((t) => (
-                            <label
-                              key={t.id}
-                              className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent transition-colors"
-                            >
-                              <Checkbox
-                                checked={editTenantIds.includes(t.id)}
-                                onCheckedChange={() => toggleEditTenant(t.id)}
-                              />
-                              <span className="text-sm">{t.label}</span>
-                            </label>
-                          ))
-                      )}
-                    </div>
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  El primero seleccionado será el inquilino principal.
-                </p>
-              </div>
-
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={cancelEditingPartes}
-                  disabled={patchPartesMutation.isPending}
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Cancelar
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    patchPartesMutation.mutate({
-                      ownerId: editOwnerId,
-                      tenantIds: editTenantIds,
-                    })
-                  }
-                  disabled={
-                    patchPartesMutation.isPending ||
-                    !editOwnerId ||
-                    editTenantIds.length === 0
-                  }
-                >
-                  {patchPartesMutation.isPending ? (
-                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  ) : null}
-                  Guardar cambios
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {data.tenants.map((t) => (
-                <div key={t.id} className="px-4 py-3 flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-xs font-bold flex-shrink-0">
-                    {t.name
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium">{t.name}</span>
-                      <Badge variant="secondary" className="text-xs h-5">
-                        {t.role === "principal" ? "Principal" : "Co-titular"}
-                      </Badge>
-                    </div>
-                    {t.email && (
-                      <p className="text-xs text-muted-foreground truncate">{t.email}</p>
-                    )}
-                    {t.phone && (
-                      <p className="text-xs text-muted-foreground">{t.phone}</p>
-                    )}
-                    {t.dni && (
-                      <p className="text-xs text-muted-foreground">DNI {t.dni}</p>
-                    )}
-                  </div>
-                  <Badge variant="outline" className="text-xs h-5 flex-shrink-0">
-                    Inquilino
-                  </Badge>
-                </div>
-              ))}
-
-              <Separator />
-
-              {data.owner && (
-                <div className="px-4 py-3 flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-xs font-bold flex-shrink-0">
-                    {data.owner.name
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{data.owner.name}</span>
-                    </div>
-                    {data.owner.email && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {data.owner.email}
-                      </p>
-                    )}
-                    {data.owner.phone && (
-                      <p className="text-xs text-muted-foreground">
-                        {data.owner.phone}
-                      </p>
-                    )}
-                    {data.owner.dni && (
-                      <p className="text-xs text-muted-foreground">
-                        DNI {data.owner.dni}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Badge variant="outline" className="text-xs h-5">
-                      Propietario
-                    </Badge>
-                    <User className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-              )}
-            </div>
+          {data.status === "pending_signature" && (
+            <button className="px-[14px] py-[7px] text-[0.72rem] font-semibold rounded-xl bg-primary text-primary-foreground hover:brightness-110 transition-all">
+              Aprobar y enviar a firma →
+            </button>
           )}
         </div>
       </div>
 
-      {/* Servicios e impuestos */}
-      <div className="rounded-lg border overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 bg-muted/40 border-b">
-          <Zap className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Servicios e impuestos
-          </h2>
-          <span className="text-xs text-muted-foreground ml-1">
-            (datos de la propiedad)
-          </span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x">
-          {PROPERTY_SERVICES.map(({ key, label }) => {
-            const value = data[key as keyof PropertyServices] as string;
-            const Icon = SERVICE_ICONS[key];
-            const resp = value as ServiceResponsibility;
-            const respLabel = SERVICE_RESPONSIBILITY_LABELS[resp] ?? value;
-            return (
-              <div key={key} className="px-4 py-3 flex items-center gap-3">
-                {Icon && <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground">{label}</p>
-                  <p
-                    className={`text-sm font-medium ${
-                      resp === "na" ? "text-muted-foreground" : ""
-                    }`}
-                  >
-                    {respLabel}
+      <div className="flex flex-col gap-5 px-7 pb-7">
+
+        {/* ── Stepper (solo draft / pending_signature) ─────── */}
+        {showStepper && (
+          <div className="flex bg-surface border border-border rounded-[18px] overflow-hidden">
+            {STEPS.map((step, i) => {
+              const state = stepStates[i];
+              const isLast = i === STEPS.length - 1;
+              return (
+                <div
+                  key={step.num}
+                  className={`flex-1 px-[18px] py-[14px] flex flex-col gap-[3px] relative ${!isLast ? "border-r border-border" : ""} ${
+                    state === "done"
+                      ? "bg-green/5"
+                      : state === "active"
+                      ? "bg-primary/8"
+                      : "bg-transparent"
+                  }`}
+                >
+                  {/* Arrow connector */}
+                  {!isLast && (
+                    <div
+                      className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full z-10 w-0 h-0"
+                      style={{
+                        borderTop: "8px solid transparent",
+                        borderBottom: "8px solid transparent",
+                        borderLeft: `8px solid ${state === "done" ? "rgba(141,207,149,0.05)" : state === "active" ? "var(--primary-dim)" : "transparent"}`,
+                      }}
+                    />
+                  )}
+                  <p className={`text-[0.58rem] font-bold uppercase tracking-[0.12em] ${
+                    state === "done" ? "text-green" : state === "active" ? "text-primary" : "text-text-muted"
+                  }`}>
+                    {step.num}
+                  </p>
+                  <p className={`text-[0.78rem] font-semibold ${
+                    state === "done" ? "text-green" : state === "active" ? "text-primary" : "text-text-muted"
+                  }`}>
+                    {state === "done" ? `✓ ${step.name}` : step.name}
+                  </p>
+                  <p className={`text-[0.68rem] ${state === "active" ? "text-text-secondary" : "text-text-muted"}`}>
+                    {state === "done" ? step.statusText.done : state === "active" ? step.statusText.active : step.statusText.pending}
                   </p>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Alert banner (pending_signature) ─────────────── */}
+        {data.status === "pending_signature" && (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-[0.8rem] text-primary"
+            style={{ background: "var(--primary-dim)", border: "1px solid var(--border-accent)" }}
+          >
+            <span className="text-[1rem] flex-shrink-0">✍</span>
+            <div>
+              Solicitud de firma enviada.{" "}
+              <strong>Esperando firma de las partes.</strong>{" "}
+              El contrato entrará en vigor automáticamente al completarse todas las firmas.
+            </div>
+          </div>
+        )}
+
+        {/* ── Alert banner (draft) ─────────────────────────── */}
+        {data.status === "draft" && (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-[0.8rem] text-info"
+            style={{ background: "var(--info-dim)", border: "1px solid rgba(147,197,253,0.2)" }}
+          >
+            <span className="text-[1rem] flex-shrink-0">✏</span>
+            <div>
+              Contrato en redacción.{" "}
+              <strong>Completá los datos y generá el borrador PDF antes de enviarlo a firma.</strong>
+            </div>
+          </div>
+        )}
+
+        {/* ── KPI cards ─────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-[18px] border border-border bg-surface px-[18px] py-4">
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Alquiler base</p>
+            <p className="font-headline text-[1.4rem] font-bold text-primary leading-none">
+              {formatMoney(data.monthlyAmount)}
+            </p>
+            <p className="text-[0.68rem] text-text-muted mt-1.5">
+              Ajuste {data.adjustmentIndex} · {frequencyLabel.toLowerCase()}
+            </p>
+          </div>
+
+          <div className="rounded-[18px] border border-border bg-surface px-[18px] py-4">
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Depósito</p>
+            <p className="font-headline text-[1.4rem] font-bold text-on-bg leading-none">
+              {formatMoney(data.depositAmount)}
+            </p>
+            <p className="text-[0.68rem] text-text-muted mt-1.5">1 mes · garantía</p>
+          </div>
+
+          <div className="rounded-[18px] border border-border bg-surface px-[18px] py-4">
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Duración</p>
+            <p className="font-headline text-[1.4rem] font-bold text-on-bg leading-none">
+              {durationMonths} meses
+            </p>
+            <p className="text-[0.68rem] text-text-muted mt-1.5">
+              {format(new Date(data.startDate), "dd/MM/yyyy")} → {format(new Date(data.endDate), "dd/MM/yyyy")}
+            </p>
+          </div>
+
+          <div className="rounded-[18px] border border-border bg-surface px-[18px] py-4">
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Día de pago</p>
+            <p className="font-headline text-[1.4rem] font-bold text-on-bg leading-none">
+              Día {data.paymentDay}
+            </p>
+            <p className="text-[0.68rem] text-text-muted mt-1.5">
+              Modalidad {data.paymentModality === "A" ? "A — inmobiliaria" : "B — directo"}
+            </p>
+          </div>
         </div>
+
+        {/* ── Condiciones + Partes ─────────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Condiciones */}
+          <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
+            <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">
+                Condiciones del contrato
+              </p>
+              {!isEditing && (
+                <button
+                  onClick={startEditing}
+                  className="flex items-center gap-1 px-2 py-1 text-[0.67rem] font-semibold text-text-secondary border border-border rounded-md hover:bg-surface-high transition-colors"
+                >
+                  <Pencil className="h-3 w-3" /> Editar
+                </button>
+              )}
+            </div>
+
+            {isEditing && editValues ? (
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Inicio</Label>
+                    <Input type="date" value={editValues.startDate}
+                      onChange={(e) => setEditValues((v) => v && { ...v, startDate: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Fin</Label>
+                    <Input type="date" value={editValues.endDate}
+                      onChange={(e) => setEditValues((v) => v && { ...v, endDate: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Monto mensual ($)</Label>
+                    <Input type="number" min="0" step="0.01" value={editValues.monthlyAmount}
+                      onChange={(e) => setEditValues((v) => v && { ...v, monthlyAmount: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Depósito ($)</Label>
+                    <Input type="number" min="0" step="0.01" value={editValues.depositAmount}
+                      onChange={(e) => setEditValues((v) => v && { ...v, depositAmount: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Comisión (%)</Label>
+                    <Input type="number" min="0" max="100" step="0.5" value={editValues.agencyCommission}
+                      onChange={(e) => setEditValues((v) => v && { ...v, agencyCommission: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Día de pago</Label>
+                    <Input type="number" min="1" max="28" value={editValues.paymentDay}
+                      onChange={(e) => setEditValues((v) => v && { ...v, paymentDay: e.target.value })} />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Modalidad de pago</Label>
+                    <Select value={editValues.paymentModality}
+                      onValueChange={(v) => setEditValues((p) => p ? { ...p, paymentModality: v as "A" | "B" } : p)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A">Modalidad A (inmobiliaria recibe y liquida)</SelectItem>
+                        <SelectItem value="B">Modalidad B (pago directo al propietario)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Índice de ajuste</Label>
+                    <Select value={editValues.adjustmentIndex}
+                      onValueChange={(v) => setEditValues((p) => p ? { ...p, adjustmentIndex: v } : p)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {allIndexOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Frecuencia de ajuste</Label>
+                    <Select value={editValues.adjustmentFrequency}
+                      onValueChange={(v) => setEditValues((p) => p ? { ...p, adjustmentFrequency: v } : p)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(ADJUSTMENT_FREQUENCY_LABELS).map(([val, label]) => (
+                          <SelectItem key={val} value={val}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setEditValues(null); }} disabled={patchMutation.isPending}>
+                    <X className="h-3 w-3 mr-1" /> Cancelar
+                  </Button>
+                  <Button size="sm" onClick={() => editValues && patchMutation.mutate(editValues)} disabled={patchMutation.isPending}>
+                    {patchMutation.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                    Guardar cambios
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-border text-sm">
+                {[
+                  { label: "Propiedad", value: data.propertyAddress || "—" },
+                  { label: "Tipo", value: contractTypeLabel },
+                  { label: "Período", value: `${format(new Date(data.startDate), "dd/MM/yyyy", { locale: es })} → ${format(new Date(data.endDate), "dd/MM/yyyy", { locale: es })}` },
+                  { label: "Canon", value: formatMoney(data.monthlyAmount) },
+                  { label: "Índice", value: adjustmentLabel },
+                  { label: "Frecuencia", value: frequencyLabel },
+                  { label: "Vto. pago", value: `Día ${data.paymentDay}` },
+                  ...(data.agencyCommission ? [{ label: "Comisión", value: `${data.agencyCommission}%` }] : []),
+                ].map(({ label, value }) => (
+                  <div key={label} className="grid grid-cols-2 gap-2 px-[18px] py-[11px]">
+                    <span className="text-text-muted text-[0.75rem]">{label}</span>
+                    <span className="font-medium text-[0.78rem] text-on-surface">{value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Partes firmantes */}
+          <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
+            <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">
+                Partes firmantes
+              </p>
+              <div className="flex items-center gap-2">
+                {data.status === "pending_signature" && (
+                  <span className="px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold bg-primary-dim text-primary">
+                    1 / {data.tenants.length + (data.owner ? 2 : 1)} firmado
+                  </span>
+                )}
+                {!isEditingPartes && (
+                  <button
+                    onClick={startEditingPartes}
+                    className="flex items-center gap-1 px-2 py-1 text-[0.67rem] font-semibold text-text-secondary border border-border rounded-md hover:bg-surface-high transition-colors"
+                  >
+                    <Pencil className="h-3 w-3" /> Editar
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {isEditingPartes ? (
+              <div className="p-4 space-y-4">
+                <div className="space-y-1">
+                  <Label className="text-xs">Propietario</Label>
+                  <SearchableSelect
+                    options={availableOwners}
+                    value={editOwnerId}
+                    onValueChange={setEditOwnerId}
+                    placeholder="Seleccionar propietario..."
+                    searchPlaceholder="Buscar por nombre..."
+                    emptyText="No hay propietarios cargados"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Inquilinos</Label>
+                  {selectedTenantObjects.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pb-1">
+                      {selectedTenantObjects.map((t, i) => (
+                        <Badge key={t.id} variant="secondary" className="gap-1 pr-1 text-xs">
+                          <span>{t.label}{i === 0 && <span className="text-muted-foreground ml-1 text-xs">(principal)</span>}</span>
+                          <button type="button" onClick={() => toggleEditTenant(t.id)} className="ml-1 rounded-sm hover:bg-destructive/20 p-0.5">
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setTenantSearchOpen((v) => !v)}
+                    className="w-full flex items-center justify-between px-3 py-2 border rounded-md text-xs text-muted-foreground hover:bg-accent transition-colors"
+                  >
+                    <span>{tenantSearchOpen ? "Cerrar lista" : selectedTenantObjects.length === 0 ? "Seleccionar inquilinos..." : `${selectedTenantObjects.length} seleccionado${selectedTenantObjects.length > 1 ? "s" : ""} — agregar más`}</span>
+                    <span>{tenantSearchOpen ? "▲" : "▼"}</span>
+                  </button>
+                  {tenantSearchOpen && (
+                    <div className="border rounded-md overflow-hidden">
+                      <div className="p-2 border-b flex items-center gap-2">
+                        <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                        <input
+                          autoFocus type="text" value={tenantSearch}
+                          onChange={(e) => setTenantSearch(e.target.value)}
+                          placeholder="Buscar inquilino..."
+                          className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                        />
+                        {tenantSearch && (
+                          <button type="button" onClick={() => setTenantSearch("")} className="text-muted-foreground hover:text-foreground">
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="divide-y max-h-48 overflow-y-auto">
+                        {availableTenants.length === 0 ? (
+                          <p className="p-3 text-xs text-muted-foreground text-center">No hay inquilinos cargados</p>
+                        ) : availableTenants.filter((t) => t.label.toLowerCase().includes(tenantSearch.toLowerCase())).length === 0 ? (
+                          <p className="p-3 text-xs text-muted-foreground text-center">Sin resultados</p>
+                        ) : (
+                          availableTenants
+                            .filter((t) => t.label.toLowerCase().includes(tenantSearch.toLowerCase()))
+                            .map((t) => (
+                              <label key={t.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent transition-colors">
+                                <Checkbox checked={editTenantIds.includes(t.id)} onCheckedChange={() => toggleEditTenant(t.id)} />
+                                <span className="text-sm">{t.label}</span>
+                              </label>
+                            ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">El primero seleccionado será el inquilino principal.</p>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" size="sm" onClick={() => { setIsEditingPartes(false); setTenantSearch(""); setTenantSearchOpen(false); }} disabled={patchPartesMutation.isPending}>
+                    <X className="h-3 w-3 mr-1" /> Cancelar
+                  </Button>
+                  <Button size="sm"
+                    onClick={() => patchPartesMutation.mutate({ ownerId: editOwnerId, tenantIds: editTenantIds })}
+                    disabled={patchPartesMutation.isPending || !editOwnerId || editTenantIds.length === 0}>
+                    {patchPartesMutation.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                    Guardar cambios
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {data.tenants.map((t, i) => (
+                  <div key={t.id} className="flex items-center gap-3 px-[18px] py-[11px] border-b border-border">
+                    <div className={`w-[34px] h-[34px] rounded-md flex items-center justify-center text-[0.65rem] font-bold text-white flex-shrink-0 ${avatarColor(t.name)}`}>
+                      {getInitials(t.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[0.8rem] font-semibold text-on-surface">{t.name}</p>
+                      <p className="text-[0.67rem] text-text-muted mt-0.5">
+                        {i === 0 ? "Inquilino principal" : "Co-titular"}
+                        {t.email && ` · ${t.email}`}
+                      </p>
+                    </div>
+                    <span className={`px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold flex-shrink-0 ${
+                      data.status === "pending_signature" && i === 0
+                        ? "bg-green-dim text-green border border-green/20"
+                        : "bg-surface-highest text-text-muted border border-border"
+                    }`}>
+                      {data.status === "pending_signature" && i === 0 ? "✓ Firmó" : "En espera"}
+                    </span>
+                  </div>
+                ))}
+
+                {data.owner && (
+                  <div className="flex items-center gap-3 px-[18px] py-[11px] border-b border-border">
+                    <div className={`w-[34px] h-[34px] rounded-md flex items-center justify-center text-[0.65rem] font-bold text-white flex-shrink-0 ${avatarColor(data.owner.name)}`}>
+                      {getInitials(data.owner.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[0.8rem] font-semibold text-on-surface">{data.owner.name}</p>
+                      <p className="text-[0.67rem] text-text-muted mt-0.5">
+                        Propietario{data.owner.email && ` · ${data.owner.email}`}
+                      </p>
+                    </div>
+                    <span className="px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold flex-shrink-0 bg-surface-highest text-text-muted border border-border">
+                      En espera
+                    </span>
+                  </div>
+                )}
+
+                {/* Arce Administración firma institucional */}
+                <div className="flex items-center gap-3 px-[18px] py-[11px]">
+                  <div className="w-[34px] h-[34px] rounded-md flex items-center justify-center text-[0.65rem] font-bold text-primary flex-shrink-0 bg-primary-dark border border-border-accent">
+                    A
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[0.8rem] font-semibold text-on-surface">Arce Administración</p>
+                    <p className="text-[0.67rem] text-text-muted mt-0.5">Firma institucional</p>
+                  </div>
+                  <span className="px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold flex-shrink-0 bg-surface-highest text-text-muted border border-border">
+                    En espera
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Cláusulas ─────────────────────────────────────── */}
+        <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
+          <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
+            <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">
+              Cláusulas del contrato
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-[0.7rem] text-text-muted">estándar</span>
+              <button className="px-2 py-1 text-[0.67rem] font-semibold border border-border rounded-md text-text-secondary bg-transparent hover:bg-surface-high transition-colors">
+                + Agregar cláusula
+              </button>
+            </div>
+          </div>
+          <div className="p-[14px] space-y-1.5">
+            {[
+              "Objeto del contrato y partes",
+              "Plazo de locación y condiciones de renovación",
+              "Mascotas y convivencia",
+              "Canon locativo y forma de pago",
+              `Ajuste por índice ${data.adjustmentIndex} — periodicidad ${frequencyLabel.toLowerCase()}`,
+              "Depósito · Servicios · Garantías · Rescisión · Inspecciones · Mora",
+            ].map((clausula, i) => (
+              <div key={i} className="flex items-center gap-[10px] px-[14px] py-[10px] border border-border rounded-md hover:border-white/12 transition-colors cursor-pointer">
+                <span className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted flex-shrink-0">
+                  Cláusula {i + 1 < 6 ? i + 1 : "6–12"}
+                </span>
+                <span className="text-[0.78rem] text-on-surface flex-1">{clausula}</span>
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  className="px-2 py-0.5 text-[0.67rem] border border-border rounded text-text-secondary hover:bg-surface-high transition-colors flex-shrink-0"
+                >
+                  Editar
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Acta de entrega + Actividad ───────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Acta de entrega */}
+          <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
+            <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">Acta de entrega de llaves</p>
+              <span className="px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold bg-surface-highest text-text-muted border border-border">
+                {showStepper ? "Se genera al firmar" : "Completada"}
+              </span>
+            </div>
+            <div className="p-[18px] space-y-2">
+              {showStepper && (
+                <p className="text-[0.72rem] text-text-muted mb-3">
+                  Se completará luego de que todas las partes firmen. Ítems a relevar:
+                </p>
+              )}
+              {[
+                { label: "Fecha y hora de entrega efectiva", value: "—" },
+                { label: "Estado general del inmueble", value: showStepper ? "Checklist" : "OK" },
+                { label: "Medidor de luz (foto + número)", value: "—" },
+                { label: "Medidor de gas (foto + número)", value: "—" },
+                { label: "Inventario (del ABM)", value: "—" },
+                { label: "Llaves entregadas", value: "—" },
+              ].map(({ label, value }, i) => (
+                <div key={i} className="flex items-center gap-[10px] px-[10px] py-2 bg-surface-low rounded-md">
+                  <div className={`w-[15px] h-[15px] rounded-[3px] border-[1.5px] flex items-center justify-center flex-shrink-0 ${
+                    !showStepper ? "bg-green border-green" : "border-primary-dim bg-primary-dim/30"
+                  }`}>
+                    {!showStepper && <span className="text-[0.5rem] text-white font-bold">✓</span>}
+                  </div>
+                  <span className="flex-1 text-[0.75rem] text-text-secondary">{label}</span>
+                  <span className="text-[0.68rem] text-text-muted font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Actividad */}
+          <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
+            <div className="px-[18px] py-[14px] border-b border-border">
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">Actividad del contrato</p>
+            </div>
+            <div className="p-[18px]">
+              {[
+                {
+                  state: "done" as const,
+                  label: "Contrato creado",
+                  meta: format(new Date(data.createdAt), "dd/MM/yyyy", { locale: es }),
+                },
+                ...(data.status !== "draft" ? [{
+                  state: "done" as const,
+                  label: "Borrador generado",
+                  meta: "Condiciones completadas",
+                }] : []),
+                ...(data.status === "pending_signature" ? [{
+                  state: "active" as const,
+                  label: "Solicitud de firma enviada",
+                  meta: "Esperando firmas de las partes",
+                }] : []),
+                ...(data.status === "active" || data.status === "expiring_soon" ? [{
+                  state: "done" as const,
+                  label: "Contrato vigente",
+                  meta: `Desde ${format(new Date(data.startDate), "dd/MM/yyyy", { locale: es })}`,
+                }] : []),
+                ...(data.status === "expired" ? [{
+                  state: "active" as const,
+                  label: "Contrato vencido",
+                  meta: `Venció el ${format(new Date(data.endDate), "dd/MM/yyyy", { locale: es })}`,
+                }] : []),
+                ...(data.status === "terminated" ? [{
+                  state: "active" as const,
+                  label: "Contrato rescindido",
+                  meta: "Terminado anticipadamente",
+                }] : []),
+              ].map((item, i, arr) => (
+                <div key={i} className="flex gap-3 pb-4 relative">
+                  {i < arr.length - 1 && (
+                    <div className="absolute left-[10px] top-[22px] bottom-0 w-px bg-border" />
+                  )}
+                  <div className={`w-[22px] h-[22px] rounded-full border-[1.5px] flex items-center justify-center flex-shrink-0 mt-0.5 text-[0.6rem] ${
+                    item.state === "done"
+                      ? "border-green bg-green-dim text-green"
+                      : "border-primary bg-primary-dim"
+                  }`}>
+                    {item.state === "done" ? "✓" : (
+                      <div className="w-[7px] h-[7px] rounded-full bg-primary" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[0.78rem] font-semibold text-on-surface">{item.label}</p>
+                    <p className="text-[0.68rem] text-text-muted mt-0.5">{item.meta}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Servicios ─────────────────────────────────────── */}
+        <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
+          <div className="flex items-center gap-2 px-[18px] py-[14px] border-b border-border">
+            <Zap className="h-4 w-4 text-text-muted" />
+            <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">
+              Servicios e impuestos
+            </p>
+            <span className="text-[0.68rem] text-text-muted">(datos de la propiedad)</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
+            {PROPERTY_SERVICES.map(({ key, label }) => {
+              const value = data[key as keyof PropertyServices] as string;
+              const Icon = SERVICE_ICONS[key];
+              const resp = value as ServiceResponsibility;
+              const respLabel = SERVICE_RESPONSIBILITY_LABELS[resp] ?? value;
+              return (
+                <div key={key} className="px-[18px] py-3 flex items-center gap-3">
+                  {Icon && <Icon className="h-4 w-4 text-text-muted flex-shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[0.67rem] text-text-muted">{label}</p>
+                    <p className={`text-[0.78rem] font-medium ${resp === "na" ? "text-text-muted" : "text-on-surface"}`}>
+                      {respLabel}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Actions footer ───────────────────────────────── */}
+        <div className="flex items-center justify-between px-5 py-4 bg-surface border border-border rounded-[18px]">
+          <div className="flex gap-2">
+            <button className="px-[14px] py-[7px] text-[0.72rem] font-semibold border border-border rounded-xl text-text-secondary bg-transparent hover:bg-surface-high transition-colors">
+              Guardar cambios
+            </button>
+            <button className="px-[14px] py-[7px] text-[0.72rem] font-semibold border border-border rounded-xl text-text-secondary bg-transparent hover:bg-surface-high transition-colors">
+              ↓ Vista previa PDF
+            </button>
+            <button className="px-[14px] py-[7px] text-[0.72rem] font-semibold rounded-xl text-error bg-transparent border border-error/25 hover:bg-error-dim transition-colors">
+              Rescindir contrato
+            </button>
+          </div>
+          <div className="flex gap-2">
+            {data.status === "pending_signature" && (
+              <button className="px-[14px] py-[7px] text-[0.72rem] font-semibold border border-border rounded-xl bg-surface-highest text-on-surface hover:bg-surface-high transition-colors">
+                Reenviar solicitud de firma
+              </button>
+            )}
+            {(data.status === "draft" || data.status === "pending_signature") && (
+              <button
+                onClick={() => data.status === "draft" && activarMutation.mutate()}
+                disabled={activarMutation.isPending}
+                className="px-[14px] py-[7px] text-[0.72rem] font-semibold rounded-xl bg-primary text-primary-foreground hover:brightness-110 transition-all disabled:opacity-60"
+              >
+                Aprobar y enviar a firma →
+              </button>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );
