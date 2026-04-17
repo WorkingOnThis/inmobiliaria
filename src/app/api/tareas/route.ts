@@ -7,7 +7,7 @@ import { property } from "@/db/schema/property";
 import { contract } from "@/db/schema/contract";
 import { client } from "@/db/schema/client";
 import { user } from "@/db/schema/better-auth";
-import { and, count, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     const categoria = params.get("categoria");
     const tipo = params.get("tipo");
     const estado = params.get("estado");
+    const excluirResuelta = params.get("excluirResuelta") === "true";
 
     const conditions = [];
     if (scope === "mine") {
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest) {
     if (categoria) conditions.push(eq(tarea.categoria, categoria));
     if (tipo) conditions.push(eq(tarea.tipo, tipo));
     if (estado) conditions.push(eq(tarea.estado, estado));
+    if (excluirResuelta) conditions.push(ne(tarea.estado, "resuelta"));
 
     const items = await db
       .select({

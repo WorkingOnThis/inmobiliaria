@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 import { property } from "./property";
 import { contract } from "./contract";
@@ -37,6 +37,11 @@ export const tarea = pgTable("tarea", {
     onDelete: "set null",
   }),
   ownerId: text("ownerId").references(() => client.id, {
+    onDelete: "set null",
+  }),
+
+  // Cliente vinculado genérico (propietario, inquilino, garante, contacto, etc.)
+  clienteId: text("clienteId").references(() => client.id, {
     onDelete: "set null",
   }),
 
@@ -89,6 +94,27 @@ export const tareaComentario = pgTable("tareaComentario", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
+/**
+ * TareaArchivo
+ *
+ * Archivos adjuntos a una tarea (imágenes, PDFs, etc.).
+ * Se almacenan en /public/uploads/tareas/[tareaId]/.
+ */
+export const tareaArchivo = pgTable("tareaArchivo", {
+  id: text("id").primaryKey(),
+  tareaId: text("tareaId")
+    .notNull()
+    .references(() => tarea.id, { onDelete: "cascade" }),
+  nombre: text("nombre").notNull(),
+  url: text("url").notNull(),
+  tipo: text("tipo"),
+  tamaño: integer("tamaño"),
+  creadoPor: text("creadoPor").references(() => user.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
 // Tipos inferidos
 export type Tarea = typeof tarea.$inferSelect;
 export type NuevaTarea = typeof tarea.$inferInsert;
@@ -96,3 +122,5 @@ export type TareaHistorial = typeof tareaHistorial.$inferSelect;
 export type NuevaTareaHistorial = typeof tareaHistorial.$inferInsert;
 export type TareaComentario = typeof tareaComentario.$inferSelect;
 export type NuevaTareaComentario = typeof tareaComentario.$inferInsert;
+export type TareaArchivo = typeof tareaArchivo.$inferSelect;
+export type NuevaTareaArchivo = typeof tareaArchivo.$inferInsert;

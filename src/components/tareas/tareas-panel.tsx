@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, Paperclip, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -19,6 +19,16 @@ type Prioridad = "urgente" | "alta" | "media" | "baja";
 type Estado = "pendiente" | "en_curso" | "resuelta";
 type Tipo = "auto" | "manual";
 type FiltroKey = "todas" | "auto" | "manual" | "alquiler" | "servicios" | "contratos";
+
+type TareaPatch = {
+  prioridad?: Prioridad;
+  estado?: Estado;
+  titulo?: string;
+  descripcion?: string | null;
+  fechaVencimiento?: string | null;
+  clienteId?: string | null;
+  propertyId?: string | null;
+};
 
 type TareaResumen = {
   id: string;
@@ -44,10 +54,21 @@ type TareaResumen = {
 type TareaDetalle = TareaResumen & {
   ownerId: string | null;
   ownerNombre: string | null;
+  clienteId: string | null;
+  clienteNombre: string | null;
+  clienteTipo: string | null;
+  archivos: {
+    id: string;
+    nombre: string;
+    url: string;
+    tipo: string | null;
+    tamaño: number | null;
+    createdAt: string;
+  }[];
   historial: {
     id: string;
     texto: string;
-    tipo: Tipo;
+    tipo: string;
     creadoPorNombre: string | null;
     createdAt: string;
   }[];
@@ -63,6 +84,26 @@ type ListaResponse = {
   total: number;
   saludPortfolio: number;
   items: TareaResumen[];
+};
+
+type ClienteSimple = {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  type: string;
+};
+
+type PropertySimple = {
+  id: string;
+  address: string;
+  title: string | null;
+  zone: string | null;
+};
+
+type ComboOption = {
+  id: string;
+  label: string;
+  sublabel?: string;
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -85,6 +126,13 @@ function formatFecha(fecha: string | null): { label: string; colorClass: string 
   return { label: `en ${diffDays} días`, colorClass: "text-text-muted" };
 }
 
+function formatBytes(bytes: number | null): string {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 const PRIO: Record<Prioridad, { label: string; pill: string; border: string }> = {
   urgente: { label: "Urgente", pill: "bg-error-dim text-destructive",         border: "var(--error)" },
   alta:    { label: "Alta",    pill: "bg-mustard-dim text-mustard",            border: "var(--mustard)" },
@@ -101,6 +149,29 @@ const EST: Record<Estado, { label: string; badge: string }> = {
 const TIPO_TAG: Record<Tipo, { label: string; cls: string }> = {
   auto:   { label: "Auto",   cls: "bg-neutral-dim text-neutral" },
   manual: { label: "Manual", cls: "bg-primary-dim text-primary" },
+};
+
+function searchFilter(options: ComboOption[], query: string): ComboOption[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const words = q.split(/\s+/);
+  return options
+    .map(o => {
+      const haystack = (o.label + " " + (o.sublabel ?? "")).toLowerCase();
+      const score = words.filter(w => haystack.includes(w)).length;
+      return { option: o, score };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(({ option }) => option);
+}
+
+const TIPO_CLIENTE: Record<string, string> = {
+  propietario: "Propietario",
+  inquilino:   "Inquilino",
+  garante:     "Garante",
+  contacto:    "Contacto",
 };
 
 // ── Sub-componentes ────────────────────────────────────────────────────────
@@ -149,6 +220,75 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+function SearchCombobox({
+  options,
+  selectedId,
+  selectedLabel,
+  placeholder,
+  onSelect,
+  onClear,
+}: {
+  options: ComboOption[];
+  selectedId: string | null;
+  selectedLabel: string | null;
+  placeholder: string;
+  onSelect: (id: string) => void;
+  onClear: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const results = searchFilter(options, query);
+
+  if (selectedId && selectedLabel) {
+    return (
+      <div className="flex items-center gap-2 bg-surface-high border border-border rounded-lg px-3 py-[8px]">
+        <span className="flex-1 text-[0.78rem] text-on-surface truncate">{selectedLabel}</span>
+        <button
+          onClick={onClear}
+          className="text-text-muted hover:text-destructive transition-colors shrink-0"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <input
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder}
+        className="w-full text-[0.78rem] bg-surface-high border border-border rounded-lg px-3 py-[8px] text-on-surface placeholder:text-text-muted outline-none focus:border-primary transition-colors"
+      />
+      {open && query.trim().length > 0 && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden">
+          {results.length === 0 ? (
+            <div className="px-3 py-[10px] text-[0.72rem] text-text-muted text-center">
+              Sin resultados
+            </div>
+          ) : (
+            results.map(r => (
+              <button
+                key={r.id}
+                onMouseDown={() => { onSelect(r.id); setQuery(""); setOpen(false); }}
+                className="w-full text-left px-3 py-[9px] hover:bg-surface-mid transition-colors border-b border-border last:border-b-0"
+              >
+                <div className="text-[0.78rem] font-medium text-on-surface truncate">{r.label}</div>
+                {r.sublabel && (
+                  <div className="text-[0.65rem] text-text-muted truncate mt-[1px]">{r.sublabel}</div>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HealthWidget({ pct }: { pct: number }) {
   const color = pct >= 80 ? "text-green" : pct >= 50 ? "text-mustard" : "text-destructive";
   return (
@@ -174,10 +314,12 @@ function TareaRow({
   t,
   selected,
   onClick,
+  onComplete,
 }: {
   t: TareaResumen;
   selected: boolean;
   onClick: () => void;
+  onComplete: (id: string) => void;
 }) {
   const pCfg = PRIO[t.prioridad];
   const fecha = formatFecha(t.fechaVencimiento);
@@ -191,7 +333,11 @@ function TareaRow({
         selected && "border-primary bg-primary-dim"
       )}
     >
-      <div className="w-4 h-4 rounded-full border-2 border-border shrink-0 hover:border-income hover:bg-income-dim transition-all" />
+      <div
+        onClick={(e) => { e.stopPropagation(); onComplete(t.id); }}
+        className="w-4 h-4 rounded-full border-2 border-border shrink-0 hover:border-income hover:bg-income-dim transition-all cursor-pointer"
+        title="Marcar como resuelta"
+      />
 
       <div className="flex-1 min-w-0">
         <div className="text-[0.82rem] font-semibold text-on-surface truncate">{t.titulo}</div>
@@ -221,6 +367,32 @@ function TareaRow({
   );
 }
 
+// ── Fila tarea finalizada ──────────────────────────────────────────────────
+
+function TareaFinalizadaRow({ t, onClick }: { t: TareaResumen; onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      className="flex items-center gap-3 p-[10px_14px] bg-card border border-border rounded-xl cursor-pointer transition-all mb-1 hover:border-border-accent hover:bg-surface-mid opacity-60"
+    >
+      <div className="w-4 h-4 rounded-full bg-income/30 border-2 border-income shrink-0 flex items-center justify-center">
+        <div className="w-2 h-2 rounded-full bg-income" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[0.82rem] font-semibold text-on-surface truncate line-through">
+          {t.titulo}
+        </div>
+        <div className="text-[0.63rem] text-text-muted mt-[1px]">
+          {t.categoria ?? ""}
+        </div>
+      </div>
+      <span className="text-[0.62rem] text-text-muted shrink-0">
+        {new Date(t.updatedAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" })}
+      </span>
+    </div>
+  );
+}
+
 // ── Grupo de prioridad ─────────────────────────────────────────────────────
 
 function GrupoPrioridad({
@@ -228,6 +400,7 @@ function GrupoPrioridad({
   items,
   selectedId,
   onSelect,
+  onComplete,
   collapsed,
   onToggle,
 }: {
@@ -235,6 +408,7 @@ function GrupoPrioridad({
   items: TareaResumen[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onComplete: (id: string) => void;
   collapsed: boolean;
   onToggle: () => void;
 }) {
@@ -260,6 +434,7 @@ function GrupoPrioridad({
             t={t}
             selected={selectedId === t.id}
             onClick={() => onSelect(t.id)}
+            onComplete={onComplete}
           />
         ))}
       </CollapsibleContent>
@@ -335,15 +510,20 @@ function PanelLateral({
   onClose,
   selectedId,
   onUpdate,
-  onAddComentario,
 }: {
   open: boolean;
   onClose: () => void;
   selectedId: string | null;
-  onUpdate: (id: string, patch: { prioridad?: Prioridad; estado?: Estado }) => void;
-  onAddComentario: (id: string, texto: string) => void;
+  onUpdate: (id: string, patch: TareaPatch) => void;
 }) {
-  const [comentario, setComentario] = useState("");
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [editingTitulo, setEditingTitulo] = useState(false);
+  const [tituloDraft, setTituloDraft] = useState("");
+  const [notaDraft, setNotaDraft] = useState("");
+  const [historialOpen, setHistorialOpen] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const { data: t, isLoading } = useQuery({
     queryKey: ["tarea", selectedId],
@@ -355,17 +535,99 @@ function PanelLateral({
     enabled: !!selectedId && open,
   });
 
-  function submitComentario() {
-    if (!t || !comentario.trim()) return;
-    onAddComentario(t.id, comentario.trim());
-    setComentario("");
+  const { data: clientesData } = useQuery({
+    queryKey: ["clientes-lista"],
+    queryFn: async () => {
+      const res = await fetch("/api/clients?limit=200");
+      if (!res.ok) return { clients: [] };
+      return res.json() as Promise<{ clients: ClienteSimple[] }>;
+    },
+    enabled: open,
+  });
+  const clientes = clientesData?.clients ?? [];
+
+  const { data: propiedadesData } = useQuery({
+    queryKey: ["propiedades-lista"],
+    queryFn: async () => {
+      const res = await fetch("/api/properties?limit=200");
+      if (!res.ok) return { properties: [] };
+      const json = await res.json();
+      return json as { properties: PropertySimple[] };
+    },
+    enabled: open,
+  });
+  const propiedades = propiedadesData?.properties ?? [];
+
+  const clienteOptions: ComboOption[] = clientes.map(c => ({
+    id: c.id,
+    label: [c.firstName, c.lastName].filter(Boolean).join(" "),
+    sublabel: TIPO_CLIENTE[c.type] ?? c.type,
+  }));
+
+  const propiedadOptions: ComboOption[] = propiedades.map(p => ({
+    id: p.id,
+    label: p.address,
+    sublabel: [p.title, p.zone].filter(Boolean).join(" · ") || undefined,
+  }));
+
+  useEffect(() => {
+    if (t) {
+      setTituloDraft(t.titulo);
+      setNotaDraft(t.descripcion ?? "");
+      setHistorialOpen(false);
+    }
+  }, [t?.id]);
+
+  function saveTitulo() {
+    if (!t || !tituloDraft.trim() || tituloDraft.trim() === t.titulo) {
+      setEditingTitulo(false);
+      return;
+    }
+    onUpdate(t.id, { titulo: tituloDraft.trim() });
+    setEditingTitulo(false);
+  }
+
+  function saveNota() {
+    if (!t) return;
+    const val = notaDraft.trim() || null;
+    if (val === t.descripcion) return;
+    onUpdate(t.id, { descripcion: val });
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !t) return;
+    setUploadingFile(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`/api/tareas/${t.id}/archivos`, {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) throw new Error("Error al subir");
+      queryClient.invalidateQueries({ queryKey: ["tarea", t.id] });
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function deleteArchivo(archivoId: string) {
+    if (!t) return;
+    await fetch(`/api/tareas/${t.id}/archivos`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ archivoId }),
+    });
+    queryClient.invalidateQueries({ queryKey: ["tarea", t.id] });
   }
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
       <SheetContent
         side="right"
-        className="top-14 w-[400px] sm:max-w-[400px] p-0 flex flex-col gap-0 overflow-hidden"
+        className="top-14 w-[420px] sm:max-w-[420px] p-0 flex flex-col gap-0 overflow-hidden"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>{t?.titulo ?? "Detalle de tarea"}</SheetTitle>
@@ -385,9 +647,9 @@ function PanelLateral({
 
         {t && !isLoading && (
           <>
-            {/* Header */}
+            {/* Header — título editable */}
             <div className="p-[16px_20px] pr-12 border-b border-border shrink-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-2">
                 <TagBadge tipo={t.tipo} />
                 {t.categoria && (
                   <span className="text-[0.6rem] text-text-muted uppercase font-bold tracking-wide">
@@ -395,13 +657,55 @@ function PanelLateral({
                   </span>
                 )}
               </div>
-              <div className="text-[0.95rem] font-bold text-on-bg font-headline leading-snug">
-                {t.titulo}
-              </div>
+              {editingTitulo ? (
+                <input
+                  autoFocus
+                  value={tituloDraft}
+                  onChange={e => setTituloDraft(e.target.value)}
+                  onBlur={saveTitulo}
+                  onKeyDown={e => { if (e.key === "Enter") saveTitulo(); if (e.key === "Escape") setEditingTitulo(false); }}
+                  className="w-full text-[0.95rem] font-bold text-on-bg font-headline leading-snug bg-transparent border-b border-primary outline-none pb-[2px]"
+                />
+              ) : (
+                <div
+                  onClick={() => { setEditingTitulo(true); setTituloDraft(t.titulo); }}
+                  className="text-[0.95rem] font-bold text-on-bg font-headline leading-snug cursor-text hover:text-primary transition-colors"
+                  title="Clic para editar título"
+                >
+                  {t.titulo}
+                </div>
+              )}
             </div>
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto">
+
+              {/* Nota / cuerpo */}
+              <div className="p-[14px_20px] border-b border-border">
+                <Textarea
+                  value={notaDraft}
+                  onChange={e => setNotaDraft(e.target.value)}
+                  onBlur={saveNota}
+                  placeholder="Escribí una nota, contexto o pasos a seguir…"
+                  className="resize-none min-h-[90px] bg-transparent border-border/50 text-[0.8rem] text-text-secondary leading-relaxed focus:border-border"
+                />
+              </div>
+
+              {/* Fecha */}
+              <div className="p-[14px_20px] border-b border-border">
+                <SectionTitle>Fecha límite</SectionTitle>
+                <input
+                  type="date"
+                  defaultValue={t.fechaVencimiento ? t.fechaVencimiento.substring(0, 10) : ""}
+                  onChange={e => onUpdate(t.id, { fechaVencimiento: e.target.value || null })}
+                  className="w-full text-[0.78rem] bg-surface-high border border-border rounded-lg px-3 py-[7px] text-on-surface outline-none focus:border-primary transition-colors"
+                />
+                {t.fechaVencimiento && (
+                  <p className={`text-[0.65rem] mt-[5px] font-semibold ${formatFecha(t.fechaVencimiento).colorClass}`}>
+                    {formatFecha(t.fechaVencimiento).label}
+                  </p>
+                )}
+              </div>
 
               {/* Prioridad + Estado */}
               <div className="p-[14px_20px] border-b border-border">
@@ -441,6 +745,36 @@ function PanelLateral({
                 </div>
               </div>
 
+              {/* Persona vinculada */}
+              <div className="p-[14px_20px] border-b border-border">
+                <SectionTitle>Persona vinculada</SectionTitle>
+                <SearchCombobox
+                  options={clienteOptions}
+                  selectedId={t.clienteId ?? null}
+                  selectedLabel={
+                    t.clienteNombre
+                      ? `${t.clienteNombre}${t.clienteTipo ? ` · ${TIPO_CLIENTE[t.clienteTipo] ?? t.clienteTipo}` : ""}`
+                      : null
+                  }
+                  placeholder="Buscar persona…"
+                  onSelect={id => onUpdate(t.id, { clienteId: id })}
+                  onClear={() => onUpdate(t.id, { clienteId: null })}
+                />
+              </div>
+
+              {/* Propiedad vinculada */}
+              <div className="p-[14px_20px] border-b border-border">
+                <SectionTitle>Propiedad vinculada</SectionTitle>
+                <SearchCombobox
+                  options={propiedadOptions}
+                  selectedId={t.propertyId ?? null}
+                  selectedLabel={t.propertyAddress ?? null}
+                  placeholder="Buscar propiedad…"
+                  onSelect={id => onUpdate(t.id, { propertyId: id })}
+                  onClear={() => onUpdate(t.id, { propertyId: null })}
+                />
+              </div>
+
               {/* Entidades vinculadas */}
               {(t.propertyAddress || t.contractNumber || t.tenantNombre) && (
                 <div className="p-[14px_20px] border-b border-border">
@@ -472,19 +806,9 @@ function PanelLateral({
                 </div>
               )}
 
-              {/* Descripción */}
-              {t.descripcion && (
-                <div className="p-[14px_20px] border-b border-border">
-                  <SectionTitle>Descripción</SectionTitle>
-                  <p className="text-[0.78rem] text-text-secondary leading-relaxed">
-                    {t.descripcion}
-                  </p>
-                </div>
-              )}
-
               {/* Responsable */}
               <div className="p-[14px_20px] border-b border-border">
-                <SectionTitle>Responsables</SectionTitle>
+                <SectionTitle>Responsable</SectionTitle>
                 {t.assignedToNombre ? (
                   <div className="flex items-center gap-2 py-[6px]">
                     <div className="w-7 h-7 rounded-[4px] bg-primary-dark flex items-center justify-center text-[0.55rem] font-extrabold text-primary-foreground shrink-0 font-brand">
@@ -502,70 +826,131 @@ function PanelLateral({
                 )}
               </div>
 
-              {/* Historial */}
-              {t.historial.length > 0 && (
-                <div className="p-[14px_20px] border-b border-border">
-                  <SectionTitle>Historial</SectionTitle>
-                  {t.historial.slice(0, 5).map(h => (
-                    <div key={h.id} className="flex gap-[10px] py-2 border-b border-border last:border-b-0">
-                      <div className={`w-[7px] h-[7px] rounded-full shrink-0 mt-[6px] ${
-                        h.tipo === "auto" ? "bg-neutral" : "bg-primary"
-                      }`} />
-                      <div>
-                        <div className="text-[0.72rem] text-text-secondary leading-snug">
-                          {h.texto}
-                        </div>
-                        <div className="text-[0.6rem] text-text-muted mt-[2px]">
-                          {new Date(h.createdAt).toLocaleDateString("es-AR", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                          })}
-                          {" · "}
-                          {h.creadoPorNombre ?? "Automático"}
-                        </div>
+              {/* Archivos adjuntos */}
+              <div className="p-[14px_20px] border-b border-border">
+                <SectionTitle>Archivos adjuntos</SectionTitle>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+
+                {(t.archivos ?? []).length > 0 && (
+                  <div className="flex flex-col gap-[6px] mb-[10px]">
+                    {(t.archivos ?? []).map(a => (
+                      <div
+                        key={a.id}
+                        className="flex items-center gap-2 bg-surface-high border border-border rounded-lg px-3 py-[8px] group"
+                      >
+                        <Paperclip className="w-3 h-3 text-text-muted shrink-0" />
+                        <a
+                          href={a.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 text-[0.75rem] text-primary hover:underline truncate"
+                        >
+                          {a.nombre}
+                        </a>
+                        {a.tamaño && (
+                          <span className="text-[0.6rem] text-text-muted shrink-0">
+                            {formatBytes(a.tamaño)}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => deleteArchivo(a.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-text-muted hover:text-destructive"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFile}
+                  className="flex items-center gap-2 text-[0.72rem] text-text-secondary hover:text-primary border border-dashed border-border hover:border-primary rounded-lg px-3 py-[7px] w-full transition-all disabled:opacity-50"
+                >
+                  {uploadingFile ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Paperclip className="w-3 h-3" />
+                  )}
+                  {uploadingFile ? "Subiendo…" : "Adjuntar archivo"}
+                </button>
+              </div>
+
+              {/* Historial desplegable */}
+              {(t.historial ?? []).length > 0 && (
+                <div className="p-[14px_20px]">
+                  <Collapsible open={historialOpen} onOpenChange={setHistorialOpen}>
+                    <CollapsibleTrigger className="flex w-full items-center gap-2 select-none cursor-pointer">
+                      <div className="text-[0.58rem] font-bold uppercase tracking-[0.12em] text-text-muted">
+                        Historial
+                      </div>
+                      <span className="text-[0.58rem] text-text-muted bg-muted px-[6px] py-[1px] rounded-full">
+                        {(t.historial ?? []).length}
+                      </span>
+                      <div className="flex-1 h-px bg-border" />
+                      {historialOpen
+                        ? <ChevronDown className="w-3 h-3 text-text-muted shrink-0" />
+                        : <ChevronRight className="w-3 h-3 text-text-muted shrink-0" />
+                      }
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-[10px]">
+                        {(t.historial ?? []).map(h => (
+                          <div key={h.id} className="flex gap-[10px] py-2 border-b border-border last:border-b-0">
+                            <div className={`w-[7px] h-[7px] rounded-full shrink-0 mt-[6px] ${
+                              h.tipo === "auto" ? "bg-neutral" : "bg-primary"
+                            }`} />
+                            <div>
+                              <div className="text-[0.72rem] text-text-secondary leading-snug">
+                                {h.texto}
+                              </div>
+                              <div className="text-[0.6rem] text-text-muted mt-[2px]">
+                                {new Date(h.createdAt).toLocaleDateString("es-AR", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                })}
+                                {" · "}
+                                {h.creadoPorNombre ?? "Automático"}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               )}
-
-              {/* Comentarios */}
-              <div className="p-[14px_20px]">
-                <SectionTitle>Comentarios internos</SectionTitle>
-                {t.comentarios.map(c => (
-                  <div key={c.id} className="mb-3 pb-3 border-b border-border last:border-b-0">
-                    <div className="text-[0.72rem] text-text-secondary leading-snug">
-                      {c.texto}
-                    </div>
-                    <div className="text-[0.6rem] text-text-muted mt-1">
-                      {c.creadoPorNombre} ·{" "}
-                      {new Date(c.createdAt).toLocaleDateString("es-AR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                      })}
-                    </div>
-                  </div>
-                ))}
-                <Textarea
-                  value={comentario}
-                  onChange={e => setComentario(e.target.value)}
-                  placeholder="Agregá una nota…"
-                  className="resize-none min-h-[60px]"
-                />
-                <Button variant="secondary" size="sm" className="w-full mt-2" onClick={submitComentario}>
-                  Agregar comentario
-                </Button>
-              </div>
             </div>
 
             {/* Footer */}
             <div className="p-[14px_20px] border-t border-border flex gap-2 shrink-0">
-              <Button variant="ghost" size="sm" className="flex-1">
-                Reasignar
-              </Button>
-              <Button size="sm" className="flex-[2]" onClick={() => onUpdate(t.id, { estado: "resuelta" })}>
-                ✓ Marcar como resuelta
+              {t.estado !== "resuelta" ? (
+                <Button
+                  size="sm"
+                  className="flex-1 bg-income text-income-foreground hover:bg-income/90"
+                  onClick={() => onUpdate(t.id, { estado: "resuelta" })}
+                >
+                  ✓ Marcar como resuelta
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => onUpdate(t.id, { estado: "pendiente" })}
+                >
+                  ↩ Reabrir tarea
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                <X className="w-4 h-4" />
               </Button>
             </div>
           </>
@@ -660,7 +1045,7 @@ function ModalNuevaTarea({
 
           <div className="flex flex-col gap-[5px]">
             <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
-              Descripción
+              Nota <span className="font-normal normal-case text-[0.6rem]">(opcional)</span>
             </label>
             <Textarea
               value={form.descripcion}
@@ -748,6 +1133,7 @@ export function TareasPanel() {
   const [vista, setVista] = useState<"lista" | "kanban">("lista");
   const [scope, setScope] = useState<"mine" | "all">("mine");
   const [filtro, setFiltro] = useState<FiltroKey>("todas");
+  const [verFinalizadas, setVerFinalizadas] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -761,12 +1147,17 @@ export function TareasPanel() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["tareas", scope, filtro],
+    queryKey: ["tareas", scope, filtro, verFinalizadas],
     queryFn: async () => {
       const p = new URLSearchParams();
       if (scope === "mine") p.set("scope", "mine");
       if (filtro === "auto" || filtro === "manual") p.set("tipo", filtro);
       else if (filtro !== "todas") p.set("categoria", filtro);
+      if (verFinalizadas) {
+        p.set("estado", "resuelta");
+      } else {
+        p.set("excluirResuelta", "true");
+      }
       const res = await fetch(`/api/tareas?${p}`);
       if (!res.ok) throw new Error("Error al cargar tareas");
       return res.json() as Promise<ListaResponse>;
@@ -779,7 +1170,7 @@ export function TareasPanel() {
       patch,
     }: {
       id: string;
-      patch: { prioridad?: Prioridad; estado?: Estado };
+      patch: TareaPatch;
     }) => {
       const res = await fetch(`/api/tareas/${id}`, {
         method: "PATCH",
@@ -789,24 +1180,28 @@ export function TareasPanel() {
       if (!res.ok) throw new Error("Error al actualizar");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, { patch }) => {
       queryClient.invalidateQueries({ queryKey: ["tareas"] });
       queryClient.invalidateQueries({ queryKey: ["tarea", selectedId] });
+      if (patch.estado === "resuelta") {
+        closePanel();
+      }
     },
   });
 
-  const comentarioMutation = useMutation({
-    mutationFn: async ({ id, texto }: { id: string; texto: string }) => {
+  const completarMutation = useMutation({
+    mutationFn: async (id: string) => {
       const res = await fetch(`/api/tareas/${id}`, {
-        method: "POST",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto }),
+        body: JSON.stringify({ estado: "resuelta" }),
       });
-      if (!res.ok) throw new Error("Error al agregar comentario");
+      if (!res.ok) throw new Error("Error al completar");
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tarea", selectedId] });
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["tareas"] });
+      if (selectedId === id && panelOpen) closePanel();
     },
   });
 
@@ -846,7 +1241,6 @@ export function TareasPanel() {
         <HealthWidget pct={data?.saludPortfolio ?? 100} />
 
         <div className="ml-auto flex gap-2 items-center">
-          {/* Scope toggle */}
           <button
             onClick={() => setScope(s => s === "mine" ? "all" : "mine")}
             className="flex items-center gap-[6px] bg-surface-high border border-border rounded-full px-3 py-1 text-[0.68rem] font-semibold text-text-secondary hover:text-on-surface transition-all"
@@ -855,7 +1249,6 @@ export function TareasPanel() {
             {scope === "mine" ? "Mis tareas" : "Todo el equipo"}
           </button>
 
-          {/* Vista toggle */}
           <div className="flex bg-surface-high border border-border rounded-xl overflow-hidden">
             {(["lista", "kanban"] as const).map(v => (
               <button
@@ -898,9 +1291,9 @@ export function TareasPanel() {
               {FILTROS.map(f => (
                 <button
                   key={f.key}
-                  onClick={() => setFiltro(f.key)}
+                  onClick={() => { setFiltro(f.key); setVerFinalizadas(false); }}
                   className={`flex items-center gap-[5px] px-3 py-[5px] text-[0.65rem] font-semibold rounded-full border transition-all whitespace-nowrap ${
-                    filtro === f.key
+                    filtro === f.key && !verFinalizadas
                       ? "bg-primary-dim text-primary border-border-accent"
                       : "bg-surface border-border text-text-secondary hover:text-on-surface hover:border-border-accent"
                   }`}
@@ -914,23 +1307,46 @@ export function TareasPanel() {
                   {f.label}
                 </button>
               ))}
+              <button
+                onClick={() => setVerFinalizadas(v => !v)}
+                className={`flex items-center gap-[5px] px-3 py-[5px] text-[0.65rem] font-semibold rounded-full border transition-all whitespace-nowrap ${
+                  verFinalizadas
+                    ? "bg-income-dim text-income border-income/30"
+                    : "bg-surface border-border text-text-secondary hover:text-on-surface hover:border-border-accent"
+                }`}
+              >
+                <span className="w-[6px] h-[6px] rounded-full shrink-0 bg-income" />
+                Finalizadas
+              </button>
               <button className="ml-auto px-3 py-[5px] text-[0.65rem] font-semibold bg-card border border-dashed border-border rounded-full text-text-secondary hover:text-on-surface transition-all">
                 ⇅ Ordenar
               </button>
             </div>
 
-            {/* Grupos */}
+            {/* Lista de tareas */}
             {items.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-16">
-                <div className="text-4xl opacity-20">✓</div>
+                <div className="text-4xl opacity-20">{verFinalizadas ? "✓" : "✓"}</div>
                 <div className="text-[0.9rem] font-semibold text-text-secondary">
-                  Sin tareas pendientes
+                  {verFinalizadas ? "Sin tareas finalizadas" : "Sin tareas pendientes"}
                 </div>
                 <div className="text-[0.75rem] text-text-muted">
-                  {scope === "mine"
-                    ? "No tenés tareas asignadas"
-                    : "No hay tareas en el sistema"}
+                  {verFinalizadas
+                    ? "Las tareas resueltas aparecen acá"
+                    : scope === "mine"
+                      ? "No tenés tareas asignadas"
+                      : "No hay tareas en el sistema"}
                 </div>
+              </div>
+            ) : verFinalizadas ? (
+              <div className="flex flex-col">
+                {items.map(t => (
+                  <TareaFinalizadaRow
+                    key={t.id}
+                    t={t}
+                    onClick={() => selectTask(t.id)}
+                  />
+                ))}
               </div>
             ) : (
               (["urgente", "alta", "media", "baja"] as Prioridad[]).map(prioridad => (
@@ -940,6 +1356,7 @@ export function TareasPanel() {
                   items={grouped[prioridad]}
                   selectedId={selectedId}
                   onSelect={selectTask}
+                  onComplete={id => completarMutation.mutate(id)}
                   collapsed={grupoCerrado[prioridad]}
                   onToggle={() =>
                     setGrupoCerrado(prev => ({
@@ -962,7 +1379,6 @@ export function TareasPanel() {
           onClose={closePanel}
           selectedId={selectedId}
           onUpdate={(id, patch) => updateMutation.mutate({ id, patch })}
-          onAddComentario={(id, texto) => comentarioMutation.mutate({ id, texto })}
         />
       </div>
 
