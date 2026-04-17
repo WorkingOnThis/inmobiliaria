@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Plus, X, ChevronLeft, ChevronRight, Banknote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,12 @@ function formatMoney(n: number) {
   }).format(n);
 }
 
+function localDateString() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function formatMonthYear(periodo: string) {
   // "YYYY-MM" → "Abril 2025"
   const [year, month] = periodo.split("-");
@@ -77,7 +83,6 @@ export function PropietarioTabCuentaCorriente({
   const queryClient = useQueryClient();
 
   const [movFilter, setMovFilter] = useState<MovFilter>("todos");
-  const [fabOpen, setFabOpen] = useState(false);
   const [fabAction, setFabAction] = useState<FabAction>(null);
   const [saving, setSaving] = useState(false);
 
@@ -88,7 +93,7 @@ export function PropietarioTabCuentaCorriente({
     descripcion: "",
     tipo: "ingreso",
     monto: "",
-    fecha: new Date().toISOString().slice(0, 10),
+    fecha: localDateString(),
     categoria: "",
     nota: "",
   });
@@ -96,7 +101,7 @@ export function PropietarioTabCuentaCorriente({
   const [liqForm, setLiqForm] = useState<LiquidacionFormState>({
     descripcion: "Liquidación mensual",
     monto: "",
-    fecha: new Date().toISOString().slice(0, 10),
+    fecha: localDateString(),
     nota: "",
   });
 
@@ -173,8 +178,16 @@ export function PropietarioTabCuentaCorriente({
 
   // Guardar movimiento manual
   const handleSaveMovimiento = async () => {
-    if (!movForm.descripcion.trim() || !movForm.monto || !movForm.fecha) {
-      toast.error("Completá descripción, monto y fecha");
+    if (!movForm.descripcion.trim()) {
+      toast.error("Completá la descripción");
+      return;
+    }
+    if (!movForm.monto) {
+      toast.error("Completá el monto");
+      return;
+    }
+    if (!movForm.fecha) {
+      toast.error("Completá la fecha");
       return;
     }
     setSaving(true);
@@ -200,12 +213,11 @@ export function PropietarioTabCuentaCorriente({
       await queryClient.invalidateQueries({ queryKey: ["propietario-cc", propietarioId] });
       toast.success("Movimiento registrado");
       setFabAction(null);
-      setFabOpen(false);
       setMovForm({
         descripcion: "",
         tipo: "ingreso",
         monto: "",
-        fecha: new Date().toISOString().slice(0, 10),
+        fecha: localDateString(),
         categoria: "",
         nota: "",
       });
@@ -218,8 +230,16 @@ export function PropietarioTabCuentaCorriente({
 
   // Guardar liquidación
   const handleSaveLiquidacion = async () => {
-    if (!liqForm.descripcion.trim() || !liqForm.monto || !liqForm.fecha) {
-      toast.error("Completá descripción, monto y fecha");
+    if (!liqForm.descripcion.trim()) {
+      toast.error("Completá la descripción");
+      return;
+    }
+    if (!liqForm.monto) {
+      toast.error("Completá el monto a liquidar");
+      return;
+    }
+    if (!liqForm.fecha) {
+      toast.error("Completá la fecha");
       return;
     }
     setSaving(true);
@@ -244,11 +264,10 @@ export function PropietarioTabCuentaCorriente({
       await queryClient.invalidateQueries({ queryKey: ["propietario-cc", propietarioId] });
       toast.success("Liquidación ejecutada");
       setFabAction(null);
-      setFabOpen(false);
       setLiqForm({
         descripcion: "Liquidación mensual",
         monto: "",
-        fecha: new Date().toISOString().slice(0, 10),
+        fecha: localDateString(),
         nota: "",
       });
     } catch (err) {
@@ -264,7 +283,7 @@ export function PropietarioTabCuentaCorriente({
     "text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-0.5 block";
 
   return (
-    <div className="p-7 flex flex-col gap-5 pb-20 relative">
+    <div className="p-7 flex flex-col gap-5">
       {/* KPIs */}
       {data && (
         <div className="grid grid-cols-3 gap-4">
@@ -370,10 +389,13 @@ export function PropietarioTabCuentaCorriente({
             ))}
           </div>
 
-          <div className="ml-auto">
-            <button className="text-[0.62rem] text-muted-foreground hover:text-muted-foreground border border-border rounded-[6px] px-2 py-1 transition-all">
-              ⬇ CSV
-            </button>
+          <div className="ml-auto flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setFabAction("liquidacion")} className="h-8 gap-1.5 text-[0.72rem]">
+              <Banknote size={13} /> Liquidación
+            </Button>
+            <Button size="sm" onClick={() => setFabAction("movimiento")} className="h-8 gap-1.5 text-[0.72rem]">
+              <Plus size={13} /> Movimiento
+            </Button>
           </div>
         </div>
 
@@ -548,41 +570,6 @@ export function PropietarioTabCuentaCorriente({
         )}
       </div>
 
-      {/* FAB — botón flotante */}
-      <div className="fixed bottom-8 right-8 flex flex-col items-end gap-2 z-30">
-        {fabOpen && (
-          <>
-            <button
-              onClick={() => {
-                setFabAction("liquidacion");
-                setFabOpen(false);
-              }}
-              className="flex items-center gap-2 bg-card border border-border rounded-[12px] px-4 py-2.5 text-[0.78rem] font-semibold text-foreground shadow-xl hover:border-border-accent hover:text-primary transition-all whitespace-nowrap"
-            >
-              💸 Generar liquidación
-            </button>
-            <button
-              onClick={() => {
-                setFabAction("movimiento");
-                setFabOpen(false);
-              }}
-              className="flex items-center gap-2 bg-card border border-border rounded-[12px] px-4 py-2.5 text-[0.78rem] font-semibold text-foreground shadow-xl hover:border-border-accent hover:text-primary transition-all whitespace-nowrap"
-            >
-              ➕ Agregar movimiento manual
-            </button>
-          </>
-        )}
-        <button
-          onClick={() => setFabOpen((o) => !o)}
-          className={cn(
-            "size-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_6px_24px_rgba(255,180,162,0.35)] hover:shadow-[0_8px_28px_rgba(255,180,162,0.5)] transition-all text-xl font-bold",
-            fabOpen && "rotate-45"
-          )}
-          style={{ transition: "transform 0.22s ease, box-shadow 0.2s ease" }}
-        >
-          <Plus size={24} />
-        </button>
-      </div>
 
       {/* Modal: Agregar movimiento manual */}
       {fabAction === "movimiento" && (

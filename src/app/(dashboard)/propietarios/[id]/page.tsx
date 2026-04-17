@@ -75,7 +75,7 @@ export default function PropietarioFichaPage() {
   const queryClient = useQueryClient();
   const [pendingFocus, setPendingFocus] = useState<string | null>(null);
 
-  const activeTab = (searchParams.get("tab") as Tab) ?? "datos";
+  const activeTab = (searchParams.get("tab") as Tab) ?? "cuenta-corriente";
 
   const setTab = (tab: Tab) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -195,8 +195,8 @@ export default function PropietarioFichaPage() {
           <div className="bg-surface border-b border-border px-7">
             <div className="flex gap-0">
               {[
-                { key: "datos" as Tab, label: "Datos" },
                 { key: "cuenta-corriente" as Tab, label: "Cuenta corriente" },
+                { key: "datos" as Tab, label: "Datos" },
                 { key: "propiedades" as Tab, label: "Propiedades" },
                 { key: "documentos" as Tab, label: "Documentos" },
               ].map(({ key, label }) => (
