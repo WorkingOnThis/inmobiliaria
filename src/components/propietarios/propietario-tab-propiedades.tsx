@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, Plus, Home, BedDouble, Bath, Ruler, FileText } from "lucide-react";
-import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
-import { Separator } from "@/components/ui/separator";
+import { Building2, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PropertyData {
   id: string;
@@ -39,23 +38,23 @@ interface PropietarioTabPropiedadesProps {
 
 function formatPropertyType(type: string): string {
   const map: Record<string, string> = {
-    casa: "Casa",
-    depto: "Departamento",
+    casa:    "Casa",
+    depto:   "Departamento",
     terreno: "Terreno",
-    local: "Local comercial",
+    local:   "Local comercial",
     oficina: "Oficina",
     cochera: "Cochera",
   };
   return map[type] ?? type;
 }
 
-function getPropertyStatusBadge(status: string): { variant: StatusBadgeVariant; label: string } {
+function getStatusPill(status: string): { cls: string; label: string } {
   switch (status) {
-    case "available": return { variant: "available", label: "Disponible" };
-    case "rented":    return { variant: "rented",    label: "Alquilado" };
-    case "sold":      return { variant: "baja",      label: "Vendido" };
-    case "reserved":  return { variant: "reserved",  label: "Reservado" };
-    default:          return { variant: "draft",     label: status };
+    case "available": return { cls: "status-pill status-available", label: "Disponible" };
+    case "rented":    return { cls: "status-pill status-rented",    label: "Alquilado" };
+    case "reserved":  return { cls: "status-pill status-reserved",  label: "Reservado" };
+    case "sold":      return { cls: "status-pill status-baja",      label: "Vendido" };
+    default:          return { cls: "status-pill status-draft",     label: status };
   }
 }
 
@@ -70,8 +69,20 @@ function formatMoney(value: string | number | null): string {
 }
 
 function formatDate(iso: string): string {
-  const [year, month, day] = iso.split("-");
-  return `${day}/${month}/${year}`;
+  const [year, month] = iso.split("-");
+  return `${month}/${year}`;
+}
+
+function PropertyInitial({ address }: { address: string }) {
+  const initial = (address ?? "P")[0].toUpperCase();
+  return (
+    <div
+      className="w-full h-28 flex items-center justify-center text-white text-[32px] font-bold select-none"
+      style={{ background: "var(--gradient-property)" }}
+    >
+      {initial}
+    </div>
+  );
 }
 
 export function PropietarioTabPropiedades({
@@ -81,25 +92,19 @@ export function PropietarioTabPropiedades({
 }: PropietarioTabPropiedadesProps) {
   if (propiedades.length === 0) {
     return (
-      <div className="p-7 flex flex-col gap-5">
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <Building2 size={40} className="text-[#333537]" />
-          <div className="text-center">
-            <p className="text-[0.9rem] font-semibold text-[#a8a9ac] mb-1">
-              Sin propiedades cargadas
-            </p>
-            <p className="text-[0.78rem] text-[#6b6d70]">
-              Este propietario no tiene propiedades asociadas todavía.
-            </p>
-          </div>
-          <Link
-            href={`/propiedades/nueva?propietarioId=${propietarioId}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#ffb4a2] text-[#561100] text-[0.78rem] font-semibold rounded-[12px] hover:brightness-110 transition-all"
-          >
-            <Plus size={14} />
-            Agregar propiedad
-          </Link>
+      <div className="p-7 flex flex-col items-center justify-center py-20 gap-4">
+        <Building2 size={40} className="text-text-muted" />
+        <div className="text-center">
+          <p className="text-[0.9rem] font-semibold text-text-secondary mb-1">Sin propiedades cargadas</p>
+          <p className="text-[0.78rem] text-text-muted">Este propietario no tiene propiedades asociadas todavía.</p>
         </div>
+        <Link
+          href={`/propiedades/nueva?propietarioId=${propietarioId}`}
+          className="inline-flex items-center gap-2 px-4 py-2 text-[0.78rem] font-semibold rounded-[6px] transition-all hover:opacity-90"
+          style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
+        >
+          <Plus size={14} /> Agregar propiedad
+        </Link>
       </div>
     );
   }
@@ -108,116 +113,70 @@ export function PropietarioTabPropiedades({
     <div className="p-7 flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-[#6b6d70]">
+        <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted">
           {propiedades.length} {propiedades.length === 1 ? "propiedad" : "propiedades"}
         </span>
         <Link
           href={`/propiedades/nueva?propietarioId=${propietarioId}`}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#ffb4a2] text-[#561100] text-[0.72rem] font-semibold rounded-[12px] hover:brightness-110 transition-all"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[0.72rem] font-semibold rounded-[6px] transition-all hover:opacity-90"
+          style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
         >
-          <Plus size={13} />
-          Agregar propiedad
+          <Plus size={13} /> Agregar propiedad
         </Link>
       </div>
 
-      {/* Property cards */}
-      <div className="flex flex-col gap-4">
+      {/* Grid: xl:3 md:2 sm:1 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[14px]">
         {propiedades.map((prop) => {
-          const { variant: statusVariant, label: statusLabel } = getPropertyStatusBadge(prop.status);
+          const { cls: statusCls, label: statusLabel } = getStatusPill(prop.status);
           const contratos = contratosActivos.filter((c) => c.propertyId === prop.id);
+          const contrato = contratos[0] ?? null;
+
+          const subtitle = [
+            prop.zone,
+            prop.rooms    ? `${prop.rooms} amb.`  : null,
+            prop.surface  ? `${prop.surface} m²`  : null,
+          ].filter(Boolean).join(" · ");
 
           return (
             <Link
               key={prop.id}
               href={`/propiedades/${prop.id}`}
-              className="block bg-[#191c1e] border border-white/[0.07] rounded-[18px] p-5 hover:border-white/[0.14] hover:bg-[#1d2022] transition-all group"
+              className="block bg-surface border border-border rounded-[10px] overflow-hidden hover:border-primary/30 hover:shadow-sm transition-all group"
             >
-              {/* Top row: address + status */}
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <Home size={15} className="text-[#6b6d70] flex-shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <p className="text-[0.9rem] font-semibold text-[#e1e2e4] group-hover:text-[#ffb4a2] transition-colors truncate">
-                      {prop.address}
-                    </p>
-                    {prop.title && (
-                      <p className="text-[0.72rem] text-[#6b6d70] truncate">{prop.title}</p>
-                    )}
-                  </div>
-                </div>
-                <StatusBadge variant={statusVariant}>{statusLabel}</StatusBadge>
-              </div>
+              {/* Thumbnail */}
+              <PropertyInitial address={prop.address} />
 
-              {/* Type + zone + details */}
-              <div className="flex items-center gap-3 flex-wrap mb-3 pl-[22px]">
-                <span className="text-[0.72rem] text-[#6b6d70]">
-                  {formatPropertyType(prop.type)}
-                </span>
-                {prop.zone && (
-                  <>
-                    <span className="text-[#333537]">·</span>
-                    <span className="text-[0.72rem] text-[#6b6d70]">{prop.zone}</span>
-                  </>
-                )}
-                {prop.floorUnit && (
-                  <>
-                    <span className="text-[#333537]">·</span>
-                    <span className="text-[0.72rem] text-[#6b6d70]">{prop.floorUnit}</span>
-                  </>
-                )}
-              </div>
+              {/* Body */}
+              <div className="p-3 flex flex-col gap-2">
+                <h4 className="text-[14px] font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
+                  {prop.address}
+                </h4>
 
-              {/* Property features */}
-              {(prop.rooms || prop.bathrooms || prop.surface) && (
-                <div className="flex items-center gap-4 pl-[22px] mb-3">
-                  {prop.rooms && (
-                    <span className="flex items-center gap-1 text-[0.72rem] text-[#a8a9ac]">
-                      <BedDouble size={12} className="text-[#6b6d70]" />
-                      {prop.rooms} amb.
-                    </span>
-                  )}
-                  {prop.bathrooms && (
-                    <span className="flex items-center gap-1 text-[0.72rem] text-[#a8a9ac]">
-                      <Bath size={12} className="text-[#6b6d70]" />
-                      {prop.bathrooms} baños
-                    </span>
-                  )}
-                  {prop.surface && (
-                    <span className="flex items-center gap-1 text-[0.72rem] text-[#a8a9ac]">
-                      <Ruler size={12} className="text-[#6b6d70]" />
-                      {prop.surface} m²
+                {subtitle && (
+                  <p className="text-[12px] text-text-secondary">{subtitle}</p>
+                )}
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className={cn(statusCls)}>{statusLabel}</span>
+                  {contrato && (
+                    <span className="font-mono text-[12px] text-on-surface tabular-nums">
+                      {formatMoney(contrato.monthlyAmount)}/mes
                     </span>
                   )}
                 </div>
-              )}
 
-              {/* Active contracts */}
-              {contratos.length > 0 && (
-                <>
-                  <Separator className="my-3" />
-                  <div className="flex flex-col gap-2 pl-[22px]">
-                    <span className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#6b6d70]">
-                      Contratos activos
+                {contrato && (
+                  <div
+                    className="text-[12px] text-text-muted border-t border-border pt-2 mt-0.5"
+                  >
+                    {/* Inquilino no disponible en los datos actuales — mostrar vencimiento */}
+                    <span className="font-mono tabular-nums">
+                      {formatPropertyType(prop.type)} · vence {formatDate(contrato.endDate)}
                     </span>
-                    {contratos.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <FileText size={11} className="text-[#6b6d70]" />
-                          <span className="text-[0.75rem] text-[#a8a9ac]">
-                            {c.contractNumber}
-                          </span>
-                          <span className="text-[0.7rem] text-[#6b6d70]">
-                            {formatDate(c.startDate)} → {formatDate(c.endDate)}
-                          </span>
-                        </div>
-                        <span className="text-[0.78rem] font-semibold text-[#ffb4a2]">
-                          {formatMoney(c.monthlyAmount)}/mes
-                        </span>
-                      </div>
-                    ))}
                   </div>
-                </>
-              )}
+                )}
+              </div>
             </Link>
           );
         })}

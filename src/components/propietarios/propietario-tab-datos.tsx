@@ -3,11 +3,9 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Edit2, Save, X, Loader2, AlertCircle } from "lucide-react";
+import { Edit2, Save, X, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { StatusBadge } from "@/components/ui/status-badge";
 
 interface Propietario {
   id: string;
@@ -35,6 +33,7 @@ interface PropietarioTabDatosProps {
 
 type EditableFields = Omit<Propietario, "id" | "status">;
 
+// ── DataField ────────────────────────────────────────────────
 function DataField({
   label,
   value,
@@ -42,7 +41,7 @@ function DataField({
   editing,
   onChange,
   type = "text",
-  placeholder = "Sin cargar",
+  placeholder = "",
   alert = false,
   mono = false,
 }: {
@@ -58,7 +57,7 @@ function DataField({
 }) {
   return (
     <div id={`field-${id}`} className="flex flex-col gap-1">
-      <div className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
         {label}
       </div>
       {editing ? (
@@ -66,31 +65,49 @@ function DataField({
           type={type}
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={placeholder || "Sin cargar"}
           className={cn(
-            "w-full bg-surface-mid border border-border-accent rounded-[12px] text-on-surface text-[0.85rem] px-3 py-2 outline-none focus:border-primary transition-all placeholder:text-text-muted",
-            mono && "font-mono text-[0.82rem]"
+            "w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all placeholder:text-text-muted",
+            mono && "font-mono text-[12.5px]"
           )}
         />
-      ) : (
-        <div
-          className={cn(
-            "text-[0.875rem] font-medium",
-            !value
-              ? alert
-                ? "text-mustard italic font-normal flex items-center gap-1.5"
-                : "text-text-muted italic font-normal"
-              : cn("text-on-surface", mono && "font-mono text-[0.82rem]")
-          )}
-        >
-          {!value && alert && <AlertCircle size={13} className="flex-shrink-0" />}
-          {value || (alert ? "Sin cargar — necesario para liquidar" : "Sin cargar")}
+      ) : value ? (
+        <div className={cn("text-[13.5px] text-on-surface", mono && "font-mono text-[12.5px]")}>
+          {value}
         </div>
+      ) : alert ? (
+        <div className="text-[12px] text-warning italic flex items-center gap-1.5">
+          <AlertCircle size={12} className="flex-shrink-0" />
+          Sin cargar — necesario para liquidar
+        </div>
+      ) : (
+        <div className="text-[12px] text-text-muted italic">Sin cargar</div>
       )}
     </div>
   );
 }
 
+// ── Card wrapper ─────────────────────────────────────────────
+function SectionCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-surface border border-border rounded-[10px] overflow-hidden">
+      <div className="px-4 py-3 border-b border-border bg-surface-mid">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+          {title}
+        </span>
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────
 export function PropietarioTabDatos({
   propietario,
   onStatusChange,
@@ -104,16 +121,16 @@ export function PropietarioTabDatos({
 
   const [form, setForm] = useState<EditableFields>({
     firstName: propietario.firstName,
-    lastName: propietario.lastName,
-    dni: propietario.dni,
-    cuit: propietario.cuit,
-    phone: propietario.phone,
-    email: propietario.email,
-    address: propietario.address,
+    lastName:  propietario.lastName,
+    dni:       propietario.dni,
+    cuit:      propietario.cuit,
+    phone:     propietario.phone,
+    email:     propietario.email,
+    address:   propietario.address,
     birthDate: propietario.birthDate,
-    cbu: propietario.cbu,
-    alias: propietario.alias,
-    banco: propietario.banco,
+    cbu:       propietario.cbu,
+    alias:     propietario.alias,
+    banco:     propietario.banco,
     tipoCuenta: propietario.tipoCuenta,
   });
 
@@ -123,7 +140,6 @@ export function PropietarioTabDatos({
   useEffect(() => {
     if (!focusField) return;
     setEditing(true);
-    // Esperamos un tick para que React renderice los inputs antes de hacer scroll
     const timer = setTimeout(() => {
       const el = document.getElementById(`field-${focusField}`);
       if (el) {
@@ -160,16 +176,16 @@ export function PropietarioTabDatos({
   const handleCancelEdit = () => {
     setForm({
       firstName: propietario.firstName,
-      lastName: propietario.lastName,
-      dni: propietario.dni,
-      cuit: propietario.cuit,
-      phone: propietario.phone,
-      email: propietario.email,
-      address: propietario.address,
+      lastName:  propietario.lastName,
+      dni:       propietario.dni,
+      cuit:      propietario.cuit,
+      phone:     propietario.phone,
+      email:     propietario.email,
+      address:   propietario.address,
       birthDate: propietario.birthDate,
-      cbu: propietario.cbu,
-      alias: propietario.alias,
-      banco: propietario.banco,
+      cbu:       propietario.cbu,
+      alias:     propietario.alias,
+      banco:     propietario.banco,
       tipoCuenta: propietario.tipoCuenta,
     });
     setEditing(false);
@@ -185,9 +201,7 @@ export function PropietarioTabDatos({
       if (!res.ok) throw new Error("Error al cambiar estado");
       await queryClient.invalidateQueries({ queryKey: ["propietario", propietario.id] });
       await queryClient.invalidateQueries({ queryKey: ["propietarios"] });
-      toast.success(
-        newStatus === "baja" ? "Propietario dado de baja" : "Propietario suspendido"
-      );
+      toast.success(newStatus === "baja" ? "Propietario dado de baja" : "Propietario suspendido");
       setConfirmStatus(null);
       onStatusChange();
     } catch (err) {
@@ -212,19 +226,16 @@ export function PropietarioTabDatos({
     }
   };
 
-  const cardClass =
-    "bg-surface border border-border rounded-[18px] p-5";
-
   return (
     <div className="p-7 flex flex-col gap-5">
-      {/* Acciones de edición */}
+      {/* Botón editar — top right */}
       <div className="flex items-center justify-end gap-2">
         {editing ? (
           <>
             <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={saving}>
               <X size={13} /> Cancelar
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={saving}>
+            <Button size="sm" onClick={handleSave} disabled={saving} className="bg-primary text-primary-foreground hover:opacity-90">
               {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
               Guardar cambios
             </Button>
@@ -236,191 +247,85 @@ export function PropietarioTabDatos({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-5">
-        {/* Card: Datos personales */}
-        <div className={cardClass}>
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-muted">
-              Datos personales
-            </span>
+      {/* ── 2 columnas: personales + bancarios ── */}
+      <div className="grid grid-cols-[2fr_1fr] gap-5">
+        {/* Datos personales */}
+        <SectionCard title="Datos personales">
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <DataField id="firstName" label="Nombre"   value={form.firstName} editing={editing} onChange={setField("firstName")} />
+              <DataField id="lastName"  label="Apellido" value={form.lastName}  editing={editing} onChange={setField("lastName")} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <DataField id="dni"  label="DNI"        value={form.dni}  editing={editing} onChange={setField("dni")}  placeholder="28441100" mono />
+              <DataField id="cuit" label="CUIT / CUIL" value={form.cuit} editing={editing} onChange={setField("cuit")} placeholder="20-28441100-4" mono />
+            </div>
+            <div className="border-t border-border" />
+            <DataField id="email" label="Email" value={form.email} editing={editing} onChange={setField("email")} type="email" placeholder="cmendoza@gmail.com" />
+            <div className="grid grid-cols-2 gap-4">
+              <DataField id="phone"     label="Teléfono"            value={form.phone}     editing={editing} onChange={setField("phone")}     placeholder="351 612-4400" />
+              <DataField id="birthDate" label="Fecha de nacimiento" value={form.birthDate} editing={editing} onChange={setField("birthDate")} type="date" mono />
+            </div>
+            <DataField id="address" label="Domicilio fiscal" value={form.address} editing={editing} onChange={setField("address")} placeholder="Av. Colón 1234, Córdoba" />
           </div>
-          <div className="flex flex-col gap-3.5">
-            <div className="grid grid-cols-2 gap-3.5">
-              <DataField
-                id="firstName"
-                label="Nombre"
-                value={form.firstName}
-                editing={editing}
-                onChange={setField("firstName")}
-              />
-              <DataField
-                id="lastName"
-                label="Apellido"
-                value={form.lastName}
-                editing={editing}
-                onChange={setField("lastName")}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3.5">
-              <DataField
-                id="dni"
-                label="DNI"
-                value={form.dni}
-                editing={editing}
-                onChange={setField("dni")}
-                placeholder="28441100"
-              />
-              <DataField
-                id="cuit"
-                label="CUIT / CUIL"
-                value={form.cuit}
-                editing={editing}
-                onChange={setField("cuit")}
-                placeholder="20-28441100-4"
-              />
-            </div>
-            <Separator />
-            <DataField
-              id="email"
-              label="Email"
-              value={form.email}
-              editing={editing}
-              onChange={setField("email")}
-              type="email"
-              placeholder="cmendoza@gmail.com"
-            />
-            <div className="grid grid-cols-2 gap-3.5">
-              <DataField
-                id="phone"
-                label="Teléfono"
-                value={form.phone}
-                editing={editing}
-                onChange={setField("phone")}
-                placeholder="351 612-4400"
-              />
-              <DataField
-                id="birthDate"
-                label="Fecha de nacimiento"
-                value={form.birthDate}
-                editing={editing}
-                onChange={setField("birthDate")}
-                type="date"
-              />
-            </div>
-            <DataField
-              id="address"
-              label="Domicilio fiscal"
-              value={form.address}
-              editing={editing}
-              onChange={setField("address")}
-              placeholder="Av. Colón 1234, Córdoba"
-            />
-          </div>
-        </div>
+        </SectionCard>
 
-        {/* Card: Datos bancarios */}
-        <div className={cardClass}>
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-muted">
-              Datos bancarios
-            </span>
-          </div>
-          <div className="flex flex-col gap-3.5">
-            <DataField
-              id="cbu"
-              label="CBU / CVU"
-              value={form.cbu}
-              editing={editing}
-              onChange={setField("cbu")}
-              placeholder="0000003100012345678900"
-              alert={true}
-              mono={true}
-            />
-            <DataField
-              id="alias"
-              label="Alias"
-              value={form.alias}
-              editing={editing}
-              onChange={setField("alias")}
-              placeholder="carlos.mendoza.mp"
-            />
-            <Separator />
-            <div className="grid grid-cols-2 gap-3.5">
-              <DataField
-                id="banco"
-                label="Banco"
-                value={form.banco}
-                editing={editing}
-                onChange={setField("banco")}
-                placeholder="Banco Nación"
-              />
-              <div className="flex flex-col gap-1">
-                <div className="text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
-                  Tipo de cuenta
-                </div>
-                {editing ? (
-                  <select
-                    value={form.tipoCuenta ?? ""}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        tipoCuenta: e.target.value || null,
-                      }))
-                    }
-                    className="w-full bg-surface-mid border border-border-accent rounded-[12px] text-on-surface text-[0.85rem] px-3 py-2 outline-none focus:border-primary transition-all"
-                  >
-                    <option value="">Sin especificar</option>
-                    <option value="caja_ahorro">Caja de ahorro</option>
-                    <option value="cuenta_corriente">Cuenta corriente</option>
-                  </select>
-                ) : (
-                  <div
-                    className={cn(
-                      "text-[0.875rem] font-medium",
-                      !form.tipoCuenta ? "text-text-muted italic font-normal" : "text-on-surface"
-                    )}
-                  >
-                    {form.tipoCuenta === "caja_ahorro"
-                      ? "Caja de ahorro"
-                      : form.tipoCuenta === "cuenta_corriente"
-                      ? "Cuenta corriente"
-                      : "Sin cargar"}
-                  </div>
-                )}
+        {/* Datos bancarios */}
+        <SectionCard title="Datos bancarios">
+          <div className="flex flex-col gap-4">
+            <DataField id="cbu"   label="CBU / CVU" value={form.cbu}   editing={editing} onChange={setField("cbu")}   placeholder="0000003100012345678900" alert mono />
+            <DataField id="alias" label="Alias"     value={form.alias} editing={editing} onChange={setField("alias")} placeholder="carlos.mendoza.mp" />
+            <div className="border-t border-border" />
+            <DataField id="banco" label="Banco" value={form.banco} editing={editing} onChange={setField("banco")} placeholder="Banco Nación" />
+            {/* Tipo de cuenta */}
+            <div className="flex flex-col gap-1" id="field-tipoCuenta">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+                Tipo de cuenta
               </div>
+              {editing ? (
+                <select
+                  value={form.tipoCuenta ?? ""}
+                  onChange={(e) => setForm((prev) => ({ ...prev, tipoCuenta: e.target.value || null }))}
+                  className="w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all"
+                >
+                  <option value="">Sin especificar</option>
+                  <option value="caja_ahorro">Caja de ahorro</option>
+                  <option value="cuenta_corriente">Cuenta corriente</option>
+                </select>
+              ) : (
+                <div className={cn("text-[13.5px]", !form.tipoCuenta ? "text-text-muted italic text-[12px]" : "text-on-surface")}>
+                  {form.tipoCuenta === "caja_ahorro"
+                    ? "Caja de ahorro"
+                    : form.tipoCuenta === "cuenta_corriente"
+                    ? "Cuenta corriente"
+                    : "Sin cargar"}
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        </SectionCard>
       </div>
 
-      {/* Card: Estado del propietario */}
-      <div className={cardClass}>
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-muted">
-            Estado del propietario
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <div className="text-[0.875rem] text-on-surface flex items-center gap-2">
-              Estado actual:{" "}
-              <StatusBadge
-                variant={
+      {/* ── Estado del propietario ── */}
+      <SectionCard title="Estado del propietario">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[13.5px] text-text-secondary">Estado actual:</span>
+              <span
+                className={cn(
+                  "status-pill",
                   propietario.status === "activo"
-                    ? "active"
+                    ? "status-active"
                     : propietario.status === "suspendido"
-                    ? "suspended"
-                    : "baja"
-                }
+                    ? "status-suspended"
+                    : "status-baja"
+                )}
               >
-                {propietario.status === "activo"
-                  ? "Activo"
-                  : propietario.status === "suspendido"
-                  ? "Suspendido"
-                  : "Dado de baja"}
-              </StatusBadge>
+                {propietario.status === "activo" ? "Activo" : propietario.status === "suspendido" ? "Suspendido" : "Dado de baja"}
+              </span>
             </div>
-            <div className="text-[0.72rem] text-text-muted mt-1">
+            <div className="text-[12px] text-text-muted">
               {propietario.status === "activo"
                 ? "El propietario está activo y puede recibir liquidaciones."
                 : propietario.status === "suspendido"
@@ -431,78 +336,73 @@ export function PropietarioTabDatos({
           {propietario.status !== "activo" && (
             <button
               onClick={handleReactivar}
-              className="px-3.5 py-2 text-[0.72rem] font-semibold bg-green-dim text-green border border-green/20 rounded-[12px] hover:bg-green/20 transition-all"
+              className="flex-shrink-0 px-3.5 py-2 text-[12px] font-semibold rounded-[6px] transition-all border"
+              style={{
+                background: "var(--success-dim)",
+                color: "var(--success)",
+                borderColor: "color-mix(in srgb, var(--success) 20%, transparent)",
+              }}
             >
               Reactivar
             </button>
           )}
         </div>
-      </div>
+      </SectionCard>
 
-      {/* Danger zone */}
+      {/* ── Zona de riesgo ── */}
       {propietario.status === "activo" && (
-        <div className="bg-surface border border-error-dim rounded-[18px] p-5">
-          <div className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-error mb-3">
-            Zona de riesgo
+        <div className="bg-surface border border-border rounded-[10px] overflow-hidden">
+          <div className="px-4 py-3 border-b border-border bg-surface-mid flex items-center gap-2">
+            <AlertTriangle size={13} style={{ color: "var(--error)" }} />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.06em]" style={{ color: "var(--error)" }}>
+              Zona de riesgo
+            </span>
           </div>
-          {confirmStatus ? (
-            <div className="flex flex-col gap-3">
-              <div className="text-[0.82rem] text-on-surface">
-                ¿Estás seguro de que querés{" "}
-                <strong>
-                  {confirmStatus === "suspendido" ? "suspender" : "dar de baja"}
-                </strong>{" "}
-                a este propietario?
-                {confirmStatus === "baja" && (
-                  <span className="text-error"> Esta acción es difícil de revertir.</span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setConfirmStatus(null)}
-                  className="px-3.5 py-2 text-[0.72rem] font-semibold text-text-secondary bg-surface-highest border border-border rounded-[12px] hover:bg-surface-high transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => handleStatusChange(confirmStatus)}
-                  className={cn(
-                    "px-3.5 py-2 text-[0.72rem] font-semibold rounded-[12px] transition-all border",
-                    confirmStatus === "baja"
-                      ? "bg-error-dim text-error border-error/20 hover:bg-error/20"
-                      : "bg-mustard-dim text-mustard border-mustard/20 hover:bg-mustard/25"
+          <div className="p-4">
+            {confirmStatus ? (
+              <div className="flex flex-col gap-3">
+                <div className="text-[13px] text-on-surface">
+                  ¿Estás seguro de que querés{" "}
+                  <strong>{confirmStatus === "suspendido" ? "suspender" : "dar de baja"}</strong>{" "}
+                  a este propietario?
+                  {confirmStatus === "baja" && (
+                    <span style={{ color: "var(--error)" }}> Esta acción es difícil de revertir.</span>
                   )}
-                >
-                  Confirmar
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-2.5 flex-wrap">
-              <div>
-                <button
-                  onClick={() => setConfirmStatus("suspendido")}
-                  className="px-3.5 py-2 text-[0.72rem] font-semibold bg-mustard-dim text-mustard border border-mustard/20 rounded-[12px] hover:bg-mustard/25 transition-all"
-                >
-                  Suspender temporalmente
-                </button>
-                <div className="text-[0.65rem] text-text-muted mt-1.5">
-                  Pausa las liquidaciones, se puede revertir
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setConfirmStatus(null)}
+                    className="px-3.5 py-2 text-[12px] font-semibold text-text-secondary bg-surface-high border border-border rounded-[6px] hover:bg-surface-highest transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(confirmStatus)}
+                    className={cn(
+                      "px-3.5 py-2 text-[12px] font-semibold rounded-[6px] transition-all border btn-danger"
+                    )}
+                  >
+                    Confirmar
+                  </button>
                 </div>
               </div>
-              <div>
-                <button
-                  onClick={() => setConfirmStatus("baja")}
-                  className="px-3.5 py-2 text-[0.72rem] font-semibold bg-error-dim text-error border border-error/20 rounded-[12px] hover:bg-error/20 transition-all"
-                >
-                  Dar de baja
-                </button>
-                <div className="text-[0.65rem] text-text-muted mt-1.5">
-                  Cierra la relación comercial
+            ) : (
+              <div className="flex gap-4 flex-wrap">
+                <div>
+                  <button onClick={() => setConfirmStatus("suspendido")} className="btn btn-danger btn-sm">
+                    Suspender temporalmente
+                  </button>
+                  <div className="text-[11px] text-text-muted mt-1.5">Pausa las liquidaciones, se puede revertir</div>
+                </div>
+                <div>
+                  <button onClick={() => setConfirmStatus("baja")} className="btn btn-danger btn-sm">
+                    Dar de baja
+                  </button>
+                  <div className="text-[11px] text-text-muted mt-1.5">Cierra la relación comercial</div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

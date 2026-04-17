@@ -207,38 +207,38 @@
 }
 
 .dark {
-  /* --- Superficies (modo oscuro) --- */
-  --background:          #111314;
-  --foreground:          #e1e2e4;
+  /* --- Shadcn base tokens --- */
+  --background:          oklch(0.165 0.006 40);
+  --foreground:          oklch(0.972 0.004 60);
 
-  --card:                #1d2022;
-  --card-foreground:     #e1e2e4;
+  --card:                oklch(0.215 0.008 40);
+  --card-foreground:     oklch(0.972 0.004 60);
 
-  --popover:             #1d2022;
-  --popover-foreground:  #e1e2e4;
+  --popover:             oklch(0.215 0.008 40);
+  --popover-foreground:  oklch(0.972 0.004 60);
 
-  --muted:               #282a2c;
-  --muted-foreground:    #c6c6ca;
+  --muted:               oklch(0.235 0.008 40);
+  --muted-foreground:    oklch(0.72 0.012 50);
 
-  --accent:              #282a2c;
-  --accent-foreground:   #e1e2e4;
+  --accent:              oklch(0.235 0.008 40);
+  --accent-foreground:   oklch(0.972 0.004 60);
 
-  --secondary:           #44464a;
-  --secondary-foreground:#e1e2e4;
+  --secondary:           oklch(0.235 0.008 40);
+  --secondary-foreground: oklch(0.972 0.004 60);
 
-  /* --- Primario: Salmón (invertido en oscuro) --- */
-  --primary:             #ffb4a2;
-  --primary-foreground:  #561100;
+  /* --- Primario: Terracota oklch --- */
+  --primary:             oklch(0.585 0.135 32);
+  --primary-foreground:  oklch(0.97 0.02 34);
 
   /* --- Errores --- */
-  --destructive:         #ffb4ab;
+  --destructive:         oklch(0.68 0.18 25);
 
   /* --- Bordes ghost oscuros --- */
-  --border:              rgba(221, 192, 185, 0.1);
-  --input:               rgba(160, 132, 126, 0.25);
-  --ring:                #ffb4a2;
+  --border:              oklch(0.285 0.010 40);
+  --input:               oklch(0.195 0.007 40);
+  --ring:                oklch(0.585 0.135 32);
 
-  /* --- Charts (oscuro) --- */
+  /* --- Charts (oscuro, sin cambio) --- */
   --chart-1: #ffb4a2;
   --chart-2: #ffdad2;
   --chart-3: #f9bc42;
@@ -246,51 +246,61 @@
   --chart-5: #a0847e;
 
   /* --- Sidebar (modo oscuro) --- */
-  --sidebar:                    #191c1e;
-  --sidebar-foreground:         #e1e2e4;
-  --sidebar-primary:            #ffb4a2;
-  --sidebar-primary-foreground: #561100;
-  --sidebar-accent:             rgba(255, 180, 162, 0.1);
-  --sidebar-accent-foreground:  #ffb4a2;
-  --sidebar-border:             rgba(221, 192, 185, 0.15);
+  --sidebar:                    oklch(0.165 0.006 40);
+  --sidebar-foreground:         oklch(0.972 0.004 60);
+  --sidebar-primary:            oklch(0.585 0.135 32);
+  --sidebar-primary-foreground: oklch(0.97 0.02 34);
+  --sidebar-accent:             oklch(0.585 0.135 32 / 0.12);
+  --sidebar-accent-foreground:  oklch(0.585 0.135 32);
+  --sidebar-border:             oklch(0.285 0.010 40);
   --sidebar-ring:               #ffb4a2;
 
   /* --- Tokens Arce: superficies semánticas (oscuro) --- */
-  --bg:                     #111314;
-  --surface:                #191c1e;
-  --surface-mid:            #222527;
-  --surface-high:           #282a2c;
-  --surface-highest:        #333537;
+  --bg:                     oklch(0.165 0.006 40);
+  --surface:                oklch(0.215 0.008 40);
+  --surface-mid:            oklch(0.195 0.007 40);
+  --surface-high:           oklch(0.235 0.008 40);
+  --surface-highest:        oklch(0.255 0.010 40);
 
   /* --- Tokens Arce: texto semántico (oscuro) --- */
-  --on-bg:                  #e1e2e4;
-  --on-surface:             #e1e2e4;
-  --text-secondary:         #a8a9ac;
-  --text-muted:             #6b6d70;
+  --on-bg:                  oklch(0.972 0.004 60);
+  --on-surface:             oklch(0.972 0.004 60);
+  --text-secondary:         oklch(0.72 0.012 50);
+  --text-muted:             oklch(0.54 0.012 40);
+  --text-dim:               oklch(0.54 0.012 40 / 0.6);
 
   /* --- Tokens Arce: primario extendido --- */
-  --primary-dark:           #6b1702;
-  --primary-dim:            rgba(255,180,162,0.12);
+  --primary-dark:           oklch(0.585 0.135 32);
+  --primary-dim:            oklch(0.585 0.135 32 / 0.16);
 
   /* --- Tokens Arce: errores semánticos (oscuro) --- */
-  --error:                  #ffb4ab;
-  --error-dim:              rgba(255,180,171,0.12);
+  --error:                  oklch(0.68 0.18 25);
+  --error-dim:              oklch(0.68 0.18 25 / 0.14);
+  --destructive-dim:        oklch(0.68 0.18 25 / 0.14);
 
-  /* --- Tokens Arce: semánticos de estado --- */
+  /* --- Tokens Arce: semafóricos --- */
+  --success:                oklch(0.74 0.14 155);
+  --success-dim:            oklch(0.74 0.14 155 / 0.14);
+  --warning:                oklch(0.80 0.13 85);
+  --warning-dim:            oklch(0.80 0.13 85 / 0.14);
+  --income:                 oklch(0.74 0.14 155);
+  --income-dim:             oklch(0.74 0.14 155 / 0.12);
+  --border-accent:          oklch(0.585 0.135 32 / 0.25);
+
+  /* --- Tokens Arce: estado y semántica visual (sin cambio) --- */
   --avatar-a:               #2d3f4e;
   --avatar-b:               #2e4038;
   --green:                  #7fd3a0;
   --green-dim:              rgba(127,211,160,0.12);
   --mustard:                #ffdea8;
   --mustard-dim:            rgba(253,222,168,0.15);
-  --income:                 #6ee7a0;
-  --income-dim:             rgba(110,231,160,0.12);
   --expense:                var(--destructive);
   --neutral:                #8899ee;
   --neutral-dim:            rgba(100,130,220,0.12);
-  --border-accent:          rgba(255,180,162,0.2);
-  --destructive-dim:        rgba(255,180,171,0.12);
-  --text-dim:               rgba(200,200,204,0.4);
+  --border-subtle:          rgba(255,255,255,0.02);
+  --primary-subtle:         rgba(255,180,162,0.05);
+  --gradient-property:      linear-gradient(135deg, #1a2a1a, #2a4a2a);
+  --gradient-owner:         linear-gradient(135deg, #1a2a30, #1a4060);
   --status-available:       #ffdea8;
   --status-available-dim:   rgba(253,222,168,0.15);
   --status-rented:          #8dcf95;
@@ -299,18 +309,9 @@
   --status-maintenance-dim: rgba(253,186,116,0.12);
   --status-reserved:        #93c5fd;
   --status-reserved-dim:    rgba(147,197,253,0.12);
-  --border-subtle:          rgba(255,255,255,0.02);
-  --primary-subtle:         rgba(255,180,162,0.05);
-  --gradient-property:      linear-gradient(135deg, #1a2a1a, #2a4a2a);
-  --gradient-owner:         linear-gradient(135deg, #1a2a30, #1a4060);
   /* --- Tokens Arce: info (azul informativo) --- */
   --info:                   #8ab4f8;
   --info-dim:               rgba(138,180,248,0.12);
-  /* --- Tokens Arce: warning (ámbar) y success (alias de green) --- */
-  --warning:                #f5c97a;
-  --warning-dim:            rgba(245,201,122,0.12);
-  --success:                var(--green);
-  --success-dim:            var(--green-dim);
 }
 
 @layer base {

@@ -6,7 +6,6 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { PropietarioCompletitudBar } from "@/components/propietarios/propietario-completitud-bar";
 import { PropietarioTabDatos } from "@/components/propietarios/propietario-tab-datos";
 import { PropietarioTabCuentaCorriente } from "@/components/propietarios/propietario-tab-cuenta-corriente";
@@ -66,7 +65,41 @@ function getInitials(firstName: string, lastName: string | null) {
     .slice(0, 2);
 }
 
-type Tab = "datos" | "cuenta-corriente" | "propiedades" | "documentos";
+type Tab = "datos" | "cuenta-corriente" | "propiedades" | "documentos" | "historial";
+
+function StatusDot({ status }: { status: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-block size-1.5 rounded-full flex-shrink-0",
+        status === "activo" ? "bg-success" : status === "suspendido" ? "bg-warning" : "bg-error"
+      )}
+    />
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string }> = {
+    activo:     { label: "Activo",     cls: "status-pill status-active" },
+    suspendido: { label: "Suspendido", cls: "status-pill status-suspended" },
+    baja:       { label: "Baja",       cls: "status-pill status-baja" },
+  };
+  const { label, cls } = map[status] ?? { label: status, cls: "status-pill status-draft" };
+  return (
+    <span className={cls}>
+      <StatusDot status={status} />
+      {label}
+    </span>
+  );
+}
+
+function CountBadge({ count }: { count: number }) {
+  return (
+    <span className="font-mono text-[11px] bg-surface-mid border border-border px-[7px] py-[2px] rounded-[4px] leading-none">
+      {count}
+    </span>
+  );
+}
 
 export default function PropietarioFichaPage() {
   const { id } = useParams<{ id: string }>();
@@ -100,6 +133,7 @@ export default function PropietarioFichaPage() {
   });
 
   const propietario = data?.propietario;
+  const propiedadesCount = data?.propiedades?.length ?? 0;
 
   const handleChipClick = (fieldId: string) => {
     setTab("datos");
@@ -109,6 +143,14 @@ export default function PropietarioFichaPage() {
   const handleStatusChange = () => {
     queryClient.invalidateQueries({ queryKey: ["propietario", id] });
   };
+
+  const tabs: { key: Tab; label: string; count?: number }[] = [
+    { key: "cuenta-corriente", label: "Cuenta corriente" },
+    { key: "datos",            label: "Datos" },
+    { key: "propiedades",      label: "Propiedades", count: propiedadesCount },
+    { key: "documentos",       label: "Documentos",  count: 0 },
+    { key: "historial",        label: "Historial" },
+  ];
 
   return (
     <>
@@ -148,36 +190,28 @@ export default function PropietarioFichaPage() {
           {/* Profile header */}
           <div className="bg-surface border-b border-border px-7 py-5">
             <div className="flex items-start gap-4">
-              {/* Avatar */}
-              <div className="size-12 rounded-[12px] bg-primary-dark flex items-center justify-center text-[1rem] font-extrabold text-white font-brand flex-shrink-0">
+              {/* Avatar 56×56, gradient-owner */}
+              <div
+                className="size-14 rounded-[12px] flex items-center justify-center text-[1.375rem] font-bold text-white flex-shrink-0"
+                style={{ background: "var(--gradient-owner)" }}
+              >
                 {getInitials(propietario.firstName, propietario.lastName)}
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-[1.3rem] font-bold text-on-bg font-headline tracking-[-0.02em]">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1
+                    className="text-[1.375rem] font-bold text-on-bg font-headline"
+                    style={{ letterSpacing: "-0.015em" }}
+                  >
                     {propietario.lastName
                       ? `${propietario.firstName} ${propietario.lastName}`
                       : propietario.firstName}
                   </h1>
-                  <StatusBadge
-                    variant={
-                      propietario.status === "activo"
-                        ? "active"
-                        : propietario.status === "suspendido"
-                        ? "suspended"
-                        : "baja"
-                    }
-                  >
-                    {propietario.status === "activo"
-                      ? "Activo"
-                      : propietario.status === "suspendido"
-                      ? "Suspendido"
-                      : "Baja"}
-                  </StatusBadge>
+                  <StatusPill status={propietario.status} />
                   {propietario.dni && (
-                    <span className="text-[0.72rem] text-text-muted">
+                    <span className="text-[0.72rem] text-text-muted font-mono">
                       DNI {propietario.dni}
                     </span>
                   )}
@@ -194,23 +228,19 @@ export default function PropietarioFichaPage() {
           {/* Tabs */}
           <div className="bg-surface border-b border-border px-7">
             <div className="flex gap-0">
-              {[
-                { key: "cuenta-corriente" as Tab, label: "Cuenta corriente" },
-                { key: "datos" as Tab, label: "Datos" },
-                { key: "propiedades" as Tab, label: "Propiedades" },
-                { key: "documentos" as Tab, label: "Documentos" },
-              ].map(({ key, label }) => (
+              {tabs.map(({ key, label, count }) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
                   className={cn(
-                    "px-4 py-3 text-[0.8rem] font-semibold border-b-2 transition-all",
+                    "flex items-center gap-2 px-4 py-3 text-[0.8rem] font-semibold border-b-2 transition-all",
                     activeTab === key
-                      ? "border-primary text-primary"
-                      : "border-transparent text-text-muted hover:text-text-secondary"
+                      ? "border-primary text-on-surface"
+                      : "border-transparent text-text-secondary hover:text-on-surface"
                   )}
                 >
                   {label}
+                  {count !== undefined && count > 0 && <CountBadge count={count} />}
                 </button>
               ))}
             </div>
@@ -245,6 +275,11 @@ export default function PropietarioFichaPage() {
                     : propietario.firstName
                 }
               />
+            )}
+            {activeTab === "historial" && (
+              <div className="flex items-center justify-center h-40 text-text-muted text-sm">
+                Historial próximamente
+              </div>
             )}
           </div>
         </div>
