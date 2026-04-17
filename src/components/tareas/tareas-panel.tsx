@@ -2,8 +2,15 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
@@ -179,9 +186,10 @@ function TareaRow({
     <div
       onClick={onClick}
       style={{ borderLeftColor: pCfg.border }}
-      className={`flex items-center gap-3 p-[11px_14px] bg-card border border-border border-l-[3px] rounded-xl cursor-pointer transition-all mb-1 hover:border-border-accent hover:bg-surface-mid ${
-        selected ? "border-primary bg-primary-dim" : ""
-      }`}
+      className={cn(
+        "flex items-center gap-3 p-[11px_14px] bg-card border border-border border-l-[3px] rounded-xl cursor-pointer transition-all mb-1 hover:border-border-accent hover:bg-surface-mid",
+        selected && "border-primary bg-primary-dim"
+      )}
     >
       <div className="w-4 h-4 rounded-full border-2 border-border shrink-0 hover:border-income hover:bg-income-dim transition-all" />
 
@@ -233,11 +241,8 @@ function GrupoPrioridad({
   if (items.length === 0) return null;
 
   return (
-    <div className="mb-[6px]">
-      <div
-        onClick={onToggle}
-        className="flex items-center gap-[10px] p-[8px_10px] cursor-pointer rounded-lg transition-all hover:bg-surface select-none"
-      >
+    <Collapsible open={!collapsed} onOpenChange={() => onToggle()} className="mb-[6px]">
+      <CollapsibleTrigger className="flex w-full items-center gap-[10px] p-[8px_10px] cursor-pointer rounded-lg transition-all hover:bg-surface select-none">
         {collapsed
           ? <ChevronRight className="w-[10px] h-[10px] text-text-muted shrink-0" />
           : <ChevronDown  className="w-[10px] h-[10px] text-text-muted shrink-0" />
@@ -246,21 +251,19 @@ function GrupoPrioridad({
         <span className="text-[0.65rem] text-text-muted">
           {items.length} {items.length === 1 ? "tarea" : "tareas"}
         </span>
-      </div>
+      </CollapsibleTrigger>
 
-      {!collapsed && (
-        <div className="pl-1">
-          {items.map(t => (
-            <TareaRow
-              key={t.id}
-              t={t}
-              selected={selectedId === t.id}
-              onClick={() => onSelect(t.id)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+      <CollapsibleContent className="pl-1">
+        {items.map(t => (
+          <TareaRow
+            key={t.id}
+            t={t}
+            selected={selectedId === t.id}
+            onClick={() => onSelect(t.id)}
+          />
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -359,27 +362,31 @@ function PanelLateral({
   }
 
   return (
-    <aside
-      className="fixed top-14 right-0 w-[400px] h-[calc(100vh-56px)] bg-surface border-l border-border flex flex-col z-20 overflow-hidden transition-transform duration-[220ms] ease-[ease]"
-      style={{ transform: open ? "translateX(0)" : "translateX(100%)" }}
-    >
-      {isLoading && (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-        </div>
-      )}
+    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+      <SheetContent
+        side="right"
+        className="top-14 w-[400px] sm:max-w-[400px] p-0 flex flex-col gap-0 overflow-hidden"
+      >
+        <SheetHeader className="sr-only">
+          <SheetTitle>{t?.titulo ?? "Detalle de tarea"}</SheetTitle>
+        </SheetHeader>
 
-      {!isLoading && !t && open && (
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-[0.78rem] text-text-muted">No se pudo cargar la tarea</span>
-        </div>
-      )}
+        {isLoading && (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
 
-      {t && !isLoading && (
-        <>
-          {/* Header */}
-          <div className="p-[16px_20px] border-b border-border flex items-start justify-between shrink-0 gap-3">
-            <div className="flex-1 min-w-0">
+        {!isLoading && !t && open && (
+          <div className="flex-1 flex items-center justify-center">
+            <span className="text-[0.78rem] text-text-muted">No se pudo cargar la tarea</span>
+          </div>
+        )}
+
+        {t && !isLoading && (
+          <>
+            {/* Header */}
+            <div className="p-[16px_20px] pr-12 border-b border-border shrink-0">
               <div className="flex items-center gap-2 mb-1">
                 <TagBadge tipo={t.tipo} />
                 {t.categoria && (
@@ -392,188 +399,179 @@ function PanelLateral({
                 {t.titulo}
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="text-text-muted hover:text-primary hover:bg-surface-high p-1 rounded-md transition-all shrink-0 mt-0.5"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
 
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto">
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto">
 
-            {/* Prioridad + Estado */}
-            <div className="p-[14px_20px] border-b border-border">
-              <SectionTitle>Prioridad</SectionTitle>
-              <div className="flex gap-1">
-                {(["urgente", "alta", "media", "baja"] as Prioridad[]).map(p => (
-                  <button
-                    key={p}
-                    onClick={() => onUpdate(t.id, { prioridad: p })}
-                    className={`px-[10px] py-[3px] text-[0.6rem] font-bold rounded-full border transition-all ${
-                      t.prioridad === p
-                        ? PRIO[p].pill + " border-current/30"
-                        : "bg-surface-high border-border text-text-muted hover:text-on-surface"
-                    }`}
-                  >
-                    {PRIO[p].label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="h-3" />
-              <SectionTitle>Estado</SectionTitle>
-              <div className="flex gap-1">
-                {(["pendiente", "en_curso", "resuelta"] as Estado[]).map(e => (
-                  <button
-                    key={e}
-                    onClick={() => onUpdate(t.id, { estado: e })}
-                    className={`px-[10px] py-[3px] text-[0.6rem] font-bold rounded-full border transition-all ${
-                      t.estado === e
-                        ? EST[e].badge + " border-current/30"
-                        : "bg-surface-high border-border text-text-muted hover:text-on-surface"
-                    }`}
-                  >
-                    {EST[e].label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Entidades vinculadas */}
-            {(t.propertyAddress || t.contractNumber || t.tenantNombre) && (
+              {/* Prioridad + Estado */}
               <div className="p-[14px_20px] border-b border-border">
-                <SectionTitle>Entidades vinculadas</SectionTitle>
-                {t.propertyAddress && (
-                  <div className="mb-2">
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-text-muted mb-1">Propiedad</div>
-                    <span className="text-primary inline-flex items-center gap-1 text-[0.78rem] font-semibold cursor-pointer hover:underline">
-                      🏠 {t.propertyAddress}
-                    </span>
-                  </div>
-                )}
-                {t.contractNumber && (
-                  <div className="mb-2">
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-text-muted mb-1">Contrato</div>
-                    <span className="text-primary inline-flex items-center gap-1 text-[0.78rem] font-semibold cursor-pointer hover:underline">
-                      {t.contractNumber}
-                    </span>
-                  </div>
-                )}
-                {t.tenantNombre && (
-                  <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-text-muted mb-1">Inquilino</div>
-                    <span className="text-primary inline-flex items-center gap-1 text-[0.78rem] font-semibold cursor-pointer hover:underline">
-                      {t.tenantNombre}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Descripción */}
-            {t.descripcion && (
-              <div className="p-[14px_20px] border-b border-border">
-                <SectionTitle>Descripción</SectionTitle>
-                <p className="text-[0.78rem] text-text-secondary leading-relaxed">
-                  {t.descripcion}
-                </p>
-              </div>
-            )}
-
-            {/* Responsable */}
-            <div className="p-[14px_20px] border-b border-border">
-              <SectionTitle>Responsables</SectionTitle>
-              {t.assignedToNombre ? (
-                <div className="flex items-center gap-2 py-[6px]">
-                  <div className="w-7 h-7 rounded-[4px] bg-primary-dark flex items-center justify-center text-[0.55rem] font-extrabold text-primary-foreground shrink-0 font-brand">
-                    {getInitials(t.assignedToNombre)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-[0.78rem] font-medium text-on-surface">
-                      {t.assignedToNombre}
-                    </div>
-                    <div className="text-[0.62rem] text-text-muted">Staff Admin</div>
-                  </div>
+                <SectionTitle>Prioridad</SectionTitle>
+                <div className="flex gap-1">
+                  {(["urgente", "alta", "media", "baja"] as Prioridad[]).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => onUpdate(t.id, { prioridad: p })}
+                      className={`px-[10px] py-[3px] text-[0.6rem] font-bold rounded-full border transition-all ${
+                        t.prioridad === p
+                          ? PRIO[p].pill + " border-current/30"
+                          : "bg-surface-high border-border text-text-muted hover:text-on-surface"
+                      }`}
+                    >
+                      {PRIO[p].label}
+                    </button>
+                  ))}
                 </div>
-              ) : (
-                <p className="text-[0.72rem] text-text-muted">Sin responsable asignado</p>
-              )}
-            </div>
 
-            {/* Historial */}
-            {t.historial.length > 0 && (
-              <div className="p-[14px_20px] border-b border-border">
-                <SectionTitle>Historial</SectionTitle>
-                {t.historial.slice(0, 5).map(h => (
-                  <div key={h.id} className="flex gap-[10px] py-2 border-b border-border last:border-b-0">
-                    <div className={`w-[7px] h-[7px] rounded-full shrink-0 mt-[6px] ${
-                      h.tipo === "auto" ? "bg-neutral" : "bg-primary"
-                    }`} />
+                <div className="h-3" />
+                <SectionTitle>Estado</SectionTitle>
+                <div className="flex gap-1">
+                  {(["pendiente", "en_curso", "resuelta"] as Estado[]).map(e => (
+                    <button
+                      key={e}
+                      onClick={() => onUpdate(t.id, { estado: e })}
+                      className={`px-[10px] py-[3px] text-[0.6rem] font-bold rounded-full border transition-all ${
+                        t.estado === e
+                          ? EST[e].badge + " border-current/30"
+                          : "bg-surface-high border-border text-text-muted hover:text-on-surface"
+                      }`}
+                    >
+                      {EST[e].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Entidades vinculadas */}
+              {(t.propertyAddress || t.contractNumber || t.tenantNombre) && (
+                <div className="p-[14px_20px] border-b border-border">
+                  <SectionTitle>Entidades vinculadas</SectionTitle>
+                  {t.propertyAddress && (
+                    <div className="mb-2">
+                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-text-muted mb-1">Propiedad</div>
+                      <span className="text-primary inline-flex items-center gap-1 text-[0.78rem] font-semibold cursor-pointer hover:underline">
+                        🏠 {t.propertyAddress}
+                      </span>
+                    </div>
+                  )}
+                  {t.contractNumber && (
+                    <div className="mb-2">
+                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-text-muted mb-1">Contrato</div>
+                      <span className="text-primary inline-flex items-center gap-1 text-[0.78rem] font-semibold cursor-pointer hover:underline">
+                        {t.contractNumber}
+                      </span>
+                    </div>
+                  )}
+                  {t.tenantNombre && (
                     <div>
-                      <div className="text-[0.72rem] text-text-secondary leading-snug">
-                        {h.texto}
+                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-text-muted mb-1">Inquilino</div>
+                      <span className="text-primary inline-flex items-center gap-1 text-[0.78rem] font-semibold cursor-pointer hover:underline">
+                        {t.tenantNombre}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Descripción */}
+              {t.descripcion && (
+                <div className="p-[14px_20px] border-b border-border">
+                  <SectionTitle>Descripción</SectionTitle>
+                  <p className="text-[0.78rem] text-text-secondary leading-relaxed">
+                    {t.descripcion}
+                  </p>
+                </div>
+              )}
+
+              {/* Responsable */}
+              <div className="p-[14px_20px] border-b border-border">
+                <SectionTitle>Responsables</SectionTitle>
+                {t.assignedToNombre ? (
+                  <div className="flex items-center gap-2 py-[6px]">
+                    <div className="w-7 h-7 rounded-[4px] bg-primary-dark flex items-center justify-center text-[0.55rem] font-extrabold text-primary-foreground shrink-0 font-brand">
+                      {getInitials(t.assignedToNombre)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-[0.78rem] font-medium text-on-surface">
+                        {t.assignedToNombre}
                       </div>
-                      <div className="text-[0.6rem] text-text-muted mt-[2px]">
-                        {new Date(h.createdAt).toLocaleDateString("es-AR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                        })}
-                        {" · "}
-                        {h.creadoPorNombre ?? "Automático"}
+                      <div className="text-[0.62rem] text-text-muted">Staff Admin</div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[0.72rem] text-text-muted">Sin responsable asignado</p>
+                )}
+              </div>
+
+              {/* Historial */}
+              {t.historial.length > 0 && (
+                <div className="p-[14px_20px] border-b border-border">
+                  <SectionTitle>Historial</SectionTitle>
+                  {t.historial.slice(0, 5).map(h => (
+                    <div key={h.id} className="flex gap-[10px] py-2 border-b border-border last:border-b-0">
+                      <div className={`w-[7px] h-[7px] rounded-full shrink-0 mt-[6px] ${
+                        h.tipo === "auto" ? "bg-neutral" : "bg-primary"
+                      }`} />
+                      <div>
+                        <div className="text-[0.72rem] text-text-secondary leading-snug">
+                          {h.texto}
+                        </div>
+                        <div className="text-[0.6rem] text-text-muted mt-[2px]">
+                          {new Date(h.createdAt).toLocaleDateString("es-AR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })}
+                          {" · "}
+                          {h.creadoPorNombre ?? "Automático"}
+                        </div>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Comentarios */}
+              <div className="p-[14px_20px]">
+                <SectionTitle>Comentarios internos</SectionTitle>
+                {t.comentarios.map(c => (
+                  <div key={c.id} className="mb-3 pb-3 border-b border-border last:border-b-0">
+                    <div className="text-[0.72rem] text-text-secondary leading-snug">
+                      {c.texto}
+                    </div>
+                    <div className="text-[0.6rem] text-text-muted mt-1">
+                      {c.creadoPorNombre} ·{" "}
+                      {new Date(c.createdAt).toLocaleDateString("es-AR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                      })}
                     </div>
                   </div>
                 ))}
+                <Textarea
+                  value={comentario}
+                  onChange={e => setComentario(e.target.value)}
+                  placeholder="Agregá una nota…"
+                  className="resize-none min-h-[60px]"
+                />
+                <Button variant="secondary" size="sm" className="w-full mt-2" onClick={submitComentario}>
+                  Agregar comentario
+                </Button>
               </div>
-            )}
-
-            {/* Comentarios */}
-            <div className="p-[14px_20px]">
-              <SectionTitle>Comentarios internos</SectionTitle>
-              {t.comentarios.map(c => (
-                <div key={c.id} className="mb-3 pb-3 border-b border-border last:border-b-0">
-                  <div className="text-[0.72rem] text-text-secondary leading-snug">
-                    {c.texto}
-                  </div>
-                  <div className="text-[0.6rem] text-text-muted mt-1">
-                    {c.creadoPorNombre} ·{" "}
-                    {new Date(c.createdAt).toLocaleDateString("es-AR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                    })}
-                  </div>
-                </div>
-              ))}
-              <textarea
-                value={comentario}
-                onChange={e => setComentario(e.target.value)}
-                placeholder="Agregá una nota…"
-                className="w-full bg-surface-high border border-border rounded-xl p-[8px_12px] text-[0.8rem] text-on-surface placeholder:text-text-muted outline-none focus:border-primary resize-none min-h-[60px] transition-all font-sans"
-              />
-              <button onClick={submitComentario} className="btn btn-secondary btn-sm w-full mt-2">
-                Agregar comentario
-              </button>
             </div>
-          </div>
 
-          {/* Footer */}
-          <div className="p-[14px_20px] border-t border-border flex gap-2 shrink-0">
-            <button className="btn btn-ghost btn-sm flex-1">
-              Reasignar
-            </button>
-            <button
-              onClick={() => onUpdate(t.id, { estado: "resuelta" })}
-              className="btn btn-green btn-sm flex-[2]"
-            >
-              ✓ Marcar como resuelta
-            </button>
-          </div>
-        </>
-      )}
-    </aside>
+            {/* Footer */}
+            <div className="p-[14px_20px] border-t border-border flex gap-2 shrink-0">
+              <Button variant="ghost" size="sm" className="flex-1">
+                Reasignar
+              </Button>
+              <Button size="sm" className="flex-[2]" onClick={() => onUpdate(t.id, { estado: "resuelta" })}>
+                ✓ Marcar como resuelta
+              </Button>
+            </div>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -632,24 +630,17 @@ function ModalNuevaTarea({
     }
   }
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center backdrop-blur-sm"
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-surface border border-border rounded-3xl w-[520px] max-h-[90vh] overflow-y-auto"
-        style={{ borderTop: "3px solid var(--primary)" }}
-      >
-        <div className="p-[20px_24px] border-b border-border flex items-center justify-between">
-          <span className="text-[1rem] font-bold text-on-surface font-headline">Nueva tarea</span>
-          <button onClick={onClose} className="text-text-muted hover:text-primary text-[1.1rem] p-1 rounded-md transition-all">
-            ✕
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+      <DialogContent className="sm:max-w-[520px] p-0 overflow-hidden">
+        <DialogHeader className="p-[20px_24px] border-b border-border">
+          <DialogTitle className="text-[1rem] font-bold text-on-surface font-headline">
+            Nueva tarea
+          </DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-[22px_24px] flex flex-col gap-[14px]">
+        <form onSubmit={handleSubmit}>
+        <div className="p-[22px_24px] flex flex-col gap-[14px]">
           {error && (
             <div className="text-[0.78rem] text-destructive bg-error-dim rounded-lg px-3 py-2">
               {error}
@@ -660,11 +651,10 @@ function ModalNuevaTarea({
             <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
               Título <span className="text-destructive">*</span>
             </label>
-            <input
+            <Input
               value={form.titulo}
               onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))}
               placeholder="Describí la tarea brevemente…"
-              className="w-full bg-surface-high border border-border rounded-xl px-3 py-2 text-[0.875rem] text-on-surface placeholder:text-text-muted outline-none focus:border-primary transition-all"
             />
           </div>
 
@@ -672,11 +662,11 @@ function ModalNuevaTarea({
             <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
               Descripción
             </label>
-            <textarea
+            <Textarea
               value={form.descripcion}
               onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
               placeholder="Contexto, pasos a seguir, notas…"
-              className="w-full bg-surface-high border border-border rounded-xl px-3 py-2 text-[0.875rem] text-on-surface placeholder:text-text-muted outline-none focus:border-primary resize-y min-h-[72px] transition-all"
+              className="resize-y min-h-[72px]"
             />
           </div>
 
@@ -685,26 +675,31 @@ function ModalNuevaTarea({
               <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
                 Prioridad
               </label>
-              <select
+              <Select
                 value={form.prioridad}
-                onChange={e => setForm(f => ({ ...f, prioridad: e.target.value as Prioridad }))}
-                className="w-full bg-surface-high border border-border rounded-xl px-3 py-2 text-[0.875rem] text-on-surface outline-none focus:border-primary transition-all"
+                onValueChange={v => setForm(f => ({ ...f, prioridad: v as Prioridad }))}
               >
-                <option value="urgente">Urgente</option>
-                <option value="alta">Alta</option>
-                <option value="media">Media</option>
-                <option value="baja">Baja</option>
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="urgente">Urgente</SelectItem>
+                    <SelectItem value="alta">Alta</SelectItem>
+                    <SelectItem value="media">Media</SelectItem>
+                    <SelectItem value="baja">Baja</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-[5px]">
               <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
                 Fecha límite
               </label>
-              <input
+              <Input
                 type="date"
                 value={form.fechaVencimiento}
                 onChange={e => setForm(f => ({ ...f, fechaVencimiento: e.target.value }))}
-                className="w-full bg-surface-high border border-border rounded-xl px-3 py-2 text-[0.875rem] text-on-surface outline-none focus:border-primary transition-all"
               />
             </div>
           </div>
@@ -713,30 +708,37 @@ function ModalNuevaTarea({
             <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
               Categoría <span className="font-normal normal-case text-[0.6rem]">(opcional)</span>
             </label>
-            <select
-              value={form.categoria}
-              onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))}
-              className="w-full bg-surface-high border border-border rounded-xl px-3 py-2 text-[0.875rem] text-on-surface outline-none focus:border-primary transition-all"
+            <Select
+              value={form.categoria || "__none__"}
+              onValueChange={v => setForm(f => ({ ...f, categoria: v === "__none__" ? "" : v }))}
             >
-              <option value="">Sin categoría</option>
-              <option value="alquiler">Alquiler</option>
-              <option value="servicios">Servicios</option>
-              <option value="contratos">Contratos</option>
-              <option value="onboarding">Onboarding</option>
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="__none__">Sin categoría</SelectItem>
+                  <SelectItem value="alquiler">Alquiler</SelectItem>
+                  <SelectItem value="servicios">Servicios</SelectItem>
+                  <SelectItem value="contratos">Contratos</SelectItem>
+                  <SelectItem value="onboarding">Onboarding</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
-        </form>
-
-        <div className="p-[14px_24px] border-t border-border flex justify-end gap-2 bg-surface-mid rounded-b-3xl">
-          <button type="button" onClick={onClose} className="btn btn-ghost btn-sm">
-            Cancelar
-          </button>
-          <button onClick={handleSubmit} disabled={loading} className="btn btn-primary btn-sm">
-            {loading ? "Creando…" : "Crear tarea"}
-          </button>
         </div>
-      </div>
-    </div>
+
+        <DialogFooter className="p-[14px_24px] border-t border-border">
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" size="sm" disabled={loading}>
+            {loading ? "Creando…" : "Crear tarea"}
+          </Button>
+        </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -887,10 +889,7 @@ export function TareasPanel() {
 
         {/* Vista Lista */}
         {!isLoading && vista === "lista" && (
-          <div
-            className="flex-1 overflow-y-auto p-[20px_28px] flex flex-col min-w-0 transition-[margin-right] duration-[220ms] ease-[ease]"
-            style={{ marginRight: panelOpen ? "400px" : "0" }}
-          >
+          <div className="flex-1 overflow-y-auto p-[20px_28px] flex flex-col min-w-0">
             {/* Filtros */}
             <div className="flex items-center gap-2 flex-wrap pb-4 shrink-0">
               <span className="font-headline text-[1.3rem] font-bold text-on-bg tracking-[-0.02em] mr-1">
