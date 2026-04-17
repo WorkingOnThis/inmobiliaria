@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -99,27 +101,27 @@ const TIPO_TAG: Record<Tipo, { label: string; cls: string }> = {
 function TagBadge({ tipo }: { tipo: Tipo }) {
   const { label, cls } = TIPO_TAG[tipo];
   return (
-    <span className={`inline-flex items-center px-[7px] py-[1px] rounded-full text-[0.58rem] font-bold ${cls}`}>
+    <Badge className={cn(cls, "px-[7px] py-[1px] text-[0.58rem] border-transparent")}>
       {label}
-    </span>
+    </Badge>
   );
 }
 
 function EstadoBadge({ estado }: { estado: Estado }) {
   const { label, badge } = EST[estado];
   return (
-    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[0.6rem] font-bold whitespace-nowrap ${badge}`}>
+    <Badge className={cn(badge, "border-transparent")}>
       {label}
-    </span>
+    </Badge>
   );
 }
 
 function PrioridadPill({ prioridad }: { prioridad: Prioridad }) {
   const { label, pill } = PRIO[prioridad];
   return (
-    <span className={`inline-flex items-center gap-[5px] px-[10px] py-[3px] rounded-full text-[0.6rem] font-extrabold uppercase tracking-wide ${pill}`}>
+    <Badge className={cn(pill, "px-[10px] py-[3px] font-extrabold border-transparent")}>
       {label}
-    </span>
+    </Badge>
   );
 }
 
