@@ -80,7 +80,7 @@ export function PropietarioCompletitudBar({
               onClick={() => onChipClick?.(f.id)}
               className="flex items-center gap-1 px-2 py-0.5 text-[0.62rem] font-medium text-text-secondary bg-surface-mid border border-border rounded-full hover:border-border-accent hover:text-primary transition-all"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-primary block flex-shrink-0" />
+              <span className="size-1.5 rounded-full bg-primary block flex-shrink-0" />
               {f.label}
             </button>
           ))}

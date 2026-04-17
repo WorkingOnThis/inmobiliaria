@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -74,11 +75,13 @@ export function InquilinoForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 w-full max-w-2xl">
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Datos personales</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
+    <form onSubmit={handleSubmit} className="w-full max-w-2xl">
+      <Card>
+        <CardHeader>
+          <CardTitle>Datos personales</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="firstName">
               Nombre <span className="text-destructive">*</span>
             </Label>
@@ -95,7 +98,7 @@ export function InquilinoForm() {
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="lastName">Apellido</Label>
             <Input
               id="lastName"
@@ -106,7 +109,7 @@ export function InquilinoForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="dni">DNI</Label>
             <Input
               id="dni"
@@ -117,7 +120,7 @@ export function InquilinoForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="birthDate">Fecha de nacimiento</Label>
             <Input
               id="birthDate"
@@ -128,7 +131,7 @@ export function InquilinoForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="phone">Teléfono</Label>
             <Input
               id="phone"
@@ -139,7 +142,7 @@ export function InquilinoForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="whatsapp">WhatsApp</Label>
             <Input
               id="whatsapp"
@@ -150,7 +153,7 @@ export function InquilinoForm() {
             />
           </div>
 
-          <div className="space-y-2 md:col-span-2">
+          <div className="flex flex-col gap-2 md:col-span-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -162,7 +165,7 @@ export function InquilinoForm() {
             />
           </div>
 
-          <div className="space-y-2 md:col-span-2">
+          <div className="flex flex-col gap-2 md:col-span-2">
             <Label htmlFor="address">Domicilio actual</Label>
             <Input
               id="address"
@@ -173,7 +176,7 @@ export function InquilinoForm() {
             />
           </div>
 
-          <div className="space-y-2 md:col-span-2">
+          <div className="flex flex-col gap-2 md:col-span-2">
             <Label htmlFor="profession">Profesión / Ocupación</Label>
             <Input
               id="profession"
@@ -183,22 +186,21 @@ export function InquilinoForm() {
               placeholder="Ej: Diseñadora gráfica"
             />
           </div>
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push("/inquilinos")}
-          disabled={mutation.isPending}
-        >
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? "Guardando..." : "Crear Inquilino"}
-        </Button>
-      </div>
+        </CardContent>
+        <CardFooter className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/inquilinos")}
+            disabled={mutation.isPending}
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? "Guardando..." : "Crear Inquilino"}
+          </Button>
+        </CardFooter>
+      </Card>
     </form>
   );
 }

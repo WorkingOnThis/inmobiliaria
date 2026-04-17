@@ -1,6 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+import { cn } from "@/lib/utils";
 
 interface ContratoData {
   id: string;
@@ -51,13 +54,13 @@ const tipoLabel: Record<string, string> = {
   otro: "Otro",
 };
 
-const statusLabel: Record<string, { label: string; cls: string }> = {
-  active: { label: "Vigente", cls: "bg-success/10 text-success border-success/20" },
-  expiring_soon: { label: "Por vencer", cls: "bg-warning/10 text-warning border-warning/20" },
-  expired: { label: "Vencido", cls: "bg-error/10 text-error border-error/20" },
-  terminated: { label: "Rescindido", cls: "bg-text-muted/10 text-text-muted border-text-muted/20" },
-  draft: { label: "Borrador", cls: "bg-surface-highest text-text-muted border-border" },
-  pending_signature: { label: "Pendiente firma", cls: "bg-blue/10 text-blue border-blue/20" },
+const statusLabel: Record<string, { label: string; variant: StatusBadgeVariant }> = {
+  active:            { label: "Vigente",         variant: "active" },
+  expiring_soon:     { label: "Por vencer",      variant: "expiring" },
+  expired:           { label: "Vencido",         variant: "baja" },
+  terminated:        { label: "Rescindido",      variant: "draft" },
+  draft:             { label: "Borrador",        variant: "draft" },
+  pending_signature: { label: "Pendiente firma", variant: "reserved" },
 };
 
 export function InquilinoTabContrato({ contrato }: Props) {
@@ -72,39 +75,39 @@ export function InquilinoTabContrato({ contrato }: Props) {
     );
   }
 
-  const status = statusLabel[contrato.status] ?? { label: contrato.status, cls: "bg-surface-highest text-text-muted border-border" };
+  const status = statusLabel[contrato.status] ?? { label: contrato.status, variant: "draft" as StatusBadgeVariant };
   const duracion = calcularDuracionMeses(contrato.startDate, contrato.endDate);
 
   return (
     <div className="p-7 flex flex-col gap-5">
       {/* Mini card de contrato — clickeable para navegar */}
-      <div
-        className="bg-surface-mid border border-blue/20 rounded-[8px] px-4 py-3.5 flex items-center gap-4 cursor-pointer hover:border-blue/40 hover:bg-blue/5 transition-all"
+      <Card
+        className={cn("rounded-[8px] border-blue/20 bg-surface-mid cursor-pointer hover:border-blue/40 hover:bg-blue/5 transition-all py-0 gap-0")}
         onClick={() => router.push(`/contratos/${contrato.id}`)}
       >
-        <div className="w-9 h-9 bg-blue/10 rounded-[8px] flex items-center justify-center text-base flex-shrink-0">
-          📄
-        </div>
-        <div className="flex-1">
-          <div className="text-[0.8rem] font-semibold text-blue">{contrato.contractNumber}</div>
-          <div className="text-[0.75rem] text-text-muted mt-0.5">
-            Vigente desde {formatFecha(contrato.startDate)} · Vence {formatFecha(contrato.endDate)}
+        <CardContent className="px-4 py-3.5 flex items-center gap-4">
+          <div className="size-9 bg-blue/10 rounded-[8px] flex items-center justify-center text-base flex-shrink-0">
+            📄
           </div>
-        </div>
-        <span
-          className={`text-[0.7rem] font-semibold px-2.5 py-1 rounded-full border ${status.cls}`}
-        >
-          {status.label}
-        </span>
-        <span className="text-text-muted text-lg ml-1">›</span>
-      </div>
+          <div className="flex-1">
+            <div className="text-[0.8rem] font-semibold text-blue">{contrato.contractNumber}</div>
+            <div className="text-[0.75rem] text-text-muted mt-0.5">
+              Vigente desde {formatFecha(contrato.startDate)} · Vence {formatFecha(contrato.endDate)}
+            </div>
+          </div>
+          <StatusBadge variant={status.variant}>
+            {status.label}
+          </StatusBadge>
+          <span className="text-text-muted text-lg ml-1">›</span>
+        </CardContent>
+      </Card>
 
       {/* Resumen del contrato */}
-      <div className="rounded-[10px] border border-border bg-surface overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-border">
-          <div className="text-[0.82rem] font-semibold text-on-bg">Resumen del contrato</div>
-        </div>
-        <div className="p-5 grid grid-cols-2 gap-x-8 gap-y-4">
+      <Card className="rounded-[10px] border py-0 gap-0 overflow-hidden">
+        <CardHeader className="px-5 py-3.5 border-b border-border gap-0">
+          <CardTitle className="text-[0.82rem] font-semibold">Resumen del contrato</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 grid grid-cols-2 gap-x-8 gap-y-4">
           <div>
             <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Tipo de contrato</div>
             <div className="text-[0.85rem] font-medium text-on-bg">{tipoLabel[contrato.contractType] ?? contrato.contractType}</div>
@@ -155,8 +158,8 @@ export function InquilinoTabContrato({ contrato }: Props) {
               <div className="text-[0.85rem] font-medium text-on-bg">{contrato.agencyCommission}%</div>
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

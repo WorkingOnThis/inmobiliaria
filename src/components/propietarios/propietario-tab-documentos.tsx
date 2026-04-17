@@ -1,6 +1,8 @@
 "use client";
 
 import { FileText, Upload, Scroll, FolderOpen } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface PropietarioTabDocumentosProps {
   propietarioId: string;
@@ -19,7 +21,7 @@ function DocumentCategory({ icon, title, description }: DocumentCategoryProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-[8px] bg-[#222527] flex items-center justify-center text-[#6b6d70]">
+          <div className="size-8 rounded-[8px] bg-[#222527] flex items-center justify-center text-[#6b6d70]">
             {icon}
           </div>
           <div>
@@ -27,13 +29,10 @@ function DocumentCategory({ icon, title, description }: DocumentCategoryProps) {
             <p className="text-[0.68rem] text-[#6b6d70]">{description}</p>
           </div>
         </div>
-        <button
-          disabled
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#222527] text-[#6b6d70] text-[0.68rem] font-semibold rounded-[10px] cursor-not-allowed border border-white/[0.07]"
-        >
+        <Button variant="secondary" size="sm" disabled>
           <Upload size={11} />
           Subir
-        </button>
+        </Button>
       </div>
 
       {/* Drop zone */}
@@ -53,9 +52,7 @@ function DocumentCategory({ icon, title, description }: DocumentCategoryProps) {
 
       {/* Próximamente badge */}
       <div className="mt-3 flex justify-center">
-        <span className="px-2.5 py-1 bg-[rgba(253,222,168,0.10)] text-[#ffdea8] text-[0.62rem] font-semibold rounded-full border border-[rgba(253,222,168,0.15)]">
-          Próximamente
-        </span>
+        <Badge variant="secondary">Próximamente</Badge>
       </div>
     </div>
   );

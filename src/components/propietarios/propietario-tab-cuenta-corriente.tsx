@@ -4,6 +4,10 @@ import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -283,19 +287,21 @@ export function PropietarioTabCuentaCorriente({
             <div className="text-[0.65rem] text-muted-foreground mt-0.5">Ingresos pendientes de liquidar</div>
           </div>
           <div
-            className={`border rounded-[18px] p-4 ${
+            className={cn(
+              "border rounded-[18px] p-4",
               data.kpis.pendienteConfirmar > 0
                 ? "bg-mustard/[0.06] border-mustard/20"
                 : "bg-card border-border"
-            }`}
+            )}
           >
             <div className="text-[0.62rem] font-semibold text-muted-foreground uppercase tracking-[0.08em] mb-1">
               ⏳ Pendiente de confirmar
             </div>
             <div
-              className={`text-[1.4rem] font-bold font-headline ${
+              className={cn(
+                "text-[1.4rem] font-bold font-headline",
                 data.kpis.pendienteConfirmar > 0 ? "text-mustard" : "text-foreground"
-              }`}
+              )}
             >
               {formatMoney(data.kpis.pendienteConfirmar)}
             </div>
@@ -311,7 +317,7 @@ export function PropietarioTabCuentaCorriente({
         {/* Toolbar */}
         <div className="px-5 py-3 flex items-center gap-3 border-b border-border flex-wrap">
           <span className="text-[0.78rem] font-semibold text-foreground">Movimientos</span>
-          <div className="w-px h-4 bg-white/[0.07]" />
+          <Separator orientation="vertical" className="h-4" />
 
           {/* Selector de período */}
           <div className="flex items-center gap-1">
@@ -336,7 +342,7 @@ export function PropietarioTabCuentaCorriente({
             </button>
           </div>
 
-          <div className="w-px h-4 bg-white/[0.07]" />
+          <Separator orientation="vertical" className="h-4" />
 
           {/* Filtros */}
           <div className="flex gap-1">
@@ -351,11 +357,13 @@ export function PropietarioTabCuentaCorriente({
               <button
                 key={key}
                 onClick={() => setMovFilter(key)}
-                className={`px-2.5 py-1 text-[0.62rem] font-semibold rounded-[6px] transition-all ${
+                className={cn(
+                  "px-2.5 py-1 text-[0.62rem] font-semibold rounded-[6px] transition-all border",
                   movFilter === key
-                    ? "bg-primary-dim text-primary border border-border-accent"
-                    : "text-muted-foreground hover:text-muted-foreground border border-transparent"
-                } ${key === "confirmar" ? "text-mustard" : ""}`}
+                    ? "bg-primary-dim text-primary border-border-accent"
+                    : "text-muted-foreground border-transparent hover:text-foreground",
+                  key === "confirmar" && "text-mustard"
+                )}
               >
                 {label}
               </button>
@@ -431,13 +439,14 @@ export function PropietarioTabCuentaCorriente({
                       {items.map((m, idx) => (
                         <tr
                           key={m.id}
-                          className={`transition-colors hover:bg-foreground/[0.02] ${
+                          className={cn(
+                            "transition-colors hover:bg-foreground/[0.02]",
                             m.categoria === "pendiente_confirmacion"
                               ? "bg-mustard/[0.04]"
                               : idx % 2 === 1
                               ? "bg-foreground/[0.01]"
                               : ""
-                          }`}
+                          )}
                         >
                           <td className="px-4 py-3 align-middle">
                             <div className="font-medium text-foreground">{m.descripcion}</div>
@@ -465,26 +474,25 @@ export function PropietarioTabCuentaCorriente({
                               : "—"}
                           </td>
                           <td className="px-4 py-3 align-middle">
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 text-[0.6rem] font-bold rounded-full ${
+                            <Badge
+                              variant={
                                 m.origen === "liquidacion"
-                                  ? "bg-green-dim text-green"
-                                  : m.origen === "manual"
-                                  ? "bg-secondary text-muted-foreground"
-                                  : "bg-primary-dim text-primary"
-                              }`}
+                                  ? "income"
+                                  : "secondary"
+                              }
                             >
                               {m.origen === "liquidacion"
                                 ? "Liquidación"
                                 : m.origen === "manual"
                                 ? "Manual"
                                 : "Contrato"}
-                            </span>
+                            </Badge>
                           </td>
                           <td
-                            className={`px-4 py-3 align-middle text-right font-bold font-headline text-[0.9rem] ${
+                            className={cn(
+                              "px-4 py-3 align-middle text-right font-bold font-headline text-[0.9rem]",
                               m.tipo === "ingreso" ? "text-green" : "text-destructive"
-                            }`}
+                            )}
                           >
                             {m.tipo === "ingreso" ? "+" : "−"}
                             {formatMoney(Number(m.monto))}
@@ -525,9 +533,10 @@ export function PropietarioTabCuentaCorriente({
                     Neto
                   </div>
                   <div
-                    className={`text-[0.85rem] font-bold font-headline ${
+                    className={cn(
+                      "text-[0.85rem] font-bold font-headline",
                       totalIngresos - totalEgresos >= 0 ? "text-green" : "text-destructive"
-                    }`}
+                    )}
                   >
                     {totalIngresos - totalEgresos >= 0 ? "+" : ""}
                     {formatMoney(totalIngresos - totalEgresos)}
@@ -565,9 +574,10 @@ export function PropietarioTabCuentaCorriente({
         )}
         <button
           onClick={() => setFabOpen((o) => !o)}
-          className={`w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_6px_24px_rgba(255,180,162,0.35)] hover:shadow-[0_8px_28px_rgba(255,180,162,0.5)] transition-all text-xl font-bold ${
-            fabOpen ? "rotate-45" : ""
-          }`}
+          className={cn(
+            "size-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_6px_24px_rgba(255,180,162,0.35)] hover:shadow-[0_8px_28px_rgba(255,180,162,0.5)] transition-all text-xl font-bold",
+            fabOpen && "rotate-45"
+          )}
           style={{ transition: "transform 0.22s ease, box-shadow 0.2s ease" }}
         >
           <Plus size={24} />
@@ -587,12 +597,14 @@ export function PropietarioTabCuentaCorriente({
                   Crédito o débito manual en la cuenta corriente
                 </div>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setFabAction(null)}
-                className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-[6px] w-8 h-8 flex items-center justify-center transition-all"
+                className="size-8 text-muted-foreground"
               >
                 <X size={18} />
-              </button>
+              </Button>
             </div>
             <div className="px-6 py-5 flex flex-col gap-3.5">
               {/* Tipo */}
@@ -603,13 +615,14 @@ export function PropietarioTabCuentaCorriente({
                     <button
                       key={t}
                       onClick={() => setMovForm((f) => ({ ...f, tipo: t }))}
-                      className={`flex-1 py-2 text-[0.72rem] font-semibold rounded-[10px] border transition-all ${
+                      className={cn(
+                        "flex-1 py-2 text-[0.72rem] font-semibold rounded-[10px] border transition-all",
                         movForm.tipo === t
                           ? t === "ingreso"
                             ? "bg-green-dim border-green/20 text-green"
                             : "bg-destructive-dim border-destructive/20 text-destructive"
-                          : "border-border text-muted-foreground hover:text-muted-foreground"
-                      }`}
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      )}
                     >
                       {t === "ingreso" ? "↑ Ingreso" : "↓ Egreso"}
                     </button>
@@ -677,21 +690,13 @@ export function PropietarioTabCuentaCorriente({
               </div>
             </div>
             <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
-              <button
-                onClick={() => setFabAction(null)}
-                disabled={saving}
-                className="px-3.5 py-2 text-[0.72rem] font-semibold text-muted-foreground bg-secondary border border-border rounded-[12px] hover:bg-muted transition-all"
-              >
+              <Button variant="outline" size="sm" onClick={() => setFabAction(null)} disabled={saving}>
                 Cancelar
-              </button>
-              <button
-                onClick={handleSaveMovimiento}
-                disabled={saving}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold bg-primary text-primary-foreground rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50"
-              >
+              </Button>
+              <Button size="sm" onClick={handleSaveMovimiento} disabled={saving}>
                 {saving && <Loader2 size={12} className="animate-spin" />}
                 Guardar
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -710,12 +715,14 @@ export function PropietarioTabCuentaCorriente({
                   Registrá el pago enviado al propietario
                 </div>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setFabAction(null)}
-                className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-[6px] w-8 h-8 flex items-center justify-center transition-all"
+                className="size-8 text-muted-foreground"
               >
                 <X size={18} />
-              </button>
+              </Button>
             </div>
             <div className="px-6 py-5 flex flex-col gap-3.5">
               {data && (
@@ -776,21 +783,13 @@ export function PropietarioTabCuentaCorriente({
               </div>
             </div>
             <div className="px-6 py-4 border-t border-border flex justify-end gap-2">
-              <button
-                onClick={() => setFabAction(null)}
-                disabled={saving}
-                className="px-3.5 py-2 text-[0.72rem] font-semibold text-muted-foreground bg-secondary border border-border rounded-[12px] hover:bg-muted transition-all"
-              >
+              <Button variant="outline" size="sm" onClick={() => setFabAction(null)} disabled={saving}>
                 Cancelar
-              </button>
-              <button
-                onClick={handleSaveLiquidacion}
-                disabled={saving}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold bg-primary text-primary-foreground rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50"
-              >
+              </Button>
+              <Button size="sm" onClick={handleSaveLiquidacion} disabled={saving}>
                 {saving && <Loader2 size={12} className="animate-spin" />}
                 Ejecutar liquidación
-              </button>
+              </Button>
             </div>
           </div>
         </div>

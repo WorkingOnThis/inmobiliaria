@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PropietarioCompletitudBar } from "@/components/propietarios/propietario-completitud-bar";
 import { PropietarioTabDatos } from "@/components/propietarios/propietario-tab-datos";
@@ -112,29 +114,29 @@ export default function PropietarioFichaPage() {
     <>
       {isLoading ? (
         <div className="flex h-screen items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-text-muted" />
+          <Loader2 className="size-8 animate-spin text-text-muted" />
         </div>
       ) : error || !propietario ? (
         <div className="flex h-screen flex-col items-center justify-center gap-4 text-text-muted">
           <div className="text-sm">{(error as Error)?.message ?? "Propietario no encontrado"}</div>
-          <button
-            onClick={() => router.push("/propietarios")}
+          <Link
+            href="/propietarios"
             className="text-[0.72rem] text-primary hover:underline flex items-center gap-1"
           >
             <ArrowLeft size={12} /> Volver a la lista
-          </button>
+          </Link>
         </div>
       ) : (
         <div className="flex flex-col min-h-full">
           {/* Topbar / breadcrumb */}
           <div className="h-14 bg-surface border-b border-border flex items-center px-7 gap-2.5 flex-shrink-0">
-            <button
-              onClick={() => router.push("/propietarios")}
+            <Link
+              href="/propietarios"
               className="text-[0.8rem] text-text-secondary hover:text-primary transition-colors flex items-center gap-1"
             >
               <ArrowLeft size={13} />
               Propietarios
-            </button>
+            </Link>
             <span className="text-text-muted">›</span>
             <span className="text-[0.8rem] font-semibold text-on-bg">
               {propietario.lastName
@@ -147,7 +149,7 @@ export default function PropietarioFichaPage() {
           <div className="bg-surface border-b border-border px-7 py-5">
             <div className="flex items-start gap-4">
               {/* Avatar */}
-              <div className="w-12 h-12 rounded-[12px] bg-primary-dark flex items-center justify-center text-[1rem] font-extrabold text-white font-brand flex-shrink-0">
+              <div className="size-12 rounded-[12px] bg-primary-dark flex items-center justify-center text-[1rem] font-extrabold text-white font-brand flex-shrink-0">
                 {getInitials(propietario.firstName, propietario.lastName)}
               </div>
 
@@ -201,11 +203,12 @@ export default function PropietarioFichaPage() {
                 <button
                   key={key}
                   onClick={() => setTab(key)}
-                  className={`px-4 py-3 text-[0.8rem] font-semibold border-b-2 transition-all ${
+                  className={cn(
+                    "px-4 py-3 text-[0.8rem] font-semibold border-b-2 transition-all",
                     activeTab === key
                       ? "border-primary text-primary"
                       : "border-transparent text-text-muted hover:text-text-secondary"
-                  }`}
+                  )}
                 >
                   {label}
                 </button>

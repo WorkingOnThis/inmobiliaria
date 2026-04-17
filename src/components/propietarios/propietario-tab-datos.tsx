@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Edit2, Save, X, Loader2, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 interface Propietario {
   id: string;
@@ -63,19 +67,21 @@ function DataField({
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`w-full bg-surface-mid border border-border-accent rounded-[12px] text-on-surface text-[0.85rem] px-3 py-2 outline-none focus:border-primary transition-all placeholder:text-text-muted ${
-            mono ? "font-mono text-[0.82rem]" : ""
-          }`}
+          className={cn(
+            "w-full bg-surface-mid border border-border-accent rounded-[12px] text-on-surface text-[0.85rem] px-3 py-2 outline-none focus:border-primary transition-all placeholder:text-text-muted",
+            mono && "font-mono text-[0.82rem]"
+          )}
         />
       ) : (
         <div
-          className={`text-[0.875rem] font-medium ${
+          className={cn(
+            "text-[0.875rem] font-medium",
             !value
               ? alert
                 ? "text-mustard italic font-normal flex items-center gap-1.5"
                 : "text-text-muted italic font-normal"
-              : `text-on-surface ${mono ? "font-mono text-[0.82rem]" : ""}`
-          }`}
+              : cn("text-on-surface", mono && "font-mono text-[0.82rem]")
+          )}
         >
           {!value && alert && <AlertCircle size={13} className="flex-shrink-0" />}
           {value || (alert ? "Sin cargar — necesario para liquidar" : "Sin cargar")}
@@ -127,7 +133,7 @@ export function PropietarioTabDatos({
       onFocusHandled?.();
     }, 50);
     return () => clearTimeout(timer);
-  }, [focusField]);
+  }, [focusField, onFocusHandled]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -215,29 +221,18 @@ export function PropietarioTabDatos({
       <div className="flex items-center justify-end gap-2">
         {editing ? (
           <>
-            <button
-              onClick={handleCancelEdit}
-              disabled={saving}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold text-text-secondary bg-surface-highest border border-border rounded-[12px] hover:bg-surface-high transition-all disabled:opacity-50"
-            >
+            <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={saving}>
               <X size={13} /> Cancelar
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold bg-primary text-primary-foreground rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50"
-            >
+            </Button>
+            <Button size="sm" onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
               Guardar cambios
-            </button>
+            </Button>
           </>
         ) : (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-[0.72rem] font-semibold text-text-secondary bg-surface-highest border border-border rounded-[12px] hover:bg-surface-high transition-all"
-          >
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
             <Edit2 size={13} /> Editar datos
-          </button>
+          </Button>
         )}
       </div>
 
@@ -284,7 +279,7 @@ export function PropietarioTabDatos({
                 placeholder="20-28441100-4"
               />
             </div>
-            <div className="h-px bg-border" />
+            <Separator />
             <DataField
               id="email"
               label="Email"
@@ -349,7 +344,7 @@ export function PropietarioTabDatos({
               onChange={setField("alias")}
               placeholder="carlos.mendoza.mp"
             />
-            <div className="h-px bg-border" />
+            <Separator />
             <div className="grid grid-cols-2 gap-3.5">
               <DataField
                 id="banco"
@@ -380,9 +375,10 @@ export function PropietarioTabDatos({
                   </select>
                 ) : (
                   <div
-                    className={`text-[0.875rem] font-medium ${
+                    className={cn(
+                      "text-[0.875rem] font-medium",
                       !form.tipoCuenta ? "text-text-muted italic font-normal" : "text-on-surface"
-                    }`}
+                    )}
                   >
                     {form.tipoCuenta === "caja_ahorro"
                       ? "Caja de ahorro"
@@ -406,23 +402,23 @@ export function PropietarioTabDatos({
         </div>
         <div className="flex items-center gap-4">
           <div className="flex-1">
-            <div className="text-[0.875rem] text-on-surface">
+            <div className="text-[0.875rem] text-on-surface flex items-center gap-2">
               Estado actual:{" "}
-              <span
-                className={`font-semibold ${
+              <StatusBadge
+                variant={
                   propietario.status === "activo"
-                    ? "text-green"
+                    ? "active"
                     : propietario.status === "suspendido"
-                    ? "text-mustard"
-                    : "text-error"
-                }`}
+                    ? "suspended"
+                    : "baja"
+                }
               >
                 {propietario.status === "activo"
                   ? "Activo"
                   : propietario.status === "suspendido"
                   ? "Suspendido"
                   : "Dado de baja"}
-              </span>
+              </StatusBadge>
             </div>
             <div className="text-[0.72rem] text-text-muted mt-1">
               {propietario.status === "activo"
@@ -470,11 +466,12 @@ export function PropietarioTabDatos({
                 </button>
                 <button
                   onClick={() => handleStatusChange(confirmStatus)}
-                  className={`px-3.5 py-2 text-[0.72rem] font-semibold rounded-[12px] transition-all ${
+                  className={cn(
+                    "px-3.5 py-2 text-[0.72rem] font-semibold rounded-[12px] transition-all border",
                     confirmStatus === "baja"
-                      ? "bg-error-dim text-error border border-error/20 hover:bg-error/20"
-                      : "bg-mustard-dim text-mustard border border-mustard/20 hover:bg-mustard/25"
-                  }`}
+                      ? "bg-error-dim text-error border-error/20 hover:bg-error/20"
+                      : "bg-mustard-dim text-mustard border-mustard/20 hover:bg-mustard/25"
+                  )}
                 >
                   Confirmar
                 </button>

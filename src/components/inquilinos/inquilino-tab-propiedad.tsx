@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 
 interface PropiedadData {
   id: string;
@@ -31,10 +33,10 @@ const tipoLabel: Record<string, string> = {
   otro: "Otro",
 };
 
-const statusLabel: Record<string, { label: string; cls: string }> = {
-  alquilada: { label: "Ocupada", cls: "bg-success/10 text-success border-success/20" },
-  disponible: { label: "Disponible", cls: "bg-blue/10 text-blue border-blue/20" },
-  vendida: { label: "Vendida", cls: "bg-text-muted/10 text-text-muted border-border" },
+const statusLabel: Record<string, { label: string; variant: StatusBadgeVariant }> = {
+  alquilada: { label: "Ocupada",    variant: "active" },
+  disponible: { label: "Disponible", variant: "reserved" },
+  vendida:    { label: "Vendida",    variant: "draft" },
 };
 
 export function InquilinoTabPropiedad({ propiedad, propietarioNombre, onVerPropietario }: Props) {
@@ -51,7 +53,7 @@ export function InquilinoTabPropiedad({ propiedad, propietarioNombre, onVerPropi
 
   const status = statusLabel[propiedad.status] ?? {
     label: propiedad.status,
-    cls: "bg-surface-highest text-text-muted border-border",
+    variant: "draft" as StatusBadgeVariant,
   };
 
   const direccionCompleta = propiedad.floorUnit
@@ -61,33 +63,33 @@ export function InquilinoTabPropiedad({ propiedad, propietarioNombre, onVerPropi
   return (
     <div className="p-7 flex flex-col gap-5">
       {/* Mini card — clickeable */}
-      <div
-        className="bg-surface-mid border border-border rounded-[8px] px-4 py-3.5 flex items-center gap-4 cursor-pointer hover:border-primary/30 hover:bg-primary-dark/5 transition-all"
+      <Card
+        className="rounded-[8px] bg-surface-mid cursor-pointer hover:border-primary/30 hover:bg-primary-dark/5 transition-all py-0 gap-0"
         onClick={() => router.push(`/propiedades/${propiedad.id}`)}
       >
-        <div className="w-9 h-9 bg-primary-dark/10 rounded-[8px] flex items-center justify-center text-base flex-shrink-0">
-          🏢
-        </div>
-        <div className="flex-1">
-          <div className="text-[0.85rem] font-semibold text-on-bg">{direccionCompleta}</div>
-          <div className="text-[0.75rem] text-text-muted mt-0.5">
-            {tipoLabel[propiedad.type] ?? propiedad.type}
-            {propiedad.rooms ? ` · ${propiedad.rooms} amb` : ""}
-            {propiedad.surface ? ` · ${propiedad.surface} m²` : ""}
+        <CardContent className="px-4 py-3.5 flex items-center gap-4">
+          <div className="size-9 bg-primary-dark/10 rounded-[8px] flex items-center justify-center text-base flex-shrink-0">
+            🏢
           </div>
-        </div>
-        <span className={`text-[0.7rem] font-semibold px-2.5 py-1 rounded-full border ${status.cls}`}>
-          {status.label}
-        </span>
-        <span className="text-text-muted text-lg ml-1">›</span>
-      </div>
+          <div className="flex-1">
+            <div className="text-[0.85rem] font-semibold text-on-bg">{direccionCompleta}</div>
+            <div className="text-[0.75rem] text-text-muted mt-0.5">
+              {tipoLabel[propiedad.type] ?? propiedad.type}
+              {propiedad.rooms ? ` · ${propiedad.rooms} amb` : ""}
+              {propiedad.surface ? ` · ${propiedad.surface} m²` : ""}
+            </div>
+          </div>
+          <StatusBadge variant={status.variant}>{status.label}</StatusBadge>
+          <span className="text-text-muted text-lg ml-1">›</span>
+        </CardContent>
+      </Card>
 
       {/* Datos de la propiedad */}
-      <div className="rounded-[10px] border border-border bg-surface overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-border">
-          <div className="text-[0.82rem] font-semibold text-on-bg">Datos de la propiedad</div>
-        </div>
-        <div className="p-5 grid grid-cols-2 gap-x-8 gap-y-4">
+      <Card className="rounded-[10px] border py-0 gap-0 overflow-hidden">
+        <CardHeader className="px-5 py-3.5 border-b border-border gap-0">
+          <CardTitle className="text-[0.82rem] font-semibold">Datos de la propiedad</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 grid grid-cols-2 gap-x-8 gap-y-4">
           <div>
             <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Tipo</div>
             <div className="text-[0.85rem] font-medium text-on-bg">{tipoLabel[propiedad.type] ?? propiedad.type}</div>
@@ -133,8 +135,8 @@ export function InquilinoTabPropiedad({ propiedad, propietarioNombre, onVerPropi
               </button>
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

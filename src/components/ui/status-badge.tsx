@@ -42,7 +42,7 @@ interface StatusBadgeProps {
 export function StatusBadge({ variant, children }: StatusBadgeProps) {
   return (
     <Badge variant={variant}>
-      <span className="w-1.5 h-1.5 rounded-full bg-current block flex-shrink-0" />
+      <span className="size-1.5 rounded-full bg-current block flex-shrink-0" />
       {children}
     </Badge>
   );

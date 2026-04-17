@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -136,8 +137,8 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
       } else {
         router.push(`/propiedades/${data.property.id}`);
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setIsPropertySaving(false);
     }
@@ -166,10 +167,10 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
           </div>
         )}
 
-        <form onSubmit={handleCreateProperty} className="p-6 space-y-5">
+        <form onSubmit={handleCreateProperty} className="p-6 flex flex-col gap-5">
 
           {/* Dirección */}
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="address" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
               Dirección <span className="text-primary">*</span>
             </Label>
@@ -184,7 +185,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
 
           <div className="grid grid-cols-2 gap-4">
             {/* Tipo */}
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="type" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
                 Tipo <span className="text-primary">*</span>
               </Label>
@@ -193,17 +194,19 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
                   <SelectValue placeholder="Seleccionar..." />
                 </SelectTrigger>
                 <SelectContent className="bg-surface-mid border-white/10 text-on-surface">
-                  {PROPERTY_TYPES.map((t) => (
-                    <SelectItem key={t} value={t} className="focus:bg-white/10 focus:text-on-surface">
-                      {PROPERTY_TYPE_LABELS[t]}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    {PROPERTY_TYPES.map((t) => (
+                      <SelectItem key={t} value={t} className="focus:bg-white/10 focus:text-on-surface">
+                        {PROPERTY_TYPE_LABELS[t]}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Barrio / Zona */}
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="zone" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
                 Barrio / Zona
               </Label>
@@ -218,7 +221,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
           </div>
 
           {/* Piso / Unidad — ocupa todo el ancho (superficie eliminada del alta rápida) */}
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="floorUnit" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
               Piso / Unidad
             </Label>
@@ -232,7 +235,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
           </div>
 
           {/* Propietario */}
-          <div className="space-y-2 pt-2 border-t border-white/5">
+          <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
             <Label htmlFor="owner" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
               Propietario <span className="text-primary">*</span>
             </Label>

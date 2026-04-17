@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { X, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface NuevoPropietarioModalProps {
   open: boolean;
@@ -104,31 +112,18 @@ export function NuevoPropietarioModal({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-[3px] flex items-start justify-center px-4 py-8 overflow-y-auto">
-      <div
-        className="bg-card border border-border rounded-[24px] w-full max-w-[640px] overflow-hidden my-auto flex-shrink-0"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
+      <DialogContent className="max-w-[640px] p-0 rounded-[24px] overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-border flex items-start gap-3">
-          <div>
-            <div className="font-bold text-[1.1rem] text-foreground font-headline tracking-[-0.02em]">
-              Nuevo propietario
-            </div>
-            <div className="text-[0.71rem] text-muted-foreground mt-0.5 leading-relaxed">
-              Completá los datos esenciales. El resto puede cargarse desde la ficha.
-            </div>
-          </div>
-          <button
-            onClick={handleClose}
-            className="ml-auto flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-[6px] w-8 h-8 flex items-center justify-center transition-all"
-          >
-            <X size={18} />
-          </button>
-        </div>
+        <DialogHeader className="px-6 py-5 border-b border-border">
+          <DialogTitle className="font-bold text-[1.1rem] text-foreground font-headline tracking-[-0.02em]">
+            Nuevo propietario
+          </DialogTitle>
+          <DialogDescription className="text-[0.71rem] text-muted-foreground mt-0.5 leading-relaxed">
+            Completá los datos esenciales. El resto puede cargarse desde la ficha.
+          </DialogDescription>
+        </DialogHeader>
 
         {/* Body */}
         <form onSubmit={handleSubmit}>
@@ -261,25 +256,22 @@ export function NuevoPropietarioModal({
 
           {/* Footer */}
           <div className="px-6 py-4 border-t border-border flex items-center justify-end gap-2">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={handleClose}
               disabled={loading}
-              className="px-3.5 py-2 text-[0.72rem] font-semibold text-muted-foreground bg-secondary border border-border rounded-[12px] hover:bg-muted transition-all disabled:opacity-50"
             >
               Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-3.5 py-2 text-[0.72rem] font-semibold bg-primary text-primary-foreground rounded-[12px] hover:brightness-110 transition-all disabled:opacity-50 flex items-center gap-1.5"
-            >
+            </Button>
+            <Button type="submit" size="sm" disabled={loading}>
               {loading && <Loader2 size={12} className="animate-spin" />}
               Guardar propietario
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -8,13 +8,16 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 import { ServicioTabPropiedad } from "@/components/servicios/servicio-tab-propiedad";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -111,24 +114,13 @@ function buildSubtitle(prop: PropertyDetail) {
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 
-const STATUS_VARIANT: Record<string, "available" | "rented" | "maintenance" | "reserved" | "baja"> = {
+const STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
   available:   "available",
   rented:      "rented",
   maintenance: "maintenance",
   reserved:    "reserved",
   sold:        "baja",
 };
-
-function PropertyStatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.available;
-  const variant = STATUS_VARIANT[status] ?? "available";
-  return (
-    <Badge variant={variant}>
-      <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
-      {cfg.label}
-    </Badge>
-  );
-}
 
 // ── Dato item ─────────────────────────────────────────────────────────────────
 
@@ -209,9 +201,11 @@ function EditSelect({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {options.map((o) => (
-            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-          ))}
+          <SelectGroup>
+            {options.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
     </div>
@@ -311,10 +305,8 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
             return (
               <div
                 key={c.id}
-                className="flex items-center gap-4 px-4 py-3.5 rounded-[12px] cursor-pointer transition-colors bg-card border border-border"
+                className="flex items-center gap-4 px-4 py-3.5 rounded-[12px] cursor-pointer transition-colors bg-card border border-border hover:border-[var(--border-accent)]"
                 onClick={() => router.push(`/contratos/${c.id}`)}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-accent)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = ""; }}
               >
                 {/* Número */}
                 <div className="font-mono text-[0.82rem] font-bold text-foreground w-24 flex-shrink-0">
@@ -539,7 +531,7 @@ function PropiedadFichaContent() {
           {/* Identity */}
           <div className="px-7 pt-5 pb-0 flex items-start gap-4">
             <div
-              className="w-14 h-14 rounded-[12px] flex items-center justify-center text-2xl flex-shrink-0"
+              className="size-14 rounded-[12px] flex items-center justify-center text-2xl flex-shrink-0"
               style={{
                 background: "var(--gradient-property)",
                 border: "2px solid rgba(163,217,165,0.2)",
@@ -557,7 +549,9 @@ function PropiedadFichaContent() {
               </h1>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[0.75rem] text-muted-foreground">{buildSubtitle(prop)}</span>
-                <PropertyStatusBadge status={prop.status} />
+                <StatusBadge variant={STATUS_VARIANT[prop.status] ?? "available"}>
+                  {STATUS_CONFIG[prop.status]?.label ?? prop.status}
+                </StatusBadge>
               </div>
             </div>
 
@@ -587,9 +581,7 @@ function PropiedadFichaContent() {
             {/* Widget: Propietario */}
             <button
               onClick={() => router.push(`/propietarios/${prop.ownerId}`)}
-              className="flex-1 px-5 py-3 text-left transition-colors group border-r border-border"
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--muted)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+              className="flex-1 px-5 py-3 text-left transition-colors group border-r border-border hover:bg-muted"
             >
               <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Propietario</div>
               <div className="text-[0.88rem] font-bold text-muted-foreground leading-tight">{ownerName}</div>
@@ -599,10 +591,10 @@ function PropiedadFichaContent() {
             {/* Widget: Contrato activo */}
             <button
               onClick={() => activeContract && router.push(`/contratos/${activeContract.id}`)}
-              className="flex-1 px-5 py-3 text-left border-r border-border transition-colors"
-              style={{ cursor: activeContract ? "pointer" : "default" }}
-              onMouseEnter={(e) => { if (activeContract) (e.currentTarget as HTMLElement).style.background = "var(--muted)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+              className={cn(
+                "flex-1 px-5 py-3 text-left border-r border-border transition-colors",
+                activeContract ? "cursor-pointer hover:bg-muted" : "cursor-default"
+              )}
             >
               <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Contrato activo</div>
               {activeContract ? (
@@ -645,13 +637,14 @@ function PropiedadFichaContent() {
               key={key}
               onClick={() => !disabled && setTab(key)}
               disabled={disabled}
-              className={`px-4 py-3 text-[0.75rem] font-medium border-b-2 transition-all whitespace-nowrap ${
+              className={cn(
+                "px-4 py-3 text-[0.75rem] font-medium border-b-2 transition-all whitespace-nowrap",
                 disabled
                   ? "border-transparent text-secondary cursor-not-allowed"
                   : activeTab === key
                   ? "border-primary text-primary font-semibold"
                   : "border-transparent text-muted-foreground hover:text-muted-foreground"
-              }`}
+              )}
               title={disabled ? "Módulo en desarrollo" : undefined}
             >
               {label}
@@ -671,14 +664,12 @@ function PropiedadFichaContent() {
                 Propietario
               </div>
               <div
-                className="flex items-center gap-4 px-4 py-4 rounded-[12px] mb-2 transition-colors cursor-pointer bg-card border border-border"
+                className="flex items-center gap-4 px-4 py-4 rounded-[12px] mb-2 transition-colors cursor-pointer bg-card border border-border hover:border-[var(--border-accent)]"
                 onClick={() => router.push(`/propietarios/${prop.ownerId}`)}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-accent)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = ""; }}
               >
                 {/* Avatar */}
                 <div
-                  className="w-10 h-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0 font-brand"
+                  className="size-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0 font-brand"
                   style={{
                     background: "var(--gradient-owner)",
                     border: "1.5px solid var(--status-reserved-dim)",
@@ -722,13 +713,16 @@ function PropiedadFichaContent() {
                     return (
                       <div
                         key={activeContract.tenantIds[i] ?? i}
-                        className="flex items-center gap-4 px-4 py-4 rounded-[12px] transition-colors bg-card border border-border cursor-pointer"
+                        className={cn(
+                          "flex items-center gap-4 px-4 py-4 rounded-[12px] transition-colors bg-card border border-border",
+                          activeContract.tenantIds[i]
+                            ? "cursor-pointer hover:border-[var(--border-accent)]"
+                            : "cursor-default"
+                        )}
                         onClick={() => activeContract.tenantIds[i] && router.push(`/inquilinos/${activeContract.tenantIds[i]}`)}
-                        onMouseEnter={(e) => { if (activeContract.tenantIds[i]) (e.currentTarget as HTMLElement).style.borderColor = "var(--border-accent)"; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = ""; }}
                       >
                         <div
-                          className="w-10 h-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0 font-brand"
+                          className="size-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0 font-brand"
                           style={{
                             background: "var(--gradient-tenant, var(--muted))",
                             border: "1.5px solid var(--border)",

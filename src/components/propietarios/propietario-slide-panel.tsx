@@ -2,7 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { X, User, Phone, CreditCard, Building2, ChevronRight } from "lucide-react";
+import { X, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -110,7 +112,7 @@ export function PropietarioSlidePanel({
             {/* Header */}
             <div className="p-5 border-b border-white/7 bg-card flex-shrink-0">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-[12px] bg-primary-dark flex items-center justify-center text-[0.85rem] font-extrabold text-white font-brand flex-shrink-0">
+                <div className="size-10 rounded-[12px] bg-primary-dark flex items-center justify-center text-[0.85rem] font-extrabold text-white font-brand flex-shrink-0">
                   {getInitials(propietario.firstName, propietario.lastName)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -235,7 +237,7 @@ export function PropietarioSlidePanel({
                             key={m.id}
                             className="flex items-start gap-2.5 py-2.5 border-b border-white/7 last:border-0"
                           >
-                            <div className="w-2 h-2 rounded-full bg-green mt-1 flex-shrink-0" />
+                            <div className="size-2 rounded-full bg-green mt-1 flex-shrink-0" />
                             <div className="flex-1">
                               <div className="text-[0.78rem] font-semibold text-on-surface">
                                 {m.descripcion}
@@ -250,9 +252,7 @@ export function PropietarioSlidePanel({
                               <div className="text-[0.88rem] font-bold text-on-surface font-headline">
                                 {formatMoney(Number(m.monto))}
                               </div>
-                              <div className="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-green-dim text-green mt-1 inline-block">
-                                Liquidado
-                              </div>
+                              <Badge variant="income" className="mt-1">Liquidado</Badge>
                             </div>
                           </div>
                         ))}
@@ -276,13 +276,10 @@ export function PropietarioSlidePanel({
 
             {/* Footer */}
             <div className="p-3.5 border-t border-white/7 bg-card flex flex-col gap-2 flex-shrink-0">
-              <button
-                onClick={handleVerFicha}
-                className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground text-[0.72rem] font-semibold px-3.5 py-2 rounded-[12px] hover:brightness-110 transition-all"
-              >
+              <Button onClick={handleVerFicha} className="w-full">
                 Ver ficha completa
                 <ChevronRight size={14} />
-              </button>
+              </Button>
             </div>
           </>
         )}

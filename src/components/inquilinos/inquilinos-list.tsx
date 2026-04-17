@@ -16,6 +16,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ClientPagination } from "@/components/clients/client-pagination";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -105,7 +108,7 @@ function EstadoBadge({
     return (
       <div className="flex flex-col items-start gap-1">
         <span className="flex items-center gap-1 text-xs text-mustard font-medium">
-          <AlertTriangle className="h-3 w-3" />
+          <AlertTriangle className="size-3" />
           {diasMora} días de mora
         </span>
         <StatusBadge variant="baja">En mora</StatusBadge>
@@ -119,20 +122,15 @@ function EstadoBadge({
 }
 
 function ProgressBar({ value }: { value: number }) {
-  const color =
+  const indicatorColor =
     value >= 90
-      ? "bg-destructive"
+      ? "[&>[data-slot=progress-indicator]]:bg-destructive"
       : value >= 70
-        ? "bg-mustard"
-        : "bg-neutral";
+        ? "[&>[data-slot=progress-indicator]]:bg-mustard"
+        : "[&>[data-slot=progress-indicator]]:bg-neutral";
   return (
     <div className="flex items-center gap-2 min-w-[100px]">
-      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div
-          className={cn("h-full rounded-full transition-all", color)}
-          style={{ width: `${value}%` }}
-        />
-      </div>
+      <Progress value={value} className={cn("h-1.5 flex-1", indicatorColor)} />
       <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">
         {value}%
       </span>
@@ -268,12 +266,12 @@ export function InquilinosList() {
             onClick={() => inquilinos.length > 0 && exportarCSV(inquilinos)}
             disabled={inquilinos.length === 0}
           >
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="mr-2 size-4" />
             Exportar
           </Button>
           <Button asChild size="sm">
             <Link href="/inquilinos/nuevo">
-              <PlusCircle className="mr-2 h-4 w-4" />
+              <PlusCircle className="mr-2 size-4" />
               Nuevo Inquilino
             </Link>
           </Button>
@@ -283,81 +281,89 @@ export function InquilinosList() {
       {/* Tarjetas de estadísticas */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {/* Total */}
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Total Inquilinos
-              </p>
-              <p className="mt-1 text-3xl font-bold">
-                {isLoading ? "—" : (stats?.total ?? 0)}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {stats?.conContratoActivo ?? 0} con contrato activo
-              </p>
+        <Card className="rounded-xl border py-0 gap-0">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Total Inquilinos
+                </p>
+                <p className="mt-1 text-3xl font-bold">
+                  {isLoading ? "—" : (stats?.total ?? 0)}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {stats?.conContratoActivo ?? 0} con contrato activo
+                </p>
+              </div>
+              <Users className="size-5 text-muted-foreground" />
             </div>
-            <Users className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* En mora */}
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                En mora
-              </p>
-              <p className="mt-1 text-3xl font-bold text-mustard">
-                {isLoading ? "—" : (stats?.enMora ?? 0)}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                con pagos atrasados
-              </p>
+        <Card className="rounded-xl border py-0 gap-0">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  En mora
+                </p>
+                <p className="mt-1 text-3xl font-bold text-mustard">
+                  {isLoading ? "—" : (stats?.enMora ?? 0)}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  con pagos atrasados
+                </p>
+              </div>
+              <AlertCircle className="size-5 text-mustard" />
             </div>
-            <AlertCircle className="h-5 w-5 text-mustard" />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Por vencer */}
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Contrato por vencer
-              </p>
-              <p className="mt-1 text-3xl font-bold text-mustard">
-                {isLoading ? "—" : (stats?.porVencer ?? 0)}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                vencen en ≤ 90 días
-              </p>
+        <Card className="rounded-xl border py-0 gap-0">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Contrato por vencer
+                </p>
+                <p className="mt-1 text-3xl font-bold text-mustard">
+                  {isLoading ? "—" : (stats?.porVencer ?? 0)}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  vencen en ≤ 90 días
+                </p>
+              </div>
+              <Clock className="size-5 text-mustard" />
             </div>
-            <Clock className="h-5 w-5 text-mustard" />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Sin contrato */}
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Sin contrato activo
-              </p>
-              <p className="mt-1 text-3xl font-bold text-muted-foreground">
-                {isLoading ? "—" : (stats?.sinContrato ?? 0)}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                registrados sin contrato
-              </p>
+        <Card className="rounded-xl border py-0 gap-0">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Sin contrato activo
+                </p>
+                <p className="mt-1 text-3xl font-bold text-muted-foreground">
+                  {isLoading ? "—" : (stats?.sinContrato ?? 0)}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  registrados sin contrato
+                </p>
+              </div>
+              <UserX className="size-5 text-muted-foreground" />
             </div>
-            <UserX className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Búsqueda */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Buscar por nombre, DNI, dirección o contrato..."
           className="pl-9"
@@ -393,15 +399,17 @@ export function InquilinosList() {
 
       {/* Tabla o estados de carga/error */}
       {error ? (
-        <div className="rounded-md border border-destructive/20 bg-destructive/10 p-6 text-center">
-          <p className="text-destructive mb-4">{(error as Error).message}</p>
+        <div className="flex flex-col items-center gap-4">
+          <Alert variant="destructive">
+            <AlertDescription>{(error as Error).message}</AlertDescription>
+          </Alert>
           <Button variant="outline" onClick={() => refetch()}>
             Reintentar
           </Button>
         </div>
       ) : isLoading ? (
         <div className="flex h-64 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <>
@@ -521,7 +529,7 @@ export function InquilinosList() {
                   <TableRow>
                     <TableCell colSpan={7} className="h-32 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Users className="h-8 w-8" />
+                        <Users className="size-8" />
                         <p className="text-sm">No hay inquilinos para mostrar.</p>
                         {search && (
                           <p className="text-xs">

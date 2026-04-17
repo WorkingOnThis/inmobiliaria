@@ -1,6 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface PropietarioData {
   id: string;
@@ -32,8 +34,6 @@ const modalidadLabel: Record<string, string> = {
 };
 
 export function InquilinoTabPropietario({ propietario, contrato }: Props) {
-  const router = useRouter();
-
   if (!propietario) {
     return (
       <div className="p-7 flex flex-col items-center justify-center min-h-[200px] text-center gap-2">
@@ -50,11 +50,11 @@ export function InquilinoTabPropietario({ propietario, contrato }: Props) {
   return (
     <div className="p-7 flex flex-col gap-5">
       {/* Mini card — clickeable */}
-      <div
-        className="bg-surface-mid border border-border rounded-[8px] px-4 py-3.5 flex items-center gap-4 cursor-pointer hover:border-primary/30 hover:bg-primary-dark/5 transition-all"
-        onClick={() => router.push(`/propietarios/${propietario.id}`)}
+      <Link
+        href={`/propietarios/${propietario.id}`}
+        className="bg-surface-mid border border-border rounded-[8px] px-4 py-3.5 flex items-center gap-4 hover:border-primary/30 hover:bg-primary-dark/5 transition-all"
       >
-        <div className="w-9 h-9 bg-primary-dark/10 rounded-[8px] flex items-center justify-center text-base flex-shrink-0">
+        <div className="size-9 bg-primary-dark/10 rounded-[8px] flex items-center justify-center text-base flex-shrink-0">
           🏠
         </div>
         <div className="flex-1">
@@ -65,18 +65,16 @@ export function InquilinoTabPropietario({ propietario, contrato }: Props) {
             {propietario.phone ? ` · ${propietario.phone}` : ""}
           </div>
         </div>
-        <span className="text-[0.7rem] font-semibold px-2.5 py-1 rounded-full border bg-primary-dark/10 text-primary border-primary/20">
-          Propietario
-        </span>
+        <Badge variant="secondary">Propietario</Badge>
         <span className="text-text-muted text-lg ml-1">›</span>
-      </div>
+      </Link>
 
       {/* Datos de liquidación */}
-      <div className="rounded-[10px] border border-border bg-surface overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-border">
-          <div className="text-[0.82rem] font-semibold text-on-bg">Datos de liquidación</div>
-        </div>
-        <div className="p-5 grid grid-cols-2 gap-x-8 gap-y-4">
+      <Card className="gap-0 p-0 rounded-[10px] overflow-hidden">
+        <CardHeader className="px-5 py-3.5 border-b border-border gap-0">
+          <CardTitle className="text-[0.82rem] font-semibold">Datos de liquidación</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 grid grid-cols-2 gap-x-8 gap-y-4">
           {propietario.cbu && (
             <div className="col-span-2">
               <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">CBU</div>
@@ -115,8 +113,8 @@ export function InquilinoTabPropietario({ propietario, contrato }: Props) {
               <div className="text-[0.85rem] font-medium text-on-bg">{contrato.agencyCommission}%</div>
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { Building2, Plus, Home, BedDouble, Bath, Ruler, FileText } from "lucide-react";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+import { Separator } from "@/components/ui/separator";
 
 interface PropertyData {
   id: string;
@@ -47,36 +49,13 @@ function formatPropertyType(type: string): string {
   return map[type] ?? type;
 }
 
-function formatPropertyStatus(status: string): {
-  label: string;
-  className: string;
-} {
+function getPropertyStatusBadge(status: string): { variant: StatusBadgeVariant; label: string } {
   switch (status) {
-    case "available":
-      return {
-        label: "Disponible",
-        className: "bg-[rgba(127,211,160,0.12)] text-[#7fd3a0]",
-      };
-    case "rented":
-      return {
-        label: "Alquilado",
-        className: "bg-[rgba(255,180,162,0.12)] text-[#ffb4a2]",
-      };
-    case "sold":
-      return {
-        label: "Vendido",
-        className: "bg-[#333537] text-[#6b6d70]",
-      };
-    case "reserved":
-      return {
-        label: "Reservado",
-        className: "bg-[rgba(253,222,168,0.15)] text-[#ffdea8]",
-      };
-    default:
-      return {
-        label: status,
-        className: "bg-[#333537] text-[#6b6d70]",
-      };
+    case "available": return { variant: "available", label: "Disponible" };
+    case "rented":    return { variant: "rented",    label: "Alquilado" };
+    case "sold":      return { variant: "baja",      label: "Vendido" };
+    case "reserved":  return { variant: "reserved",  label: "Reservado" };
+    default:          return { variant: "draft",     label: status };
   }
 }
 
@@ -144,7 +123,7 @@ export function PropietarioTabPropiedades({
       {/* Property cards */}
       <div className="flex flex-col gap-4">
         {propiedades.map((prop) => {
-          const status = formatPropertyStatus(prop.status);
+          const { variant: statusVariant, label: statusLabel } = getPropertyStatusBadge(prop.status);
           const contratos = contratosActivos.filter((c) => c.propertyId === prop.id);
 
           return (
@@ -166,11 +145,7 @@ export function PropietarioTabPropiedades({
                     )}
                   </div>
                 </div>
-                <span
-                  className={`flex-shrink-0 px-2 py-0.5 text-[0.6rem] font-bold rounded-full uppercase tracking-[0.05em] ${status.className}`}
-                >
-                  {status.label}
-                </span>
+                <StatusBadge variant={statusVariant}>{statusLabel}</StatusBadge>
               </div>
 
               {/* Type + zone + details */}
@@ -219,7 +194,7 @@ export function PropietarioTabPropiedades({
               {/* Active contracts */}
               {contratos.length > 0 && (
                 <>
-                  <div className="h-px bg-white/[0.07] my-3" />
+                  <Separator className="my-3" />
                   <div className="flex flex-col gap-2 pl-[22px]">
                     <span className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-[#6b6d70]">
                       Contratos activos

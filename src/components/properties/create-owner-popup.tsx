@@ -4,6 +4,7 @@ import { useState } from "react";
 import { UserPlus, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 interface CreatedOwner {
@@ -64,8 +65,8 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
       const data = await res.json();
       toast.success("Propietario creado");
       onCreated(data.client);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setIsSaving(false);
     }
@@ -86,24 +87,26 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
               Nuevo propietario
             </span>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="text-text-muted hover:text-on-surface transition-colors"
+            className="size-8 text-text-muted hover:text-on-surface"
           >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
           <p className="text-[11px] text-text-muted -mt-1">
             Los campos con <span className="text-primary">*</span> son obligatorios.
             El resto se completa en la ficha del propietario.
           </p>
 
           {/* Nombre */}
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-1.5">
             <Label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
               Nombre <span className="text-primary">*</span>
             </Label>
@@ -117,7 +120,7 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
           </div>
 
           {/* DNI */}
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-1.5">
             <Label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
               DNI
             </Label>
@@ -130,7 +133,7 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
           </div>
 
           {/* WhatsApp */}
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-1.5">
             <Label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
               WhatsApp / Celular
             </Label>
@@ -144,20 +147,12 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
 
           {/* Footer */}
           <div className="flex justify-end gap-3 pt-3 border-t border-white/5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 h-10 rounded-xl text-[12px] font-semibold text-text-secondary hover:text-on-surface transition-colors bg-white/5"
-            >
+            <Button type="button" variant="ghost" onClick={onClose}>
               Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-5 h-10 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-70"
-            >
+            </Button>
+            <Button type="submit" disabled={isSaving}>
               {isSaving ? <Loader2 size={14} className="animate-spin" /> : "Crear propietario"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

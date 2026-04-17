@@ -8,6 +8,9 @@ import { PropietarioSlidePanel } from "./propietario-slide-panel";
 import { NuevoPropietarioModal } from "./nuevo-propietario-modal";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface Propietario {
   id: string;
@@ -140,12 +143,9 @@ export function PropietariosList() {
             Hacé click en una fila para ver la cuenta corriente
           </div>
         </div>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-1.5 bg-primary text-primary-foreground text-[0.72rem] font-semibold px-3.5 py-2 rounded-[12px] hover:brightness-110 transition-all flex-shrink-0"
-        >
+        <Button onClick={() => setModalOpen(true)} size="sm" className="flex-shrink-0">
           ＋ Nuevo propietario
-        </button>
+        </Button>
       </div>
 
       {/* Search bar */}
@@ -209,9 +209,9 @@ export function PropietariosList() {
                       </div>
                     )}
                   </div>
-                  <span className="text-[0.58rem] font-bold px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                  <Badge variant="secondary" className="text-[0.58rem]">
                     {p.matchedProperty ? "Por propiedad" : "Propietario"}
-                  </span>
+                  </Badge>
                 </div>
               ))}
             </div>
@@ -230,11 +230,12 @@ export function PropietariosList() {
                 setStatusFilter(s);
                 setPage(1);
               }}
-              className={`px-3 py-1 text-[0.65rem] font-semibold rounded-full border transition-all ${
+              className={cn(
+                "px-3 py-1 text-[0.65rem] font-semibold rounded-full border transition-all",
                 statusFilter === s
                   ? "bg-primary-dim border-border-accent text-primary"
                   : "border-border text-muted-foreground hover:text-foreground"
-              }`}
+              )}
             >
               {s === "activo" ? "Activos" : s === "inactivo" ? "Inactivos" : "Todos"}
             </button>
@@ -308,15 +309,12 @@ export function PropietariosList() {
                       <tr
                         key={p.id}
                         onClick={() => handleRowClick(p)}
-                        className={`cursor-pointer transition-all ${
-                          i % 2 === 1 ? "bg-foreground/[0.02]" : ""
-                        } ${
-                          isSelected
-                            ? "!bg-primary-dim border-l-2 border-primary"
-                            : isNew
-                            ? "bg-primary/[0.06]"
-                            : ""
-                        } hover:bg-primary-dim`}
+                        className={cn(
+                          "cursor-pointer transition-all hover:bg-primary-dim",
+                          i % 2 === 1 && "bg-foreground/[0.02]",
+                          isSelected && "!bg-primary-dim border-l-2 border-primary",
+                          isNew && "bg-primary/[0.06]"
+                        )}
                         style={
                           p.status === "inactivo" || p.status === "baja"
                             ? { opacity: 0.65 }
@@ -359,22 +357,24 @@ export function PropietariosList() {
                         </td>
                         <td className="px-3.5 py-3 align-middle text-center">
                           <span
-                            className={`inline-flex items-center justify-center min-w-[24px] h-6 rounded-[6px] text-[0.72rem] font-bold px-1.5 border ${
+                            className={cn(
+                              "inline-flex items-center justify-center min-w-[24px] h-6 rounded-[6px] text-[0.72rem] font-bold px-1.5 border",
                               p.propiedadesCount > 0
                                 ? "bg-primary-dim border-border-accent text-primary"
                                 : "bg-muted border-border text-muted-foreground"
-                            }`}
+                            )}
                           >
                             {p.propiedadesCount}
                           </span>
                         </td>
                         <td className="px-3.5 py-3 align-middle text-center">
                           <span
-                            className={`inline-flex items-center justify-center min-w-[24px] h-6 rounded-[6px] text-[0.72rem] font-bold px-1.5 border ${
+                            className={cn(
+                              "inline-flex items-center justify-center min-w-[24px] h-6 rounded-[6px] text-[0.72rem] font-bold px-1.5 border",
                               p.contratosActivosCount > 0
                                 ? "bg-primary-dim border-border-accent text-primary"
                                 : "bg-muted border-border text-muted-foreground"
-                            }`}
+                            )}
                           >
                             {p.contratosActivosCount}
                           </span>
@@ -392,7 +392,7 @@ export function PropietariosList() {
                             <button
                               onClick={(e) => handleFichaClick(e, p.id)}
                               title="Ver ficha completa"
-                              className="w-7 h-7 bg-transparent border border-border rounded-[6px] flex items-center justify-center text-muted-foreground text-[11px] hover:bg-primary-dim hover:text-primary hover:border-border-accent transition-all"
+                              className="size-7 bg-transparent border border-border rounded-[6px] flex items-center justify-center text-muted-foreground text-[11px] hover:bg-primary-dim hover:text-primary hover:border-border-accent transition-all"
                             >
                               <User size={12} />
                             </button>
@@ -415,7 +415,7 @@ export function PropietariosList() {
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="w-7 h-7 border border-border rounded-[6px] flex items-center justify-center text-muted-foreground text-xs hover:bg-muted disabled:opacity-40 transition-all"
+                    className="size-7 border border-border rounded-[6px] flex items-center justify-center text-muted-foreground text-xs hover:bg-muted disabled:opacity-40 transition-all"
                   >
                     ‹
                   </button>
@@ -425,11 +425,12 @@ export function PropietariosList() {
                       <button
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
-                        className={`w-7 h-7 border rounded-[6px] flex items-center justify-center text-xs font-bold transition-all ${
+                        className={cn(
+                          "size-7 border rounded-[6px] flex items-center justify-center text-xs font-bold transition-all",
                           page === pageNum
                             ? "bg-primary-dim border-border-accent text-primary"
                             : "border-border text-muted-foreground hover:bg-muted"
-                        }`}
+                        )}
                       >
                         {pageNum}
                       </button>
@@ -438,7 +439,7 @@ export function PropietariosList() {
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="w-7 h-7 border border-border rounded-[6px] flex items-center justify-center text-muted-foreground text-xs hover:bg-muted disabled:opacity-40 transition-all"
+                    className="size-7 border border-border rounded-[6px] flex items-center justify-center text-muted-foreground text-xs hover:bg-muted disabled:opacity-40 transition-all"
                   >
                     ›
                   </button>

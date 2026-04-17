@@ -88,12 +88,12 @@ export function PropietarioForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 w-full max-w-2xl">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full max-w-2xl">
       {/* Datos personales */}
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Datos personales</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="firstName">
               Nombre <span className="text-destructive">*</span>
             </Label>
@@ -110,7 +110,7 @@ export function PropietarioForm() {
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="lastName">Apellido</Label>
             <Input
               id="lastName"
@@ -121,7 +121,7 @@ export function PropietarioForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="dni">DNI</Label>
             <Input
               id="dni"
@@ -132,7 +132,7 @@ export function PropietarioForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="phone">Teléfono</Label>
             <Input
               id="phone"
@@ -143,7 +143,7 @@ export function PropietarioForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="whatsapp">WhatsApp</Label>
             <Input
               id="whatsapp"
@@ -154,7 +154,7 @@ export function PropietarioForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -166,7 +166,7 @@ export function PropietarioForm() {
             />
           </div>
 
-          <div className="space-y-2 md:col-span-2">
+          <div className="flex flex-col gap-2 md:col-span-2">
             <Label htmlFor="address">Domicilio</Label>
             <Input
               id="address"
@@ -177,7 +177,7 @@ export function PropietarioForm() {
             />
           </div>
 
-          <div className="space-y-2 md:col-span-2">
+          <div className="flex flex-col gap-2 md:col-span-2">
             <Label htmlFor="profession">Profesión / Ocupación</Label>
             <Input
               id="profession"
@@ -191,7 +191,7 @@ export function PropietarioForm() {
       </div>
 
       {/* Datos bancarios */}
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">
           Datos bancarios{" "}
           <span className="text-sm font-normal text-muted-foreground">
@@ -199,7 +199,7 @@ export function PropietarioForm() {
           </span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2 md:col-span-2">
+          <div className="flex flex-col gap-2 md:col-span-2">
             <Label htmlFor="cbu">CBU / CVU</Label>
             <Input
               id="cbu"
@@ -211,7 +211,7 @@ export function PropietarioForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="alias">Alias</Label>
             <Input
               id="alias"
@@ -222,7 +222,7 @@ export function PropietarioForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="banco">Banco</Label>
             <Input
               id="banco"
@@ -233,7 +233,7 @@ export function PropietarioForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="tipoCuenta">Tipo de cuenta</Label>
             <Select
               value={tipoCuenta}

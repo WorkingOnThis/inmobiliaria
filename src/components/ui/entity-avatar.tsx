@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * EntityAvatar — avatar con iniciales para entidades del sistema.
  * Basado en el componente Avatar de shadcn/ui.

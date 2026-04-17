@@ -3,6 +3,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InquilinoTabCuentaCorriente } from "@/components/inquilinos/inquilino-tab-cuenta-corriente";
 import { InquilinoTabContrato } from "@/components/inquilinos/inquilino-tab-contrato";
 import { InquilinoTabPropiedad } from "@/components/inquilinos/inquilino-tab-propiedad";
@@ -25,11 +28,11 @@ function formatMonto(val: string | number | null) {
   return "$" + Number(val).toLocaleString("es-AR", { minimumFractionDigits: 0 });
 }
 
-const estadoBadge: Record<string, { label: string; cls: string }> = {
-  activo: { label: "Inquilino activo", cls: "bg-success/10 text-success border-success/20" },
-  en_mora: { label: "En mora", cls: "bg-error/10 text-error border-error/20" },
-  por_vencer: { label: "Por vencer", cls: "bg-warning/10 text-warning border-warning/20" },
-  sin_contrato: { label: "Sin contrato", cls: "bg-surface-highest text-text-muted border-border" },
+const estadoBadge: Record<string, { label: string; variant: StatusBadgeVariant }> = {
+  activo:       { label: "Inquilino activo", variant: "active" },
+  en_mora:      { label: "En mora",          variant: "baja" },
+  por_vencer:   { label: "Por vencer",       variant: "expiring" },
+  sin_contrato: { label: "Sin contrato",     variant: "draft" },
 };
 
 export default function InquilinoFichaPage() {
@@ -139,7 +142,7 @@ export default function InquilinoFichaPage() {
     <>
       {isLoading ? (
         <div className="flex h-screen items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-text-muted" />
+          <Loader2 className="size-8 animate-spin text-text-muted" />
         </div>
       ) : error || !inquilino ? (
         <div className="flex h-screen flex-col items-center justify-center gap-4 text-text-muted">
@@ -176,7 +179,7 @@ export default function InquilinoFichaPage() {
           <div className="bg-surface border-b border-border px-7 py-5">
             <div className="flex items-start gap-5">
               {/* Avatar */}
-              <div className="w-14 h-14 rounded-full bg-purple/10 border-2 border-purple/30 flex items-center justify-center font-headline text-[1.3rem] text-purple flex-shrink-0">
+              <div className="size-14 rounded-full bg-purple/10 border-2 border-purple/30 flex items-center justify-center font-headline text-[1.3rem] text-purple flex-shrink-0">
                 {getInitials(inquilino.firstName, inquilino.lastName)}
               </div>
 
@@ -193,23 +196,23 @@ export default function InquilinoFichaPage() {
                   {inquilino.dni && <span>🪪 DNI {inquilino.dni}</span>}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <span className={`text-[0.7rem] font-semibold px-2.5 py-1 rounded-full border ${estadoInfo.cls}`}>
+                  <StatusBadge variant={estadoInfo.variant}>
                     {estadoInfo.label}
-                  </span>
+                  </StatusBadge>
                   {inquilino.estado === "en_mora" && data?.inquilino.diasMora ? (
-                    <span className="text-[0.7rem] font-semibold px-2.5 py-1 rounded-full border bg-error/10 text-error border-error/20">
+                    <Badge variant="baja">
                       ⚠ {data.inquilino.diasMora} días en mora
-                    </span>
+                    </Badge>
                   ) : null}
                   {data?.contrato && (
-                    <span className="text-[0.7rem] font-semibold px-2.5 py-1 rounded-full border bg-blue/10 text-blue border-blue/20">
+                    <Badge variant="reserved">
                       Contrato vigente
-                    </span>
+                    </Badge>
                   )}
                   {data?.contrato?.adjustmentIndex && data.contrato.adjustmentIndex !== "sin_ajuste" && (
-                    <span className="text-[0.7rem] font-semibold px-2.5 py-1 rounded-full border bg-primary-dark/10 text-primary border-primary/20">
+                    <Badge variant="secondary">
                       Índice {data.contrato.adjustmentIndex}
-                    </span>
+                    </Badge>
                   )}
                 </div>
               </div>
@@ -248,21 +251,19 @@ export default function InquilinoFichaPage() {
 
           {/* Tabs */}
           <div className="bg-surface border-b border-border px-7">
-            <div className="flex gap-0 overflow-x-auto">
-              {tabs.map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setTab(key)}
-                  className={`px-4 py-3 text-[0.8rem] font-semibold border-b-2 transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                    activeTab === key
-                      ? "border-purple text-purple"
-                      : "border-transparent text-text-muted hover:text-text-secondary"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <Tabs value={activeTab} onValueChange={(v) => setTab(v as Tab)}>
+              <TabsList className="flex gap-0 overflow-x-auto bg-transparent p-0 h-auto rounded-none">
+                {tabs.map(({ key, label }) => (
+                  <TabsTrigger
+                    key={key}
+                    value={key}
+                    className="px-4 py-3 text-[0.8rem] font-semibold border-b-2 transition-all whitespace-nowrap rounded-none bg-transparent shadow-none data-[state=active]:border-purple data-[state=active]:text-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=inactive]:border-transparent data-[state=inactive]:text-text-muted hover:text-text-secondary"
+                  >
+                    {label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </div>
 
           {/* Contenido del tab activo */}
@@ -279,6 +280,7 @@ export default function InquilinoFichaPage() {
                 diasMora={inquilino.diasMora}
                 contrato={data?.contrato ?? null}
                 movimientos={data?.movimientos ?? []}
+                propiedadId={data?.propiedad?.id ?? null}
               />
             )}
 

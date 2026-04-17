@@ -44,6 +44,12 @@ export const cajaMovimiento = pgTable("caja_movimiento", {
   // Nota interna (solo visible para staff, no aparece en informes al cliente)
   nota: text("nota"),
 
+  // Número correlativo de recibo (solo para ingresos formales de alquiler)
+  reciboNumero: text("reciboNumero"),
+
+  // Período de alquiler al que corresponde el pago, formato "YYYY-MM"
+  periodo: text("periodo"),
+
   // Quién registró el movimiento
   creadoPor: text("creadoPor").references(() => user.id, { onDelete: "set null" }),
 

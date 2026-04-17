@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { QuickPropertyForm } from "@/components/properties/quick-property-form";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
+import { cn } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -235,10 +236,7 @@ function PaginationBtn({
 function ContratoCell({ prop }: { prop: PropertyRow }) {
   if (!prop.contractNumber) {
     return (
-      <span
-        className="text-[11px] italic"
-        style={{ color: "var(--muted-foreground)" }}
-      >
+      <span className="text-[11px] italic text-muted-foreground">
         Sin contrato activo
       </span>
     );
@@ -249,10 +247,10 @@ function ContratoCell({ prop }: { prop: PropertyRow }) {
   if (isPending) {
     return (
       <div className="flex flex-col gap-0.5">
-        <span className="font-mono text-[11px] font-bold" style={{ color: "var(--status-reserved)" }}>
+        <span className="font-mono text-[11px] font-bold text-status-reserved">
           {prop.contractNumber}
         </span>
-        <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+        <span className="text-[10px] text-muted-foreground">
           Pend. firma{prop.contractEndDate ? ` · Inicio ${formatDate(prop.contractEndDate)}` : ""}
         </span>
       </div>
@@ -265,16 +263,15 @@ function ContratoCell({ prop }: { prop: PropertyRow }) {
 
   return (
     <div className="flex flex-col gap-0.5">
-      <span
-        className="font-mono text-[11px] font-bold"
-        style={{ color: "var(--primary)" }}
-      >
+      <span className="font-mono text-[11px] font-bold text-primary">
         {prop.contractNumber}
       </span>
       {prop.contractEndDate && (
         <span
-          className="text-[10px] font-semibold"
-          style={{ color: isExpiringSoon ? "var(--status-available)" : "var(--muted-foreground)" }}
+          className={cn(
+            "text-[10px] font-semibold",
+            isExpiringSoon ? "text-status-available" : "text-muted-foreground"
+          )}
         >
           {isExpiringSoon ? `⚠ Vence en ${days} días` : `Vence ${formatDate(prop.contractEndDate)}`}
         </span>
@@ -289,45 +286,28 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
   const cfg = STATUS_CONFIG[prop.status];
   return (
     <div
-      className="grid px-4 py-3 cursor-pointer transition-colors group"
+      className={cn(
+        "grid px-4 py-3 cursor-pointer transition-colors group",
+        "hover:bg-[var(--primary-subtle)]",
+        even ? "bg-[var(--surface-mid)]" : "bg-background"
+      )}
       style={{
         gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 130px 60px 64px",
-        background: even ? "var(--surface-mid)" : "var(--background)",
         borderBottom: "1px solid rgba(160,132,126,0.07)",
         borderLeft: cfg?.borderLeft ? `2px solid ${cfg.borderLeft}` : "2px solid transparent",
       }}
       onClick={onClick}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "var(--primary-subtle)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.background = even
-          ? "var(--surface-mid)"
-          : "var(--background)";
-      }}
     >
       {/* Propiedad */}
       <div className="flex items-center gap-3 min-w-0">
-        <span
-          className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-sm"
-          style={{
-            background: "var(--muted)",
-            color: "var(--muted-foreground)",
-          }}
-        >
+        <span className="flex-shrink-0 flex items-center justify-center size-8 rounded-sm bg-muted text-muted-foreground">
           {TYPE_ICON[prop.type] ?? <Building2 size={16} />}
         </span>
         <div className="min-w-0">
-          <p
-            className="text-[13px] font-semibold leading-snug truncate font-headline"
-            style={{ color: "var(--foreground)" }}
-          >
+          <p className="text-[13px] font-semibold leading-snug truncate font-headline text-foreground">
             {prop.title || prop.address}
           </p>
-          <p
-            className="text-[11px] leading-none mt-0.5 truncate"
-            style={{ color: "var(--muted-foreground)" }}
-          >
+          <p className="text-[11px] leading-none mt-0.5 truncate text-muted-foreground">
             {buildSubtitle(prop)}
           </p>
         </div>
@@ -340,10 +320,7 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
           size="sm"
           colorSeed={prop.ownerFirstName ?? undefined}
         />
-        <span
-          className="text-[12px] font-medium truncate"
-          style={{ color: "var(--foreground)" }}
-        >
+        <span className="text-[12px] font-medium truncate text-foreground">
           {prop.ownerLastName && prop.ownerFirstName
             ? `${prop.ownerLastName}, ${prop.ownerFirstName}`
             : prop.ownerFirstName ?? "Sin cargar"}
@@ -364,18 +341,12 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
 
       {/* Tareas — placeholder hasta que exista el módulo */}
       <div className="flex items-center justify-center">
-        <span className="text-[12px]" style={{ color: "var(--muted-foreground)" }}>—</span>
+        <span className="text-[12px] text-muted-foreground">—</span>
       </div>
 
       {/* Acción — visible en hover */}
       <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-        <span
-          className="text-[11px] font-bold flex items-center gap-1 px-2 py-1 rounded"
-          style={{
-            color: "var(--primary)",
-            background: "var(--primary-dim)",
-          }}
-        >
+        <span className="text-[11px] font-bold flex items-center gap-1 px-2 py-1 rounded text-primary bg-[var(--primary-dim)]">
           Ver <ArrowRight size={12} />
         </span>
       </div>
