@@ -1,0 +1,2083 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arce · Propietario — Demián Samir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: oklch(0.165 0.006 40);
+    --bg-raise: oklch(0.195 0.007 40);
+    --panel: oklch(0.215 0.008 40);
+    --panel-2: oklch(0.235 0.008 40);
+    --line: oklch(0.285 0.010 40);
+    --line-soft: oklch(0.255 0.010 40);
+    --text: oklch(0.972 0.004 60);
+    --text-muted: oklch(0.72 0.012 50);
+    --text-dim: oklch(0.54 0.012 40);
+    --accent: oklch(0.585 0.135 32);
+    --accent-hover: oklch(0.635 0.14 32);
+    --accent-strong: oklch(0.62 0.14 32);
+    --accent-soft: oklch(0.585 0.135 32 / .16);
+    --accent-ink: oklch(0.97 0.02 34);
+    --success: oklch(0.74 0.14 155);
+    --success-soft: oklch(0.74 0.14 155 / .14);
+    --warn: oklch(0.80 0.13 85);
+    --warn-soft: oklch(0.80 0.13 85 / .14);
+    --danger: oklch(0.68 0.18 25);
+    --radius: 10px;
+    --radius-sm: 6px;
+
+    --sidebar-w: 216px;
+    --row-h: 40px;
+    --pad: 20px;
+    --gap: 14px;
+    --font-ui: "Inter", -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* tweaks */
+    --card-bg: var(--panel);
+    --card-border: 1px solid var(--line);
+    --card-shadow: none;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 13.5px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  body{ min-height: 100vh; }
+  button{ font: inherit; color: inherit; }
+  a{ color: inherit; text-decoration: none; }
+
+  /* ===== App shell ===== */
+  .app{ display:grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar{
+    border-right: 1px solid var(--line);
+    background: var(--bg);
+    display:flex; flex-direction: column;
+    position: sticky; top:0; height:100vh;
+  }
+  .brand{
+    display:flex; align-items:center; gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .brand-mark{
+    width: 26px; height: 26px; border-radius: 7px;
+    background: linear-gradient(135deg, var(--accent), oklch(0.55 0.15 30));
+    display:grid; place-items:center; color:#fff; font-weight:700; font-size:13px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .brand-name{ font-weight: 600; font-size: 13.5px; letter-spacing: -.01em; }
+  .brand-sub{ font-size: 11px; color: var(--text-dim); }
+
+  .nav-section{ padding: 10px 10px; }
+  .nav-label{ font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); padding: 6px 8px; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    padding: 7px 8px; border-radius: 6px;
+    color: var(--text-muted); font-size: 13px;
+    cursor: pointer; user-select: none;
+    white-space: nowrap; overflow: hidden;
+  }
+  .nav-item:hover{ background: var(--panel); color: var(--text); }
+  .nav-item.active{ background: var(--panel); color: var(--text); }
+  .nav-item.active .nav-dot{ background: var(--accent); }
+  .nav-item .ic{ width: 16px; height:16px; color: var(--text-dim); flex: 0 0 16px; }
+  .nav-item.active .ic{ color: var(--text); }
+  .nav-item .chev{ margin-left:auto; color: var(--text-dim); font-size: 11px; }
+  .nav-dot{ width:4px; height:4px; border-radius: 50%; background: transparent; margin-right: -4px; }
+
+  .sidebar-footer{
+    margin-top:auto; border-top: 1px solid var(--line-soft);
+    padding: 10px; display:flex; align-items:center; gap:10px;
+  }
+  .avatar{
+    width: 28px; height: 28px; border-radius: 50%;
+    display:grid; place-items:center; font-weight:600; font-size:12px;
+    background: oklch(0.5 0.11 25); color:#fff;
+  }
+  .who{ font-size: 12.5px; }
+  .who .role{ font-size: 11px; color: var(--text-dim); }
+
+  /* Sidebar: icons-only */
+  .app[data-sidebar="icons"]{ --sidebar-w: 56px; }
+  .app[data-sidebar="icons"] .brand-name,
+  .app[data-sidebar="icons"] .brand-sub,
+  .app[data-sidebar="icons"] .nav-label,
+  .app[data-sidebar="icons"] .nav-item span.label,
+  .app[data-sidebar="icons"] .nav-item .chev,
+  .app[data-sidebar="icons"] .who{ display:none; }
+  .app[data-sidebar="icons"] .nav-item{ justify-content:center; padding:8px; }
+  .app[data-sidebar="icons"] .brand{ justify-content:center; padding: 14px 8px; }
+
+  /* Topbar */
+  .main{ min-width: 0; }
+  .topbar{
+    display:flex; align-items:center; gap: 14px;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; background: color-mix(in oklab, var(--bg) 92%, transparent); backdrop-filter: blur(8px);
+    z-index: 10;
+  }
+  .crumbs{ display:flex; align-items:center; gap:8px; font-size: 13px; color: var(--text-muted); }
+  .crumbs .sep{ color: var(--text-dim); }
+  .crumbs .ref{ font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); padding: 2px 7px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg-raise); }
+  .search{
+    margin-left: 16px;
+    flex: 1; max-width: 420px;
+    display:flex; align-items:center; gap:8px;
+    background: var(--bg-raise);
+    border: 1px solid var(--line); border-radius: 7px;
+    padding: 6px 10px; color: var(--text-dim); font-size: 12.5px;
+  }
+  .kbd{ margin-left:auto; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-dim); border: 1px solid var(--line); padding: 1px 5px; border-radius: 4px; background: var(--bg); }
+
+  .top-actions{ margin-left:auto; display:flex; align-items:center; gap: 8px; }
+  .iconbtn{
+    width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg-raise);
+    display:grid; place-items:center; cursor:pointer; color: var(--text-muted);
+  }
+  .iconbtn:hover{ color: var(--text); background: var(--panel); }
+
+  /* Page */
+  .page{ padding: 22px 24px 80px; max-width: 1440px; }
+  .page-head{
+    display:grid; grid-template-columns: 1fr auto; align-items: start; gap: 24px;
+    margin-bottom: 18px;
+  }
+  .owner{
+    display:flex; align-items: center; gap: 16px;
+  }
+  .owner-avatar{
+    width: 56px; height: 56px; border-radius: 12px;
+    background: linear-gradient(145deg, oklch(0.56 0.14 30), oklch(0.42 0.12 25));
+    color:#fff; display:grid; place-items:center;
+    font-weight: 700; font-size: 22px; letter-spacing: -.02em;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .owner-meta h1{ margin:0; font-size: 22px; letter-spacing: -.015em; font-weight: 650; }
+  .owner-sub{ display:flex; align-items:center; gap: 10px; margin-top: 4px; font-size: 12.5px; color: var(--text-muted); }
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size: 11px; font-weight: 600;
+    padding: 3px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .pill.success{ background: var(--success-soft); color: var(--success); }
+  .pill .dot{ width:6px; height:6px; border-radius: 50%; background: currentColor; }
+  .id-chip{
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);
+    padding: 2px 7px; border-radius: 4px; background: var(--bg-raise); border: 1px solid var(--line);
+  }
+
+  .owner-actions{ display:flex; align-items: center; gap: 8px; }
+  .btn{
+    display:inline-flex; align-items:center; gap:7px;
+    padding: 7px 12px; border-radius: 7px;
+    border: 1px solid var(--line); background: var(--bg-raise); color: var(--text);
+    font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+    transition: background .12s ease, border-color .12s ease, transform .04s ease;
+  }
+  .btn:hover{ background: var(--panel); }
+  .btn:active{ transform: translateY(1px); }
+  .btn.primary{
+    background: var(--accent); color: #fff; border-color: transparent;
+    font-weight: 600;
+  }
+  .btn.primary:hover{ background: var(--accent-hover); }
+  .btn.ghost{ background: transparent; border-color: transparent; color: var(--text-muted); }
+  .btn.ghost:hover{ color: var(--text); background: var(--panel); }
+  .btn .ic{ width: 14px; height: 14px; }
+
+  /* Secondary row: completitud + quick facts */
+  .subrail{
+    display:grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;
+    padding: 12px 14px;
+    background: var(--card-bg);
+    border: var(--card-border); border-radius: var(--radius);
+    margin-bottom: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .facts{ display:flex; flex-wrap: wrap; gap: 18px 24px; }
+  .fact{ display:flex; flex-direction: column; }
+  .fact .k{ font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+  .fact .v{ font-size: 13px; color: var(--text); font-family: var(--font-mono); margin-top: 1px; }
+  .fact .v.plain{ font-family: var(--font-ui); }
+
+  .completitud{
+    display:flex; align-items: center; gap: 12px;
+    min-width: 260px;
+  }
+  .completitud .ring{
+    --p: 23;
+    width: 40px; height: 40px; border-radius: 50%;
+    background:
+      conic-gradient(var(--accent) calc(var(--p) * 1%), var(--line) 0);
+    display:grid; place-items:center;
+    position: relative;
+  }
+  .completitud .ring::after{
+    content:''; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--card-bg); position: absolute;
+  }
+  .completitud .ring span{
+    position: relative; z-index: 1; font-size: 11.5px; font-weight: 600; font-family: var(--font-mono);
+  }
+  .completitud .txt .lbl{ font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+  .completitud .txt .val{ font-size: 12.5px; color: var(--text); margin-top: 1px; }
+  .completitud .txt .val b{ color: var(--accent); font-weight: 600; }
+
+  /* Tabs */
+  .tabs{
+    display:flex; align-items:center; gap: 4px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 18px;
+  }
+  .tab{
+    padding: 9px 12px;
+    font-size: 13px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .tab:hover{ color: var(--text); }
+  .tab.active{ color: var(--text); border-bottom-color: var(--accent); }
+  .tab .count{
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);
+    background: var(--bg-raise); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
+  }
+  .tab.active .count{ color: var(--text); }
+
+  /* Missing fields chips */
+  .missing{
+    display:flex; flex-wrap: wrap; gap: 6px;
+    padding: 10px 14px 14px;
+    border-top: 1px dashed var(--line-soft);
+    margin-top: 10px;
+  }
+  .missing .mlbl{ font-size: 11px; color: var(--text-dim); align-self: center; margin-right: 4px; }
+  .chip{
+    display:inline-flex; align-items:center; gap:5px;
+    font-size: 11.5px; color: var(--text-muted);
+    padding: 3px 8px; border-radius: 999px;
+    background: var(--bg-raise); border: 1px dashed var(--line);
+    cursor: pointer;
+  }
+  .chip:hover{ border-style: solid; color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
+  .chip .ic{ width:10px; height:10px; }
+
+  /* KPI cards */
+  .kpis{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap);
+    margin-bottom: 18px;
+  }
+  .kpi{
+    background: var(--card-bg); border: var(--card-border); border-radius: var(--radius);
+    padding: 14px 16px; position: relative; overflow: hidden;
+    box-shadow: var(--card-shadow);
+  }
+  .kpi .k{ font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; display:flex; align-items:center; gap:8px; }
+  .kpi .v{ margin-top: 8px; font-size: 28px; letter-spacing: -.02em; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kpi .v small{ font-size: 16px; color: var(--text-muted); font-weight: 500; margin-right: 2px; }
+  .kpi .sub{ margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+  .kpi .spark{ margin-top: 10px; height: 22px; display:block; width: 100%; }
+  .kpi.accent::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width: 3px; background: var(--accent);
+  }
+
+  /* Movements panel */
+  .panel{
+    background: var(--card-bg); border: var(--card-border); border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+  }
+  .panel-head{
+    display:flex; align-items:center; gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .panel-title{ font-size: 14px; font-weight: 600; }
+  .period{
+    display:inline-flex; align-items:center; gap: 2px;
+    border: 1px solid var(--line); border-radius: 7px; overflow: hidden;
+    background: var(--bg-raise);
+  }
+  .period button{
+    background: none; border: 0; padding: 5px 8px; color: var(--text-muted); cursor:pointer;
+    display:grid; place-items:center;
+  }
+  .period button:hover{ color: var(--text); }
+  .period .lbl{ padding: 5px 10px; font-size: 12.5px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+
+  .seg{
+    display:inline-flex; background: var(--bg-raise); border: 1px solid var(--line); border-radius: 7px; padding: 2px;
+  }
+  .seg button{
+    background: transparent; border: 0; padding: 5px 10px; border-radius: 5px;
+    color: var(--text-muted); font-size: 12.5px; cursor: pointer;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .seg button:hover{ color: var(--text); }
+  .seg button.on{ background: var(--panel-2); color: var(--text); box-shadow: 0 1px 0 rgba(0,0,0,.2); }
+  .seg .badge{ font-family: var(--font-mono); font-size: 10px; padding: 1px 5px; border-radius: 3px; background: var(--bg); color: var(--text-dim); border: 1px solid var(--line); }
+
+  .panel-tools{ margin-left:auto; display:flex; align-items:center; gap: 8px; }
+  .toggle{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size: 12px; color: var(--text-muted); cursor:pointer;
+    padding: 5px 8px; border-radius: 6px;
+  }
+  .toggle:hover{ color: var(--text); background: var(--panel); }
+  .switch{ width:26px; height: 14px; background: var(--line); border-radius: 999px; position: relative; transition: .15s; }
+  .switch::after{ content:''; position:absolute; left: 2px; top: 2px; width: 10px; height: 10px; background: var(--text-muted); border-radius: 50%; transition: .15s; }
+  .toggle.on .switch{ background: var(--accent-soft); }
+  .toggle.on .switch::after{ left: 14px; background: var(--accent); }
+
+  table.mov{
+    width:100%; border-collapse: separate; border-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  table.mov thead th{
+    text-align: left; font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 600;
+    padding: 10px 14px; border-bottom: 1px solid var(--line-soft); background: transparent;
+    position: sticky; top: 0;
+  }
+  table.mov tbody td{
+    padding: 11px 14px; border-bottom: 1px solid var(--line-soft);
+    font-size: 13px;
+  }
+  table.mov tbody tr:hover td{ background: var(--bg-raise); }
+  table.mov tbody tr:last-child td{ border-bottom: 0; }
+  td.num{ text-align: right; font-family: var(--font-mono); font-weight: 500; }
+  td.num.pos{ color: var(--success); }
+  td.num.neg{ color: var(--danger); }
+  td.date{ color: var(--text-muted); font-family: var(--font-mono); font-size: 12px; }
+  td.concept{ font-weight: 500; }
+  td.concept .meta{ font-size: 11.5px; color: var(--text-dim); font-weight: 400; margin-top: 2px; }
+  .origin{
+    display:inline-flex; align-items:center; gap:5px;
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600;
+    padding: 2px 7px; border-radius: 4px;
+    background: var(--bg-raise); border: 1px solid var(--line); color: var(--text-muted);
+  }
+  .origin.manual{ color: oklch(0.8 0.13 85); border-color: oklch(0.8 0.13 85 / .25); background: oklch(0.8 0.13 85 / .08); }
+  .origin.auto{ color: oklch(0.75 0.1 210); border-color: oklch(0.75 0.1 210 / .25); background: oklch(0.75 0.1 210 / .08); }
+
+  tbody tr.checked td{ background: color-mix(in oklab, var(--accent-soft) 40%, transparent); }
+  .rowcheck{ display:inline-grid; place-items:center; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
+  tr.checked .rowcheck{ background: var(--accent); border-color: transparent; }
+  tr.checked .rowcheck::after{ content: ''; width: 8px; height: 4px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
+
+  .empty-prop{ color: var(--text-dim); }
+
+  /* Footer summary */
+  .footer-sum{
+    display:flex; align-items: center; gap: 22px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--line-soft);
+    font-size: 12.5px;
+  }
+  .footer-sum .grow{ flex: 1; color: var(--text-muted); }
+  .footer-sum .s{ display:flex; flex-direction: column; align-items:flex-end; }
+  .footer-sum .s .k{ font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+  .footer-sum .s .v{ font-family: var(--font-mono); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .footer-sum .s .v.pos{ color: var(--success); }
+
+  /* Card style variants */
+  .app[data-card="flat"]{ --card-bg: transparent; --card-border: 1px solid var(--line-soft); --card-shadow: none; }
+  .app[data-card="bordered"]{ --card-bg: var(--bg); --card-border: 1px solid var(--line); --card-shadow: none; }
+  .app[data-card="elevated"]{ --card-bg: var(--panel); --card-border: 1px solid transparent; --card-shadow: 0 1px 0 rgba(255,255,255,.02), 0 6px 20px -12px rgba(0,0,0,.7); }
+
+  /* Density */
+  .app[data-density="compact"] table.mov tbody td{ padding: 7px 14px; font-size: 12.5px; }
+  .app[data-density="compact"] table.mov thead th{ padding: 8px 14px; }
+  .app[data-density="compact"] .kpi{ padding: 10px 14px; }
+  .app[data-density="compact"] .kpi .v{ font-size: 24px; margin-top: 4px; }
+  .app[data-density="compact"] .nav-item{ padding: 5px 8px; }
+  .app[data-density="compact"] .subrail{ padding: 9px 12px; }
+
+  /* Secondary actions hide */
+  .app[data-secondary="off"] .secondary-action{ display:none; }
+
+  /* ===== Modal ===== */
+  .scrim{
+    position: fixed; inset: 0; background: oklch(0.09 0.003 40 / .66);
+    display:none; align-items:center; justify-content:center; z-index: 50;
+    padding: 20px;
+  }
+  .scrim.open{ display: flex; }
+  .modal{
+    width: 560px; max-width: 100%;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    overflow: hidden;
+  }
+  .modal-head{
+    padding: 16px 18px; border-bottom: 1px solid var(--line-soft);
+    display:flex; align-items:center; gap: 12px;
+  }
+  .modal-head h3{ margin:0; font-size: 15px; font-weight: 600; }
+  .modal-head .sub{ color: var(--text-dim); font-size: 12px; margin-top: 2px;}
+  .modal-body{ padding: 16px 18px; }
+  .modal-foot{
+    padding: 12px 18px; border-top: 1px solid var(--line-soft);
+    display:flex; align-items:center; gap: 8px; justify-content: flex-end;
+    background: var(--bg-raise);
+  }
+
+  .field{ display:flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .field[hidden], [hidden]{ display: none !important; }
+  .field label{ font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .field input, .field select, .field textarea{
+    background: var(--bg); border: 1px solid var(--line); color: var(--text);
+    padding: 9px 11px; border-radius: 7px; font: inherit; font-size: 13px;
+    outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{ border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .row2{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Liquidation preview */
+  .liq-summary{
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+    background: var(--bg); margin-top: 6px;
+  }
+  .liq-summary .ln{ display:flex; justify-content: space-between; padding: 4px 0; font-size: 13px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .liq-summary .ln .k{ font-family: var(--font-ui); color: var(--text-muted); }
+  .liq-summary .ln.total{ border-top: 1px solid var(--line-soft); margin-top: 6px; padding-top: 10px; font-weight: 600; }
+  .liq-summary .ln.total .v{ color: var(--accent); }
+
+  /* Porcentaje base options */
+  .pct-base{ display:flex; flex-direction: column; gap: 6px; }
+  .base-opt{
+    display:flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); cursor: pointer;
+    transition: border-color .12s, background .12s;
+  }
+  .base-opt:hover{ border-color: var(--line-soft); }
+  .base-opt.on{ border-color: var(--accent); background: var(--accent-soft); }
+  .base-opt .r{
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1.5px solid var(--line); margin-top: 2px; flex: 0 0 14px;
+    position: relative;
+  }
+  .base-opt.on .r{ border-color: var(--accent); }
+  .base-opt.on .r::after{
+    content:''; position:absolute; inset: 2px; border-radius: 50%; background: var(--accent);
+  }
+  .base-opt .t{ font-size: 13px; font-weight: 500; }
+  .base-opt .s{ font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .base-opt .s b{ font-family: var(--font-mono); color: var(--text); font-weight: 500; }
+
+  .pct-preview{
+    margin-top: 12px; padding: 12px 14px;
+    border-radius: 8px; background: var(--bg); border: 1px solid var(--line);
+  }
+  .pct-preview .ln{ display:flex; justify-content: space-between; padding: 3px 0; font-size: 12.5px; }
+  .pct-preview .ln .k{ color: var(--text-muted); }
+  .pct-preview .ln .v{ font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .pct-preview .ln.total{ border-top: 1px solid var(--line-soft); margin-top: 6px; padding-top: 8px; font-weight: 600; }
+  .pct-preview .ln.total .v{ color: var(--accent); font-size: 14px; }
+
+  /* Segmented: full-width in modals */
+  .modal .seg.typeSeg button.on{ background: var(--accent-soft); color: var(--text); border: 1px solid var(--accent); }
+
+  /* ===== Tweaks panel ===== */
+  .tweaks{
+    position: fixed; right: 18px; bottom: 18px; z-index: 40;
+    width: 280px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    display:none;
+    overflow: hidden;
+  }
+  .tweaks.open{ display:block; }
+  .tweaks h4{
+    margin:0; padding: 12px 14px; border-bottom: 1px solid var(--line-soft);
+    font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim);
+    display:flex; align-items: center; gap: 8px;
+  }
+  .tweaks h4 .close{ margin-left:auto; cursor: pointer; color: var(--text-dim); }
+  .tweaks .grp{ padding: 10px 14px; border-bottom: 1px solid var(--line-soft); }
+  .tweaks .grp:last-child{ border-bottom: 0; }
+  .tweaks .glb{ font-size: 11px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+  .tweaks .opts{ display:flex; gap: 4px; flex-wrap: wrap; }
+  .tweaks .opts button{
+    flex:1 0 auto;
+    background: var(--bg); border: 1px solid var(--line); color: var(--text-muted);
+    padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor:pointer;
+  }
+  .tweaks .opts button.on{ background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+  .tweaks .opts button:hover{ color: var(--text); }
+
+  /* Toast */
+  .toast{
+    position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 14px; font-size: 13px; display:none; z-index: 60;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  }
+  .toast.show{ display:flex; align-items:center; gap:10px; animation: toast .25s ease forwards; }
+  .toast .ok{ width: 18px; height: 18px; border-radius: 50%; background: var(--success-soft); color: var(--success); display:grid; place-items:center; }
+  @keyframes toast{ to{ transform: translate(-50%, 0); opacity: 1; } }
+
+  /* Icons */
+  svg.ic{ display:inline-block; vertical-align: middle; }
+
+  /* Drop zone */
+  .dropzone{
+    border: 1.5px dashed var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    position: relative;
+  }
+  .dropzone:hover, .dropzone.over{ border-color: var(--accent); background: var(--accent-soft); }
+  .dropzone input[type=file]{ position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .dropzone .dz-icon{ width: 36px; height: 36px; border-radius: 9px; background: var(--panel); border: 1px solid var(--line); display:grid; place-items:center; margin: 0 auto 10px; color: var(--text-muted); }
+  .dropzone .dz-lbl{ font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .dropzone .dz-sub{ font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .dropzone.has-file{ border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
+  .dz-file-info{ display:flex; align-items:center; gap:10px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-top: 10px; }
+  .dz-file-info .dz-fname{ font-size: 13px; font-weight: 500; min-width: 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .dz-file-info .dz-fsize{ font-size: 12px; color: var(--text-dim); font-family: var(--font-mono); white-space:nowrap; }
+  .dz-file-info .dz-rm{ cursor:pointer; color: var(--text-dim); flex: 0 0 20px; }
+  .dz-file-info .dz-rm:hover{ color: var(--danger); }
+  .dz-hidden{ display:none !important; }
+  /* Tag pills inside modal */
+  .tag-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .tag{ display:inline-flex; align-items:center; gap:5px; font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--bg-raise); border: 1px solid var(--line); color: var(--text-muted); cursor:pointer; user-select:none; }
+  .tag:hover{ border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
+  .tag.on{ background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .tag.disabled{ opacity: 0.5; cursor: not-allowed; }
+  .tag.disabled:hover{ border-color: var(--line); color: var(--text-muted); background: var(--bg-raise); }
+  /* Combobox estilo */
+  .combobox-wrap{ position: relative; }
+  .combobox-input{ background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 9px 11px; border-radius: 7px; font: inherit; font-size: 13px; outline: none; width: 100%; }
+  .combobox-input:focus{ border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .combobox-list{ position: absolute; top: 100%; left: 0; right: 0; background: var(--panel); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 7px 7px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; }
+  .combobox-list.open{ display: block; }
+  .combobox-item{ padding: 9px 11px; font-size: 13px; color: var(--text-muted); cursor: pointer; border-bottom: 1px solid var(--line-soft); }
+  .combobox-item:last-child{ border-bottom: 0; }
+  .combobox-item:hover, .combobox-item.hl{ background: var(--bg-raise); color: var(--text); }
+  .combobox-item.new{ color: var(--accent); font-weight: 600; border-top: 1px solid var(--line-soft); padding-top: 10px; margin-top: 6px; }
+  .combobox-item.new::before{ content: '+ Crear: '; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{ width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb{ background: var(--line); border-radius: 8px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover{ background: var(--line-soft); }
+
+  /* Sticky action bar */
+  .actionbar{
+    display:flex; justify-content: flex-end; gap: 8px;
+    margin-top: 14px;
+  }
+
+  /* Compact completitud button on Cuenta corriente */
+  .cc-compact-wrap{ display:flex; justify-content: flex-start; }
+  .cc-compact-wrap[hidden]{ display:none !important; }
+  .cc-compact{
+    display:inline-flex; align-items:center; gap: 12px;
+    background: var(--card-bg); border: var(--card-border); border-radius: var(--radius);
+    padding: 10px 14px; cursor: pointer; color: var(--text);
+    box-shadow: var(--card-shadow); text-align: left;
+  }
+  .cc-compact:hover{ border-color: var(--accent); }
+  .cc-compact .ring{
+    width: 36px; height: 36px; border-radius: 50%;
+    background: conic-gradient(var(--accent) calc(var(--p) * 1%), var(--line) 0);
+    display:grid; place-items:center; position: relative; flex: 0 0 36px;
+  }
+  .cc-compact .ring::after{ content:''; width: 27px; height: 27px; border-radius: 50%; background: var(--card-bg); position: absolute; }
+  .cc-compact .ring span{ position: relative; z-index: 1; font-size: 10.5px; font-weight: 600; font-family: var(--font-mono); }
+  .cc-compact-txt{ display:flex; flex-direction: column; line-height: 1.2; }
+  .cc-compact-txt .lbl{ font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; }
+  .cc-compact-txt .val{ font-size: 12.5px; margin-top: 2px; }
+  .cc-compact-txt .val b{ color: var(--accent); font-weight: 600; }
+  .cc-compact-arr{ color: var(--text-dim); margin-left: 4px; }
+
+  /* ====== Completitud rail (new) ====== */
+  .completitud-rail{ display:grid; grid-template-columns: 320px 1fr; gap: 20px; align-items:center; padding: 14px 16px; }
+  .comp-main{ min-width: 0; }
+  .comp-head{ display:flex; align-items:baseline; gap:10px; margin-bottom: 6px; }
+  .comp-label{ font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--text-dim); font-weight:600; }
+  .comp-pct{ margin-left:auto; font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .comp-pct b{ color: var(--text); font-weight: 600; }
+  .comp-bar{ height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
+  .comp-fill{ height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); border-radius: 999px; transition: width .3s ease; }
+  .comp-sub{ margin-top: 7px; font-size: 12px; color: var(--text-dim); }
+  .comp-link{ color: var(--accent); cursor: pointer; font-weight: 500; }
+  .comp-link:hover{ color: var(--accent-hover); }
+  .comp-badges{ display:flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .comp-badges .mlbl{ font-size: 11px; color: var(--text-dim); margin-right: 4px; }
+
+  /* ====== Datos tab ====== */
+  .datos-actions{ display:flex; justify-content: flex-end; margin-bottom: 14px; }
+  .datos-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .datos-card{ background: var(--card-bg); border: var(--card-border); border-radius: var(--radius); box-shadow: var(--card-shadow); overflow: hidden; }
+  .datos-card-head{ padding: 12px 16px; border-bottom: 1px solid var(--line-soft); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim); font-weight: 600; }
+  .datos-fields{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px 20px; padding: 16px; }
+  .df{ display:flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .df label{ font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); font-weight: 600; }
+  .df .dv{ font-size: 13.5px; color: var(--text); word-break: break-word; }
+  .df.empty .dv{ color: var(--text-dim); font-style: italic; }
+  .df .hint{ font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .df input{ background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 7px 10px; border-radius: 6px; font: inherit; font-size: 13px; outline: none; width: 100%; }
+  .df input:focus{ border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .danger-card{ border-color: oklch(0.4 0.08 25 / .5); }
+  .danger-card .datos-card-head{ color: oklch(0.75 0.12 25); }
+  .danger-body{ padding: 14px 16px; }
+  .danger-actions{ display:flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .danger-btn{ border-color: oklch(0.5 0.1 25 / .5); color: oklch(0.8 0.1 25); background: oklch(0.3 0.06 25 / .3); }
+  .danger-btn:hover{ background: oklch(0.35 0.08 25 / .4); color: oklch(0.9 0.1 25); }
+
+  /* Pill warn */
+  .pill.warn{ background: var(--warn-soft); color: var(--warn); }
+
+  /* Propiedades */
+  .props-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .prop-card{ background: var(--card-bg); border: var(--card-border); border-radius: var(--radius); box-shadow: var(--card-shadow); overflow: hidden; display:flex; flex-direction: column; }
+  .prop-thumb{ height: 120px; display:grid; place-items:center; color: oklch(0.6 0.01 40); font-weight:700; font-size: 32px; letter-spacing: -.02em; }
+  .prop-body{ padding: 12px 14px; }
+  .prop-body h4{ margin: 0; font-size: 14px; font-weight: 600; }
+  .prop-sub{ font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .prop-meta{ display:flex; align-items:center; gap: 10px; margin-top: 10px; }
+  .prop-meta .kv{ margin-left:auto; font-family: var(--font-mono); font-size: 12.5px; color: var(--text); }
+  .prop-foot{ margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+
+  /* Timeline */
+  .timeline{ list-style: none; margin: 0; padding: 4px 4px 4px 10px; }
+  .timeline li{ display:grid; grid-template-columns: 110px 1fr; gap: 14px; padding: 8px 0; border-bottom: 1px dashed var(--line-soft); font-size: 13px; }
+  .timeline li:last-child{ border-bottom: 0; }
+  .timeline time{ color: var(--text-dim); font-family: var(--font-mono); font-size: 12px; }
+  .timeline b{ font-weight: 600; color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- Icon defs -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-dash" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d="M2.5 2.5h5v5h-5zM8.5 2.5h5v3h-5zM2.5 8.5h5v5h-5zM8.5 6.5h5v7h-5z"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 16 16"><rect x="1.5" y="4" width="13" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2.8 13.5c.8-2.4 2.8-3.5 5.2-3.5s4.4 1.1 5.2 3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-users" viewBox="0 0 16 16"><circle cx="6" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 13.5c.7-2 2.3-3 4.5-3s3.8 1 4.5 3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10 4.5a2 2 0 110 4M11.5 13.5c.5-1.5 1.5-2.3 3-2.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-home" viewBox="0 0 16 16"><path d="M2.5 7L8 2.5 13.5 7v6.5h-4v-4h-3v4h-4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 16 16"><path d="M3.5 1.5h6L12.5 4.5v10h-9z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9.5 1.5V4.5h3" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-wrench" viewBox="0 0 16 16"><path d="M10.5 2a3 3 0 012.5 4.3l2 2-2.2 2.2-2-2A3 3 0 0112 5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 7l-6 6 1.5 1.5L10.5 8.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+    <symbol id="i-bar" viewBox="0 0 16 16"><path d="M2 13h12M4 10v3M7 6v7M10 8v5M13 4v9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-check2" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 8l2.5 2.5 4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-cog" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M3 13l1.5-1.5M11.5 4.5L13 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 16 16"><path d="M8 1.5l5.5 2v4c0 3.5-2.5 6-5.5 7-3-1-5.5-3.5-5.5-7v-4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev-l" viewBox="0 0 16 16"><path d="M10 4l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 16 16"><path d="M3 1.5h10v13l-2-1.2-1.5 1.2L8 13.3 6.5 14.5 5 13.3 3 14.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5.5 5h5M5.5 7.5h5M5.5 10h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 16 16"><path d="M4 11V7a4 4 0 118 0v4l1.5 1.5h-11z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6.5 13.5a1.5 1.5 0 003 0" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-more" viewBox="0 0 16 16"><circle cx="3.5" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="12.5" cy="8" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-down" viewBox="0 0 16 16"><path d="M8 3v9M5 9l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 16 16"><path d="M2 3h12l-4.5 6v4l-3 1.5V9z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-arr" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 16 16"><path d="M2 4h8M13 4h1M2 12h3M8 12h6M2 8h11M14 8h0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="11" cy="4" r="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="6.5" cy="12" r="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 16 16"><path d="M2 14l1-3 8-8 2 2-8 8-3 1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 3l2 2" stroke="currentColor" stroke-width="1.4"/></symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app" data-density="comfortable" data-sidebar="full" data-card="bordered" data-secondary="on">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">A</div>
+      <div>
+        <div class="brand-name">Arce</div>
+        <div class="brand-sub">Administración</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Navegación</div>
+      <div class="nav-item"><svg class="ic"><use href="#i-dash"/></svg><span class="label">Tablero</span></div>
+      <div class="nav-item"><svg class="ic"><use href="#i-cash"/></svg><span class="label">Caja General</span></div>
+      <div class="nav-item active"><span class="nav-dot"></span><svg class="ic"><use href="#i-user"/></svg><span class="label">Propietarios</span></div>
+      <div class="nav-item"><svg class="ic"><use href="#i-users"/></svg><span class="label">Inquilinos</span></div>
+      <div class="nav-item"><svg class="ic"><use href="#i-home"/></svg><span class="label">Propiedades</span></div>
+      <div class="nav-item"><svg class="ic"><use href="#i-doc"/></svg><span class="label">Contratos</span><svg class="ic chev"><use href="#i-chev"/></svg></div>
+      <div class="nav-item"><svg class="ic"><use href="#i-check2"/></svg><span class="label">Control Servicios</span></div>
+      <div class="nav-item"><svg class="ic"><use href="#i-check2"/></svg><span class="label">Tareas</span></div>
+      <div class="nav-item"><svg class="ic"><use href="#i-receipt"/></svg><span class="label">Pagos</span><svg class="ic chev"><use href="#i-chev"/></svg></div>
+      <div class="nav-item"><svg class="ic"><use href="#i-wrench"/></svg><span class="label">Mantenimiento</span><svg class="ic chev"><use href="#i-chev"/></svg></div>
+      <div class="nav-item"><svg class="ic"><use href="#i-bar"/></svg><span class="label">Reportes</span><svg class="ic chev"><use href="#i-chev"/></svg></div>
+      <a class="nav-item" href="Datos de la Administración.html"><svg class="ic"><use href="#i-cog"/></svg><span class="label">Configuración</span></a>
+      <div class="nav-item"><svg class="ic"><use href="#i-shield"/></svg><span class="label">Administración</span></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="avatar">D</div>
+      <div class="who">Demian Torres<div class="role">Administrador</div></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="crumbs">
+        <svg class="ic" width="14" height="14"><use href="#i-user"/></svg>
+        <span>Propietarios</span>
+        <span class="sep">/</span>
+        <span style="color:var(--text)">Demián Samir</span>
+
+      </div>
+      <div class="search">
+        <svg class="ic" width="14" height="14"><use href="#i-search"/></svg>
+        <span>Buscar propietario, propiedad, contrato…</span>
+        <span class="kbd">⌘K</span>
+      </div>
+      <div class="top-actions">
+        <button class="iconbtn" title="Ajustes de vista" onclick="toggleTweaks()"><svg class="ic" width="14" height="14"><use href="#i-sliders"/></svg></button>
+        <button class="iconbtn secondary-action" title="Notificaciones"><svg class="ic" width="14" height="14"><use href="#i-bell"/></svg></button>
+        <div class="avatar" style="width:28px;height:28px;font-size:11px">DT</div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <!-- Page head -->
+      <div class="page-head">
+        <div class="owner">
+          <div class="owner-avatar">DS</div>
+          <div class="owner-meta">
+            <h1>Demián Samir</h1>
+            <div class="owner-sub">
+              <span class="pill success"><span class="dot"></span>Activo</span>
+            </div>
+          </div>
+        </div>
+        <div class="owner-actions">
+          <button class="btn ghost secondary-action" title="Más acciones"><svg class="ic"><use href="#i-more"/></svg></button>
+          <button class="btn secondary-action" onclick="toast('Enviado recordatorio por email')"><svg class="ic"><use href="#i-bell"/></svg>Notificar</button>
+        </div>
+      </div>
+
+      <!-- Compact completitud chip (Cuenta corriente view) — click to jump to Datos -->
+      <div class="cc-compact-wrap" id="ccCompletitud">
+        <button class="cc-compact" onclick="goToDatos()" title="Ver datos del propietario">
+          <span class="ring" style="--p:23"><span>23%</span></span>
+          <span class="cc-compact-txt">
+            <span class="lbl">Completitud de ficha</span>
+            <span class="val"><b>7 campos</b> pendientes</span>
+          </span>
+          <svg class="ic cc-compact-arr" width="14" height="14"><use href="#i-chev"/></svg>
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs" style="margin-top: 18px">
+        <div class="tab active" data-tab="cc">Cuenta corriente <span class="count">3</span></div>
+        <div class="tab" data-tab="datos">Datos</div>
+        <div class="tab" data-tab="props">Propiedades <span class="count">3</span></div>
+        <div class="tab" data-tab="docs">Documentos <span class="count">12</span></div>
+        <div class="tab" data-tab="hist">Historial</div>
+      </div>
+
+      <!-- ====== DATOS PANEL ====== -->
+      <div id="panel-datos" class="tab-panel" hidden>
+        <!-- Full completitud rail + quick-fill badges live INSIDE Datos -->
+        <div class="subrail completitud-rail" style="margin-bottom: 14px">
+          <div class="comp-main">
+            <div class="comp-head">
+              <div class="comp-label">Completitud de la ficha</div>
+              <div class="comp-pct"><b id="compPct">23</b>%</div>
+            </div>
+            <div class="comp-bar"><div class="comp-fill" id="compFill" style="width:23%"></div></div>
+            <div class="comp-sub"><span id="compDone">3</span> de <span id="compTotal">10</span> campos completos</div>
+          </div>
+          <div class="comp-badges" id="missing">
+            <span class="mlbl">Pendiente:</span>
+            <span class="chip" data-field="dni"><svg class="ic"><use href="#i-plus"/></svg>DNI</span>
+            <span class="chip" data-field="cuit"><svg class="ic"><use href="#i-plus"/></svg>CUIT / CUIL</span>
+            <span class="chip" data-field="telefono"><svg class="ic"><use href="#i-plus"/></svg>Teléfono</span>
+            <span class="chip" data-field="email"><svg class="ic"><use href="#i-plus"/></svg>Email</span>
+            <span class="chip" data-field="fiscal"><svg class="ic"><use href="#i-plus"/></svg>Condición fiscal</span>
+            <span class="chip" data-field="alias"><svg class="ic"><use href="#i-plus"/></svg>Alias</span>
+            <span class="chip" data-field="banco"><svg class="ic"><use href="#i-plus"/></svg>Banco</span>
+            <span class="chip" data-field="cuenta"><svg class="ic"><use href="#i-plus"/></svg>Tipo de cuenta</span>
+            <span class="chip" data-field="nacimiento2" data-half="1" title="Peso ½"><svg class="ic"><use href="#i-plus"/></svg>Fecha de nacimiento <span style="font-size:10px;opacity:.65;margin-left:1px">½</span></span>
+            <span class="chip" data-field="nacionalidad" data-half="1" title="Peso ½"><svg class="ic"><use href="#i-plus"/></svg>Nacionalidad <span style="font-size:10px;opacity:.65;margin-left:1px">½</span></span>
+            <span class="chip" data-field="ocupacion" data-half="1" title="Peso ½"><svg class="ic"><use href="#i-plus"/></svg>Ocupación <span style="font-size:10px;opacity:.65;margin-left:1px">½</span></span>
+            <span class="chip" data-field="notas_internas" data-half="1" title="Peso ½"><svg class="ic"><use href="#i-plus"/></svg>Notas internas <span style="font-size:10px;opacity:.65;margin-left:1px">½</span></span>
+          </div>
+        </div>
+        <div class="datos-actions">
+          <button class="btn" id="editDatosBtn" onclick="toggleEditDatos()"><svg class="ic"><use href="#i-pencil"/></svg><span id="editDatosLbl">Editar datos</span></button>
+        </div>
+        <div class="datos-grid">
+          <section class="datos-card">
+            <header class="datos-card-head">Datos personales</header>
+            <div class="datos-fields">
+              <div class="df"><label>Nombre</label><div class="dv" data-field="nombre">Demián</div></div>
+              <div class="df"><label>Apellido</label><div class="dv" data-field="apellido">Samir</div></div>
+              <div class="df empty"><label>DNI</label><div class="dv" data-field="dni">Sin cargar</div></div>
+              <div class="df empty"><label>CUIT / CUIL</label><div class="dv" data-field="cuit">Sin cargar</div></div>
+              <div class="df empty"><label>Email</label><div class="dv" data-field="email">Sin cargar</div></div>
+              <div class="df empty"><label>Teléfono</label><div class="dv" data-field="telefono">Sin cargar</div></div>
+              <div class="df empty"><label>Domicilio fiscal</label><div class="dv" data-field="fiscal">Sin cargar</div></div>
+              <div class="df"><label>Alta en el sistema</label><div class="dv">12/03/2024</div></div>
+            </div>
+          </section>
+          <section class="datos-card" style="opacity: 1">
+            <header class="datos-card-head">Datos bancarios</header>
+            <div class="datos-fields">
+              <div class="df"><label>CBU / CVU</label><div class="dv" data-field="cbu" style="font-family:var(--font-mono)">2131231231231231231</div></div>
+              <div class="df empty"><label>Alias</label><div class="dv" data-field="alias">Sin cargar</div></div>
+              <div class="df empty"><label>Banco</label><div class="dv" data-field="banco">Sin cargar</div></div>
+              <div class="df empty"><label>Tipo de cuenta</label><div class="dv" data-field="cuenta">Sin cargar</div></div>
+            </div>
+          </section>
+
+          <section class="datos-card">
+            <header class="datos-card-head">Datos de interés</header>
+            <div class="datos-fields">
+              <div class="df empty"><label>Fecha de nacimiento</label><div class="dv" data-field="nacimiento2">Sin cargar</div><div class="hint">Útil para saludar al propietario en su cumpleaños.</div></div>
+              <div class="df empty"><label>Nacionalidad</label><div class="dv" data-field="nacionalidad">Sin cargar</div></div>
+              <div class="df empty"><label>Ocupación</label><div class="dv" data-field="ocupacion">Sin cargar</div></div>
+              <div class="df empty"><label>Notas internas</label><div class="dv" data-field="notas_internas">Sin cargar</div></div>
+            </div>
+          </section>
+
+          <section class="datos-card">
+            <header class="datos-card-head">Persona de confianza</header>
+            <div class="datos-fields">
+              <div class="df empty"><label>Nombre</label><div class="dv" data-field="pc_nombre">Sin cargar</div></div>
+              <div class="df empty"><label>Apellido</label><div class="dv" data-field="pc_apellido">Sin cargar</div></div>
+              <div class="df empty"><label>DNI</label><div class="dv" data-field="pc_dni">Sin cargar</div></div>
+              <div class="df empty"><label>Email</label><div class="dv" data-field="pc_email">Sin cargar</div></div>
+              <div class="df empty"><label>Teléfono</label><div class="dv" data-field="pc_telefono">Sin cargar</div></div>
+              <div class="df empty"><label>Vínculo</label><div class="dv" data-field="pc_vinculo">Sin cargar</div><div class="hint">Ej: cónyuge, familiar, apoderado.</div></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="datos-card" style="margin-top:14px" id="comentariosCard">
+          <header class="datos-card-head" style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none" onclick="toggleComentarios()">
+            <span>Comentarios internos</span>
+            <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:oklch(0.8 0.13 85 / .12);color:oklch(0.80 0.13 85);font-weight:600;letter-spacing:.04em;text-transform:uppercase">Solo staff</span>
+            <svg id="comentariosChev" class="ic" width="14" height="14" style="margin-left:auto;transition:transform .2s;transform:rotate(90deg)"><use href="#i-chev"/></svg>
+          </header>
+          <div id="comentariosBody" style="display:none">
+            <div style="padding:8px 16px;display:flex;align-items:center;gap:8px;background:oklch(0.8 0.13 85 / .06);border-bottom:1px solid var(--line-soft)">
+              <svg class="ic" width="13" height="13" style="color:oklch(0.80 0.13 85);flex:0 0 13px"><use href="#i-shield"/></svg>
+              <span style="font-size:11.5px;color:oklch(0.80 0.13 85)">Internos — no visibles para el propietario. Cada miembro del staff gestiona su propio panel.</span>
+            </div>
+            <div id="staffPanelsList" style="display:flex;flex-direction:column"></div>
+          </div>
+        </section>
+
+        <section class="datos-card" style="margin-top:14px">
+          <header class="datos-card-head">Estado del propietario</header>
+          <div class="datos-fields" style="grid-template-columns:1fr">
+            <div class="df">
+              <label>Estado actual</label>
+              <div class="dv"><span class="pill success"><span class="dot"></span>Activo</span></div>
+              <div class="hint">El propietario está activo y puede recibir liquidaciones.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="datos-card danger-card" style="margin-top:14px">
+          <header class="datos-card-head">Zona de riesgo</header>
+          <div class="danger-body">
+            <div class="danger-actions">
+              <button class="btn danger-btn" onclick="toast('Propietario suspendido temporalmente')">Suspender temporalmente</button>
+              <button class="btn danger-btn" onclick="toast('Propietario dado de baja')">Dar de baja</button>
+            </div>
+            <div class="hint">Pausa las liquidaciones, no podrá recibirlas. Cierra la relación comercial.</div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ====== CUENTA CORRIENTE PANEL ====== -->
+      <div id="panel-cc" class="tab-panel">
+      <!-- KPIs -->
+      <div class="kpis">
+        <div class="kpi">
+          <div class="k">Liquidado acumulado · 2026
+            <span style="margin-left:auto; font-family:var(--font-mono); color: var(--text-dim); font-size: 11px">YTD</span>
+          </div>
+          <div class="v"><small>$</small>0<small style="color: var(--text-dim)">,00</small></div>
+          <div class="sub">Todavía no se liquidó al propietario</div>
+          <svg class="spark" viewBox="0 0 220 22" preserveAspectRatio="none">
+            <polyline points="0,18 20,18 40,18 60,18 80,18 100,18 120,18 140,18 160,18 180,18 200,18 220,18"
+              fill="none" stroke="oklch(0.5 0.01 40)" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="kpi accent">
+          <div class="k">Próxima liquidación estimada
+            <span style="margin-left:auto; color: var(--accent); font-size: 11px; letter-spacing: .04em">30 abr</span>
+          </div>
+          <div class="v"><small>$</small>150.000</div>
+          <div class="sub">Incluye 1 partida no liquidada</div>
+          <svg class="spark" viewBox="0 0 220 22" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="gA" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="oklch(0.685 0.165 34)" stop-opacity=".4"/>
+                <stop offset="1" stop-color="oklch(0.685 0.165 34)" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <polyline points="0,18 20,16 40,14 60,15 80,12 100,10 120,11 140,9 160,7 180,8 200,6 220,4"
+              fill="none" stroke="oklch(0.685 0.165 34)" stroke-width="1.6"/>
+            <polygon points="0,22 0,18 20,16 40,14 60,15 80,12 100,10 120,11 140,9 160,7 180,8 200,6 220,4 220,22"
+              fill="url(#gA)"/>
+          </svg>
+        </div>
+        <div class="kpi">
+          <div class="k">Pendiente de confirmar
+            <span style="margin-left:auto; color: var(--warn); font-size: 11px">1 item</span>
+          </div>
+          <div class="v"><small>$</small>0<small style="color: var(--text-dim)">,00</small></div>
+          <div class="sub">Movimientos sin conciliar · Mutualidad B</div>
+          <svg class="spark" viewBox="0 0 220 22" preserveAspectRatio="none">
+            <polyline points="0,18 20,18 40,17 60,18 80,18 100,16 120,18 140,17 160,18 180,17 200,18 220,18"
+              fill="none" stroke="oklch(0.5 0.01 40)" stroke-width="1.5" stroke-dasharray="2,3"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Panel -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Movimientos</div>
+          <div class="period" role="group" aria-label="período">
+            <button title="Anterior"><svg class="ic" width="12" height="12"><use href="#i-chev-l"/></svg></button>
+            <div class="lbl">Todo 2026</div>
+            <button title="Siguiente"><svg class="ic" width="12" height="12"><use href="#i-chev"/></svg></button>
+          </div>
+          <div class="seg" id="filterSeg">
+            <button class="on" data-f="all">Todos <span class="badge">3</span></button>
+            <button data-f="liq">Liquidados <span class="badge">0</span></button>
+            <button data-f="pend">Pendientes <span class="badge">2</span></button>
+            <button data-f="conf">A confirmar <span class="badge">1</span></button>
+          </div>
+          <div class="panel-tools">
+            <button class="btn secondary-action" style="padding: 5px 10px"><svg class="ic"><use href="#i-filter"/></svg>Filtros</button>
+            <div class="toggle on" id="reconToggle" onclick="this.classList.toggle('on')">
+              <div class="switch"></div><span>Conciliado</span>
+            </div>
+            <button class="btn secondary-action" style="padding: 5px 10px"><svg class="ic"><use href="#i-down"/></svg>CSV</button>
+          </div>
+        </div>
+
+        <table class="mov">
+          <thead>
+            <tr>
+              <th style="width:28px"></th>
+              <th>Concepto</th>
+              <th>Propiedad</th>
+              <th>Fecha</th>
+              <th>Origen</th>
+              <th style="text-align:right">Monto</th>
+              <th style="width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="movBody">
+            <tr data-id="1" data-tipo="ingreso" data-concepto="Abril 2026 · Alquiler" data-meta="Ref. LIQ-0241 · Incluye ABL y expensas" data-prop="" data-fecha="" data-origen="auto" data-monto="150000">
+              <td><div class="rowcheck" onclick="toggleRow(this)"></div></td>
+              <td class="concept" style="cursor:pointer" onclick="editRow(this.closest('tr'))">Abril 2026 · Alquiler
+                <div class="meta">Ref. LIQ-0241 · Incluye ABL y expensas</div>
+              </td>
+              <td class="empty-prop">—</td>
+              <td class="date">—</td>
+              <td><span class="origin auto">Automático</span></td>
+              <td class="num pos">+$ 150.000</td>
+              <td style="position:relative"><button class="iconbtn" style="width:24px;height:24px" onclick="showRowMenu(event,this.closest('tr'))"><svg class="ic" width="12" height="12"><use href="#i-more"/></svg></button></td>
+            </tr>
+            <tr data-id="2" data-tipo="egreso" data-concepto="Gastos · Plomería urgente" data-meta="Factura 0003-00004521 · a descontar" data-prop="Av. Rivadavia 4210, 3ºB" data-fecha="2026-04-10" data-origen="manual" data-monto="-32400">
+              <td><div class="rowcheck" onclick="toggleRow(this)"></div></td>
+              <td class="concept" style="cursor:pointer" onclick="editRow(this.closest('tr'))">Gastos · Plomería urgente
+                <div class="meta">Factura 0003-00004521 · a descontar</div>
+              </td>
+              <td>Av. Rivadavia 4210, 3ºB</td>
+              <td class="date">10/04/2026</td>
+              <td><span class="origin manual">Manual</span></td>
+              <td class="num neg">−$ 32.400</td>
+              <td style="position:relative"><button class="iconbtn" style="width:24px;height:24px" onclick="showRowMenu(event,this.closest('tr'))"><svg class="ic" width="12" height="12"><use href="#i-more"/></svg></button></td>
+            </tr>
+            <tr data-id="3" data-tipo="ingreso" data-concepto="Depósito en garantía · intereses" data-meta="Actualización trimestral" data-prop="Bulnes 1880, 6ºA" data-fecha="2026-04-01" data-origen="auto" data-monto="8450">
+              <td><div class="rowcheck" onclick="toggleRow(this)"></div></td>
+              <td class="concept" style="cursor:pointer" onclick="editRow(this.closest('tr'))">Depósito en garantía · intereses
+                <div class="meta">Actualización trimestral</div>
+              </td>
+              <td>Bulnes 1880, 6ºA</td>
+              <td class="date">01/04/2026</td>
+              <td><span class="origin auto">Automático</span></td>
+              <td class="num pos">+$ 8.450</td>
+              <td style="position:relative"><button class="iconbtn" style="width:24px;height:24px" onclick="showRowMenu(event,this.closest('tr'))"><svg class="ic" width="12" height="12"><use href="#i-more"/></svg></button></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="footer-sum">
+          <div class="grow">3 movimientos · <span style="color:var(--text)">1 a confirmar</span></div>
+          <div class="s"><div class="k">Ingresos</div><div class="v pos">+$ 158.450</div></div>
+          <div class="s"><div class="k">Egresos</div><div class="v">−$ 32.400</div></div>
+          <div class="s"><div class="k">Neto</div><div class="v pos">+$ 126.050</div></div>
+        </div>
+      </div>
+
+      <!-- Inline sticky action bar mirror (bottom) -->
+      <div class="actionbar">
+        <button class="btn secondary-action" onclick="toast('Resumen copiado al portapapeles')" ><svg class="ic"><use href="#i-down"/></svg>Exportar resumen</button>
+        <button class="btn" onclick="openModal('manualModal')"><svg class="ic"><use href="#i-plus"/></svg>Agregar movimiento manual</button>
+        <button class="btn primary" onclick="openModal('liqModal')"><svg class="ic"><use href="#i-receipt"/></svg>Generar liquidación</button>
+      </div>
+      </div><!-- /panel-cc -->
+
+      <!-- ====== PROPIEDADES PANEL ====== -->
+      <div id="panel-props" class="tab-panel" hidden>
+        <div class="props-grid">
+          <article class="prop-card">
+            <div class="prop-thumb" style="background: linear-gradient(135deg, oklch(0.3 0.02 30), oklch(0.22 0.01 30))"><span>R</span></div>
+            <div class="prop-body">
+              <h4>Av. Rivadavia 4210, 3ºB</h4>
+              <div class="prop-sub">Balvanera, CABA · 2 amb · 58 m²</div>
+              <div class="prop-meta"><span class="pill success"><span class="dot"></span>Alquilada</span><span class="kv">$ 150.000/mes</span></div>
+              <div class="prop-foot">Inquilino: <b>M. Torres</b> · vence 08/2026</div>
+            </div>
+          </article>
+          <article class="prop-card">
+            <div class="prop-thumb" style="background: linear-gradient(135deg, oklch(0.32 0.02 60), oklch(0.22 0.01 60))"><span>B</span></div>
+            <div class="prop-body">
+              <h4>Bulnes 1880, 6ºA</h4>
+              <div class="prop-sub">Palermo, CABA · 3 amb · 74 m²</div>
+              <div class="prop-meta"><span class="pill success"><span class="dot"></span>Alquilada</span><span class="kv">$ 230.000/mes</span></div>
+              <div class="prop-foot">Inquilino: <b>L. Rivas</b> · vence 02/2027</div>
+            </div>
+          </article>
+          <article class="prop-card">
+            <div class="prop-thumb" style="background: linear-gradient(135deg, oklch(0.3 0.02 120), oklch(0.22 0.01 120))"><span>P</span></div>
+            <div class="prop-body">
+              <h4>Paraná 725, 2ºD</h4>
+              <div class="prop-sub">San Nicolás, CABA · 1 amb · 42 m²</div>
+              <div class="prop-meta"><span class="pill warn"><span class="dot"></span>Disponible</span><span class="kv">— / mes</span></div>
+              <div class="prop-foot">Sin inquilino activo</div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- ====== DOCUMENTOS PANEL ====== -->
+      <div id="panel-docs" class="tab-panel" hidden>
+        <div class="panel"><div class="panel-head"><div class="panel-title">Documentos</div><div class="panel-tools"><button class="btn primary" onclick="openModal('docModal')"><svg class="ic"><use href="#i-plus"/></svg>Subir documento</button></div></div>
+          <table class="mov"><thead><tr><th>Nombre</th><th>Tipo</th><th>Subido</th><th></th></tr></thead><tbody>
+            <tr><td class="concept">Contrato Rivadavia 4210.pdf</td><td>Contrato</td><td class="date">08/2024</td><td style="text-align:right"><button class="btn" style="padding:4px 9px"><svg class="ic"><use href="#i-down"/></svg></button></td></tr>
+            <tr><td class="concept">Escritura Bulnes 1880.pdf</td><td>Escritura</td><td class="date">03/2024</td><td style="text-align:right"><button class="btn" style="padding:4px 9px"><svg class="ic"><use href="#i-down"/></svg></button></td></tr>
+            <tr><td class="concept">Formulario AFIP F.572.pdf</td><td>Fiscal</td><td class="date">01/2026</td><td style="text-align:right"><button class="btn" style="padding:4px 9px"><svg class="ic"><use href="#i-down"/></svg></button></td></tr>
+          </tbody></table></div>
+      </div>
+
+      <!-- ====== HISTORIAL PANEL ====== -->
+      <div id="panel-hist" class="tab-panel" hidden>
+        <div class="panel" style="padding: 14px">
+          <ul class="timeline">
+            <li><time>10/04/2026</time><div><b>Gasto registrado</b> — Plomería urgente, Rivadavia 4210</div></li>
+            <li><time>01/04/2026</time><div><b>Intereses</b> acreditados al depósito — Bulnes 1880</div></li>
+            <li><time>31/03/2026</time><div><b>Liquidación Marzo 2026</b> enviada por email</div></li>
+            <li><time>12/03/2024</time><div><b>Alta</b> del propietario en el sistema</div></li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal: Subir documento ============ -->
+<div class="scrim" id="docModal" onclick="if(event.target===this) closeModal('docModal')">
+  <div class="modal" role="dialog" aria-labelledby="docTitle" style="width:580px">
+    <div class="modal-head">
+      <div>
+        <h3 id="docTitle">Subir documento</h3>
+        <div class="sub">Demián Samir · el archivo quedará en su ficha</div>
+      </div>
+      <button class="iconbtn" style="margin-left:auto" onclick="closeModal('docModal')"><svg class="ic" width="12" height="12"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Drop zone -->
+      <div class="dropzone" id="dz" ondragover="dzDragOver(event)" ondragleave="dzDragLeave()" ondrop="dzDrop(event)">
+        <input type="file" id="dzInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onchange="dzPicked(this)">
+        <div id="dzEmpty">
+          <div class="dz-icon"><svg class="ic" width="18" height="18"><use href="#i-down"/></svg></div>
+          <div class="dz-lbl">Arrastrá el archivo aquí</div>
+          <div class="dz-sub">o hacé clic para seleccionar · PDF, Word, imagen — máx. 20 MB</div>
+        </div>
+      </div>
+      <div class="dz-file-info dz-hidden" id="dzInfo">
+        <svg class="ic" width="16" height="16" style="flex:0 0 16px;color:var(--accent)"><use href="#i-doc"/></svg>
+        <span class="dz-fname" id="dzFname">archivo.pdf</span>
+        <span class="dz-fsize" id="dzFsize">—</span>
+        <svg class="ic dz-rm" width="14" height="14" onclick="dzClear()" title="Quitar"><use href="#i-x"/></svg>
+      </div>
+
+      <!-- Tipo de documento (combobox creador) -->
+      <div class="field" style="margin:0">
+        <label>Tipo de documento <span style="color:var(--danger)">*</span></label>
+        <div class="combobox-wrap">
+          <input type="text" id="docTipo" class="combobox-input" placeholder="Buscá o crea un tipo…" autocomplete="off">
+          <div class="combobox-list" id="docTipoList"></div>
+        </div>
+      </div>
+
+      <!-- Nombre -->
+      <div class="field" style="margin:0">
+        <label>Nombre del documento</label>
+        <input type="text" id="docNombre" placeholder="Se completará automáticamente con el nombre del archivo">
+      </div>
+
+      <!-- Propiedad + Vigencia -->
+      <div class="row2" style="gap:12px">
+        <div class="field" style="margin:0">
+          <label>Propiedad asociada</label>
+          <select id="docProp">
+            <option value="">Sin asociar (ficha general)</option>
+            <option>Rivadavia 4210 · CABA</option>
+            <option>Bulnes 1880 · CABA</option>
+            <option>Av. Corrientes 2540 · CABA</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>Vigencia hasta</label>
+          <input type="date" id="docVigencia">
+        </div>
+      </div>
+
+      <!-- Visibilidad -->
+      <div class="field" style="margin:0">
+        <label>Visible para</label>
+        <div class="tag-row" id="visibilidadTags">
+          <span class="tag on" data-v="prop">Propietario</span>
+          <span class="tag" data-v="inq">Inquilino</span>
+        </div>
+      </div>
+
+      <!-- Notas -->
+      <div class="field" style="margin:0">
+        <label>Notas internas</label>
+        <textarea id="docNotas" rows="2" placeholder="Referencia, contexto, número de folio…" style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:9px 11px;border-radius:7px;font:inherit;font-size:13px;outline:none;resize:vertical"></textarea>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal('docModal')">Cancelar</button>
+      <button class="btn primary" id="docSubmitBtn" onclick="docSubmit()">
+        <svg class="ic" width="14" height="14"><use href="#i-down"/></svg>
+        Subir documento
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modals ============ -->
+<div class="scrim" id="liqModal" onclick="if(event.target===this) closeModal('liqModal')">
+  <div class="modal" role="dialog" aria-labelledby="liqTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="liqTitle">Generar liquidación · Abril 2026</h3>
+        <div class="sub" id="liqSub">Demián Samir · 3 propiedades · 3 movimientos incluidos</div>
+      </div>
+      <button class="iconbtn" style="margin-left:auto" onclick="closeModal('liqModal')"><svg class="ic" width="12" height="12"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="row2">
+        <div class="field">
+          <label>Período</label>
+          <select><option>Abril 2026</option><option>Marzo 2026</option><option>Febrero 2026</option></select>
+        </div>
+        <div class="field">
+          <label>Fecha de emisión</label>
+          <input type="date" value="2026-04-30" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Propiedades a incluir</label>
+        <select multiple size="3" style="min-height: 80px">
+          <option selected>Av. Rivadavia 4210, 3ºB — Inquilino: M. Torres</option>
+          <option selected>Bulnes 1880, 6ºA — Inquilino: L. Rivas</option>
+          <option selected>Paraná 725, 2ºD — Inquilino: G. Abril</option>
+        </select>
+      </div>
+      <div class="liq-summary">
+        <div class="ln" id="liqAlqRow"><span class="k">Alquileres</span><span id="liqAlq">+$ 150.000</span></div>
+        <div class="ln" id="liqIntRow"><span class="k">Intereses · depósito</span><span id="liqInt">+$ 8.450</span></div>
+        <div class="ln" id="liqGasRow"><span class="k">Gastos a descontar</span><span id="liqGas">−$ 32.400</span></div>
+        <div class="ln"><span class="k">Honorarios (7%)</span><span id="liqHon">−$ 8.823</span></div>
+        <div class="ln total"><span class="k">Total a transferir</span><span class="v" id="liqTotal">$ 117.227</span></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal('liqModal')">Cancelar</button>
+      <a class="btn" href="Vista Previa Recibo.html"><svg class="ic"><use href="#i-receipt"/></svg>Vista previa</a>
+      <button class="btn primary" onclick="closeModal('liqModal'); toast('Liquidación generada y enviada por email')">Generar y enviar</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="manualModal" onclick="if(event.target===this) closeModal('manualModal')">
+  <div class="modal" role="dialog" aria-labelledby="manTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="manTitle">Agregar movimiento manual</h3>
+        <div class="sub">Se registrará en la cuenta corriente de Demián Samir</div>
+      </div>
+      <button class="iconbtn" style="margin-left:auto" onclick="closeModal('manualModal')"><svg class="ic" width="12" height="12"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <!-- Tipo: segmented -->
+      <div class="field">
+        <label>Tipo de movimiento</label>
+        <div class="seg typeSeg" id="typeSeg" style="width:100%">
+          <button data-t="ingreso" style="flex:1">+ Ingreso</button>
+          <button data-t="egreso" class="on" style="flex:1">− Egreso</button>
+          <button data-t="pct" style="flex:1">% Porcentaje</button>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" value="2026-04-17" />
+        </div>
+        <div class="field">
+          <label>Propiedad <span style="color:var(--text-dim);text-transform:none;letter-spacing:0;font-size:10.5px">(opcional)</span></label>
+          <select id="manProp"><option>—</option><option>Av. Rivadavia 4210, 3ºB</option><option>Bulnes 1880, 6ºA</option><option>Paraná 725, 2ºD</option></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Concepto</label>
+        <input type="text" id="manConcept" placeholder="Ej. Reparación caldera" />
+      </div>
+
+      <!-- MONTO FIJO (ingreso / egreso / ajuste) -->
+      <div class="field" id="amtBlock">
+        <label>Monto</label>
+        <input type="text" placeholder="$ 0,00" />
+      </div>
+
+      <!-- PORCENTAJE -->
+      <div id="pctBlock" hidden>
+        <div class="row2">
+          <div class="field">
+            <label>Dirección</label>
+            <div class="seg typeSeg" id="pctDir" style="width:100%">
+              <button data-d="sumar" class="on" style="flex:1">+ Sumar</button>
+              <button data-d="restar" style="flex:1">− Restar</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Porcentaje</label>
+            <div style="position:relative">
+              <input type="number" id="pctVal" value="7" min="0" step="0.5" style="padding-right:28px" />
+              <span style="position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-family:var(--font-mono);font-size:13px">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Se aplica sobre</label>
+          <div class="pct-base" id="pctBase">
+            <label class="base-opt on" data-base="total">
+              <div class="r"></div>
+              <div>
+                <div class="t">Total a transferir</div>
+                <div class="s">Neto final luego de todos los movimientos · <b id="bTotal">$ 126.050</b></div>
+              </div>
+            </label>
+            <label class="base-opt" data-base="alquileres">
+              <div class="r"></div>
+              <div>
+                <div class="t">Subtotal de alquileres</div>
+                <div class="s">Solo ingresos por alquiler del período · <b id="bAlq">$ 150.000</b></div>
+              </div>
+            </label>
+            <label class="base-opt" data-base="ingresos">
+              <div class="r"></div>
+              <div>
+                <div class="t">Subtotal de ingresos</div>
+                <div class="s">Alquileres + intereses + otros ingresos · <b id="bIng">$ 158.450</b></div>
+              </div>
+            </label>
+            <label class="base-opt" data-base="custom">
+              <div class="r"></div>
+              <div style="flex:1">
+                <div class="t">Monto manual</div>
+                <div class="s">Lo defino yo</div>
+                <input type="text" id="pctCustom" placeholder="$ 0,00" style="margin-top:6px;padding:6px 9px;font-size:12.5px;width:160px" />
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="pct-preview" id="pctPreview">
+          <div class="ln"><span class="k">Base</span><span id="pvBase" class="v">$ 126.050</span></div>
+          <div class="ln"><span class="k">Cálculo</span><span id="pvCalc" class="v">7% de $ 126.050</span></div>
+          <div class="ln total"><span class="k">Ajuste resultante</span><span id="pvAmt" class="v">− $ 8.823,50</span></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Notas</label>
+        <textarea rows="2" placeholder="Opcional"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal('manualModal')">Cancelar</button>
+      <button class="btn primary" id="saveMovBtn" onclick="saveMovimiento()">Guardar movimiento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tweaks panel -->
+<div class="tweaks" id="tweaks">
+  <h4><svg class="ic" width="12" height="12"><use href="#i-sliders"/></svg>Tweaks<span class="close" onclick="toggleTweaks()"><svg class="ic" width="12" height="12"><use href="#i-x"/></svg></span></h4>
+  <div class="grp">
+    <div class="glb">Densidad</div>
+    <div class="opts" data-opt="density">
+      <button data-v="comfortable" class="on">Confortable</button>
+      <button data-v="compact">Compacta</button>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="glb">Sidebar</div>
+    <div class="opts" data-opt="sidebar">
+      <button data-v="full" class="on">Full</button>
+      <button data-v="icons">Icons</button>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="glb">Card style</div>
+    <div class="opts" data-opt="card">
+      <button data-v="flat">Flat</button>
+      <button data-v="bordered" class="on">Bordered</button>
+      <button data-v="elevated">Elevated</button>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="glb">Acciones secundarias</div>
+    <div class="opts" data-opt="secondary">
+      <button data-v="on" class="on">Mostrar</button>
+      <button data-v="off">Ocultar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="ok"><svg class="ic" width="10" height="10"><use href="#i-check"/></svg></div><span id="toastMsg">Listo</span></div>
+
+<!-- Row context menu -->
+<div id="rowMenu" style="display:none;position:fixed;z-index:50;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.45);padding:4px;min-width:164px">
+  <button id="rowMenuEditBtn" style="display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border:0;background:transparent;color:var(--text);border-radius:5px;font-size:13px;cursor:pointer" onmouseover="this.style.background='var(--bg-raise)'" onmouseout="this.style.background='transparent'"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M11.5 2.5l2 2-8 8H3.5v-2l8-8z" stroke-linejoin="round"/></svg>Ver y editar</button>
+  <div style="height:1px;background:var(--line-soft);margin:2px 4px"></div>
+  <button id="rowMenuDelBtn" style="display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border:0;background:transparent;color:var(--danger);border-radius:5px;font-size:13px;cursor:pointer" onmouseover="this.style.background='var(--bg-raise)'" onmouseout="this.style.background='transparent'"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>Eliminar movimiento</button>
+</div>
+
+<script>
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "density": "comfortable",
+    "sidebar": "full",
+    "card": "elevated",
+    "secondary": "on"
+  }/*EDITMODE-END*/;
+
+  const app = document.getElementById('app');
+  function applyTweaks(t){
+    app.dataset.density = t.density;
+    app.dataset.sidebar = t.sidebar;
+    app.dataset.card = t.card;
+    app.dataset.secondary = t.secondary;
+    document.querySelectorAll('.tweaks .opts').forEach(g=>{
+      const key = g.dataset.opt;
+      g.querySelectorAll('button').forEach(b=>{
+        b.classList.toggle('on', b.dataset.v === t[key]);
+      });
+    });
+  }
+  const current = {...TWEAK_DEFAULTS};
+  applyTweaks(current);
+
+  document.querySelectorAll('.tweaks .opts').forEach(g=>{
+    const key = g.dataset.opt;
+    g.addEventListener('click', e=>{
+      const b = e.target.closest('button'); if(!b) return;
+      current[key] = b.dataset.v;
+      applyTweaks(current);
+      try{ window.parent.postMessage({type:'__edit_mode_set_keys', edits: {[key]: b.dataset.v}}, '*'); }catch(_){}
+    });
+  });
+
+  // Tabs — switch panels
+  function showTab(name){
+    document.getElementById('ccCompletitud').hidden = (name === 'datos');
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===name));
+    ['cc','datos','props','docs','hist'].forEach(k=>{
+      const p = document.getElementById('panel-'+k);
+      if(p) p.hidden = (k !== name);
+    });
+  }
+  window.showTab = showTab;
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click', ()=> showTab(t.dataset.tab));
+  });
+  function goToDatos(){ showTab('datos'); window.scrollTo({top: 0, behavior:'smooth'}); }
+  window.goToDatos = goToDatos;
+
+  // Edit mode for Datos
+  let editing = false;
+
+  function toggleComentarios(){
+    const body = document.getElementById('comentariosBody');
+    const chev = document.getElementById('comentariosChev');
+    const open = body.style.display === 'none';
+    body.style.display = open ? 'block' : 'none';
+    chev.style.transform = open ? 'rotate(270deg)' : 'rotate(90deg)';
+  }
+
+  // Staff panels data — one note per staff member
+  const ME = 'Demian Torres';
+  const staffPanels = [
+    {
+      name: 'Demian Torres',
+      initials: 'DT',
+      role: 'Administrador',
+      lastEdit: '12/03/2024 · 14:32',
+      note: 'Propietario muy puntual con los pagos. Prefiere contacto por WhatsApp.'
+    },
+    {
+      name: 'Carla Méndez',
+      initials: 'CM',
+      role: 'Asistente',
+      lastEdit: '03/01/2024 · 10:15',
+      note: 'Firmó el contrato sin inconvenientes. Muy amable en todo momento.'
+    }
+  ];
+
+  function renderStaffPanels() {
+    const list = document.getElementById('staffPanelsList');
+    list.innerHTML = '';
+    staffPanels.forEach((s, idx) => {
+      const isMe = s.name === ME;
+      const panel = document.createElement('div');
+      panel.style.cssText = 'border-bottom:1px solid var(--line-soft)';
+      const truncated = s.note.length > 60 ? s.note.slice(0, 60) + '…' : s.note;
+
+      panel.innerHTML = `
+        <div onclick="toggleStaffPanel(${idx})" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;user-select:none" onmouseover="this.style.background='var(--bg-raise)'" onmouseout="this.style.background=''">
+          <div style="width:28px;height:28px;border-radius:50%;background:${isMe ? 'oklch(0.5 0.11 25)' : 'oklch(0.42 0.08 200)'};display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:0 0 28px">${s.initials}</div>
+          <div style="min-width:0;flex:1">
+            <div style="display:flex;align-items:baseline;gap:8px">
+              <span style="font-size:13px;font-weight:600;color:var(--text)">${s.name}</span>
+              <span style="font-size:11px;color:var(--text-dim)">${s.role}</span>
+              ${isMe ? '<span style="font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;letter-spacing:.04em">Tú</span>' : ''}
+            </div>
+            <div id="preview-${idx}" style="font-size:12px;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${truncated}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono)" id="lastedit-${idx}">Modificado ${s.lastEdit}</span>
+            <svg id="staffchev-${idx}" style="transition:transform .18s;color:var(--text-dim)" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>
+          </div>
+        </div>
+        <div id="staffbody-${idx}" style="display:none;padding:0 16px 14px">
+          ${isMe ? `
+            <textarea id="notaTxt-${idx}" rows="4"
+              style="background:var(--bg);border:1px solid var(--line);color:var(--text);padding:9px 11px;border-radius:7px;font:inherit;font-size:13px;outline:none;resize:vertical;width:100%"
+              onfocus="this.style.borderColor='var(--accent)';this.style.boxShadow='0 0 0 3px var(--accent-soft)'"
+              onblur="this.style.borderColor='var(--line)';this.style.boxShadow='none'"
+            >${s.note}</textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:8px">
+              <button class="btn primary" style="font-size:12px;padding:6px 12px" onclick="guardarNota(${idx})">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M3.5 8.5l3 3 6-6"/></svg>Guardar
+              </button>
+            </div>
+          ` : `
+            <div style="background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:10px 12px;font-size:13px;color:var(--text-muted)">${s.note}</div>
+          `}
+        </div>
+      `;
+      list.appendChild(panel);
+    });
+  }
+
+  function toggleStaffPanel(idx) {
+    const body = document.getElementById(`staffbody-${idx}`);
+    const chev = document.getElementById(`staffchev-${idx}`);
+    const preview = document.getElementById(`preview-${idx}`);
+    const open = body.style.display === 'none';
+    body.style.display = open ? 'block' : 'none';
+    chev.style.transform = open ? 'rotate(270deg)' : '';
+    if (preview) preview.style.display = open ? 'none' : '';
+  }
+
+  function guardarNota(idx) {
+    const ta = document.getElementById(`notaTxt-${idx}`);
+    const txt = ta.value.trim();
+    if (!txt) return;
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-AR') + ' · ' + now.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+    staffPanels[idx].note = txt;
+    staffPanels[idx].lastEdit = fecha;
+    // Update timestamp inline without full re-render
+    document.getElementById(`lastedit-${idx}`).textContent = 'Modificado ' + fecha;
+    const truncated = txt.length > 60 ? txt.slice(0, 60) + '…' : txt;
+    document.getElementById(`preview-${idx}`).textContent = truncated;
+    toast('Nota guardada');
+  }
+
+  function agregarComentario() {}
+
+  renderStaffPanels();
+  // Completitud weights
+  const COMP_FULL = ['nombre','apellido','dni','cuit','email','telefono','fiscal','cbu','alias','banco','cuenta'];
+  const COMP_HALF = ['nacimiento2','nacionalidad','ocupacion','notas_internas'];
+
+  function recalcComp(){
+    const totalPts = COMP_FULL.length + COMP_HALF.length * 0.5;
+    let scored = 0;
+    const isFilled = f => {
+      const el = document.querySelector(`#panel-datos [data-field="${f}"]`);
+      if(!el) return false;
+      const df = el.closest('.df');
+      return df ? !df.classList.contains('empty') : false;
+    };
+    COMP_FULL.forEach(f=>{ if(isFilled(f)) scored += 1; });
+    COMP_HALF.forEach(f=>{ if(isFilled(f)) scored += 0.5; });
+    const pct = Math.min(100, Math.round((scored / totalPts) * 100));
+    // Update rail
+    document.getElementById('compPct').textContent = pct;
+    document.getElementById('compFill').style.width = pct + '%';
+    document.getElementById('compDone').textContent = scored % 1 === 0 ? scored : scored.toFixed(1);
+    document.getElementById('compTotal').textContent = totalPts % 1 === 0 ? totalPts : totalPts.toFixed(1);
+    // Update cc-compact ring
+    const ring = document.querySelector('.cc-compact .ring');
+    if(ring){ ring.style.setProperty('--p', pct); const sp = ring.querySelector('span'); if(sp) sp.textContent = pct+'%'; }
+    const ccVal = document.querySelector('.cc-compact-txt .val');
+    if(ccVal){
+      const pending = (totalPts - scored);
+      ccVal.innerHTML = `<b>${pending % 1 === 0 ? pending : pending.toFixed(1)} pts</b> pendientes`;
+    }
+    // Missing chips: hide filled, show pending; 100% → "+" symbol
+    const missingEl = document.getElementById('missing');
+    if(pct >= 100){
+      missingEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--success);font-weight:600"><span style="width:20px;height:20px;border-radius:50%;background:var(--success-soft);display:grid;place-items:center;font-size:14px;font-weight:700">+</span>Ficha completa</span>';
+    } else {
+      missingEl.querySelectorAll('.chip').forEach(chip=>{
+        const f = chip.dataset.field;
+        const el = document.querySelector(`#panel-datos [data-field="${f}"]`);
+        const df = el ? el.closest('.df') : null;
+        chip.style.display = (df && !df.classList.contains('empty')) ? 'none' : '';
+      });
+    }
+  }
+
+  function toggleEditDatos(){
+    editing = !editing;
+    document.getElementById('editDatosLbl').textContent = editing ? 'Guardar cambios' : 'Editar datos';
+    document.querySelectorAll('#panel-datos .df .dv').forEach(dv=>{
+      const field = dv.dataset.field;
+      if(!field) return;
+      if(editing){
+        const val = dv.classList.contains('empty') ? '' : dv.textContent.trim();
+        dv.dataset.prev = val;
+        dv.innerHTML = `<input type="text" value="${val}" placeholder="—" />`;
+      } else {
+        const input = dv.querySelector('input');
+        const v = input ? input.value.trim() : '';
+        if(v){ dv.textContent = v; dv.closest('.df').classList.remove('empty'); }
+        else { dv.textContent = 'Sin cargar'; dv.closest('.df').classList.add('empty'); }
+      }
+    });
+    if(!editing){ toast('Datos guardados'); recalcComp(); }
+  }
+
+  recalcComp();
+  window.toggleEditDatos = toggleEditDatos;
+
+  // Filter seg
+  document.querySelectorAll('#filterSeg button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('#filterSeg button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+    });
+  });
+
+  function openModal(id){
+    if(id === 'liqModal'){
+      // Determine which rows to include: checked rows, or all if none checked
+      const allRows = Array.from(document.querySelectorAll('#movBody tr'));
+      const checkedRows = allRows.filter(r => r.classList.contains('checked'));
+      const rows = checkedRows.length > 0 ? checkedRows : allRows;
+
+      let alq = 0, interes = 0, gastos = 0;
+      rows.forEach(r => {
+        const tipo = r.dataset.tipo;
+        const monto = parseFloat(r.dataset.monto) || 0;
+        if(tipo === 'alquiler') alq += monto;
+        else if(tipo === 'interes') interes += monto;
+        else if(tipo === 'gasto') gastos += Math.abs(monto);
+      });
+
+      const honorarios = Math.round((alq + interes) * 0.07);
+      const total = alq + interes - gastos - honorarios;
+      const fmt = n => n.toLocaleString('es-AR');
+
+      // Update subtitle
+      const selNote = checkedRows.length > 0 ? `${rows.length} seleccionados` : `${rows.length} movimientos`;
+      document.getElementById('liqSub').textContent = `Demián Samir · 3 propiedades · ${selNote}`;
+
+      // Show/hide rows with 0
+      document.getElementById('liqAlqRow').style.display = alq === 0 ? 'none' : '';
+      document.getElementById('liqIntRow').style.display = interes === 0 ? 'none' : '';
+      document.getElementById('liqGasRow').style.display = gastos === 0 ? 'none' : '';
+
+      document.getElementById('liqAlq').textContent = '+$ ' + fmt(alq);
+      document.getElementById('liqInt').textContent = '+$ ' + fmt(interes);
+      document.getElementById('liqGas').textContent = '−$ ' + fmt(gastos);
+      document.getElementById('liqHon').textContent = '−$ ' + fmt(honorarios);
+      document.getElementById('liqTotal').textContent = '$ ' + fmt(total);
+    }
+    document.getElementById(id).classList.add('open');
+  }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+  window.openModal = openModal; window.closeModal = closeModal;
+
+  function toggleTweaks(){ document.getElementById('tweaks').classList.toggle('open'); }
+  window.toggleTweaks = toggleTweaks;
+
+  function toggleRow(el){ el.closest('tr').classList.toggle('checked'); }
+  window.toggleRow = toggleRow;
+
+  let toastT;
+  function toast(msg){
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(()=>t.classList.remove('show'), 1800);
+  }
+  window.toast = toast;
+
+  // Chip click → jump to Datos and focus the missing field
+  document.getElementById('missing').addEventListener('click', e=>{
+    const chip = e.target.closest('.chip');
+    if(!chip) return;
+    const field = chip.dataset.field;
+    showTab('datos');
+    if(!editing) toggleEditDatos();
+    setTimeout(()=>{
+      const target = document.querySelector(`#panel-datos .dv[data-field="${field}"] input`);
+      if(target){ target.focus(); target.select(); }
+    }, 50);
+  });
+
+  // Edit mode handshake
+  window.addEventListener('message', e=>{
+    if(!e.data || !e.data.type) return;
+    if(e.data.type === '__activate_edit_mode'){
+      document.getElementById('tweaks').classList.add('open');
+    } else if (e.data.type === '__deactivate_edit_mode'){
+      document.getElementById('tweaks').classList.remove('open');
+    }
+  });
+  try{ window.parent.postMessage({type:'__edit_mode_available'}, '*'); }catch(_){}
+
+  /* ---- Manual movement modal: type + percentage ---- */
+  let editingRowId = null; // null = new, string = editing existing
+  let nextRowId = 4;
+  const manualState = { type: 'egreso', dir: 'restar', base: 'total', pct: 7, custom: 0 };
+  const BASE_VALUES = { total: 126050, alquileres: 150000, ingresos: 158450, custom: 0 };
+
+  function fmt(n){
+    return '$ ' + Math.round(Math.abs(n)).toLocaleString('es-AR');
+  }
+  function fmtSigned(n){
+    return (n >= 0 ? '+$ ' : '−$ ') + Math.round(Math.abs(n)).toLocaleString('es-AR');
+  }
+
+  function updatePctPreview(){
+    const baseVal = manualState.base === 'custom' ? manualState.custom : BASE_VALUES[manualState.base];
+    const amt = baseVal * (manualState.pct/100);
+    const sign = manualState.dir === 'restar' ? '−' : '+';
+    const baseLabels = { total: 'Total a transferir', alquileres: 'Subtotal alquileres', ingresos: 'Subtotal ingresos', custom: 'Monto manual' };
+    document.getElementById('pvBase').textContent = fmt(baseVal) + ' · ' + baseLabels[manualState.base];
+    document.getElementById('pvCalc').textContent = manualState.pct + '% de ' + fmt(baseVal);
+    document.getElementById('pvAmt').textContent = sign + ' ' + fmt(amt);
+    document.getElementById('pvAmt').style.color = manualState.dir === 'restar' ? 'var(--danger)' : 'var(--success)';
+  }
+
+  // Type segmented
+  document.querySelectorAll('#typeSeg button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('#typeSeg button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      manualState.type = b.dataset.t;
+      const isPct = manualState.type === 'pct';
+      document.getElementById('amtBlock').hidden = isPct;
+      document.getElementById('pctBlock').hidden = !isPct;
+      if(isPct) updatePctPreview();
+    });
+  });
+
+  // Direction segmented
+  document.querySelectorAll('#pctDir button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('#pctDir button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      manualState.dir = b.dataset.d;
+      updatePctPreview();
+    });
+  });
+
+  // Base radio options
+  document.querySelectorAll('#pctBase .base-opt').forEach(opt=>{
+    opt.addEventListener('click', (e)=>{
+      if(e.target.tagName === 'INPUT') return;
+      document.querySelectorAll('#pctBase .base-opt').forEach(x=>x.classList.remove('on'));
+      opt.classList.add('on');
+      manualState.base = opt.dataset.base;
+      updatePctPreview();
+    });
+  });
+
+  const pctVal = document.getElementById('pctVal');
+  if(pctVal) pctVal.addEventListener('input', ()=>{
+    manualState.pct = parseFloat(pctVal.value) || 0;
+    updatePctPreview();
+  });
+
+  const pctCustom = document.getElementById('pctCustom');
+  if(pctCustom){
+    pctCustom.addEventListener('focus', ()=>{
+      document.querySelectorAll('#pctBase .base-opt').forEach(x=>x.classList.remove('on'));
+      document.querySelector('#pctBase [data-base="custom"]').classList.add('on');
+      manualState.base = 'custom';
+    });
+    pctCustom.addEventListener('input', ()=>{
+      const n = parseFloat(pctCustom.value.replace(/[^0-9.-]/g,'')) || 0;
+      manualState.custom = n;
+      BASE_VALUES.custom = n;
+      updatePctPreview();
+    });
+  }
+
+  /* ---- Helpers to get/set modal fields ---- */
+  function getModalFields(){
+    return {
+      concepto: document.getElementById('manConcept').value.trim(),
+      tipo: manualState.type,
+      fecha: document.querySelector('#manualModal input[type=date]').value,
+      prop: document.getElementById('manProp').value,
+      monto: parseFloat((document.querySelector('#amtBlock input').value||'').replace(/[^0-9.-]/g,'')) || 0,
+    };
+  }
+
+  function resetModal(){
+    editingRowId = null;
+    document.getElementById('manTitle').textContent = 'Agregar movimiento manual';
+    document.getElementById('manConcept').value = '';
+    document.querySelector('#manualModal input[type=date]').value = '2026-04-17';
+    document.querySelector('#amtBlock input').value = '';
+    document.getElementById('manProp').value = '—';
+    document.querySelectorAll('#typeSeg button').forEach(b=> b.classList.toggle('on', b.dataset.t === 'egreso'));
+    manualState.type = 'egreso';
+    document.getElementById('amtBlock').hidden = false;
+    document.getElementById('pctBlock').hidden = true;
+    document.getElementById('saveMovBtn').textContent = 'Guardar movimiento';
+  }
+
+  function populateModalFromRow(tr){
+    editingRowId = tr.dataset.id;
+    document.getElementById('manTitle').textContent = 'Editar movimiento';
+    document.getElementById('saveMovBtn').textContent = 'Guardar cambios';
+    document.getElementById('manConcept').value = tr.dataset.concepto || '';
+    const fecha = tr.dataset.fecha || '';
+    document.querySelector('#manualModal input[type=date]').value = fecha;
+    const monto = parseFloat(tr.dataset.monto) || 0;
+    const tipo = monto >= 0 ? 'ingreso' : 'egreso';
+    document.querySelectorAll('#typeSeg button').forEach(b=> b.classList.toggle('on', b.dataset.t === tipo));
+    manualState.type = tipo;
+    document.getElementById('amtBlock').hidden = false;
+    document.getElementById('pctBlock').hidden = true;
+    document.querySelector('#amtBlock input').value = Math.abs(monto).toLocaleString('es-AR');
+    const prop = tr.dataset.prop || '—';
+    const sel = document.getElementById('manProp');
+    for(let o of sel.options){ if(o.value === prop){ o.selected = true; break; } }
+  }
+
+  function saveMovimiento(){
+    const f = getModalFields();
+    if(!f.concepto){ toast('Ingresá un concepto'); return; }
+    const monto = f.tipo === 'ingreso' ? f.monto : -f.monto;
+    const today = f.fecha ? f.fecha.split('-').reverse().join('/') : '';
+    const prop = f.prop === '—' ? '' : f.prop;
+
+    if(editingRowId){
+      // Update existing row
+      const tr = document.querySelector(`tr[data-id="${editingRowId}"]`);
+      if(tr){
+        tr.dataset.monto = monto;
+        tr.dataset.concepto = f.concepto;
+        tr.dataset.fecha = f.fecha;
+        tr.dataset.prop = prop;
+        tr.cells[1].innerHTML = `${f.concepto}<div class="meta">${tr.dataset.meta||''}</div>`;
+        tr.cells[1].style.cursor = 'pointer';
+        tr.cells[1].onclick = ()=> editRow(tr);
+        tr.cells[2].textContent = prop || '—';
+        tr.cells[2].className = prop ? '' : 'empty-prop';
+        tr.cells[3].textContent = today;
+        tr.cells[3].className = 'date';
+        tr.cells[4].innerHTML = `<span class="origin manual">Manual</span>`;
+        tr.cells[5].textContent = (monto>=0?'+$ ':'−$ ') + Math.abs(monto).toLocaleString('es-AR');
+        tr.cells[5].className = 'num ' + (monto>=0 ? 'pos' : 'neg');
+        toast('Movimiento actualizado');
+      }
+    } else {
+      // Add new row
+      const id = nextRowId++;
+      const tbody = document.getElementById('movBody');
+      const tr = document.createElement('tr');
+      tr.dataset.id = id;
+      tr.dataset.monto = monto;
+      tr.dataset.concepto = f.concepto;
+      tr.dataset.fecha = f.fecha;
+      tr.dataset.prop = prop;
+      tr.dataset.origen = 'manual';
+      tr.innerHTML = `
+        <td><div class="rowcheck" onclick="toggleRow(this)"></div></td>
+        <td class="concept" style="cursor:pointer" onclick="editRow(this.closest('tr'))">${f.concepto}<div class="meta"></div></td>
+        <td class="${prop?'':'empty-prop'}">${prop||'—'}</td>
+        <td class="date">${today}</td>
+        <td><span class="origin manual">Manual</span></td>
+        <td class="num ${monto>=0?'pos':'neg'}">${monto>=0?'+$ ':'−$ '}${Math.abs(monto).toLocaleString('es-AR')}</td>
+        <td style="position:relative"><button class="iconbtn" style="width:24px;height:24px" onclick="showRowMenu(event,this.closest('tr'))"><svg class="ic" width="12" height="12"><use href="#i-more"/></svg></button></td>`;
+      tbody.appendChild(tr);
+      toast('Movimiento agregado');
+      refreshFooter();
+    }
+    refreshFooter();
+    closeModal('manualModal');
+    resetModal();
+  }
+  window.saveMovimiento = saveMovimiento;
+
+  function refreshFooter(){
+    let ing = 0, egr = 0;
+    document.querySelectorAll('#movBody tr').forEach(tr=>{
+      const m = parseFloat(tr.dataset.monto)||0;
+      if(m>0) ing+=m; else egr+=m;
+    });
+    const count = document.querySelectorAll('#movBody tr').length;
+    document.querySelector('.footer-sum .grow').innerHTML = count + ' movimientos';
+    document.querySelector('.footer-sum .s:nth-child(2) .v').textContent = '+$ '+Math.round(ing).toLocaleString('es-AR');
+    document.querySelector('.footer-sum .s:nth-child(3) .v').textContent = '−$ '+Math.round(Math.abs(egr)).toLocaleString('es-AR');
+    const neto = ing + egr;
+    const netoEl = document.querySelector('.footer-sum .s:nth-child(4) .v');
+    netoEl.textContent = (neto>=0?'+$ ':'−$ ') + Math.round(Math.abs(neto)).toLocaleString('es-AR');
+    netoEl.className = 'v ' + (neto>=0?'pos':'');
+  }
+
+  /* ---- Edit row ---- */
+  function editRow(tr){
+    populateModalFromRow(tr);
+    openModal('manualModal');
+  }
+  window.editRow = editRow;
+
+  /* ---- Row context menu ---- */
+  let menuTargetRow = null;
+  function showRowMenu(e, tr){
+    e.stopPropagation();
+    menuTargetRow = tr;
+    const menu = document.getElementById('rowMenu');
+    menu.style.display = 'block';
+    const x = Math.min(e.clientX, window.innerWidth - 180);
+    const y = Math.min(e.clientY + 4, window.innerHeight - 80);
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+  }
+  window.showRowMenu = showRowMenu;
+
+  document.getElementById('rowMenuEditBtn').onclick = function(){
+    hideRowMenu();
+    if(menuTargetRow) editRow(menuTargetRow);
+  };
+  document.getElementById('rowMenuDelBtn').onclick = function(){
+    hideRowMenu();
+    if(menuTargetRow){
+      menuTargetRow.remove();
+      refreshFooter();
+      toast('Movimiento eliminado');
+      menuTargetRow = null;
+    }
+  };
+
+  function hideRowMenu(){ document.getElementById('rowMenu').style.display = 'none'; }
+  document.addEventListener('click', e=>{
+    if(!e.target.closest('#rowMenu')) hideRowMenu();
+  });
+
+  /* override openModal to reset on new */
+  const _origOpenModal = window.openModal;
+  window.openModal = function(id){
+    if(id === 'manualModal' && !editingRowId) resetModal();
+    _origOpenModal(id);
+  };
+  window.addEventListener('keydown', e=>{
+    if(e.key === 'Escape'){
+      ['liqModal','manualModal','docModal'].forEach(id=>closeModal(id));
+    }
+  });
+
+  /* ---- Drop zone ---- */
+  function dzDragOver(e){
+    e.preventDefault();
+    document.getElementById('dz').classList.add('over');
+  }
+  function dzDragLeave(){
+    document.getElementById('dz').classList.remove('over');
+  }
+  function dzDrop(e){
+    e.preventDefault();
+    dzDragLeave();
+    const file = e.dataTransfer.files[0];
+    if(file) dzApply(file);
+  }
+  function dzPicked(input){
+    const file = input.files[0];
+    if(file) dzApply(file);
+  }
+  function dzApply(file){
+    const dz = document.getElementById('dz');
+    dz.classList.add('has-file');
+    document.getElementById('dzEmpty').style.display = 'none';
+    // remove the file input so it doesn't overlap the info
+    const inp = document.getElementById('dzInput');
+    if(inp) inp.style.display = 'none';
+
+    document.getElementById('dzInfo').classList.remove('dz-hidden');
+    document.getElementById('dzFname').textContent = file.name;
+    const mb = (file.size / 1048576).toFixed(1);
+    document.getElementById('dzFsize').textContent = mb + ' MB';
+
+    // auto-fill nombre if empty
+    const nombreInput = document.getElementById('docNombre');
+    if(!nombreInput.value){
+      nombreInput.value = file.name.replace(/\.[^.]+$/, '');
+    }
+  }
+  function dzClear(){
+    document.getElementById('dz').classList.remove('has-file','over');
+    document.getElementById('dzEmpty').style.display = '';
+    const inp = document.getElementById('dzInput');
+    if(inp){ inp.style.display = ''; inp.value = ''; }
+    document.getElementById('dzInfo').classList.add('dz-hidden');
+    document.getElementById('docNombre').value = '';
+  }
+
+  /* ---- Combobox: Tipo de documento ---- */
+  const docTipoDefaults = [
+    'Contrato de alquiler',
+    'Escritura / título',
+    'DNI / identificación',
+    'CUIT / CUIL',
+    'Comprobante fiscal (AFIP)',
+    'Presupuesto / factura',
+    'Recibo de pago',
+    'Acta de entrega',
+    'Poder notarial',
+    'Seguro',
+    'Plano / habilitación'
+  ];
+  let docTipoCustom = [];
+
+  function renderDocTipoList(){
+    const input = document.getElementById('docTipo').value.trim().toLowerCase();
+    const list = document.getElementById('docTipoList');
+    
+    if(!input && !document.getElementById('docTipo').matches(':focus')){
+      list.classList.remove('open');
+      return;
+    }
+
+    // match against defaults + custom
+    const all = [...docTipoDefaults, ...docTipoCustom];
+    const matches = all
+      .filter(t => t.toLowerCase().includes(input))
+      .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+    
+    // check if exact match exists
+    const exactMatch = all.some(t => t.toLowerCase() === input);
+    
+    let html = '';
+    matches.forEach(m => {
+      html += `<div class="combobox-item" onclick="selectDocTipo('${m.replace(/'/g, "\\'")}'">${m}</div>`;
+    });
+    
+    if(!exactMatch && input.length > 1){
+      html += `<div class="combobox-item new" onclick="createAndSelectDocTipo('${input.replace(/'/g, "\\'")}')">${input}</div>`;
+    }
+
+    list.innerHTML = html;
+    list.classList.add('open');
+  }
+
+  function selectDocTipo(tipo){
+    document.getElementById('docTipo').value = tipo;
+    document.getElementById('docTipoList').classList.remove('open');
+  }
+
+  function createAndSelectDocTipo(tipo){
+    if(!docTipoCustom.includes(tipo)){
+      docTipoCustom.push(tipo);
+    }
+    selectDocTipo(tipo);
+  }
+
+  document.getElementById('docTipo').addEventListener('input', renderDocTipoList);
+  document.getElementById('docTipo').addEventListener('focus', e=>{
+    renderDocTipoList();
+  });
+  document.addEventListener('click', e=>{
+    if(!e.target.closest('.combobox-wrap')){
+      document.getElementById('docTipoList').classList.remove('open');
+    }
+  });
+
+  /* ---- Visibilidad tags ---- */
+  document.getElementById('visibilidadTags').addEventListener('click', e=>{
+    const tag = e.target.closest('.tag');
+    if(!tag || tag.classList.contains('disabled')) return;
+    tag.classList.toggle('on');
+  });
+
+  /* ---- Doc submit ---- */
+  function docSubmit(){
+    const tipo = document.getElementById('docTipo').value.trim();
+    if(!tipo){ 
+      document.getElementById('docTipo').focus(); 
+      return; 
+    }
+    closeModal('docModal');
+    // reset form
+    dzClear();
+    document.getElementById('docTipo').value = '';
+    document.getElementById('docNotas').value = '';
+    document.getElementById('docVigencia').value = '';
+    document.getElementById('docProp').value = '';
+    document.querySelectorAll('#visibilidadTags .tag:not(.disabled)').forEach((t,i)=>{ t.classList.toggle('on', i===0); });
+    toast('Documento subido correctamente');
+  }
+</script>
+</body>
+</html>

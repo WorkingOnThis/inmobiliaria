@@ -5,11 +5,17 @@ interface PropietarioCompletitudBarProps {
     cbu: string | null;
     dni: string | null;
     cuit: string | null;
+    condicionFiscal: string | null;
     birthDate: string | null;
     address: string | null;
     email: string | null;
     phone: string | null;
+    alias: string | null;
     banco: string | null;
+    tipoCuenta: string | null;
+    nacionalidad: string | null;
+    ocupacion: string | null;
+    notasInternas: string | null;
   };
   onChipClick?: (fieldId: string) => void;
 }
@@ -26,14 +32,20 @@ export function PropietarioCompletitudBar({
   onChipClick,
 }: PropietarioCompletitudBarProps) {
   const fields: FieldDef[] = [
-    { id: "cbu",       label: "CBU / CVU",          weight: 3,   value: propietario.cbu },
-    { id: "dni",       label: "DNI",                weight: 2,   value: propietario.dni },
-    { id: "cuit",      label: "CUIT / CUIL",        weight: 2,   value: propietario.cuit },
-    { id: "phone",     label: "Teléfono",           weight: 1.5, value: propietario.phone },
-    { id: "email",     label: "Email",              weight: 1.5, value: propietario.email },
-    { id: "birthDate", label: "Fecha nac.",         weight: 1,   value: propietario.birthDate },
-    { id: "address",   label: "Domicilio fiscal",   weight: 1,   value: propietario.address },
-    { id: "banco",     label: "Banco",              weight: 1,   value: propietario.banco },
+    { id: "cbu",           label: "CBU / CVU",        weight: 3,   value: propietario.cbu },
+    { id: "dni",           label: "DNI",              weight: 2,   value: propietario.dni },
+    { id: "cuit",          label: "CUIT / CUIL",      weight: 2,   value: propietario.cuit },
+    { id: "condicionFiscal", label: "Condición fiscal", weight: 1.5, value: propietario.condicionFiscal },
+    { id: "phone",         label: "Teléfono",         weight: 1.5, value: propietario.phone },
+    { id: "email",         label: "Email",            weight: 1.5, value: propietario.email },
+    { id: "alias",         label: "Alias CBU",        weight: 1,   value: propietario.alias },
+    { id: "banco",         label: "Banco",            weight: 1,   value: propietario.banco },
+    { id: "tipoCuenta",    label: "Tipo de cuenta",   weight: 1,   value: propietario.tipoCuenta },
+    { id: "address",       label: "Domicilio fiscal", weight: 1,   value: propietario.address },
+    { id: "birthDate",     label: "Fecha nac.",       weight: 0.5, value: propietario.birthDate },
+    { id: "nacionalidad",  label: "Nacionalidad",     weight: 0.5, value: propietario.nacionalidad },
+    { id: "ocupacion",     label: "Ocupación",        weight: 0.5, value: propietario.ocupacion },
+    { id: "notasInternas", label: "Notas internas",   weight: 0.5, value: propietario.notasInternas },
   ];
 
   const totalWeight = fields.reduce((sum, f) => sum + f.weight, 0);

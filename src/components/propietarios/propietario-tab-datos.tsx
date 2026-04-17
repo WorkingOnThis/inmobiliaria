@@ -21,7 +21,18 @@ interface Propietario {
   alias: string | null;
   banco: string | null;
   tipoCuenta: string | null;
+  condicionFiscal: string | null;
+  nacionalidad: string | null;
+  ocupacion: string | null;
+  notasInternas: string | null;
+  confianzaNombre: string | null;
+  confianzaApellido: string | null;
+  confianzaDni: string | null;
+  confianzaEmail: string | null;
+  confianzaTelefono: string | null;
+  confianzaVinculo: string | null;
   status: string;
+  createdAt: string;
 }
 
 interface PropietarioTabDatosProps {
@@ -31,7 +42,7 @@ interface PropietarioTabDatosProps {
   onFocusHandled?: () => void;
 }
 
-type EditableFields = Omit<Propietario, "id" | "status">;
+type EditableFields = Omit<Propietario, "id" | "status" | "createdAt">;
 
 // ── DataField ────────────────────────────────────────────────
 function DataField({
@@ -44,6 +55,7 @@ function DataField({
   placeholder = "",
   alert = false,
   mono = false,
+  hint,
 }: {
   label: string;
   value: string | null;
@@ -54,11 +66,19 @@ function DataField({
   placeholder?: string;
   alert?: boolean;
   mono?: boolean;
+  hint?: string;
 }) {
   return (
     <div id={`field-${id}`} className="flex flex-col gap-1">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
-        {label}
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+          {label}
+        </span>
+        {hint && (
+          <span className="text-[10px] text-text-muted italic normal-case tracking-normal">
+            — {hint}
+          </span>
+        )}
       </div>
       {editing ? (
         <input
@@ -80,6 +100,52 @@ function DataField({
           <AlertCircle size={12} className="flex-shrink-0" />
           Sin cargar — necesario para liquidar
         </div>
+      ) : (
+        <div className="text-[12px] text-text-muted italic">Sin cargar</div>
+      )}
+    </div>
+  );
+}
+
+function TextareaField({
+  label,
+  value,
+  id,
+  editing,
+  onChange,
+  placeholder = "",
+  hint,
+}: {
+  label: string;
+  value: string | null;
+  id: string;
+  editing: boolean;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  hint?: string;
+}) {
+  return (
+    <div id={`field-${id}`} className="flex flex-col gap-1">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+          {label}
+        </span>
+        {hint && (
+          <span className="text-[10px] text-text-muted italic normal-case tracking-normal">
+            — {hint}
+          </span>
+        )}
+      </div>
+      {editing ? (
+        <textarea
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder || "Sin cargar"}
+          rows={3}
+          className="w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all placeholder:text-text-muted resize-none"
+        />
+      ) : value ? (
+        <div className="text-[13.5px] text-on-surface whitespace-pre-wrap">{value}</div>
       ) : (
         <div className="text-[12px] text-text-muted italic">Sin cargar</div>
       )}
@@ -120,18 +186,28 @@ export function PropietarioTabDatos({
   const [confirmStatus, setConfirmStatus] = useState<"suspendido" | "baja" | null>(null);
 
   const [form, setForm] = useState<EditableFields>({
-    firstName: propietario.firstName,
-    lastName:  propietario.lastName,
-    dni:       propietario.dni,
-    cuit:      propietario.cuit,
-    phone:     propietario.phone,
-    email:     propietario.email,
-    address:   propietario.address,
-    birthDate: propietario.birthDate,
-    cbu:       propietario.cbu,
-    alias:     propietario.alias,
-    banco:     propietario.banco,
-    tipoCuenta: propietario.tipoCuenta,
+    firstName:        propietario.firstName,
+    lastName:         propietario.lastName,
+    dni:              propietario.dni,
+    cuit:             propietario.cuit,
+    phone:            propietario.phone,
+    email:            propietario.email,
+    address:          propietario.address,
+    birthDate:        propietario.birthDate,
+    cbu:              propietario.cbu,
+    alias:            propietario.alias,
+    banco:            propietario.banco,
+    tipoCuenta:       propietario.tipoCuenta,
+    condicionFiscal:  propietario.condicionFiscal,
+    nacionalidad:     propietario.nacionalidad,
+    ocupacion:        propietario.ocupacion,
+    notasInternas:    propietario.notasInternas,
+    confianzaNombre:  propietario.confianzaNombre,
+    confianzaApellido: propietario.confianzaApellido,
+    confianzaDni:     propietario.confianzaDni,
+    confianzaEmail:   propietario.confianzaEmail,
+    confianzaTelefono: propietario.confianzaTelefono,
+    confianzaVinculo: propietario.confianzaVinculo,
   });
 
   const setField = (key: keyof EditableFields) => (val: string) =>
@@ -144,7 +220,7 @@ export function PropietarioTabDatos({
       const el = document.getElementById(`field-${focusField}`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        (el.querySelector("input, select") as HTMLElement | null)?.focus();
+        (el.querySelector("input, select, textarea") as HTMLElement | null)?.focus();
       }
       onFocusHandled?.();
     }, 50);
@@ -175,18 +251,28 @@ export function PropietarioTabDatos({
 
   const handleCancelEdit = () => {
     setForm({
-      firstName: propietario.firstName,
-      lastName:  propietario.lastName,
-      dni:       propietario.dni,
-      cuit:      propietario.cuit,
-      phone:     propietario.phone,
-      email:     propietario.email,
-      address:   propietario.address,
-      birthDate: propietario.birthDate,
-      cbu:       propietario.cbu,
-      alias:     propietario.alias,
-      banco:     propietario.banco,
-      tipoCuenta: propietario.tipoCuenta,
+      firstName:        propietario.firstName,
+      lastName:         propietario.lastName,
+      dni:              propietario.dni,
+      cuit:             propietario.cuit,
+      phone:            propietario.phone,
+      email:            propietario.email,
+      address:          propietario.address,
+      birthDate:        propietario.birthDate,
+      cbu:              propietario.cbu,
+      alias:            propietario.alias,
+      banco:            propietario.banco,
+      tipoCuenta:       propietario.tipoCuenta,
+      condicionFiscal:  propietario.condicionFiscal,
+      nacionalidad:     propietario.nacionalidad,
+      ocupacion:        propietario.ocupacion,
+      notasInternas:    propietario.notasInternas,
+      confianzaNombre:  propietario.confianzaNombre,
+      confianzaApellido: propietario.confianzaApellido,
+      confianzaDni:     propietario.confianzaDni,
+      confianzaEmail:   propietario.confianzaEmail,
+      confianzaTelefono: propietario.confianzaTelefono,
+      confianzaVinculo: propietario.confianzaVinculo,
     });
     setEditing(false);
   };
@@ -257,8 +343,35 @@ export function PropietarioTabDatos({
               <DataField id="lastName"  label="Apellido" value={form.lastName}  editing={editing} onChange={setField("lastName")} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <DataField id="dni"  label="DNI"        value={form.dni}  editing={editing} onChange={setField("dni")}  placeholder="28441100" mono />
+              <DataField id="dni"  label="DNI"         value={form.dni}  editing={editing} onChange={setField("dni")}  placeholder="28441100" mono />
               <DataField id="cuit" label="CUIT / CUIL" value={form.cuit} editing={editing} onChange={setField("cuit")} placeholder="20-28441100-4" mono />
+            </div>
+            {/* Condición fiscal */}
+            <div className="flex flex-col gap-1" id="field-condicionFiscal">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+                Condición fiscal
+              </div>
+              {editing ? (
+                <select
+                  value={form.condicionFiscal ?? ""}
+                  onChange={(e) => setForm((prev) => ({ ...prev, condicionFiscal: e.target.value || null }))}
+                  className="w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all"
+                >
+                  <option value="">Sin especificar</option>
+                  <option value="responsable_inscripto">Responsable inscripto</option>
+                  <option value="monotributista">Monotributista</option>
+                  <option value="exento">Exento</option>
+                  <option value="consumidor_final">Consumidor final</option>
+                </select>
+              ) : (
+                <div className={cn("text-[13.5px]", !form.condicionFiscal ? "text-text-muted italic text-[12px]" : "text-on-surface")}>
+                  {form.condicionFiscal === "responsable_inscripto" ? "Responsable inscripto"
+                    : form.condicionFiscal === "monotributista" ? "Monotributista"
+                    : form.condicionFiscal === "exento" ? "Exento"
+                    : form.condicionFiscal === "consumidor_final" ? "Consumidor final"
+                    : "Sin cargar"}
+                </div>
+              )}
             </div>
             <div className="border-t border-border" />
             <DataField id="email" label="Email" value={form.email} editing={editing} onChange={setField("email")} type="email" placeholder="cmendoza@gmail.com" />
@@ -305,6 +418,44 @@ export function PropietarioTabDatos({
           </div>
         </SectionCard>
       </div>
+
+      {/* ── Datos de interés ── */}
+      <SectionCard title="Datos de interés">
+        <div className="grid grid-cols-2 gap-4">
+          <DataField
+            id="nacionalidad" label="Nacionalidad" value={form.nacionalidad}
+            editing={editing} onChange={setField("nacionalidad")} placeholder="Argentina"
+          />
+          <DataField
+            id="ocupacion" label="Ocupación" value={form.ocupacion}
+            editing={editing} onChange={setField("ocupacion")} placeholder="Ej: Contador, Médico"
+          />
+          <div className="col-span-2">
+            <TextareaField
+              id="notasInternas" label="Notas internas" value={form.notasInternas}
+              editing={editing} onChange={setField("notasInternas")}
+              placeholder="Observaciones útiles para el staff…"
+              hint="Solo visible para el equipo"
+            />
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* ── Persona de confianza ── */}
+      <SectionCard title="Persona de confianza">
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <DataField id="confianzaNombre"   label="Nombre"   value={form.confianzaNombre}   editing={editing} onChange={setField("confianzaNombre")} />
+            <DataField id="confianzaApellido" label="Apellido" value={form.confianzaApellido} editing={editing} onChange={setField("confianzaApellido")} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <DataField id="confianzaDni"     label="DNI"      value={form.confianzaDni}     editing={editing} onChange={setField("confianzaDni")}     mono placeholder="28441100" />
+            <DataField id="confianzaVinculo" label="Vínculo"  value={form.confianzaVinculo} editing={editing} onChange={setField("confianzaVinculo")} placeholder="Ej: cónyuge, familiar, apoderado" hint="Relación con el propietario" />
+          </div>
+          <DataField id="confianzaEmail"    label="Email"    value={form.confianzaEmail}    editing={editing} onChange={setField("confianzaEmail")}    type="email" placeholder="contacto@gmail.com" />
+          <DataField id="confianzaTelefono" label="Teléfono" value={form.confianzaTelefono} editing={editing} onChange={setField("confianzaTelefono")} placeholder="351 612-4400" />
+        </div>
+      </SectionCard>
 
       {/* ── Estado del propietario ── */}
       <SectionCard title="Estado del propietario">

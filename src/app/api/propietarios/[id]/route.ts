@@ -22,6 +22,16 @@ const updatePropietarioSchema = z.object({
   alias: z.string().nullable().optional(),
   banco: z.string().nullable().optional(),
   tipoCuenta: z.string().nullable().optional(),
+  condicionFiscal: z.string().nullable().optional(),
+  nacionalidad: z.string().nullable().optional(),
+  ocupacion: z.string().nullable().optional(),
+  notasInternas: z.string().nullable().optional(),
+  confianzaNombre: z.string().nullable().optional(),
+  confianzaApellido: z.string().nullable().optional(),
+  confianzaDni: z.string().nullable().optional(),
+  confianzaEmail: z.string().nullable().optional(),
+  confianzaTelefono: z.string().nullable().optional(),
+  confianzaVinculo: z.string().nullable().optional(),
   status: z.enum(["activo", "suspendido", "baja"]).optional(),
 });
 

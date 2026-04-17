@@ -5,10 +5,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Loader2, Plus, X, ChevronLeft, ChevronRight,
-  Banknote, Download,
+  Banknote, Download, FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -61,10 +62,19 @@ function formatMonthYear(periodo: string) {
 type MovFilter = "todos" | "liquidados" | "pendientes" | "confirmar";
 type FabAction = "liquidacion" | "movimiento" | null;
 
+type MovTipo = "ingreso" | "egreso" | "porcentaje";
+type PorcentajeBase = "total_transferir" | "subtotal_alquileres" | "subtotal_ingresos" | "monto_manual";
+
 interface MovimientoFormState {
   descripcion: string;
-  tipo: "ingreso" | "egreso";
+  tipo: MovTipo;
+  // Para tipo ingreso/egreso
   monto: string;
+  // Para tipo porcentaje
+  pctDireccion: "ingreso" | "egreso";
+  pctValor: string;
+  pctBase: PorcentajeBase;
+  pctMontoManual: string;
   fecha: string;
   categoria: string;
   nota: string;
@@ -96,6 +106,10 @@ export function PropietarioTabCuentaCorriente({
     descripcion: "",
     tipo: "ingreso",
     monto: "",
+    pctDireccion: "egreso",
+    pctValor: "",
+    pctBase: "total_transferir",
+    pctMontoManual: "",
     fecha: localDateString(),
     categoria: "",
     nota: "",
@@ -173,10 +187,40 @@ export function PropietarioTabCuentaCorriente({
     ? formatMonthYear(periodoFiltro)
     : `Todo ${new Date().getFullYear()}`;
 
+  const calcPorcentajeMonto = (): number | null => {
+    if (!movForm.pctValor) return null;
+    const pct = parseFloat(movForm.pctValor) / 100;
+    let base = 0;
+    if (movForm.pctBase === "total_transferir") {
+      base = (data?.kpis.proximaLiquidacionEstimada ?? 0) * 0.93;
+    } else if (movForm.pctBase === "subtotal_alquileres") {
+      base = data?.kpis.proximaLiquidacionEstimada ?? 0;
+    } else if (movForm.pctBase === "subtotal_ingresos") {
+      base = totalIngresos;
+    } else if (movForm.pctBase === "monto_manual") {
+      base = parseFloat(movForm.pctMontoManual) || 0;
+    }
+    return Math.round(base * pct);
+  };
+
   const handleSaveMovimiento = async () => {
     if (!movForm.descripcion.trim()) { toast.error("Completá la descripción"); return; }
-    if (!movForm.monto)              { toast.error("Completá el monto"); return; }
     if (!movForm.fecha)              { toast.error("Completá la fecha"); return; }
+
+    let montoFinal: number;
+    let tipoFinal: "ingreso" | "egreso";
+
+    if (movForm.tipo === "porcentaje") {
+      const calculado = calcPorcentajeMonto();
+      if (!calculado || calculado <= 0) { toast.error("Revisá el porcentaje y la base de cálculo"); return; }
+      montoFinal = calculado;
+      tipoFinal = movForm.pctDireccion;
+    } else {
+      if (!movForm.monto) { toast.error("Completá el monto"); return; }
+      montoFinal = parseFloat(movForm.monto);
+      tipoFinal = movForm.tipo as "ingreso" | "egreso";
+    }
+
     setSaving(true);
     try {
       const res = await fetch(`/api/propietarios/${propietarioId}/movimientos`, {
@@ -184,8 +228,8 @@ export function PropietarioTabCuentaCorriente({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           descripcion: movForm.descripcion.trim(),
-          tipo: movForm.tipo,
-          monto: parseFloat(movForm.monto),
+          tipo: tipoFinal,
+          monto: montoFinal,
           fecha: movForm.fecha,
           categoria: movForm.categoria || null,
           nota: movForm.nota || null,
@@ -197,7 +241,7 @@ export function PropietarioTabCuentaCorriente({
       await queryClient.invalidateQueries({ queryKey: ["propietario-cc",      propietarioId] });
       toast.success("Movimiento registrado");
       setFabAction(null);
-      setMovForm({ descripcion: "", tipo: "ingreso", monto: "", fecha: localDateString(), categoria: "", nota: "" });
+      setMovForm({ descripcion: "", tipo: "ingreso", monto: "", pctDireccion: "egreso", pctValor: "", pctBase: "total_transferir", pctMontoManual: "", fecha: localDateString(), categoria: "", nota: "" });
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -511,6 +555,11 @@ export function PropietarioTabCuentaCorriente({
           <Button variant="secondary" size="sm" onClick={() => setFabAction("movimiento")} className="gap-1.5">
             <Plus size={13} /> Agregar movimiento manual
           </Button>
+          <Link href={`/propietarios/${propietarioId}/liquidacion${periodoFiltro ? `?periodo=${periodoFiltro}` : ""}`}>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <FileText size={13} /> Vista previa
+            </Button>
+          </Link>
           <Button size="sm" onClick={() => setFabAction("liquidacion")} className="gap-1.5 bg-primary text-primary-foreground hover:opacity-90">
             <Banknote size={13} /> Generar liquidación
           </Button>
@@ -532,29 +581,122 @@ export function PropietarioTabCuentaCorriente({
             </div>
 
             <div className="px-6 py-5 flex flex-col gap-4">
-              {/* Segmented TIPO */}
+              {/* Segmented TIPO: Ingreso / Egreso / Porcentaje */}
               <div>
                 <label className={labelCls}>Tipo</label>
                 <div
                   className="flex w-full rounded-[7px] p-[2px] border border-border"
                   style={{ background: "var(--surface-mid)" }}
                 >
-                  {(["ingreso", "egreso"] as const).map((t) => (
+                  {([
+                    { key: "ingreso",    label: "↑ Ingreso" },
+                    { key: "egreso",     label: "↓ Egreso" },
+                    { key: "porcentaje", label: "% Porcentaje" },
+                  ] as { key: MovTipo; label: string }[]).map(({ key, label }) => (
                     <button
-                      key={t}
-                      onClick={() => setMovForm((f) => ({ ...f, tipo: t }))}
+                      key={key}
+                      onClick={() => setMovForm((f) => ({ ...f, tipo: key }))}
                       className={cn(
-                        "flex-1 py-2 text-[0.78rem] font-semibold rounded-[5px] transition-all border",
-                        movForm.tipo === t
+                        "flex-1 py-2 text-[0.75rem] font-semibold rounded-[5px] transition-all border",
+                        movForm.tipo === key
                           ? "bg-primary-dim border-primary text-on-surface"
                           : "border-transparent text-text-secondary hover:text-on-surface"
                       )}
                     >
-                      {t === "ingreso" ? "↑ Ingreso" : "↓ Egreso"}
+                      {label}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Sub-panel porcentaje */}
+              {movForm.tipo === "porcentaje" && (
+                <div className="bg-surface-mid border border-border rounded-[8px] p-4 flex flex-col gap-3">
+                  {/* Dirección del porcentaje */}
+                  <div>
+                    <label className={labelCls}>Dirección</label>
+                    <div className="flex rounded-[6px] p-[2px] border border-border" style={{ background: "var(--surface-high)" }}>
+                      {(["ingreso", "egreso"] as const).map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => setMovForm((f) => ({ ...f, pctDireccion: d }))}
+                          className={cn(
+                            "flex-1 py-1.5 text-[0.72rem] font-semibold rounded-[4px] transition-all border",
+                            movForm.pctDireccion === d
+                              ? "bg-primary-dim border-primary text-on-surface"
+                              : "border-transparent text-text-secondary hover:text-on-surface"
+                          )}
+                        >
+                          {d === "ingreso" ? "↑ Ingreso" : "↓ Egreso"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Porcentaje <span className="text-error">*</span></label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={movForm.pctValor}
+                          onChange={(e) => setMovForm((f) => ({ ...f, pctValor: e.target.value }))}
+                          placeholder="7"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          className={cn(inputCls, "pr-7")}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-[0.82rem]">%</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Base de cálculo</label>
+                      <select
+                        value={movForm.pctBase}
+                        onChange={(e) => setMovForm((f) => ({ ...f, pctBase: e.target.value as PorcentajeBase }))}
+                        className={inputCls}
+                      >
+                        <option value="total_transferir">Total a transferir</option>
+                        <option value="subtotal_alquileres">Subtotal de alquileres</option>
+                        <option value="subtotal_ingresos">Subtotal de ingresos</option>
+                        <option value="monto_manual">Monto manual</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {movForm.pctBase === "monto_manual" && (
+                    <div>
+                      <label className={labelCls}>Monto base <span className="text-error">*</span></label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[0.82rem]">$</span>
+                        <input
+                          type="number"
+                          value={movForm.pctMontoManual}
+                          onChange={(e) => setMovForm((f) => ({ ...f, pctMontoManual: e.target.value }))}
+                          placeholder="150000"
+                          min="0"
+                          className={cn(inputCls, "pl-7")}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preview del monto calculado */}
+                  {movForm.pctValor && calcPorcentajeMonto() !== null && (
+                    <div className="flex items-center justify-between text-[12px] border-t border-border pt-2 mt-1">
+                      <span className="text-text-muted">Monto calculado:</span>
+                      <span
+                        className="font-mono font-semibold tabular-nums"
+                        style={{ color: movForm.pctDireccion === "ingreso" ? "var(--success)" : "var(--error)" }}
+                      >
+                        {movForm.pctDireccion === "ingreso" ? "+" : "−"}
+                        {new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(calcPorcentajeMonto()!)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -572,20 +714,23 @@ export function PropietarioTabCuentaCorriente({
                 <input type="text" value={movForm.descripcion} onChange={(e) => setMovForm((f) => ({ ...f, descripcion: e.target.value }))} placeholder="Ej: Gasto de mantenimiento" className={inputCls} />
               </div>
 
-              <div>
-                <label className={labelCls}>Monto <span className="text-error">*</span></label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[0.82rem]">$</span>
-                  <input
-                    type="number"
-                    value={movForm.monto}
-                    onChange={(e) => setMovForm((f) => ({ ...f, monto: e.target.value }))}
-                    placeholder="150000"
-                    min="0"
-                    className={cn(inputCls, "pl-7")}
-                  />
+              {/* Monto solo si no es porcentaje */}
+              {movForm.tipo !== "porcentaje" && (
+                <div>
+                  <label className={labelCls}>Monto <span className="text-error">*</span></label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[0.82rem]">$</span>
+                    <input
+                      type="number"
+                      value={movForm.monto}
+                      onChange={(e) => setMovForm((f) => ({ ...f, monto: e.target.value }))}
+                      placeholder="150000"
+                      min="0"
+                      className={cn(inputCls, "pl-7")}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className={labelCls}>Nota interna (opcional)</label>

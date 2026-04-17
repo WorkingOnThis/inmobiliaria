@@ -37,9 +37,13 @@ const visitorMenuItems: MenuItem[] = [
   },
   {
     title: "Configuración",
-    url: "/tablero/settings",
+    url: "/configuracion/administracion",
     icon: Settings,
     items: [
+      {
+        title: "Datos de la Administración",
+        url: "/configuracion/administracion",
+      },
       {
         title: "General",
         url: "/tablero/settings/general",
@@ -158,9 +162,13 @@ const accountAdminMenuItems: MenuItem[] = [
   },
   {
     title: "Configuración",
-    url: "/tablero/settings",
+    url: "/configuracion/administracion",
     icon: Settings,
     items: [
+      {
+        title: "Datos de la Administración",
+        url: "/configuracion/administracion",
+      },
       {
         title: "General",
         url: "/tablero/settings/general",

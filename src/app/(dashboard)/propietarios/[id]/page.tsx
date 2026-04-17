@@ -26,6 +26,16 @@ interface Propietario {
   alias: string | null;
   banco: string | null;
   tipoCuenta: string | null;
+  condicionFiscal: string | null;
+  nacionalidad: string | null;
+  ocupacion: string | null;
+  notasInternas: string | null;
+  confianzaNombre: string | null;
+  confianzaApellido: string | null;
+  confianzaDni: string | null;
+  confianzaEmail: string | null;
+  confianzaTelefono: string | null;
+  confianzaVinculo: string | null;
   status: string;
   createdAt: string;
 }

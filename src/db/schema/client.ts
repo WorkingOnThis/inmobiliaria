@@ -31,6 +31,18 @@ export const client = pgTable("client", {
   alias: text("alias"),
   banco: text("banco"),
   tipoCuenta: text("tipoCuenta"), // "caja_ahorro" | "cuenta_corriente"
+  condicionFiscal: text("condicionFiscal"), // "responsable_inscripto" | "monotributista" | "exento" | "consumidor_final"
+  // Datos de interés
+  nacionalidad: text("nacionalidad"),
+  ocupacion: text("ocupacion"),
+  notasInternas: text("notasInternas"),
+  // Persona de confianza
+  confianzaNombre: text("confianzaNombre"),
+  confianzaApellido: text("confianzaApellido"),
+  confianzaDni: text("confianzaDni"),
+  confianzaEmail: text("confianzaEmail"),
+  confianzaTelefono: text("confianzaTelefono"),
+  confianzaVinculo: text("confianzaVinculo"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

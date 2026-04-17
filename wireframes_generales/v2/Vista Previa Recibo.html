@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arce · Vista previa · Liquidación LIQ-00000241</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: oklch(0.165 0.006 40);
+    --bg-raise: oklch(0.195 0.007 40);
+    --panel: oklch(0.215 0.008 40);
+    --line: oklch(0.285 0.010 40);
+    --line-soft: oklch(0.255 0.010 40);
+    --text: oklch(0.972 0.004 60);
+    --text-muted: oklch(0.72 0.012 50);
+    --text-dim: oklch(0.54 0.012 40);
+    --accent: oklch(0.685 0.165 34);
+    --accent-soft: oklch(0.685 0.165 34 / .14);
+    --success: oklch(0.74 0.14 155);
+    --success-soft: oklch(0.74 0.14 155 / .14);
+    --danger: oklch(0.68 0.18 25);
+    --font-ui: "Inter", -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 13.5px; -webkit-font-smoothing: antialiased; }
+  button{ font: inherit; color: inherit; cursor: pointer; }
+  a{ color: inherit; text-decoration: none; }
+
+  /* Topbar */
+  .topbar{
+    display:flex; align-items:center; gap: 14px;
+    padding: 12px 24px; border-bottom: 1px solid var(--line);
+    background: color-mix(in oklab, var(--bg) 92%, transparent);
+    backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 20;
+  }
+  .brand-mark{ width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), oklch(0.55 0.15 30)); display:grid; place-items:center; color:#fff; font-weight:700; font-size:13px; }
+  .crumbs{ display:flex; align-items:center; gap:8px; font-size: 13px; color: var(--text-muted); }
+  .crumbs .sep{ color: var(--text-dim); }
+  .crumbs a:hover{ color: var(--text); }
+  .crumbs .ref{ font-family: var(--font-mono); font-size: 11.5px; padding: 2px 7px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg-raise); color: var(--text-dim); }
+  .top-actions{ margin-left:auto; display:flex; align-items:center; gap: 8px; }
+  .btn{ display:inline-flex; align-items:center; gap:7px; padding: 7px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg-raise); color: var(--text); font-size: 13px; font-weight: 500; }
+  .btn:hover{ background: var(--panel); }
+  .btn.primary{ background: var(--accent); color: #1a0d08; border-color: transparent; font-weight: 600; }
+  .btn.primary:hover{ background: oklch(0.72 0.165 34); }
+  .btn.ghost{ background: transparent; border-color: transparent; color: var(--text-muted); }
+  .btn.ghost:hover{ color: var(--text); background: var(--panel); }
+  .btn .ic{ width: 14px; height: 14px; }
+  .iconbtn{ width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg-raise); display:grid; place-items:center; color: var(--text-muted); }
+  .iconbtn:hover{ color: var(--text); background: var(--panel); }
+
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size: 11px; font-weight: 600;
+    padding: 3px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .pill.draft{ background: oklch(0.80 0.13 85 / .14); color: oklch(0.80 0.13 85); border: 1px solid oklch(0.80 0.13 85 / .25); }
+  .pill .dot{ width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* Layout */
+  .layout{
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 0;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* Canvas (paper) */
+  .canvas{
+    padding: 28px;
+    background:
+      radial-gradient(circle at 1px 1px, oklch(0.25 0.008 40) 1px, transparent 0) 0 0 / 18px 18px,
+      var(--bg);
+    display:flex; justify-content: center;
+    align-items: flex-start;
+    overflow: auto;
+  }
+
+  .paper-wrap{
+    position: relative;
+    transform-origin: top center;
+    transition: transform .2s;
+  }
+  .paper{
+    width: 794px; /* A4 @ 96dpi */
+    min-height: 1123px;
+    background: #f7f5ef;
+    color: #1a1614;
+    box-shadow: 0 4px 12px rgba(0,0,0,.4), 0 20px 60px rgba(0,0,0,.5);
+    border-radius: 2px;
+    font-family: "Inter", sans-serif;
+    padding: 56px 64px;
+    position: relative;
+  }
+  .paper::after{
+    content: ''; position: absolute; inset: 0;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.07 0 0 0 0 0.06 0 0 0 .05 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    opacity: .35;
+  }
+
+  .paper.draft::before{
+    content: 'BORRADOR';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-22deg);
+    font-size: 140px; font-weight: 900;
+    color: rgba(232, 90, 60, 0.1);
+    letter-spacing: .05em;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Receipt content */
+  .r-head{ display:flex; gap: 18px; align-items: flex-start; padding-bottom: 18px; border-bottom: 2px solid #1a1614; position: relative; z-index: 2; }
+  .r-logo{ width: 60px; height: 60px; border-radius: 10px; background: linear-gradient(135deg, #e85a3c, #c03c1f); color:#fff; display:grid; place-items:center; font-weight: 700; font-size: 26px; flex: 0 0 60px; }
+  .r-biz{ flex: 1; }
+  .r-biz .nm{ font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+  .r-biz .mt{ font-size: 11px; color: #5a514c; margin-top: 2px; }
+  .r-biz .mt.mono{ font-family: var(--font-mono); }
+
+  .r-num{ text-align: right; }
+  .r-num .badge{
+    display:inline-block; padding: 2px 10px; border: 1.5px solid #1a1614; border-radius: 4px;
+    font-size: 10px; font-weight: 700; letter-spacing: .1em; margin-bottom: 6px;
+  }
+  .r-num .nv{ font-family: var(--font-mono); font-size: 15px; font-weight: 700; }
+  .r-num .k{ font-size: 9.5px; color: #5a514c; text-transform: uppercase; letter-spacing: .06em; margin-top: 6px; }
+  .r-num .v{ font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+
+  /* Meta grid */
+  .r-meta{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 20px; position: relative; z-index: 2; }
+  .r-block{ }
+  .r-label{ font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; color: #5a514c; margin-bottom: 4px; font-weight: 600; }
+  .r-val{ font-size: 13px; font-weight: 500; }
+  .r-val.big{ font-size: 16px; font-weight: 700; }
+  .r-val.money{ font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .r-sub{ font-size: 10.5px; color: #5a514c; margin-top: 3px; }
+
+  /* Properties list */
+  .r-section-title{
+    font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
+    color: #5a514c; font-weight: 700; margin: 22px 0 8px;
+    position: relative; z-index: 2;
+  }
+  .r-props{ position: relative; z-index: 2; display:flex; flex-direction: column; gap: 4px; }
+  .r-prop{
+    display:grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;
+    padding: 7px 10px; background: rgba(26, 22, 20, 0.04); border-radius: 4px;
+    font-size: 11px;
+  }
+  .r-prop .pn{ font-family: var(--font-mono); color: #5a514c; }
+  .r-prop .pa{ font-weight: 500; }
+  .r-prop .pi{ color: #5a514c; font-size: 10px; }
+
+  /* Movements table */
+  .r-table{ width: 100%; border-collapse: collapse; margin-top: 8px; position: relative; z-index: 2; font-size: 11px; }
+  .r-table th{
+    text-align: left; padding: 8px 6px;
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; color: #5a514c;
+    font-weight: 700; border-bottom: 1.5px solid #1a1614;
+  }
+  .r-table td{ padding: 7px 6px; border-bottom: 1px dashed #d9d1c3; vertical-align: top; }
+  .r-table td.num{ text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .r-table td.date{ font-family: var(--font-mono); color: #5a514c; font-size: 10.5px; white-space: nowrap; }
+  .r-table .concept .meta{ font-size: 10px; color: #5a514c; margin-top: 2px; }
+  .r-table .sign-pos{ color: #2a6a3a; }
+  .r-table .sign-neg{ color: #9a2a1a; }
+
+  /* Totals */
+  .r-totals{ margin-top: 16px; margin-left: auto; width: 45%; position: relative; z-index: 2; }
+  .r-totals .ln{
+    display:flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; font-size: 12px; border-bottom: 1px dotted #d9d1c3;
+  }
+  .r-totals .ln:last-child{ border-bottom: 0; }
+  .r-totals .ln .k{ color: #5a514c; }
+  .r-totals .ln .v{ font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 500; }
+  .r-totals .ln.total{ margin-top: 6px; padding-top: 12px; border-top: 2px solid #1a1614; font-size: 15px; font-weight: 700; }
+  .r-totals .ln.total .v{ color: #e85a3c; font-weight: 700; font-size: 17px; }
+
+  /* Footer */
+  .r-foot{
+    margin-top: 40px; padding-top: 18px; border-top: 1px solid #d9d1c3;
+    position: relative; z-index: 2; display:grid; grid-template-columns: 1fr 180px; gap: 24px;
+  }
+  .r-foot .clauses{ font-size: 9.5px; color: #5a514c; line-height: 1.55; }
+  .r-foot .clauses .c{ padding: 3px 0; }
+  .r-foot .qr{
+    width: 100px; height: 100px; margin-left: auto;
+    background:
+      linear-gradient(90deg, #1a1614 0 2px, transparent 2px 6px) repeat,
+      linear-gradient(0deg, #1a1614 0 2px, transparent 2px 6px) repeat,
+      #f7f5ef;
+    background-size: 6px 6px;
+    position: relative;
+    border: 2px solid #1a1614;
+  }
+  .r-foot .qr::before, .r-foot .qr::after{
+    content: ''; position: absolute; width: 22px; height: 22px; border: 4px solid #1a1614; background: #f7f5ef;
+  }
+  .r-foot .qr::before{ top: 4px; left: 4px; }
+  .r-foot .qr::after{ top: 4px; right: 4px; }
+  .r-foot .qr-label{ font-size: 9px; text-align: center; margin-top: 4px; color: #5a514c; text-transform: uppercase; letter-spacing: .08em; }
+
+  .r-sig{
+    margin-top: 24px; display:flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 2;
+  }
+  .r-sig .bank{ font-size: 10px; color: #5a514c; }
+  .r-sig .bank b{ color: #1a1614; font-family: var(--font-mono); font-weight: 500; }
+  .r-sig .sg{ width: 200px; text-align: center; }
+  .r-sig .sg .nm{ font-family: "Brush Script MT", cursive; font-size: 26px; transform: rotate(-3deg); margin-bottom: 2px; }
+  .r-sig .sg .ln{ border-top: 1px solid #1a1614; padding-top: 6px; font-size: 9.5px; color: #5a514c; text-transform: uppercase; letter-spacing: .08em; }
+
+  /* Right sidebar */
+  .side{
+    border-left: 1px solid var(--line);
+    background: var(--bg);
+    padding: 18px 18px 24px;
+    position: sticky; top: 56px; height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .side h3{ margin: 0 0 12px; font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+  .side .card{
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px; margin-bottom: 16px;
+  }
+  .side .kv{ display:flex; justify-content: space-between; padding: 6px 0; font-size: 12.5px; border-bottom: 1px solid var(--line-soft); }
+  .side .kv:last-child{ border-bottom: 0; }
+  .side .kv .k{ color: var(--text-muted); }
+  .side .kv .v{ font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .side .kv .v.pos{ color: var(--success); }
+  .side .kv .v.neg{ color: var(--danger); }
+  .side .kv.total{ font-weight: 600; padding-top: 10px; margin-top: 4px; border-top: 1px solid var(--line); }
+  .side .kv.total .v{ color: var(--accent); }
+
+  .options{ display:flex; flex-direction: column; gap: 8px; }
+  .opt{
+    display:flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 8px;
+    background: var(--bg-raise); border: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .opt:hover{ border-color: var(--line-soft); }
+  .opt .sw{ width: 30px; height: 16px; background: var(--line); border-radius: 999px; position: relative; transition: .15s; flex: 0 0 30px; }
+  .opt .sw::after{ content:''; position:absolute; left: 2px; top: 2px; width: 12px; height: 12px; background: var(--text-muted); border-radius: 50%; transition: .15s; }
+  .opt.on .sw{ background: var(--accent-soft); }
+  .opt.on .sw::after{ left: 16px; background: var(--accent); }
+  .opt .tx{ flex: 1; font-size: 12.5px; }
+  .opt .tx .d{ font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+  /* Zoom control */
+  .zoom{
+    display:inline-flex; align-items: center; gap: 2px;
+    background: var(--bg-raise); border: 1px solid var(--line); border-radius: 7px;
+    overflow: hidden;
+  }
+  .zoom button{
+    background: transparent; border: 0; padding: 6px 8px; color: var(--text-muted);
+  }
+  .zoom button:hover{ color: var(--text); }
+  .zoom .lbl{ padding: 5px 8px; font-family: var(--font-mono); font-size: 12px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+
+  /* Toast */
+  .toast{ position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 13px; display:none; z-index: 60; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+  .toast.show{ display:flex; align-items:center; gap:10px; opacity: 1; transform: translate(-50%, 0); transition: all .2s; }
+  .toast .ok{ width: 18px; height: 18px; border-radius: 50%; background: var(--success-soft); color: var(--success); display:grid; place-items:center; }
+
+  @media print{
+    body{ background: white; }
+    .topbar, .side{ display: none; }
+    .layout{ grid-template-columns: 1fr; }
+    .canvas{ padding: 0; background: white; }
+    .paper{ box-shadow: none; border-radius: 0; }
+    .paper::after{ display: none; }
+    .paper.draft::before{ display: none; }
+  }
+
+  @media (max-width: 1100px){
+    .layout{ grid-template-columns: 1fr; }
+    .side{ position: static; height: auto; border-left: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+
+<template id="__bundler_thumbnail" data-bg-color="#1a1a1a">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <!-- Recibo preview icon -->
+    <rect width="1200" height="800" fill="#1a1a1a"/>
+    <!-- Paper/document -->
+    <rect x="300" y="150" width="600" height="500" rx="8" fill="#f7f5ef"/>
+    <!-- Header -->
+    <circle cx="380" cy="220" r="25" fill="url(#grad)"/>
+    <text x="420" y="230" font-size="20" font-weight="bold" fill="#1a1614" font-family="Inter">Recibo</text>
+    <!-- Lines (rows) -->
+    <line x1="320" y1="280" x2="880" y2="280" stroke="#d9d1c3" stroke-width="2"/>
+    <rect x="320" y="300" width="560" height="8" rx="2" fill="#e0d9ce"/>
+    <rect x="320" y="320" width="480" height="8" rx="2" fill="#e0d9ce"/>
+    <rect x="320" y="340" width="520" height="8" rx="2" fill="#e0d9ce"/>
+    <rect x="320" y="380" width="560" height="8" rx="2" fill="#e0d9ce"/>
+    <rect x="320" y="400" width="480" height="8" rx="2" fill="#e0d9ce"/>
+    <rect x="320" y="420" width="520" height="8" rx="2" fill="#e0d9ce"/>
+    <!-- Accent total -->
+    <rect x="600" y="500" width="260" height="40" rx="6" fill="#d97757" opacity="0.2"/>
+    <text x="610" y="530" font-size="16" font-weight="bold" fill="#d97757" font-family="monospace">$ 117.227</text>
+    <!-- Defs -->
+    <defs>
+      <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#e85a3c;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#c03c1f;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+  </svg>
+</template>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-print" viewBox="0 0 16 16"><path d="M4 5V2h8v3M4 11H3V6h10v5h-1M4 9h8v5H4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+    <symbol id="i-down" viewBox="0 0 16 16"><path d="M8 3v9M5 9l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 16 16"><rect x="1.5" y="3.5" width="13" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 4l6.5 4.5L14.5 4" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-back" viewBox="0 0 16 16"><path d="M7 3L2.5 7.5 7 12M2.5 7.5h11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-zoomin" viewBox="0 0 16 16"><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-zoomout" viewBox="0 0 16 16"><path d="M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-cog" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M3 13l1.5-1.5M11.5 4.5L13 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-share" viewBox="0 0 16 16"><circle cx="4" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="4" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6 7l4-2M6 9l4 2" stroke="currentColor" stroke-width="1.4"/></symbol>
+  </defs>
+</svg>
+
+<!-- Topbar -->
+<div class="topbar">
+  <a href="Arce Administración - Propietario.html" class="iconbtn" title="Volver"><svg width="14" height="14"><use href="#i-back"/></svg></a>
+  <div class="brand-mark">A</div>
+  <div class="crumbs">
+    <a href="Arce Administración - Propietario.html">Demián Samir</a>
+    <span class="sep">/</span>
+    <span style="color:var(--text)">Vista previa · Liquidación</span>
+    <span class="ref">LIQ-00000241</span>
+  </div>
+  <span class="pill draft" style="margin-left: 10px"><span class="dot"></span>Borrador</span>
+
+  <div class="top-actions">
+    <div class="zoom">
+      <button onclick="zoom(-0.1)" title="Reducir"><svg width="14" height="14"><use href="#i-zoomout"/></svg></button>
+      <span class="lbl" id="zoomLabel">100%</span>
+      <button onclick="zoom(0.1)" title="Ampliar"><svg width="14" height="14"><use href="#i-zoomin"/></svg></button>
+    </div>
+    <button class="btn ghost" onclick="window.print()"><svg class="ic"><use href="#i-print"/></svg>Imprimir</button>
+    <button class="btn" onclick="toast('PDF descargado')"><svg class="ic"><use href="#i-down"/></svg>Descargar PDF</button>
+    <button class="btn" onclick="toast('Enviado a demian.samir@arce.com')"><svg class="ic"><use href="#i-mail"/></svg>Enviar por email</button>
+    <button class="btn primary" onclick="confirmIssue()"><svg class="ic"><use href="#i-check"/></svg>Confirmar y emitir</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="canvas">
+    <div class="paper-wrap" id="paperWrap">
+      <div class="paper draft" id="paper">
+
+        <!-- HEAD -->
+        <div class="r-head">
+          <div class="r-logo">A</div>
+          <div class="r-biz">
+            <div class="nm">Arce Administración</div>
+            <div class="mt mono">CUIT 30-71824561-9 · Monotributo</div>
+            <div class="mt">Av. Callao 1280, Piso 4º B · C.A.B.A.</div>
+            <div class="mt">Tel. +54 11 4812-5500 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b6ded9dad7f6d7c4d5d3d7d2db98d5d9db98d7c4">[email&#160;protected]</a></div>
+            <div class="mt mono">IIBB 901-123456-7 · Inicio 01/06/2018</div>
+          </div>
+          <div class="r-num">
+            <div class="badge">RECIBO C</div>
+            <div class="nv">0001 - 00000241</div>
+            <div class="k">Mat. Profesional</div>
+            <div class="v">CUCICBA · MAT-4821</div>
+            <div class="k">Fecha emisión</div>
+            <div class="v">30/04/2026</div>
+          </div>
+        </div>
+
+        <!-- META -->
+        <div class="r-meta">
+          <div class="r-block">
+            <div class="r-label">Recibí de</div>
+            <div class="r-val big">Demián Samir</div>
+            <div class="r-sub">DNI 32.451.908 · CUIT 20-32451908-4</div>
+            <div class="r-sub"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0266676f6b636c2c71636f6b7042637061672c616d6f">[email&#160;protected]</a></div>
+          </div>
+          <div class="r-block" style="text-align:right">
+            <div class="r-label">Período</div>
+            <div class="r-val big">Abril 2026</div>
+            <div class="r-sub">Del 01/04/2026 al 30/04/2026</div>
+            <div class="r-sub">3 propiedades administradas</div>
+          </div>
+        </div>
+
+        <!-- PROPIEDADES -->
+        <div class="r-section-title">Propiedades incluidas</div>
+        <div class="r-props">
+          <div class="r-prop">
+            <span class="pn">#1</span>
+            <span class="pa">Av. Rivadavia 4210, 3ºB — C.A.B.A.</span>
+            <span class="pi">Inquilino: M. Torres</span>
+          </div>
+          <div class="r-prop">
+            <span class="pn">#2</span>
+            <span class="pa">Bulnes 1880, 6ºA — C.A.B.A.</span>
+            <span class="pi">Inquilino: L. Rivas</span>
+          </div>
+          <div class="r-prop">
+            <span class="pn">#3</span>
+            <span class="pa">Paraná 725, 2ºD — C.A.B.A.</span>
+            <span class="pi">Inquilino: G. Abril</span>
+          </div>
+        </div>
+
+        <!-- MOVIMIENTOS -->
+        <div class="r-section-title">Detalle de movimientos</div>
+        <table class="r-table">
+          <thead>
+            <tr>
+              <th style="width:76px">Fecha</th>
+              <th>Concepto</th>
+              <th style="width:110px; text-align:right">Importe</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="date">01/04/2026</td>
+              <td class="concept">Alquiler · Abril 2026
+                <div class="meta">Av. Rivadavia 4210, 3ºB · Inq. M. Torres</div>
+              </td>
+              <td class="num sign-pos">+ 150.000,00</td>
+            </tr>
+            <tr>
+              <td class="date">01/04/2026</td>
+              <td class="concept">Intereses depósito en garantía
+                <div class="meta">Bulnes 1880, 6ºA · Actualización trimestral</div>
+              </td>
+              <td class="num sign-pos">+ 8.450,00</td>
+            </tr>
+            <tr>
+              <td class="date">10/04/2026</td>
+              <td class="concept">Plomería urgente
+                <div class="meta">Av. Rivadavia 4210, 3ºB · Fact. 0003-00004521</div>
+              </td>
+              <td class="num sign-neg">− 32.400,00</td>
+            </tr>
+            <tr>
+              <td class="date">30/04/2026</td>
+              <td class="concept">Honorarios por administración
+                <div class="meta">7% sobre total a transferir · Ley 27.551</div>
+              </td>
+              <td class="num sign-neg">− 8.823,50</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- TOTALES -->
+        <div class="r-totals">
+          <div class="ln"><span class="k">Subtotal ingresos</span><span class="v">+ 158.450,00</span></div>
+          <div class="ln"><span class="k">Subtotal egresos</span><span class="v">− 32.400,00</span></div>
+          <div class="ln"><span class="k">Honorarios (7%)</span><span class="v">− 8.823,50</span></div>
+          <div class="ln total"><span class="k">Total a transferir</span><span class="v">$ 117.226,50</span></div>
+        </div>
+
+        <!-- SIG & BANK -->
+        <div class="r-sig">
+          <div class="bank">
+            <div style="font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; color: #5a514c; margin-bottom: 6px;">Transferencia a</div>
+            <div><b>Banco Galicia</b></div>
+            <div>Titular: Demián Samir</div>
+            <div>CBU: <b>0070123120000048214821</b></div>
+            <div>Alias: <b>demian.samir.mp</b></div>
+          </div>
+          <div class="sg">
+            <div class="nm">Demian Torres</div>
+            <div class="ln">Demian Torres · Administrador</div>
+          </div>
+        </div>
+
+        <!-- FOOT -->
+        <div class="r-foot">
+          <div class="clauses">
+            <div class="c">1. El presente recibo no constituye factura. Válido como constancia de percepción de alquiler y expensas según contrato vigente.</div>
+            <div class="c">2. Los honorarios por administración se calculan sobre el monto bruto percibido, según Ley 27.551 y modificatorias.</div>
+            <div class="c">3. Ante discrepancias comunicarse dentro de los 15 días hábiles desde la emisión.</div>
+          </div>
+          <div>
+            <div class="qr"></div>
+            <div class="qr-label">QR transferencia</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Side panel -->
+  <aside class="side">
+    <h3>Resumen</h3>
+    <div class="card">
+      <div class="kv"><span class="k">Propietario</span><span class="v" style="font-family: var(--font-ui)">Demián Samir</span></div>
+      <div class="kv"><span class="k">Período</span><span class="v">Abr 2026</span></div>
+      <div class="kv"><span class="k">Propiedades</span><span class="v">3</span></div>
+      <div class="kv"><span class="k">Movimientos</span><span class="v">4</span></div>
+      <div class="kv"><span class="k">Ingresos</span><span class="v pos">+ 158.450</span></div>
+      <div class="kv"><span class="k">Egresos</span><span class="v neg">− 32.400</span></div>
+      <div class="kv"><span class="k">Honorarios</span><span class="v neg">− 8.823</span></div>
+      <div class="kv total"><span class="k">Total a transferir</span><span class="v">$ 117.227</span></div>
+    </div>
+
+    <h3>Opciones de impresión</h3>
+    <div class="options">
+      <div class="opt on" id="optDraft" onclick="toggleOpt(this, 'draft')">
+        <div class="sw"></div>
+        <div class="tx">Marca de agua<br><span class="d">Mostrar "BORRADOR"</span></div>
+      </div>
+      <div class="opt on" onclick="this.classList.toggle('on')">
+        <div class="sw"></div>
+        <div class="tx">Incluir QR<br><span class="d">Pie del documento</span></div>
+      </div>
+      <div class="opt on" onclick="this.classList.toggle('on')">
+        <div class="sw"></div>
+        <div class="tx">Detalle de movimientos<br><span class="d">Tabla completa</span></div>
+      </div>
+      <div class="opt" onclick="this.classList.toggle('on')">
+        <div class="sw"></div>
+        <div class="tx">Copia duplicada<br><span class="d">Original + duplicado</span></div>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 22px">Destinatarios</h3>
+    <div class="card">
+      <div style="font-size: 12.5px; margin-bottom: 6px; font-weight: 500;">Demián Samir</div>
+      <div style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="9df9f8f0f4fcf3b3eefcf0f4efddfceffef8b3fef2f0">[email&#160;protected]</a></div>
+      <button class="btn" style="margin-top: 10px; width: 100%; justify-content: center; padding: 6px 8px"><svg class="ic"><use href="#i-mail"/></svg>+ Agregar copia (CC)</button>
+    </div>
+
+    <h3 style="margin-top: 22px">Editar</h3>
+    <div class="options">
+      <a class="opt" href="Datos de la Administración.html" style="text-decoration: none; color: inherit;">
+        <svg width="16" height="16" style="color: var(--text-muted)"><use href="#i-cog"/></svg>
+        <div class="tx">Datos de la administración<br><span class="d">Logo, CUIT, cláusulas…</span></div>
+      </a>
+      <a class="opt" href="Arce Administración - Propietario.html" style="text-decoration: none; color: inherit;">
+        <svg width="16" height="16" style="color: var(--text-muted)"><use href="#i-back"/></svg>
+        <div class="tx">Volver a movimientos<br><span class="d">Editar partidas del período</span></div>
+      </a>
+    </div>
+  </aside>
+</div>
+
+<div class="toast" id="toast"><div class="ok"><svg width="10" height="10"><use href="#i-check"/></svg></div><span id="toastMsg">Listo</span></div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js" defer></script><script>
+  let zoomLevel = 1;
+  function zoom(d){
+    zoomLevel = Math.min(1.5, Math.max(0.5, zoomLevel + d));
+    document.getElementById('paperWrap').style.transform = 'scale(' + zoomLevel + ')';
+    document.getElementById('zoomLabel').textContent = Math.round(zoomLevel * 100) + '%';
+  }
+  window.zoom = zoom;
+
+  function toggleOpt(el, feature){
+    el.classList.toggle('on');
+    const paper = document.getElementById('paper');
+    if(feature === 'draft'){
+      paper.classList.toggle('draft', el.classList.contains('on'));
+    }
+  }
+  window.toggleOpt = toggleOpt;
+
+  function confirmIssue(){
+    document.getElementById('paper').classList.remove('draft');
+    document.getElementById('optDraft').classList.remove('on');
+    document.querySelector('.pill.draft').style.display = 'none';
+    toast('Liquidación LIQ-00000241 emitida · número definitivo asignado');
+  }
+  window.confirmIssue = confirmIssue;
+
+  // Auto-fit zoom on narrow screens
+  function autoFit(){
+    const w = window.innerWidth;
+    if(w < 1200 && w > 700){
+      const avail = w - 320 - 56; // minus side + padding
+      const target = Math.max(0.6, Math.min(1, avail / 794));
+      zoomLevel = target;
+      document.getElementById('paperWrap').style.transform = 'scale(' + target + ')';
+      document.getElementById('zoomLabel').textContent = Math.round(target * 100) + '%';
+    }
+  }
+  autoFit();
+  window.addEventListener('resize', autoFit);
+
+  let toastT;
+  function toast(msg){
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+  window.toast = toast;
+</script>
+</body>
+</html>
