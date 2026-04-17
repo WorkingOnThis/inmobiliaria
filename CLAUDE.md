@@ -89,3 +89,20 @@ app/
 ├── propiedades/     # Property management
 └── tablero/         # Dashboard
 ```
+## UI Components — shadcn/ui
+
+This project uses shadcn/ui with Tailwind v4. When working on UI:
+
+- **General usage**: see `.agents/skills/shadcn/SKILL.md`
+- **Forms**: see `.agents/skills/shadcn/rules/forms.md`
+- **Styling**: see `.agents/skills/shadcn/rules/styling.md`
+- **Composition**: see `.agents/skills/shadcn/rules/composition.md`
+- **Icons**: see `.agents/skills/shadcn/rules/icons.md`
+- **Base vs Radix**: see `.agents/skills/shadcn/rules/base-vs-radix.md`
+
+Install components via CLI only:
+```bash
+npx shadcn@latest add [component]
+```
+
+Never write custom UI primitives — use components from `@/components/ui/`.

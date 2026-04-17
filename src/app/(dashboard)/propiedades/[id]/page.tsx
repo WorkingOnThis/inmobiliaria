@@ -8,6 +8,17 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 import { ServicioTabPropiedad } from "@/components/servicios/servicio-tab-propiedad";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -100,16 +111,22 @@ function buildSubtitle(prop: PropertyDetail) {
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: string }) {
+const STATUS_VARIANT: Record<string, "available" | "rented" | "maintenance" | "reserved" | "baja"> = {
+  available:   "available",
+  rented:      "rented",
+  maintenance: "maintenance",
+  reserved:    "reserved",
+  sold:        "baja",
+};
+
+function PropertyStatusBadge({ status }: { status: string }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.available;
+  const variant = STATUS_VARIANT[status] ?? "available";
   return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.63rem] font-bold"
-      style={{ background: cfg.bg, color: cfg.color }}
-    >
-      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
+    <Badge variant={variant}>
+      <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
       {cfg.label}
-    </span>
+    </Badge>
   );
 }
 
@@ -156,17 +173,14 @@ function EditInput({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
+      <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
         {label}
-      </label>
-      <input
+      </Label>
+      <Input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="rounded px-3 py-2 text-[0.82rem] text-foreground outline-none transition-colors bg-muted border border-border"
-        onFocus={(e) => { e.currentTarget.style.borderColor = "var(--border-accent)"; }}
-        onBlur={(e) => { e.currentTarget.style.borderColor = ""; }}
       />
     </div>
   );
@@ -187,18 +201,19 @@ function EditSelect({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
+      <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
         {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded px-3 py-2 text-[0.82rem] text-foreground outline-none transition-colors cursor-pointer bg-muted border border-border"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
+      </Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -217,13 +232,13 @@ function PlaceholderTab({ icon, title, description }: { icon: string; title: str
 
 // ── Contratos tab ─────────────────────────────────────────────────────────────
 
-const CONTRACT_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  active:            { label: "Vigente",            color: "var(--status-rented)",      bg: "var(--status-rented-dim)" },
-  draft:             { label: "Borrador",           color: "var(--muted-foreground)",   bg: "var(--muted)" },
-  pending_signature: { label: "Pend. de firma",     color: "var(--status-reserved)",    bg: "var(--status-reserved-dim)" },
-  expiring_soon:     { label: "Por vencer",         color: "var(--status-available)",   bg: "var(--status-available-dim)" },
-  expired:           { label: "Vencido",            color: "var(--destructive)",        bg: "var(--destructive-dim)" },
-  terminated:        { label: "Rescindido",         color: "var(--destructive)",        bg: "var(--destructive-dim)" },
+const CONTRACT_STATUS_CONFIG: Record<string, { label: string; variant: "rented" | "draft" | "reserved" | "available" | "baja" }> = {
+  active:            { label: "Vigente",        variant: "rented" },
+  draft:             { label: "Borrador",       variant: "draft" },
+  pending_signature: { label: "Pend. de firma", variant: "reserved" },
+  expiring_soon:     { label: "Por vencer",     variant: "available" },
+  expired:           { label: "Vencido",        variant: "baja" },
+  terminated:        { label: "Rescindido",     variant: "baja" },
 };
 
 function ContratosTab({ propertyId }: { propertyId: string }) {
@@ -274,12 +289,11 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
         <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
           Historial de contratos
         </div>
-        <Link
-          href={`/contratos/nuevo?propertyId=${propertyId}`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors bg-muted text-muted-foreground border border-border"
-        >
-          <PlusCircle size={12} /> Nuevo contrato
-        </Link>
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/contratos/nuevo?propertyId=${propertyId}`}>
+            <PlusCircle size={12} /> Nuevo contrato
+          </Link>
+        </Button>
       </div>
 
       {contracts.length === 0 ? (
@@ -321,12 +335,9 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
                 </div>
 
                 {/* Badge de estado */}
-                <span
-                  className="px-2.5 py-0.5 rounded-full text-[0.63rem] font-bold flex-shrink-0"
-                  style={{ background: cfg.bg, color: cfg.color }}
-                >
+                <Badge variant={cfg.variant} className="flex-shrink-0">
                   {cfg.label}
-                </span>
+                </Badge>
 
                 {/* Flecha */}
                 <ExternalLink size={13} className="text-muted-foreground flex-shrink-0" />
@@ -478,12 +489,9 @@ function PropiedadFichaContent() {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 text-muted-foreground">
         <div className="text-sm">{(error as Error)?.message ?? "Propiedad no encontrada"}</div>
-        <button
-          onClick={() => router.push("/propiedades")}
-          className="text-[0.72rem] text-primary hover:underline flex items-center gap-1"
-        >
+        <Button variant="link" size="sm" onClick={() => router.push("/propiedades")}>
           <ArrowLeft size={12} /> Volver a la lista
-        </button>
+        </Button>
       </div>
     );
   }
@@ -511,13 +519,15 @@ function PropiedadFichaContent() {
         <div
           className="h-14 flex items-center px-7 gap-2.5 flex-shrink-0 bg-card border-b border-border"
         >
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => router.push("/propiedades")}
-            className="text-[0.8rem] text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+            className="text-muted-foreground hover:text-primary gap-1 px-1"
           >
             <ArrowLeft size={13} />
             Propiedades
-          </button>
+          </Button>
           <span className="text-muted-foreground">›</span>
           <span className="text-[0.8rem] font-semibold text-foreground truncate max-w-xs">
             {prop.address}
@@ -547,36 +557,26 @@ function PropiedadFichaContent() {
               </h1>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[0.75rem] text-muted-foreground">{buildSubtitle(prop)}</span>
-                <StatusBadge status={prop.status} />
+                <PropertyStatusBadge status={prop.status} />
               </div>
             </div>
 
             {/* Topbar actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
               {activeTab === "datos" && !editing && (
-                <button
-                  onClick={startEdit}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors bg-muted text-muted-foreground border border-border"
-                >
+                <Button variant="outline" size="sm" onClick={startEdit}>
                   <Pencil size={12} /> Editar
-                </button>
+                </Button>
               )}
               {activeTab === "datos" && editing && (
                 <>
-                  <button
-                    onClick={cancelEdit}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors bg-muted text-muted-foreground border border-border"
-                  >
+                  <Button variant="outline" size="sm" onClick={cancelEdit}>
                     <X size={12} /> Cancelar
-                  </button>
-                  <button
-                    onClick={saveEdit}
-                    disabled={saving}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold rounded-[8px] transition-colors disabled:opacity-50 bg-primary text-primary-foreground"
-                  >
+                  </Button>
+                  <Button size="sm" onClick={saveEdit} disabled={saving}>
                     {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                     {saving ? "Guardando…" : "Guardar"}
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -701,12 +701,14 @@ function PropiedadFichaContent() {
                 </div>
 
                 {/* Action */}
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0"
                   onClick={(e) => { e.stopPropagation(); router.push(`/propietarios/${prop.ownerId}`); }}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-[0.68rem] font-semibold rounded-[8px] transition-colors flex-shrink-0 bg-muted text-muted-foreground border border-border"
                 >
                   Ver ficha <ExternalLink size={10} />
-                </button>
+                </Button>
               </div>
 
               {/* Inquilino */}
@@ -745,12 +747,14 @@ function PropiedadFichaContent() {
                           </div>
                         </div>
                         {activeContract.tenantIds[i] && (
-                          <button
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-shrink-0"
                             onClick={(e) => { e.stopPropagation(); router.push(`/inquilinos/${activeContract.tenantIds[i]}`); }}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-[0.68rem] font-semibold rounded-[8px] transition-colors flex-shrink-0 bg-muted text-muted-foreground border border-border"
                           >
                             Ver ficha <ExternalLink size={10} />
-                          </button>
+                          </Button>
                         )}
                       </div>
                     );

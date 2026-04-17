@@ -24,6 +24,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { QuickPropertyForm } from "@/components/properties/quick-property-form";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
@@ -184,29 +187,23 @@ function KpiCard({
   bgGradient: string;
 }) {
   return (
-    <div
-      className="px-6 py-5 flex-1 min-w-0 rounded-lg border"
-      style={{
-        background: bgGradient,
-        borderColor,
-      }}
+    <Card
+      className="flex-1 min-w-0 rounded-lg border gap-0 py-0"
+      style={{ background: bgGradient, borderColor }}
     >
-      <p
-        className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3"
-        style={{ color: "var(--muted-foreground)" }}
-      >
-        {label}
-      </p>
-      <p
-        className="text-4xl font-bold leading-none mb-1 tabular-nums font-headline"
-        style={{ color: valueColor }}
-      >
-        {value}
-      </p>
-      <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-        {sub}
-      </p>
-    </div>
+      <CardContent className="px-6 py-5 flex flex-col">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3 text-muted-foreground">
+          {label}
+        </p>
+        <p
+          className="text-4xl font-bold leading-none mb-1 tabular-nums font-headline"
+          style={{ color: valueColor }}
+        >
+          {value}
+        </p>
+        <p className="text-[11px] text-muted-foreground">{sub}</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -222,17 +219,15 @@ function PaginationBtn({
   disabled?: boolean;
 }) {
   return (
-    <button
+    <Button
+      variant={active ? "default" : "secondary"}
+      size="icon"
       onClick={onClick}
       disabled={disabled}
-      className="w-7 h-7 flex items-center justify-center text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed rounded-sm"
-      style={{
-        background: active ? "var(--primary)" : "var(--muted)",
-        color: active ? "var(--primary-foreground)" : "var(--foreground)",
-      }}
+      className="size-7 rounded-sm text-[12px]"
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -538,24 +533,15 @@ function PropertyListContent() {
           </div>
 
           {/* Botón prominente */}
-          <button
+          <Button
             onClick={() => setDialogOpen(true)}
-            className="inline-flex items-center gap-2.5 px-6 py-3 text-[13px] font-bold rounded-xl transition-all cursor-pointer border-none shadow-lg"
-            style={{
-              background: "var(--primary)",
-              color: "var(--primary-foreground)",
-              boxShadow: "0 4px 14px rgba(255,180,162,0.25)",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.filter = "brightness(1.1)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.filter = "";
-            }}
+            size="lg"
+            className="gap-2.5 rounded-xl shadow-lg"
+            style={{ boxShadow: "0 4px 14px rgba(255,180,162,0.25)" }}
           >
             <Plus size={18} />
             Nueva propiedad
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -606,25 +592,24 @@ function PropertyListContent() {
         >
           <Search
             size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ color: "var(--muted-foreground)" }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground"
           />
-          <input
+          <Input
             type="text"
             placeholder="Buscar por dirección, propietario, barrio…"
             value={searchInput}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-[13px] bg-transparent outline-none border-none rounded-lg"
-            style={{ color: "var(--foreground)" }}
+            className="pl-9 pr-8 border-0 bg-transparent rounded-lg text-[13px] h-10"
           />
           {searchInput && (
-            <button
-              className="absolute right-3 top-1/2 -translate-y-1/2"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
               onClick={() => handleSearch("")}
-              style={{ color: "var(--muted-foreground)" }}
             >
               <X size={13} />
-            </button>
+            </Button>
           )}
         </div>
 
@@ -633,10 +618,11 @@ function PropertyListContent() {
           {FILTER_TABS.map((tab) => {
             const isActive = tab.value === statusFilter;
             return (
-              <button
+              <Button
                 key={tab.value}
+                variant="outline"
                 onClick={() => handleStatusFilter(tab.value)}
-                className="px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.07em] transition-all border rounded-full cursor-pointer"
+                className="px-3.5 py-1.5 h-auto text-[11px] rounded-full"
                 style={{
                   background: isActive ? tab.activeBg : "transparent",
                   color: isActive ? tab.activeColor : "var(--muted-foreground)",
@@ -644,7 +630,7 @@ function PropertyListContent() {
                 }}
               >
                 {tab.label}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -653,29 +639,30 @@ function PropertyListContent() {
       {/* Filtro por barrio/zona — fila secundaria */}
       <div className="px-8 mb-4">
         <div
-          className="flex items-center gap-3 px-4 py-2.5 rounded-lg"
+          className="flex items-center gap-3 px-4 py-1 rounded-lg"
           style={{ background: "var(--muted)", border: "1px solid rgba(160,132,126,0.08)" }}
         >
-          <span
-            className="text-[10px] font-bold uppercase tracking-[0.1em] flex-shrink-0"
-            style={{ color: "var(--muted-foreground)" }}
-          >
+          <span className="text-[10px] font-bold uppercase tracking-[0.1em] flex-shrink-0 text-muted-foreground">
             Barrio:
           </span>
-          <input
+          <Input
             type="text"
             placeholder="Filtrar por barrio o zona…"
             value={zoneInput}
             onChange={(e) => handleZoneFilter(e.target.value)}
-            className="flex-1 text-[12px] bg-transparent outline-none border-none"
-            style={{ color: "var(--foreground)" }}
+            className="flex-1 border-0 bg-transparent text-[12px] h-9 px-0"
           />
           {zoneInput && (
-            <button onClick={() => handleZoneFilter("")} style={{ color: "var(--muted-foreground)" }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 flex-shrink-0"
+              onClick={() => handleZoneFilter("")}
+            >
               <X size={13} />
-            </button>
+            </Button>
           )}
-          <span className="text-[10px] ml-auto flex-shrink-0" style={{ color: "var(--muted-foreground)" }}>
+          <span className="text-[10px] ml-auto flex-shrink-0 text-muted-foreground">
             Filtro por zona
           </span>
         </div>
@@ -741,19 +728,12 @@ function PropertyListContent() {
             className="flex flex-col items-center gap-3 py-16"
             style={{ background: "var(--background)" }}
           >
-            <p className="text-sm" style={{ color: "var(--destructive)" }}>
+            <p className="text-sm text-destructive">
               {(error as Error).message}
             </p>
-            <button
-              onClick={() => refetch()}
-              className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest rounded"
-              style={{
-                background: "var(--muted)",
-                color: "var(--foreground)",
-              }}
-            >
+            <Button variant="secondary" size="sm" onClick={() => refetch()}>
               Reintentar
-            </button>
+            </Button>
           </div>
         )}
 

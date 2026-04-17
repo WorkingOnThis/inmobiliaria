@@ -1,4 +1,5 @@
 import React from "react";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Variantes semánticas del StatusBadge.
@@ -33,19 +34,6 @@ export type StatusBadgeVariant =
   | "draft"
   | "income";
 
-const CLASS_MAP: Record<StatusBadgeVariant, string> = {
-  active:      "status-active",
-  suspended:   "status-suspended",
-  baja:        "status-baja",
-  rented:      "status-rented",
-  available:   "status-available",
-  reserved:    "status-reserved",
-  maintenance: "status-maintenance",
-  expiring:    "status-expiring",
-  draft:       "status-draft",
-  income:      "status-income",
-};
-
 interface StatusBadgeProps {
   variant: StatusBadgeVariant;
   children: React.ReactNode;
@@ -53,9 +41,9 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ variant, children }: StatusBadgeProps) {
   return (
-    <span className={`status-pill ${CLASS_MAP[variant]}`}>
+    <Badge variant={variant}>
       <span className="w-1.5 h-1.5 rounded-full bg-current block flex-shrink-0" />
       {children}
-    </span>
+    </Badge>
   );
 }

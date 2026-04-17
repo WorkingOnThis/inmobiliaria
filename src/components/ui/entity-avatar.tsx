@@ -2,6 +2,7 @@
 
 /**
  * EntityAvatar — avatar con iniciales para entidades del sistema.
+ * Basado en el componente Avatar de shadcn/ui.
  *
  * Props:
  *   initials   – 1 o 2 caracteres a mostrar (ej: "GR", "A")
@@ -16,6 +17,9 @@
  *   md  → 36×36 px · text-xs        · radius-md (10px) — fila de tabla estándar
  *   lg  → 48×48 px · text-sm        · radius-lg (18px) — cabecera de ficha
  */
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 const AVATAR_BG_VARS = [
   "var(--primary-dark)",
@@ -32,9 +36,9 @@ function deriveColor(seed: string | undefined): string {
 }
 
 const SIZE_CLASSES = {
-  sm: "w-7 h-7 text-[0.62rem]",
-  md: "w-9 h-9 text-xs",
-  lg: "w-12 h-12 text-sm",
+  sm: "size-7 text-[0.62rem]",
+  md: "size-9 text-xs",
+  lg: "size-12 text-sm",
 } as const;
 
 const SIZE_RADIUS = {
@@ -56,16 +60,20 @@ export function EntityAvatar({
 }: EntityAvatarProps) {
   const bg = deriveColor(colorSeed);
   return (
-    <div
-      className={`${SIZE_CLASSES[size]} flex items-center justify-center font-brand font-extrabold flex-shrink-0`}
-      style={{
-        background: bg,
-        color: AVATAR_TEXT_COLOR,
-        borderRadius: SIZE_RADIUS[size],
-      }}
-      aria-hidden="true"
+    <Avatar
+      className={cn(SIZE_CLASSES[size], "flex-shrink-0")}
+      style={{ borderRadius: SIZE_RADIUS[size] }}
     >
-      {initials}
-    </div>
+      <AvatarFallback
+        style={{
+          background: bg,
+          color: AVATAR_TEXT_COLOR,
+          borderRadius: SIZE_RADIUS[size],
+        }}
+        className="font-brand font-extrabold"
+      >
+        {initials}
+      </AvatarFallback>
+    </Avatar>
   );
 }

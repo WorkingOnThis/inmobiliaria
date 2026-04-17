@@ -17,6 +17,20 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        // ── Estado de entidad ──────────────────────────────────────────────
+        active:      "bg-green-dim text-green border-green/20",
+        suspended:   "bg-mustard-dim text-mustard border-mustard/20",
+        baja:        "bg-error-dim text-error border-error/20",
+        // ── Estado de propiedad ────────────────────────────────────────────
+        rented:      "bg-status-rented-dim text-status-rented border-status-rented/20",
+        available:   "bg-status-available-dim text-status-available border-status-available/20",
+        reserved:    "bg-status-reserved-dim text-status-reserved border-status-reserved/20",
+        maintenance: "bg-status-maintenance-dim text-status-maintenance border-status-maintenance/20",
+        // ── Estado genérico ────────────────────────────────────────────────
+        expiring:    "bg-status-reserved-dim text-status-reserved border-status-reserved/20",
+        draft:       "bg-muted text-muted-foreground border-transparent",
+        // ── Dominio financiero ─────────────────────────────────────────────
+        income:      "bg-income-dim text-income border-income/20",
       },
     },
     defaultVariants: {
