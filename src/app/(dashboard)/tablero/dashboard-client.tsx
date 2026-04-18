@@ -133,8 +133,8 @@ export default function DashboardClient() {
   }, []);
 
   const { data: kpis } = useQuery<KPIData>({
-    queryKey: ["dashboard-resumen"],
-    queryFn: () => fetch("/api/dashboard/resumen").then((r) => r.json()),
+    queryKey: ["dashboard-summary"],
+    queryFn: () => fetch("/api/dashboard/summary").then((r) => r.json()),
   });
 
   const { data: portfolio } = useQuery<PortfolioData>({
