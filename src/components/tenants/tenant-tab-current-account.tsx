@@ -199,7 +199,7 @@ export function TenantTabCurrentAccount({
         const d = await res.json();
         throw new Error(d.error || "Error al guardar");
       }
-      await queryClient.invalidateQueries({ queryKey: ["inquilino", tenantId] });
+      await queryClient.invalidateQueries({ queryKey: ["tenant", tenantId] });
       setModalOpen(false);
     } catch (e) {
       setErrorMsg((e as Error).message);

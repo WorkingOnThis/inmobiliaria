@@ -147,7 +147,7 @@ export default function OwnerDetailPage() {
   const [ccPendingCount, setCcPendingCount] = useState(0);
 
   const handleStatusChange = () => {
-    queryClient.invalidateQueries({ queryKey: ["owner", id] });
+    queryClient.invalidateQueries({ queryKey: ["propietario", id] });
   };
 
   const tabs: { key: Tab; label: string; count?: number }[] = [

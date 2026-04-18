@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Edit2, Save, X, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { OwnerCompletenessBar } from "@/components/owners/owner-completeness-bar";
 
 interface Owner {
   id: string;
@@ -239,7 +240,7 @@ export function OwnerTabData({
         const data = await res.json();
         throw new Error(data.error || "Error al guardar");
       }
-      await queryClient.invalidateQueries({ queryKey: ["owner", owner.id] });
+      await queryClient.invalidateQueries({ queryKey: ["propietario", owner.id] });
       toast.success("Cambios guardados");
       setEditing(false);
     } catch (err) {
@@ -285,7 +286,7 @@ export function OwnerTabData({
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error("Error al cambiar estado");
-      await queryClient.invalidateQueries({ queryKey: ["owner", owner.id] });
+      await queryClient.invalidateQueries({ queryKey: ["propietario", owner.id] });
       await queryClient.invalidateQueries({ queryKey: ["owners"] });
       toast.success(newStatus === "baja" ? "Owner dado de baja" : "Owner suspendido");
       setConfirmStatus(null);
@@ -303,7 +304,7 @@ export function OwnerTabData({
         body: JSON.stringify({ status: "activo" }),
       });
       if (!res.ok) throw new Error("Error al reactivar");
-      await queryClient.invalidateQueries({ queryKey: ["owner", owner.id] });
+      await queryClient.invalidateQueries({ queryKey: ["propietario", owner.id] });
       await queryClient.invalidateQueries({ queryKey: ["owners"] });
       toast.success("Owner reactivado");
       onStatusChange();
@@ -312,8 +313,22 @@ export function OwnerTabData({
     }
   };
 
+  const handleChipClick = (fieldId: string) => {
+    setEditing(true);
+    setTimeout(() => {
+      const el = document.getElementById(`field-${fieldId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        (el.querySelector("input, select, textarea") as HTMLElement | null)?.focus();
+      }
+    }, 50);
+  };
+
   return (
     <div className="p-7 flex flex-col gap-5">
+      {/* Barra de completitud — usa form para reflejar cambios locales en tiempo real */}
+      <OwnerCompletenessBar owner={form} onChipClick={handleChipClick} />
+
       {/* Botón editar — top right */}
       <div className="flex items-center justify-end gap-2">
         {editing ? (

@@ -1,5 +1,8 @@
 "use client";
 
+import { Plus } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+
 interface OwnerCompletenessBarProps {
   owner: {
     cbu: string | null;
@@ -32,64 +35,68 @@ export function OwnerCompletenessBar({
   onChipClick,
 }: OwnerCompletenessBarProps) {
   const fields: FieldDef[] = [
-    { id: "cbu",           label: "CBU / CVU",        weight: 3,   value: owner.cbu },
-    { id: "dni",           label: "DNI",              weight: 2,   value: owner.dni },
-    { id: "cuit",          label: "CUIT / CUIL",      weight: 2,   value: owner.cuit },
-    { id: "condicionFiscal", label: "Condición fiscal", weight: 1.5, value: owner.condicionFiscal },
-    { id: "phone",         label: "Teléfono",         weight: 1.5, value: owner.phone },
-    { id: "email",         label: "Email",            weight: 1.5, value: owner.email },
-    { id: "alias",         label: "Alias CBU",        weight: 1,   value: owner.alias },
-    { id: "bank",         label: "Banco",            weight: 1,   value: owner.bank },
-    { id: "accountType",  label: "Tipo de cuenta",   weight: 1,   value: owner.accountType },
-    { id: "address",      label: "Domicilio fiscal", weight: 1,   value: owner.address },
-    { id: "birthDate",    label: "Fecha nac.",       weight: 0.5, value: owner.birthDate },
-    { id: "nationality",  label: "Nacionalidad",     weight: 0.5, value: owner.nationality },
-    { id: "occupation",   label: "Ocupación",        weight: 0.5, value: owner.occupation },
-    { id: "internalNotes", label: "Notas internas",  weight: 0.5, value: owner.internalNotes },
+    { id: "cbu",            label: "CBU / CVU",        weight: 3,   value: owner.cbu },
+    { id: "dni",            label: "DNI",              weight: 2,   value: owner.dni },
+    { id: "cuit",           label: "CUIT / CUIL",      weight: 2,   value: owner.cuit },
+    { id: "condicionFiscal",label: "Condición fiscal",  weight: 1.5, value: owner.condicionFiscal },
+    { id: "phone",          label: "Teléfono",         weight: 1.5, value: owner.phone },
+    { id: "email",          label: "Email",            weight: 1.5, value: owner.email },
+    { id: "alias",          label: "Alias",            weight: 1,   value: owner.alias },
+    { id: "bank",           label: "Banco",            weight: 1,   value: owner.bank },
+    { id: "accountType",    label: "Tipo de cuenta",   weight: 1,   value: owner.accountType },
+    { id: "address",        label: "Domicilio fiscal", weight: 1,   value: owner.address },
+    { id: "birthDate",      label: "Fecha de nacimiento", weight: 0.5, value: owner.birthDate },
+    { id: "nationality",    label: "Nacionalidad",     weight: 0.5, value: owner.nationality },
+    { id: "occupation",     label: "Ocupación",        weight: 0.5, value: owner.occupation },
+    { id: "internalNotes",  label: "Notas internas",   weight: 0.5, value: owner.internalNotes },
   ];
 
-  const totalWeight = fields.reduce((sum, f) => sum + f.weight, 0);
+  const totalWeight    = fields.reduce((sum, f) => sum + f.weight, 0);
   const completedWeight = fields.reduce((sum, f) => sum + (f.value ? f.weight : 0), 0);
-  const pct = Math.round((completedWeight / totalWeight) * 100);
-  const missing = fields.filter((f) => !f.value);
+  const totalFields    = fields.length;
+  const doneFields     = fields.filter((f) => f.value).length;
+  const pct            = Math.round((completedWeight / totalWeight) * 100);
+  const missing        = fields.filter((f) => !f.value);
+
+  if (missing.length === 0) return null;
 
   return (
-    <div className="mt-3">
-      {/* Label + porcentaje */}
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-text-muted">
-          Completitud de la ficha
-        </span>
-        <span className="font-mono font-bold text-[0.72rem] text-on-surface">{pct}%</span>
-      </div>
-
-      {/* Track 3px */}
-      <div
-        className="w-full rounded-[9999px] overflow-hidden"
-        style={{ height: "3px", background: "var(--border)" }}
-      >
-        <div
-          className="h-full rounded-[9999px] transition-all duration-500"
-          style={{ width: `${pct}%`, background: "var(--primary)" }}
-        />
-      </div>
-
-      {/* Chips de campos faltantes */}
-      {missing.length > 0 && (
-        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-          <span className="text-[0.62rem] text-text-muted flex-shrink-0">Falta:</span>
-          {missing.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => onChipClick?.(f.id)}
-              className="group flex items-center gap-1 px-2 py-[3px] text-[11px] font-medium text-text-secondary bg-surface-mid border border-dashed border-border rounded-[4px] transition-all hover:border-solid hover:border-primary hover:bg-primary-dim hover:text-on-surface"
-            >
-              <span className="text-[0.65rem] leading-none">+</span>
-              {f.label}
-            </button>
-          ))}
+    <div className="rounded-[10px] border border-border bg-surface p-4 flex gap-6">
+      {/* Left: bar */}
+      <div className="flex flex-col justify-center gap-2 min-w-[180px]">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted">
+            Completitud de la ficha
+          </span>
+          <span className="font-mono font-bold text-[13px] text-on-surface">{pct}%</span>
         </div>
-      )}
+        <Progress value={pct} className="h-[5px]" />
+        <span className="text-[11px] text-text-muted">
+          {doneFields} de {totalFields} campos completos
+        </span>
+      </div>
+
+      {/* Divider */}
+      <div className="w-px bg-border flex-shrink-0" />
+
+      {/* Right: chips */}
+      <div className="flex items-center gap-1.5 flex-wrap flex-1">
+        <span className="text-[11px] text-text-muted flex-shrink-0 mr-0.5">Pendiente:</span>
+        {missing.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => onChipClick?.(f.id)}
+            title={f.weight < 1 ? "Peso ½" : undefined}
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11.5px] font-medium text-text-secondary bg-surface-mid border border-dashed border-border rounded-full transition-all hover:border-solid hover:border-primary hover:bg-primary/10 hover:text-on-surface"
+          >
+            <Plus size={10} className="flex-shrink-0" />
+            {f.label}
+            {f.weight < 1 && (
+              <span className="text-[9px] opacity-60 leading-none">½</span>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
