@@ -136,7 +136,7 @@ export async function GET(
 
     return NextResponse.json({ kpis, movimientos: movimientosEnriquecidos });
   } catch (error) {
-    console.error("Error GET /api/propietarios/:id/cuenta-corriente:", error);
+    console.error("Error GET /api/owners/:id/cuenta-corriente:", error);
     return NextResponse.json(
       { error: "Error al obtener la cuenta corriente" },
       { status: 500 }

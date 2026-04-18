@@ -71,7 +71,7 @@ export function ServiceTabProperty({ propertyId, initialServiceId }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ["servicios", propertyId, period],
     queryFn: async () => {
-      const res = await fetch(`/api/servicios?propertyId=${propertyId}&period=${period}&limit=50`);
+      const res = await fetch(`/api/services?propertyId=${propertyId}&period=${period}&limit=50`);
       if (!res.ok) throw new Error("Error al cargar servicios");
       return res.json() as Promise<{ items: ServiceItem[] }>;
     },

@@ -103,7 +103,7 @@ export function OwnersList() {
   const { data, isLoading, error } = useQuery<OwnersResponse>({
     queryKey: ["owners", statusFilter, page, debouncedSearch],
     queryFn: async () => {
-      const res = await fetch(`/api/propietarios?${queryParams}`);
+      const res = await fetch(`/api/owners?${queryParams}`);
       if (!res.ok) throw new Error("Error al obtener propietarios");
       return res.json();
     },

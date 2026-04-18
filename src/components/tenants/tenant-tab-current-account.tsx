@@ -180,7 +180,7 @@ export function TenantTabCurrentAccount({
     }
     setGuardando(true);
     try {
-      const res = await fetch(`/api/inquilinos/${tenantId}/movimientos`, {
+      const res = await fetch(`/api/tenants/${tenantId}/movimientos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

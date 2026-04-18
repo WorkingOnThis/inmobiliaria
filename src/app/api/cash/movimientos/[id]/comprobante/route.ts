@@ -11,7 +11,7 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
 /**
- * POST /api/caja/movimientos/:id/comprobante
+ * POST /api/cash/movimientos/:id/comprobante
  *
  * Adjunta un archivo (PDF o imagen, máx 5MB) como comprobante del movimiento.
  * Si ya existía un archivo previo, lo reemplaza.
@@ -89,7 +89,7 @@ export async function POST(
 }
 
 /**
- * DELETE /api/caja/movimientos/:id/comprobante
+ * DELETE /api/cash/movimientos/:id/comprobante
  *
  * Elimina el comprobante adjunto del movimiento.
  */

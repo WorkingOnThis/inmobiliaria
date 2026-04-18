@@ -147,7 +147,7 @@ export async function GET(
       movimientos,
     });
   } catch (error) {
-    console.error("Error GET /api/inquilinos/:id:", error);
+    console.error("Error GET /api/tenants/:id:", error);
     return NextResponse.json({ error: "Error al obtener el inquilino" }, { status: 500 });
   }
 }

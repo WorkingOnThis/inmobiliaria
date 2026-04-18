@@ -133,7 +133,7 @@ export default function OwnerDetailPage() {
   }>({
     queryKey: ["propietario", id],
     queryFn: async () => {
-      const res = await fetch(`/api/propietarios/${id}`);
+      const res = await fetch(`/api/owners/${id}`);
       if (!res.ok) {
         const d = await res.json();
         throw new Error(d.error || "Error al cargar el propietario");

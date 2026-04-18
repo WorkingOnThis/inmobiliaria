@@ -191,7 +191,7 @@ export default function LiquidacionPreviewPage() {
   }>({
     queryKey: ["propietario", id],
     queryFn: async () => {
-      const res = await fetch(`/api/propietarios/${id}`);
+      const res = await fetch(`/api/owners/${id}`);
       if (!res.ok) throw new Error("Error al cargar propietario");
       return res.json();
     },
@@ -203,7 +203,7 @@ export default function LiquidacionPreviewPage() {
   }>({
     queryKey: ["propietario-cc-preview", id, periodo],
     queryFn: async () => {
-      const res = await fetch(`/api/propietarios/${id}/cuenta-corriente?periodo=${periodo}`);
+      const res = await fetch(`/api/owners/${id}/cuenta-corriente?periodo=${periodo}`);
       if (!res.ok) throw new Error("Error al cargar movimientos");
       return res.json();
     },

@@ -241,7 +241,7 @@ export function ContractDetail({ id }: { id: string }) {
       if (!data?.propertyId) return null;
       const hoy = new Date();
       const periodo = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
-      const res = await fetch(`/api/servicios?propertyId=${data.propertyId}&periodo=${periodo}&limit=20`);
+      const res = await fetch(`/api/services?propertyId=${data.propertyId}&periodo=${periodo}&limit=20`);
       if (!res.ok) return null;
       return res.json() as Promise<{
         items: {
@@ -378,7 +378,7 @@ export function ContractDetail({ id }: { id: string }) {
             if (!condKey) return Promise.resolve();
             const newVal = values[condKey];
             if (!newVal || newVal === "na" || newVal === srv.responsablePago) return Promise.resolve();
-            return fetch(`/api/servicios/${srv.id}`, {
+            return fetch(`/api/services/${srv.id}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ responsablePago: newVal }),

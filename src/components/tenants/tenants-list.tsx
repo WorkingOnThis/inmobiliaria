@@ -220,7 +220,7 @@ export function TenantsList() {
       const params = new URLSearchParams({ page: String(page), limit: "10" });
       if (search) params.set("search", search);
       if (estadoFilter !== "todos") params.set("estado", estadoFilter);
-      const res = await fetch(`/api/inquilinos?${params}`);
+      const res = await fetch(`/api/tenants?${params}`);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Error al obtener los inquilinos");

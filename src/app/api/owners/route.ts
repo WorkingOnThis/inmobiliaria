@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
       pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
-    console.error("Error GET /api/propietarios:", error);
+    console.error("Error GET /api/owners:", error);
     return NextResponse.json({ error: "Error al obtener propietarios" }, { status: 500 });
   }
 }
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error POST /api/propietarios:", error);
+    console.error("Error POST /api/owners:", error);
     return NextResponse.json({ error: "Error al crear el propietario" }, { status: 500 });
   }
 }

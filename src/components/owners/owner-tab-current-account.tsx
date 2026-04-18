@@ -151,7 +151,7 @@ function FilaMovimiento({
     setToggling(true);
     setConfirmOpen(false);
     try {
-      const res = await fetch(`/api/caja/movimientos/${movimiento.id}/conciliar`, {
+      const res = await fetch(`/api/cash/movimientos/${movimiento.id}/conciliar`, {
         method: "PATCH",
       });
       if (!res.ok) throw new Error();
@@ -180,7 +180,7 @@ function FilaMovimiento({
       formData.append("file", file);
       setUploadingFile(true);
       try {
-        const res = await fetch(`/api/caja/movimientos/${movimiento.id}/comprobante`, {
+        const res = await fetch(`/api/cash/movimientos/${movimiento.id}/comprobante`, {
           method: "POST",
           body: formData,
         });
@@ -202,7 +202,7 @@ function FilaMovimiento({
 
   const handleEliminarComprobante = async () => {
     try {
-      const res = await fetch(`/api/caja/movimientos/${movimiento.id}/comprobante`, {
+      const res = await fetch(`/api/cash/movimientos/${movimiento.id}/comprobante`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error();

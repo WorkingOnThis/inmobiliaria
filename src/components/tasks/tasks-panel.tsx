@@ -528,7 +528,7 @@ function SidePanel({
   const { data: t, isLoading } = useQuery({
     queryKey: ["tarea", selectedId],
     queryFn: async () => {
-      const res = await fetch(`/api/tareas/${selectedId}`);
+      const res = await fetch(`/api/tasks/${selectedId}`);
       if (!res.ok) throw new Error("Error al cargar tarea");
       return res.json() as Promise<TaskDetail>;
     },
@@ -601,7 +601,7 @@ function SidePanel({
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch(`/api/tareas/${t.id}/archivos`, {
+      const res = await fetch(`/api/tasks/${t.id}/archivos`, {
         method: "POST",
         body: form,
       });
@@ -615,7 +615,7 @@ function SidePanel({
 
   async function deleteArchivo(archivoId: string) {
     if (!t) return;
-    await fetch(`/api/tareas/${t.id}/archivos`, {
+    await fetch(`/api/tasks/${t.id}/archivos`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ archivoId }),
@@ -990,7 +990,7 @@ function NewTaskModal({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/tareas", {
+      const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1158,7 +1158,7 @@ export function TasksPanel() {
       } else {
         p.set("excluirResuelta", "true");
       }
-      const res = await fetch(`/api/tareas?${p}`);
+      const res = await fetch(`/api/tasks?${p}`);
       if (!res.ok) throw new Error("Error al cargar tareas");
       return res.json() as Promise<ListResponse>;
     },
@@ -1172,7 +1172,7 @@ export function TasksPanel() {
       id: string;
       patch: TaskPatch;
     }) => {
-      const res = await fetch(`/api/tareas/${id}`, {
+      const res = await fetch(`/api/tasks/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
@@ -1191,7 +1191,7 @@ export function TasksPanel() {
 
   const completarMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/tareas/${id}`, {
+      const res = await fetch(`/api/tasks/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "resolved" }),

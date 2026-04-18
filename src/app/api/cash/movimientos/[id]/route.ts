@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 
 /**
- * PATCH /api/caja/movimientos/:id
+ * PATCH /api/cash/movimientos/:id
  *
  * Actualiza un movimiento existente.
  * Acepta los mismos campos que el POST de creación.
@@ -76,7 +76,7 @@ export async function PATCH(
 }
 
 /**
- * DELETE /api/caja/movimientos/:id
+ * DELETE /api/cash/movimientos/:id
  *
  * Elimina un movimiento de caja de forma permanente.
  */

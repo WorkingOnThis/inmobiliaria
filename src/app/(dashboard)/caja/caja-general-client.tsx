@@ -107,7 +107,7 @@ export function CajaGeneralClient() {
   const { data, isLoading, isError } = useQuery<RespuestaMovimientos>({
     queryKey: ["caja-movimientos", periodo],
     queryFn: async () => {
-      const res = await fetch(`/api/caja/movimientos?periodo=${periodo}`);
+      const res = await fetch(`/api/cash/movimientos?periodo=${periodo}`);
       if (!res.ok) throw new Error("Error al cargar movimientos");
       return res.json();
     },
@@ -200,7 +200,7 @@ export function CajaGeneralClient() {
 
   const crear = useMutation({
     mutationFn: async (body: Record<string, string>) => {
-      const res = await fetch("/api/caja/movimientos", {
+      const res = await fetch("/api/cash/movimientos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -213,7 +213,7 @@ export function CajaGeneralClient() {
 
   const editar = useMutation({
     mutationFn: async ({ id, body }: { id: string; body: Record<string, string> }) => {
-      const res = await fetch(`/api/caja/movimientos/${id}`, {
+      const res = await fetch(`/api/cash/movimientos/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -226,7 +226,7 @@ export function CajaGeneralClient() {
 
   const eliminar = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/caja/movimientos/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/cash/movimientos/${id}`, { method: "DELETE" });
       if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? "Error al eliminar"); }
       return res.json();
     },

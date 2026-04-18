@@ -89,7 +89,7 @@ export function OwnerTabDocuments({
     if (!tipoFinal.trim()) { toast.error("Seleccioná el tipo de documento"); return; }
 
     setSaving(true);
-    // TODO: implementar POST a /api/propietarios/:id/documentos con FormData
+    // TODO: implementar POST a /api/owners/:id/documentos con FormData
     await new Promise((r) => setTimeout(r, 800));
     toast.info("La carga de archivos estará disponible próximamente");
     setSaving(false);

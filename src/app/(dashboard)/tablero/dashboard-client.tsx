@@ -145,7 +145,7 @@ export default function DashboardClient() {
   const { data: tareas } = useQuery<TareasData>({
     queryKey: ["tareas-urgentes"],
     queryFn: () =>
-      fetch("/api/tareas?prioridad=urgent&limit=5").then((r) => r.json()),
+      fetch("/api/tasks?prioridad=urgent&limit=5").then((r) => r.json()),
   });
 
   const { data: mora } = useQuery<MoraData>({

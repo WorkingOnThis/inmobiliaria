@@ -80,7 +80,7 @@ export async function POST(
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error POST /api/propietarios/:id/movimientos:", error);
+    console.error("Error POST /api/owners/:id/movimientos:", error);
     return NextResponse.json({ error: "Error al registrar el movimiento" }, { status: 500 });
   }
 }

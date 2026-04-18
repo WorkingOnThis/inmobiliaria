@@ -45,7 +45,7 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
       const firstFieldKey = Object.keys(form.metadata)[0];
       const accountNumber = firstFieldKey ? (form.metadata[firstFieldKey] || undefined) : undefined;
 
-      const res = await fetch("/api/servicios", {
+      const res = await fetch("/api/services", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

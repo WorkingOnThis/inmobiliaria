@@ -168,7 +168,7 @@ export function ServicesControlPanel() {
   const { data: resumen } = useQuery({
     queryKey: ["servicios-resumen", period],
     queryFn: async () => {
-      const res = await fetch(`/api/servicios/resumen?period=${period}`);
+      const res = await fetch(`/api/services/summary?period=${period}`);
       if (!res.ok) throw new Error("Error al cargar resumen");
       return res.json() as Promise<{ kpis: KPIs; period: string }>;
     },
@@ -180,7 +180,7 @@ export function ServicesControlPanel() {
     queryFn: async () => {
       const estadoParam = filter !== "todos" ? `&estado=${filter}` : "";
       const res = await fetch(
-        `/api/servicios?period=${period}&page=${page}&limit=${limit}${estadoParam}`
+        `/api/services?period=${period}&page=${page}&limit=${limit}${estadoParam}`
       );
       if (!res.ok) throw new Error("Error al cargar servicios");
       return res.json() as Promise<{

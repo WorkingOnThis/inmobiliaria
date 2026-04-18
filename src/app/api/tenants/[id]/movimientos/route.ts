@@ -83,7 +83,7 @@ export async function POST(
 
     return NextResponse.json(nuevo, { status: 201 });
   } catch (error) {
-    console.error("Error POST /api/inquilinos/:id/movimientos:", error);
+    console.error("Error POST /api/tenants/:id/movimientos:", error);
     return NextResponse.json({ error: "Error al registrar movimiento" }, { status: 500 });
   }
 }

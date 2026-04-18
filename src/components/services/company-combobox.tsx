@@ -24,7 +24,7 @@ export function CompanyCombobox({
   const { data } = useQuery({
     queryKey: ["companys-prestadoras"],
     queryFn: async () => {
-      const res = await fetch("/api/servicios/companys");
+      const res = await fetch("/api/services/companies");
       if (!res.ok) throw new Error("Error");
       return res.json() as Promise<{ companys: string[] }>;
     },

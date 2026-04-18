@@ -136,7 +136,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
   const { data, isLoading } = useQuery({
     queryKey: ["servicio-detalle", serviceId, period],
     queryFn: async () => {
-      const res = await fetch(`/api/servicios/${serviceId}?period=${period}`);
+      const res = await fetch(`/api/services/${serviceId}?period=${period}`);
       if (!res.ok) throw new Error("Error al cargar el servicio");
       return res.json();
     },
@@ -146,7 +146,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
   // Mutation: toggle triggersBlock
   const toggleBloqueo = useMutation({
     mutationFn: async (triggersBlock: boolean) => {
-      const res = await fetch(`/api/servicios/${serviceId}`, {
+      const res = await fetch(`/api/services/${serviceId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ triggersBlock }),
@@ -165,7 +165,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
   // Mutation: cargar comprobante
   const cargarComprobante = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/servicios/${serviceId}/comprobante`, {
+      const res = await fetch(`/api/services/${serviceId}/comprobante`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -189,7 +189,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
   // Mutation: omitir bloqueo
   const omitirBloqueo = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/servicios/${serviceId}/omitir-bloqueo`, {
+      const res = await fetch(`/api/services/${serviceId}/omitir-bloqueo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ period, motivo: omissionReason }),
@@ -212,7 +212,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
     mutationFn: async () => {
       // El primer valor de metadata se copia a accountNumber para mostrarlo en listas
       const primerValor = Object.values(editForm.metadata)[0] ?? null;
-      const res = await fetch(`/api/servicios/${serviceId}`, {
+      const res = await fetch(`/api/services/${serviceId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

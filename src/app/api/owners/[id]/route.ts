@@ -78,7 +78,7 @@ export async function GET(
       contratosActivos,
     });
   } catch (error) {
-    console.error("Error GET /api/propietarios/:id:", error);
+    console.error("Error GET /api/owners/:id:", error);
     return NextResponse.json({ error: "Error al obtener el propietario" }, { status: 500 });
   }
 }
@@ -122,7 +122,7 @@ export async function PATCH(
 
     return NextResponse.json({ propietario: updated });
   } catch (error) {
-    console.error("Error PATCH /api/propietarios/:id:", error);
+    console.error("Error PATCH /api/owners/:id:", error);
     return NextResponse.json({ error: "Error al actualizar el propietario" }, { status: 500 });
   }
 }

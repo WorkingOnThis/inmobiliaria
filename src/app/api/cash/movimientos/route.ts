@@ -10,7 +10,7 @@ import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 /**
- * GET /api/caja/movimientos?periodo=YYYY-MM
+ * GET /api/cash/movimientos?periodo=YYYY-MM
  *
  * Devuelve todos los movimientos del período indicado,
  * con los datos relacionados (contrato, propiedad, propietario, inquilino).
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/caja/movimientos
+ * POST /api/cash/movimientos
  *
  * Crea un nuevo movimiento manual de caja.
  *
