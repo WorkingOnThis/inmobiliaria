@@ -86,7 +86,7 @@ export function OwnerSlidePanel({
   // Últimas 3 liquidaciones del historial
   const ultimasLiquidaciones =
     ccData?.movimientos
-      .filter((m) => m.origen === "liquidacion")
+      .filter((m) => m.origen === "settlement")
       .slice(0, 3) ?? [];
 
   return (

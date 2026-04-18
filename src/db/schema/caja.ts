@@ -8,8 +8,8 @@ import { property } from "./property";
  * Caja General — Movimientos
  *
  * Registra todos los flujos de dinero de la agencia:
- *   - tipo: "ingreso" | "egreso"
- *   - origen: "manual" (cargado por staff) | "contrato" (generado automático)
+ *   - tipo: "income" | "expense"
+ *   - origen: "manual" (cargado por staff) | "contract" (generado automático) | "settlement"
  *
  * Las vinculaciones son todas opcionales. Un movimiento puede estar
  * ligado a un contrato, un propietario, un inquilino o una propiedad,

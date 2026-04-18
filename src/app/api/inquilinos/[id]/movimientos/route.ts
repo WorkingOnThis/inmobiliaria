@@ -39,7 +39,7 @@ export async function POST(
     const [inquilino] = await db
       .select({ id: client.id })
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "inquilino")))
+      .where(and(eq(client.id, id), eq(client.type, "tenant")))
       .limit(1);
 
     if (!inquilino) {
@@ -52,13 +52,13 @@ export async function POST(
     if (!tipo || !descripcion || !monto || !fecha) {
       return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 });
     }
-    if (tipo !== "ingreso" && tipo !== "egreso") {
+    if (tipo !== "income" && tipo !== "expense") {
       return NextResponse.json({ error: "Tipo inválido" }, { status: 400 });
     }
 
     // Generar número de recibo solo para ingresos de alquiler
     let reciboNumero: string | null = null;
-    if (tipo === "ingreso" && categoria === "alquiler") {
+    if (tipo === "income" && categoria === "alquiler") {
       reciboNumero = await nextReciboNumero();
     }
 
@@ -76,7 +76,7 @@ export async function POST(
         inquilinoId: id,
         contratoId: contratoId || null,
         propiedadId: propiedadId || null,
-        origen: "manual",
+        origen: "manual" as const,
         creadoPor: session.user.id,
       })
       .returning();

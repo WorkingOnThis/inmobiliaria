@@ -129,7 +129,7 @@ export async function GET(
       .limit(24);
 
     // Último pago registrado
-    const lastPayment = movimientos.find((m) => m.tipo === "ingreso");
+    const lastPayment = movimientos.find((m) => m.tipo === "income");
 
     // Estado calculado
     const { estado, diasMora } = calcularEstado(

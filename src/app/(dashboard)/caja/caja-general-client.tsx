@@ -12,7 +12,7 @@ interface Movimiento {
   id: string;
   fecha: string;
   descripcion: string;
-  tipo: "ingreso" | "egreso";
+  tipo: "income" | "expense";
   categoria: string | null;
   monto: string;
   origen: string;
@@ -245,8 +245,8 @@ export function CajaGeneralClient() {
   const movimientos = data?.movimientos ?? [];
   const totales = data?.totales ?? { ingresos: 0, egresos: 0, saldo: 0 };
   const movFiltrados = movimientos.filter((m) => {
-    if (filtro === "ingresos") return m.tipo === "ingreso";
-    if (filtro === "egresos") return m.tipo === "egreso";
+    if (filtro === "ingresos") return m.tipo === "income";
+    if (filtro === "egresos") return m.tipo === "expense";
     return true;
   });
 
@@ -298,14 +298,14 @@ export function CajaGeneralClient() {
         <KpiCard
           label="Ingresos del período"
           valor={formatMonto(totales.ingresos)}
-          sub={`${movimientos.filter(m => m.tipo === "ingreso").length} movimientos`}
+          sub={`${movimientos.filter(m => m.tipo === "income").length} movimientos`}
           variante="success"
           isLoading={isLoading}
         />
         <KpiCard
           label="Egresos del período"
           valor={formatMonto(totales.egresos)}
-          sub={`${movimientos.filter(m => m.tipo === "egreso").length} movimientos`}
+          sub={`${movimientos.filter(m => m.tipo === "expense").length} movimientos`}
           variante="error"
           isLoading={isLoading}
         />
@@ -566,12 +566,12 @@ function FilaMovimiento({ m, index, onClick }: {
       <td className="px-4 py-3">
         <span
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-          style={m.tipo === "ingreso"
+          style={m.tipo === "income"
             ? { background: C_INGRESO_BG, color: C_INGRESO }
             : { background: C_EGRESO_BG,  color: C_EGRESO  }
           }
         >
-          {m.tipo === "ingreso" ? "↑ Ingreso" : "↓ Egreso"}
+          {m.tipo === "income" ? "↑ Ingreso" : "↓ Egreso"}
         </span>
       </td>
       <td className="px-4 py-3 text-right">
@@ -579,10 +579,10 @@ function FilaMovimiento({ m, index, onClick }: {
           className="text-[14px] font-semibold tabular-nums"
           style={{
             fontFamily: "var(--font-headline)",
-            color: m.tipo === "ingreso" ? C_INGRESO : C_EGRESO,
+            color: m.tipo === "income" ? C_INGRESO : C_EGRESO,
           }}
         >
-          {m.tipo === "ingreso" ? "+" : "−"}{formatMonto(m.monto)}
+          {m.tipo === "income" ? "+" : "−"}{formatMonto(m.monto)}
         </span>
       </td>
     </tr>
@@ -747,7 +747,7 @@ function ModalMovimiento({
   eliminando?: boolean;
   error: string | null;
 }) {
-  const [tipo, setTipo] = useState<"ingreso" | "egreso">(movimiento?.tipo ?? "ingreso");
+  const [tipo, setTipo] = useState<"income" | "expense">(movimiento?.tipo ?? "income");
   const [categoriaInput, setCategoriaInput] = useState(movimiento?.categoria ?? "");
   const [chipActivo, setChipActivo] = useState<string | null>(movimiento?.categoria ?? null);
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
@@ -820,12 +820,12 @@ function ModalMovimiento({
               Tipo
             </label>
             <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-              {(["ingreso", "egreso"] as const).map((t) => (
+              {(["income", "expense"] as const).map((t) => (
                 <button
                   key={t}
                   className="flex-1 py-2 text-[12px] font-semibold capitalize transition-colors"
                   style={tipo === t
-                    ? t === "ingreso"
+                    ? t === "income"
                       ? { background: "var(--primary-dim)", color: "var(--primary)" }
                       : { background: "var(--destructive-dim)", color: "var(--destructive)" }
                     : { background: "var(--muted)", color: "var(--muted-foreground)" }
@@ -833,7 +833,7 @@ function ModalMovimiento({
                   onClick={() => setTipo(t)}
                   disabled={ocupado}
                 >
-                  {t === "ingreso" ? "↑ Ingreso" : "↓ Egreso"}
+                  {t === "income" ? "↑ Ingreso" : "↓ Egreso"}
                 </button>
               ))}
             </div>

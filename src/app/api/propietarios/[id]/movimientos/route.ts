@@ -10,7 +10,7 @@ import { and, eq } from "drizzle-orm";
 
 const movimientoSchema = z.object({
   descripcion: z.string().min(1, "La descripción es requerida"),
-  tipo: z.enum(["ingreso", "egreso"]),
+  tipo: z.enum(["income", "expense"]),
   monto: z.number().positive("El monto debe ser mayor a 0"),
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)"),
   categoria: z.string().optional().nullable(),
@@ -18,7 +18,7 @@ const movimientoSchema = z.object({
   contratoId: z.string().optional().nullable(),
   comprobante: z.string().optional().nullable(),
   nota: z.string().optional().nullable(),
-  origen: z.enum(["manual", "liquidacion"]).default("manual"),
+  origen: z.enum(["manual", "settlement"]).default("manual"),
 });
 
 export async function POST(
@@ -39,7 +39,7 @@ export async function POST(
     const [propietario] = await db
       .select({ id: client.id })
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "propietario")))
+      .where(and(eq(client.id, id), eq(client.type, "owner")))
       .limit(1);
 
     if (!propietario) {

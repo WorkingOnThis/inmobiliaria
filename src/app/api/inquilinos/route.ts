@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           inArray(cajaMovimiento.inquilinoId, ids),
-          eq(cajaMovimiento.tipo, "ingreso")
+          eq(cajaMovimiento.tipo, "income")
         )
       )
       .orderBy(desc(cajaMovimiento.fecha));

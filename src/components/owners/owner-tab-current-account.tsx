@@ -70,14 +70,14 @@ interface OwnerTabCurrentAccountProps {
 
 type MovFilter = "todos" | "liquidados" | "pendientes" | "confirmar";
 type FabAction = "liquidacion" | "movimiento" | null;
-type MovTipo = "ingreso" | "egreso" | "porcentaje";
+type MovTipo = "income" | "expense" | "porcentaje";
 type PorcentajeBase = "total_transferir" | "subtotal_alquileres" | "subtotal_ingresos" | "monto_manual";
 
 interface MovimientoFormState {
   descripcion: string;
   tipo: MovTipo;
   monto: string;
-  pctDireccion: "ingreso" | "egreso";
+  pctDireccion: "income" | "expense";
   pctValor: string;
   pctBase: PorcentajeBase;
   pctMontoManual: string;
@@ -322,9 +322,9 @@ function FilaMovimiento({
       {/* ── Celda 6: monto ── */}
       <td
         className="px-3.5 py-[11px] align-middle text-right font-mono font-semibold text-[13.5px] tabular-nums"
-        style={{ color: movimiento.tipo === "ingreso" ? "var(--success)" : "var(--error)" }}
+        style={{ color: movimiento.tipo === "income" ? "var(--success)" : "var(--error)" }}
       >
-        {movimiento.tipo === "ingreso" ? "+$" : "−$"}
+        {movimiento.tipo === "income" ? "+$" : "−$"}
         {new Intl.NumberFormat("es-AR").format(Number(movimiento.monto))}
       </td>
 
@@ -397,9 +397,9 @@ export function OwnerTabCurrentAccount({
 
   const [movForm, setMovForm] = useState<MovimientoFormState>({
     descripcion: "",
-    tipo: "ingreso",
+    tipo: "income",
     monto: "",
-    pctDireccion: "egreso",
+    pctDireccion: "expense",
     pctValor: "",
     pctBase: "total_transferir",
     pctMontoManual: "",
@@ -434,12 +434,12 @@ export function OwnerTabCurrentAccount({
   const { counts, noConciliados, totalIngresos, totalEgresos } = movimientos.reduce(
     (acc, m) => {
       acc.counts.todos++;
-      if (m.origen === "liquidacion") acc.counts.liquidados++;
+      if (m.origen === "settlement") acc.counts.liquidados++;
       else acc.counts.pendientes++;
       if (m.categoria === "pendiente_confirmacion") acc.counts.confirmar++;
       if (!m.conciliado) acc.noConciliados++;
-      if (m.tipo === "ingreso") acc.totalIngresos += Number(m.monto);
-      else if (m.tipo === "egreso") acc.totalEgresos += Number(m.monto);
+      if (m.tipo === "income") acc.totalIngresos += Number(m.monto);
+      else if (m.tipo === "expense") acc.totalEgresos += Number(m.monto);
       return acc;
     },
     { counts: { todos: 0, liquidados: 0, pendientes: 0, confirmar: 0 }, noConciliados: 0, totalIngresos: 0, totalEgresos: 0 }
@@ -451,8 +451,8 @@ export function OwnerTabCurrentAccount({
 
   const movimientosFiltrados = movimientos.filter((m) => {
     const pasaFiltroTipo =
-      movFilter === "liquidados" ? m.origen === "liquidacion" :
-      movFilter === "pendientes" ? m.origen !== "liquidacion" :
+      movFilter === "liquidados" ? m.origen === "settlement" :
+      movFilter === "pendientes" ? m.origen !== "settlement" :
       movFilter === "confirmar"  ? m.categoria === "pendiente_confirmacion" :
       true;
     const pasaFiltroConciliacion = filtroPendientesConciliacion ? !m.conciliado : true;
@@ -512,7 +512,7 @@ export function OwnerTabCurrentAccount({
     if (!movForm.fecha)              { toast.error("Completá la fecha"); return; }
 
     let montoFinal: number;
-    let tipoFinal: "ingreso" | "egreso";
+    let tipoFinal: "income" | "expense";
 
     if (movForm.tipo === "porcentaje") {
       const calculado = calcPorcentajeMonto();
@@ -522,7 +522,7 @@ export function OwnerTabCurrentAccount({
     } else {
       if (!movForm.monto) { toast.error("Completá el monto"); return; }
       montoFinal = parseFloat(movForm.monto);
-      tipoFinal = movForm.tipo as "ingreso" | "egreso";
+      tipoFinal = movForm.tipo as "income" | "expense";
     }
 
     setSaving(true);
@@ -537,7 +537,7 @@ export function OwnerTabCurrentAccount({
           fecha: movForm.fecha,
           categoria: movForm.categoria || null,
           nota: movForm.nota || null,
-          origen: "manual",
+          origen: "manual" as const,
         }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Error al guardar"); }
@@ -546,7 +546,7 @@ export function OwnerTabCurrentAccount({
       toast.success("Movimiento registrado");
       setFabAction(null);
       setMovForm({
-        descripcion: "", tipo: "ingreso", monto: "", pctDireccion: "egreso",
+        descripcion: "", tipo: "income", monto: "", pctDireccion: "expense",
         pctValor: "", pctBase: "total_transferir", pctMontoManual: "",
         fecha: localDateString(), categoria: "", nota: "",
       });
@@ -568,11 +568,11 @@ export function OwnerTabCurrentAccount({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           descripcion: liqForm.descripcion.trim(),
-          tipo: "egreso",
+          tipo: "expense",
           monto: parseFloat(liqForm.monto),
           fecha: liqForm.fecha,
           nota: liqForm.nota || null,
-          origen: "liquidacion",
+          origen: "settlement",
         }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Error al guardar"); }
@@ -930,8 +930,8 @@ export function OwnerTabCurrentAccount({
               <label className={labelCls}>Tipo</label>
               <div className="flex w-full rounded-[7px] p-[2px] border border-border" style={{ background: "var(--surface-mid)" }}>
                 {([
-                  { key: "ingreso",    label: "↑ Ingreso" },
-                  { key: "egreso",     label: "↓ Egreso" },
+                  { key: "income",     label: "↑ Ingreso" },
+                  { key: "expense",    label: "↓ Egreso" },
                   { key: "porcentaje", label: "% Porcentaje" },
                 ] as { key: MovTipo; label: string }[]).map(({ key, label }) => (
                   <button
@@ -956,7 +956,7 @@ export function OwnerTabCurrentAccount({
                 <div>
                   <label className={labelCls}>Dirección</label>
                   <div className="flex rounded-[6px] p-[2px] border border-border" style={{ background: "var(--surface-high)" }}>
-                    {(["ingreso", "egreso"] as const).map((d) => (
+                    {(["income", "expense"] as const).map((d) => (
                       <button
                         key={d}
                         onClick={() => setMovForm((f) => ({ ...f, pctDireccion: d }))}
@@ -967,7 +967,7 @@ export function OwnerTabCurrentAccount({
                             : "border-transparent text-text-secondary hover:text-on-surface"
                         )}
                       >
-                        {d === "ingreso" ? "↑ Ingreso" : "↓ Egreso"}
+                        {d === "income" ? "↑ Ingreso" : "↓ Egreso"}
                       </button>
                     ))}
                   </div>
@@ -1025,9 +1025,9 @@ export function OwnerTabCurrentAccount({
                     <span className="text-text-muted">Monto calculado:</span>
                     <span
                       className="font-mono font-semibold tabular-nums"
-                      style={{ color: movForm.pctDireccion === "ingreso" ? "var(--success)" : "var(--error)" }}
+                      style={{ color: movForm.pctDireccion === "income" ? "var(--success)" : "var(--error)" }}
                     >
-                      {movForm.pctDireccion === "ingreso" ? "+" : "−"}
+                      {movForm.pctDireccion === "income" ? "+" : "−"}
                       {new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(calcPorcentajeMonto()!)}
                     </span>
                   </div>

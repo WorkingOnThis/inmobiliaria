@@ -239,7 +239,7 @@ export default function TenantDetailPage() {
                 )}
                 <div className="px-5 text-center border-r border-border last:border-r-0">
                   <div className="font-headline text-[1.25rem] text-on-bg leading-none mb-1">
-                    {data?.movimientos.filter((m) => m.tipo === "ingreso").length ?? 0}
+                    {data?.movimientos.filter((m) => m.tipo === "income").length ?? 0}
                   </div>
                   <div className="text-[0.62rem] text-text-muted uppercase tracking-[0.06em] whitespace-nowrap">
                     Pagos registrados

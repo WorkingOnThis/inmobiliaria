@@ -99,8 +99,8 @@ export async function GET(
       .where(
         and(
           eq(cajaMovimiento.propietarioId, id),
-          eq(cajaMovimiento.tipo, "egreso"),
-          eq(cajaMovimiento.origen, "liquidacion"),
+          eq(cajaMovimiento.tipo, "expense"),
+          eq(cajaMovimiento.origen, "settlement"),
           sql`extract(year from ${cajaMovimiento.fecha}::date) = ${currentYear}`
         )
       );
@@ -112,8 +112,8 @@ export async function GET(
       .where(
         and(
           eq(cajaMovimiento.propietarioId, id),
-          eq(cajaMovimiento.tipo, "ingreso"),
-          sql`${cajaMovimiento.origen} != 'liquidacion'`
+          eq(cajaMovimiento.tipo, "income"),
+          sql`${cajaMovimiento.origen} != 'settlement'`
         )
       );
 

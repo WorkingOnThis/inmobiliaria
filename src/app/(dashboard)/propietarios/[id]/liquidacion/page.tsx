@@ -214,8 +214,8 @@ export default function LiquidacionPreviewPage() {
   const propiedades = propData?.propiedades ?? [];
   const movimientos = ccData?.movimientos ?? [];
 
-  const totalIngresos = movimientos.filter((m) => m.tipo === "ingreso").reduce((s, m) => s + Number(m.monto), 0);
-  const totalEgresos  = movimientos.filter((m) => m.tipo === "egreso").reduce((s, m) => s + Number(m.monto), 0);
+  const totalIngresos = movimientos.filter((m) => m.tipo === "income").reduce((s, m) => s + Number(m.monto), 0);
+  const totalEgresos  = movimientos.filter((m) => m.tipo === "expense").reduce((s, m) => s + Number(m.monto), 0);
   const honorarios    = (totalIngresos - totalEgresos) * 0.07;
   const totalTransferir = (totalIngresos - totalEgresos) * 0.93;
 
@@ -507,8 +507,8 @@ export default function LiquidacionPreviewPage() {
                                 <div style={{ fontSize: "10px", color: P.muted, marginTop: "2px" }}>{m.propiedadAddress}</div>
                               )}
                             </td>
-                            <td style={{ padding: "7px 6px", borderBottom: `1px dashed ${P.border}`, textAlign: "right", fontFamily: P.mono, whiteSpace: "nowrap", color: m.tipo === "ingreso" ? P.pos : P.neg }}>
-                              {m.tipo === "ingreso" ? "+ " : "− "}{fmt(Number(m.monto))}
+                            <td style={{ padding: "7px 6px", borderBottom: `1px dashed ${P.border}`, textAlign: "right", fontFamily: P.mono, whiteSpace: "nowrap", color: m.tipo === "income" ? P.pos : P.neg }}>
+                              {m.tipo === "income" ? "+ " : "− "}{fmt(Number(m.monto))}
                             </td>
                           </tr>
                         ))}

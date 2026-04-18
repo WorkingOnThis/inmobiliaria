@@ -87,11 +87,11 @@ export async function GET(request: NextRequest) {
 
   // Calcular totales del período
   const totalIngresos = movimientos
-    .filter((m) => m.tipo === "ingreso")
+    .filter((m) => m.tipo === "income")
     .reduce((acc, m) => acc + parseFloat(m.monto ?? "0"), 0);
 
   const totalEgresos = movimientos
-    .filter((m) => m.tipo === "egreso")
+    .filter((m) => m.tipo === "expense")
     .reduce((acc, m) => acc + parseFloat(m.monto ?? "0"), 0);
 
   return NextResponse.json({
@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
   if (!descripcion || typeof descripcion !== "string" || descripcion.trim() === "") {
     return NextResponse.json({ error: "La descripción es requerida" }, { status: 400 });
   }
-  if (tipo !== "ingreso" && tipo !== "egreso") {
-    return NextResponse.json({ error: "El tipo debe ser 'ingreso' o 'egreso'" }, { status: 400 });
+  if (tipo !== "income" && tipo !== "expense") {
+    return NextResponse.json({ error: "El tipo debe ser 'income' o 'expense'" }, { status: 400 });
   }
   const montoNum = parseFloat(String(monto));
   if (isNaN(montoNum) || montoNum <= 0) {
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
       tipo,
       monto: String(montoNum),
       categoria: categoria?.trim() || null,
-      origen: "manual",
+      origen: "manual" as const,
       contratoId: contratoId || null,
       propietarioId: propietarioId || null,
       inquilinoId: inquilinoId || null,

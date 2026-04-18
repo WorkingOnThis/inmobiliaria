@@ -89,12 +89,12 @@ const CATEGORIAS_INGRESO = ["alquiler", "expensas", "depósito", "otros"];
 const CATEGORIAS_EGRESO = ["reparación", "mantenimiento", "servicios", "comisión", "punitorios", "otros"];
 
 function descripcionPorDefecto(categoria: string, tipo: string): string {
-  if (tipo === "ingreso") {
+  if (tipo === "income") {
     if (categoria === "alquiler") return "Cobro de alquiler";
     if (categoria === "expensas") return "Cobro de expensas";
     if (categoria === "depósito") return "Cobro de depósito de garantía";
   }
-  if (tipo === "egreso") {
+  if (tipo === "expense") {
     if (categoria === "reparación") return "Gasto de reparación";
     if (categoria === "mantenimiento") return "Gasto de mantenimiento";
     if (categoria === "servicios") return "Pago de servicios";
@@ -104,7 +104,7 @@ function descripcionPorDefecto(categoria: string, tipo: string): string {
   return "";
 }
 
-type FiltroEstado = "todos" | "ingreso" | "egreso";
+type FiltroEstado = "todos" | "income" | "expense";
 
 export function TenantTabCurrentAccount({
   tenantId,
@@ -120,7 +120,7 @@ export function TenantTabCurrentAccount({
   const [guardando, setGuardando] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [tipo, setTipo] = useState<"ingreso" | "egreso">("ingreso");
+  const [tipo, setTipo] = useState<"income" | "expense">("income");
   const [categoria, setCategoria] = useState("alquiler");
   const [descripcion, setDescripcion] = useState("Cobro de alquiler");
   const [monto, setMonto] = useState(contrato?.monthlyAmount ?? "");
@@ -128,9 +128,9 @@ export function TenantTabCurrentAccount({
   const [periodo, setPeriodo] = useState(periodoActual());
   const [nota, setNota] = useState("");
 
-  const ingresos = movimientos.filter((m) => m.tipo === "ingreso");
+  const ingresos = movimientos.filter((m) => m.tipo === "income");
   const totalCobrado = ingresos.reduce((acc, m) => acc + Number(m.monto), 0);
-  const filtrados = filtro === "todos" ? movimientos : movimientos.filter((m) => m.tipo === filtro);
+  const filtrados = filtro === "todos" ? movimientos : movimientos.filter((m) => m.tipo === (filtro as "income" | "expense"));
   const enMora = estado === "en_mora";
 
   let proximoVto: string | null = null;
@@ -143,12 +143,12 @@ export function TenantTabCurrentAccount({
     proximoVto = formatFecha(due.toISOString().slice(0, 10));
   }
 
-  function handleTipoChange(val: "ingreso" | "egreso") {
+  function handleTipoChange(val: "income" | "expense") {
     setTipo(val);
-    const cat = val === "ingreso" ? "alquiler" : "reparación";
+    const cat = val === "income" ? "alquiler" : "reparación";
     setCategoria(cat);
     setDescripcion(descripcionPorDefecto(cat, val));
-    setMonto(val === "ingreso" ? (contrato?.monthlyAmount ?? "") : "");
+    setMonto(val === "income" ? (contrato?.monthlyAmount ?? "") : "");
   }
 
   function handleCategoriaChange(val: string) {
@@ -157,7 +157,7 @@ export function TenantTabCurrentAccount({
   }
 
   function abrirModal() {
-    setTipo("ingreso");
+    setTipo("income");
     setCategoria("alquiler");
     setDescripcion("Cobro de alquiler");
     setMonto(contrato?.monthlyAmount ?? "");
@@ -190,7 +190,7 @@ export function TenantTabCurrentAccount({
           fecha,
           categoria,
           nota: nota.trim() || null,
-          periodo: tipo === "ingreso" && categoria === "alquiler" ? periodo : null,
+          periodo: tipo === "income" && categoria === "alquiler" ? periodo : null,
           contratoId: contrato?.id ?? null,
           propertyId: propertyId ?? null,
         }),
@@ -208,7 +208,7 @@ export function TenantTabCurrentAccount({
     }
   }
 
-  const categoriasActuales = tipo === "ingreso" ? CATEGORIAS_INGRESO : CATEGORIAS_EGRESO;
+  const categoriasActuales = tipo === "income" ? CATEGORIAS_INGRESO : CATEGORIAS_EGRESO;
 
   return (
     <div className="p-7 flex flex-col gap-5">
@@ -303,8 +303,8 @@ export function TenantTabCurrentAccount({
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="ingreso">Ingresos</SelectItem>
-                  <SelectItem value="egreso">Egresos</SelectItem>
+                  <SelectItem value="income">Ingresos</SelectItem>
+                  <SelectItem value="expense">Egresos</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -353,13 +353,13 @@ export function TenantTabCurrentAccount({
                       {mov.categoria ?? "—"}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
-                      <span className={cn("text-[0.82rem] font-semibold", mov.tipo === "ingreso" ? "text-success" : "text-error")}>
-                        {mov.tipo === "ingreso" ? "+" : "-"}{formatMonto(mov.monto)}
+                      <span className={cn("text-[0.82rem] font-semibold", mov.tipo === "income" ? "text-success" : "text-error")}>
+                        {mov.tipo === "income" ? "+" : "-"}{formatMonto(mov.monto)}
                       </span>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-center">
-                      <StatusBadge variant={mov.tipo === "ingreso" ? "income" : "baja"}>
-                        {mov.tipo === "ingreso" ? "Ingreso" : "Egreso"}
+                      <StatusBadge variant={mov.tipo === "income" ? "income" : "baja"}>
+                        {mov.tipo === "income" ? "Ingreso" : "Egreso"}
                       </StatusBadge>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-center">
@@ -395,20 +395,20 @@ export function TenantTabCurrentAccount({
 
           <div className="flex flex-col gap-4 py-2">
             <div className="grid grid-cols-2 gap-2">
-              {(["ingreso", "egreso"] as const).map((t) => (
+              {(["income", "expense"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => handleTipoChange(t)}
                   className={cn(
                     "py-2.5 rounded-[8px] text-[0.8rem] font-semibold border transition-all",
                     tipo === t
-                      ? t === "ingreso"
+                      ? t === "income"
                         ? "bg-success/10 border-success text-success"
                         : "bg-error/10 border-error text-error"
                       : "bg-surface border-border text-text-muted hover:border-text-muted"
                   )}
                 >
-                  {t === "ingreso" ? "💰 Ingreso" : "💸 Egreso"}
+                  {t === "income" ? "💰 Ingreso" : "💸 Egreso"}
                 </button>
               ))}
             </div>
@@ -431,7 +431,7 @@ export function TenantTabCurrentAccount({
               </Select>
             </div>
 
-            {tipo === "ingreso" && categoria === "alquiler" && (
+            {tipo === "income" && categoria === "alquiler" && (
               <div>
                 <label className="text-[0.72rem] font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
                   Período
@@ -507,7 +507,7 @@ export function TenantTabCurrentAccount({
               </div>
             )}
 
-            {tipo === "ingreso" && categoria === "alquiler" && (
+            {tipo === "income" && categoria === "alquiler" && (
               <div className="text-[0.72rem] text-text-muted bg-surface-mid rounded-[8px] px-3 py-2">
                 Se generará automáticamente un número de recibo para este cobro.
               </div>
