@@ -27,10 +27,10 @@ export function IterationBlock({
   disabled = false,
 }: IterationBlockProps) {
   const entityLabel =
-    iteration.entity === "propietarios"
-      ? "Propietarios"
-      : iteration.entity === "inquilinos"
-        ? "Inquilinos"
+    iteration.entity === "owners"
+      ? "Owners"
+      : iteration.entity === "tenants"
+        ? "Tenants"
         : iteration.entity;
 
   // Truncar template si es muy largo para preview
