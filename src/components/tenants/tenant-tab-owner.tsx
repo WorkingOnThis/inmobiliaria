@@ -13,9 +13,9 @@ interface PropietarioData {
   phone: string | null;
   cbu: string | null;
   alias: string | null;
-  banco: string | null;
+  bank: string | null;
   cuit: string | null;
-  tipoCuenta: string | null;
+  accountType: string | null;
 }
 
 interface ContratoData {
@@ -87,10 +87,10 @@ export function TenantTabOwner({ owner, contrato }: Props) {
               <div className="text-[0.85rem] font-medium text-on-bg">{owner.alias}</div>
             </div>
           )}
-          {owner.banco && (
+          {owner.bank && (
             <div>
               <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Banco</div>
-              <div className="text-[0.85rem] font-medium text-on-bg">{owner.banco}</div>
+              <div className="text-[0.85rem] font-medium text-on-bg">{owner.bank}</div>
             </div>
           )}
           {owner.cuit && (

@@ -97,9 +97,9 @@ export default function TenantDetailPage() {
       phone: string | null;
       cbu: string | null;
       alias: string | null;
-      banco: string | null;
+      bank: string | null;
       cuit: string | null;
-      tipoCuenta: string | null;
+      accountType: string | null;
     } | null;
     movimientos: {
       id: string;

@@ -27,12 +27,12 @@ interface Owner {
   birthDate: string | null;
   cbu: string | null;
   alias: string | null;
-  banco: string | null;
-  tipoCuenta: string | null;
+  bank: string | null;
+  accountType: string | null;
   condicionFiscal: string | null;
-  nacionalidad: string | null;
-  ocupacion: string | null;
-  notasInternas: string | null;
+  nationality: string | null;
+  occupation: string | null;
+  internalNotes: string | null;
   confianzaNombre: string | null;
   confianzaApellido: string | null;
   confianzaDni: string | null;
@@ -95,13 +95,13 @@ function computeCompletitud(p: Owner) {
     { weight: 1.5, value: p.phone },
     { weight: 1.5, value: p.email },
     { weight: 1,   value: p.alias },
-    { weight: 1,   value: p.banco },
-    { weight: 1,   value: p.tipoCuenta },
+    { weight: 1,   value: p.bank },
+    { weight: 1,   value: p.accountType },
     { weight: 1,   value: p.address },
     { weight: 0.5, value: p.birthDate },
-    { weight: 0.5, value: p.nacionalidad },
-    { weight: 0.5, value: p.ocupacion },
-    { weight: 0.5, value: p.notasInternas },
+    { weight: 0.5, value: p.nationality },
+    { weight: 0.5, value: p.occupation },
+    { weight: 0.5, value: p.internalNotes },
   ];
   const total = fields.reduce((s, f) => s + f.weight, 0);
   const done  = fields.reduce((s, f) => s + (f.value ? f.weight : 0), 0);

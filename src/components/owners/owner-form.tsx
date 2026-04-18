@@ -30,8 +30,8 @@ export function OwnerForm() {
   // Datos bancarios
   const [cbu, setCbu] = useState("");
   const [alias, setAlias] = useState("");
-  const [banco, setBanco] = useState("");
-  const [tipoCuenta, setTipoCuenta] = useState("");
+  const [bank, setBank] = useState("");
+  const [accountType, setAccountType] = useState("");
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -82,8 +82,8 @@ export function OwnerForm() {
       profession: profession.trim() || null,
       cbu: cbu.trim() || null,
       alias: alias.trim() || null,
-      banco: banco.trim() || null,
-      tipoCuenta: tipoCuenta || null,
+      bank: bank.trim() || null,
+      accountType: accountType || null,
     });
   };
 
@@ -223,24 +223,24 @@ export function OwnerForm() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="banco">Banco</Label>
+            <Label htmlFor="bank">Banco</Label>
             <Input
-              id="banco"
-              value={banco}
-              onChange={(e) => setBanco(e.target.value)}
+              id="bank"
+              value={bank}
+              onChange={(e) => setBank(e.target.value)}
               disabled={mutation.isPending}
               placeholder="Ej: Banco Galicia"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="tipoCuenta">Tipo de cuenta</Label>
+            <Label htmlFor="accountType">Tipo de cuenta</Label>
             <Select
-              value={tipoCuenta}
-              onValueChange={setTipoCuenta}
+              value={accountType}
+              onValueChange={setAccountType}
               disabled={mutation.isPending}
             >
-              <SelectTrigger id="tipoCuenta">
+              <SelectTrigger id="accountType">
                 <SelectValue placeholder="Seleccionar..." />
               </SelectTrigger>
               <SelectContent>

@@ -40,7 +40,7 @@ interface FormState {
   // Datos bancarios
   cbu: string;
   alias: string;
-  banco: string;
+  bank: string;
 }
 
 const emptyForm: FormState = {
@@ -51,7 +51,7 @@ const emptyForm: FormState = {
   email: "",
   cbu: "",
   alias: "",
-  banco: "",
+  bank: "",
 };
 
 export function NewOwnerModal({
@@ -91,7 +91,7 @@ export function NewOwnerModal({
           email: form.email.trim() || null,
           cbu: form.cbu.trim() || null,
           alias: form.alias.trim() || null,
-          banco: form.banco.trim() || null,
+          bank: form.bank.trim() || null,
         }),
       });
 
@@ -244,8 +244,8 @@ export function NewOwnerModal({
                   </label>
                   <input
                     type="text"
-                    value={form.banco}
-                    onChange={set("banco")}
+                    value={form.bank}
+                    onChange={set("bank")}
                     placeholder="Banco Nación"
                     className="w-full bg-muted border border-border rounded-[12px] text-foreground text-[0.82rem] px-3 py-2 outline-none focus:border-border-accent focus:bg-muted transition-all placeholder:text-muted-foreground"
                   />

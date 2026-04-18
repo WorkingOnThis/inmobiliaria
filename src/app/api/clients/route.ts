@@ -23,8 +23,8 @@ const createClientSchema = z.object({
   birthDate: z.string().optional().nullable(),
   cbu: z.string().optional().nullable(),
   alias: z.string().optional().nullable(),
-  banco: z.string().optional().nullable(),
-  tipoCuenta: z.string().optional().nullable(),
+  bank: z.string().optional().nullable(),
+  accountType: z.string().optional().nullable(),
 });
 
 function generateId(): string {
@@ -73,8 +73,8 @@ export async function GET(request: NextRequest) {
         birthDate: client.birthDate,
         cbu: client.cbu,
         alias: client.alias,
-        banco: client.banco,
-        tipoCuenta: client.tipoCuenta,
+        bank: client.bank,
+        accountType: client.accountType,
         role: user.role,
         createdAt: client.createdAt,
         updatedAt: client.updatedAt,
@@ -174,8 +174,8 @@ export async function POST(request: NextRequest) {
           birthDate: data.birthDate,
           cbu: data.cbu,
           alias: data.alias,
-          banco: data.banco,
-          tipoCuenta: data.tipoCuenta,
+          bank: data.bank,
+          accountType: data.accountType,
           createdAt: now,
           updatedAt: now,
         })

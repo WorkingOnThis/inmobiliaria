@@ -47,7 +47,7 @@ interface Propietario {
   email: string | null;
   cbu: string | null;
   alias: string | null;
-  banco: string | null;
+  bank: string | null;
 }
 
 interface Propiedad {
@@ -547,8 +547,8 @@ export default function LiquidacionPreviewPage() {
                 <div style={{ marginTop: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                   <div style={{ fontSize: "10px", color: P.muted }}>
                     <div style={{ ...P.label, marginBottom: "6px" }}>Transferencia a</div>
-                    {propietario?.banco && (
-                      <div><strong style={{ color: P.text, fontFamily: P.mono, fontWeight: 500 }}>{propietario.banco}</strong></div>
+                    {propietario?.bank && (
+                      <div><strong style={{ color: P.text, fontFamily: P.mono, fontWeight: 500 }}>{propietario.bank}</strong></div>
                     )}
                     <div>Titular: {propietarioName}</div>
                     {propietario?.cbu && (

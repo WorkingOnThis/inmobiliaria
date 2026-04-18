@@ -19,12 +19,12 @@ interface Owner {
   birthDate: string | null;
   cbu: string | null;
   alias: string | null;
-  banco: string | null;
-  tipoCuenta: string | null;
+  bank: string | null;
+  accountType: string | null;
   condicionFiscal: string | null;
-  nacionalidad: string | null;
-  ocupacion: string | null;
-  notasInternas: string | null;
+  nationality: string | null;
+  occupation: string | null;
+  internalNotes: string | null;
   confianzaNombre: string | null;
   confianzaApellido: string | null;
   confianzaDni: string | null;
@@ -196,12 +196,12 @@ export function OwnerTabData({
     birthDate:        owner.birthDate,
     cbu:              owner.cbu,
     alias:            owner.alias,
-    banco:            owner.banco,
-    tipoCuenta:       owner.tipoCuenta,
+    bank:             owner.bank,
+    accountType:      owner.accountType,
     condicionFiscal:  owner.condicionFiscal,
-    nacionalidad:     owner.nacionalidad,
-    ocupacion:        owner.ocupacion,
-    notasInternas:    owner.notasInternas,
+    nationality:      owner.nationality,
+    occupation:       owner.occupation,
+    internalNotes:    owner.internalNotes,
     confianzaNombre:  owner.confianzaNombre,
     confianzaApellido: owner.confianzaApellido,
     confianzaDni:     owner.confianzaDni,
@@ -261,12 +261,12 @@ export function OwnerTabData({
       birthDate:        owner.birthDate,
       cbu:              owner.cbu,
       alias:            owner.alias,
-      banco:            owner.banco,
-      tipoCuenta:       owner.tipoCuenta,
+      bank:             owner.bank,
+      accountType:      owner.accountType,
       condicionFiscal:  owner.condicionFiscal,
-      nacionalidad:     owner.nacionalidad,
-      ocupacion:        owner.ocupacion,
-      notasInternas:    owner.notasInternas,
+      nationality:      owner.nationality,
+      occupation:       owner.occupation,
+      internalNotes:    owner.internalNotes,
       confianzaNombre:  owner.confianzaNombre,
       confianzaApellido: owner.confianzaApellido,
       confianzaDni:     owner.confianzaDni,
@@ -389,16 +389,16 @@ export function OwnerTabData({
             <DataField id="cbu"   label="CBU / CVU" value={form.cbu}   editing={editing} onChange={setField("cbu")}   placeholder="0000003100012345678900" alert mono />
             <DataField id="alias" label="Alias"     value={form.alias} editing={editing} onChange={setField("alias")} placeholder="carlos.mendoza.mp" />
             <div className="border-t border-border" />
-            <DataField id="banco" label="Banco" value={form.banco} editing={editing} onChange={setField("banco")} placeholder="Banco Nación" />
+            <DataField id="bank" label="Banco" value={form.bank} editing={editing} onChange={setField("bank")} placeholder="Banco Nación" />
             {/* Tipo de cuenta */}
-            <div className="flex flex-col gap-1" id="field-tipoCuenta">
+            <div className="flex flex-col gap-1" id="field-accountType">
               <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
                 Tipo de cuenta
               </div>
               {editing ? (
                 <select
-                  value={form.tipoCuenta ?? ""}
-                  onChange={(e) => setForm((prev) => ({ ...prev, tipoCuenta: e.target.value || null }))}
+                  value={form.accountType ?? ""}
+                  onChange={(e) => setForm((prev) => ({ ...prev, accountType: e.target.value || null }))}
                   className="w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all"
                 >
                   <option value="">Sin especificar</option>
@@ -406,10 +406,10 @@ export function OwnerTabData({
                   <option value="cuenta_corriente">Cuenta corriente</option>
                 </select>
               ) : (
-                <div className={cn("text-[13.5px]", !form.tipoCuenta ? "text-text-muted italic text-[12px]" : "text-on-surface")}>
-                  {form.tipoCuenta === "caja_ahorro"
+                <div className={cn("text-[13.5px]", !form.accountType ? "text-text-muted italic text-[12px]" : "text-on-surface")}>
+                  {form.accountType === "caja_ahorro"
                     ? "Caja de ahorro"
-                    : form.tipoCuenta === "cuenta_corriente"
+                    : form.accountType === "cuenta_corriente"
                     ? "Cuenta corriente"
                     : "Sin cargar"}
                 </div>
@@ -423,17 +423,17 @@ export function OwnerTabData({
       <SectionCard title="Datos de interés">
         <div className="grid grid-cols-2 gap-4">
           <DataField
-            id="nacionalidad" label="Nacionalidad" value={form.nacionalidad}
-            editing={editing} onChange={setField("nacionalidad")} placeholder="Argentina"
+            id="nationality" label="Nacionalidad" value={form.nationality}
+            editing={editing} onChange={setField("nationality")} placeholder="Argentina"
           />
           <DataField
-            id="ocupacion" label="Ocupación" value={form.ocupacion}
-            editing={editing} onChange={setField("ocupacion")} placeholder="Ej: Contador, Médico"
+            id="occupation" label="Ocupación" value={form.occupation}
+            editing={editing} onChange={setField("occupation")} placeholder="Ej: Contador, Médico"
           />
           <div className="col-span-2">
             <TextareaField
-              id="notasInternas" label="Notas internas" value={form.notasInternas}
-              editing={editing} onChange={setField("notasInternas")}
+              id="internalNotes" label="Notas internas" value={form.internalNotes}
+              editing={editing} onChange={setField("internalNotes")}
               placeholder="Observaciones útiles para el staff…"
               hint="Solo visible para el equipo"
             />

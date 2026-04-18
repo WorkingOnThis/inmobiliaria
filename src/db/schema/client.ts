@@ -29,13 +29,13 @@ export const client = pgTable("client", {
   // Datos bancarios (owners)
   cbu: text("cbu"),
   alias: text("alias"),
-  banco: text("banco"),
-  tipoCuenta: text("tipoCuenta"), // "savings" | "checking"
+  bank: text("bank"),
+  accountType: text("accountType"), // "savings" | "checking"
   condicionFiscal: text("condicionFiscal"), // "responsable_inscripto" | "monotributista" | "exento" | "consumidor_final"
   // Datos de interés
-  nacionalidad: text("nacionalidad"),
-  ocupacion: text("ocupacion"),
-  notasInternas: text("notasInternas"),
+  nationality: text("nationality"),
+  occupation: text("occupation"),
+  internalNotes: text("internalNotes"),
   // Persona de confianza
   confianzaNombre: text("confianzaNombre"),
   confianzaApellido: text("confianzaApellido"),

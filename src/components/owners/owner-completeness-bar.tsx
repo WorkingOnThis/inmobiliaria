@@ -11,11 +11,11 @@ interface OwnerCompletenessBarProps {
     email: string | null;
     phone: string | null;
     alias: string | null;
-    banco: string | null;
-    tipoCuenta: string | null;
-    nacionalidad: string | null;
-    ocupacion: string | null;
-    notasInternas: string | null;
+    bank: string | null;
+    accountType: string | null;
+    nationality: string | null;
+    occupation: string | null;
+    internalNotes: string | null;
   };
   onChipClick?: (fieldId: string) => void;
 }
@@ -39,13 +39,13 @@ export function OwnerCompletenessBar({
     { id: "phone",         label: "Teléfono",         weight: 1.5, value: owner.phone },
     { id: "email",         label: "Email",            weight: 1.5, value: owner.email },
     { id: "alias",         label: "Alias CBU",        weight: 1,   value: owner.alias },
-    { id: "banco",         label: "Banco",            weight: 1,   value: owner.banco },
-    { id: "tipoCuenta",    label: "Tipo de cuenta",   weight: 1,   value: owner.tipoCuenta },
-    { id: "address",       label: "Domicilio fiscal", weight: 1,   value: owner.address },
-    { id: "birthDate",     label: "Fecha nac.",       weight: 0.5, value: owner.birthDate },
-    { id: "nacionalidad",  label: "Nacionalidad",     weight: 0.5, value: owner.nacionalidad },
-    { id: "ocupacion",     label: "Ocupación",        weight: 0.5, value: owner.ocupacion },
-    { id: "notasInternas", label: "Notas internas",   weight: 0.5, value: owner.notasInternas },
+    { id: "bank",         label: "Banco",            weight: 1,   value: owner.bank },
+    { id: "accountType",  label: "Tipo de cuenta",   weight: 1,   value: owner.accountType },
+    { id: "address",      label: "Domicilio fiscal", weight: 1,   value: owner.address },
+    { id: "birthDate",    label: "Fecha nac.",       weight: 0.5, value: owner.birthDate },
+    { id: "nationality",  label: "Nacionalidad",     weight: 0.5, value: owner.nationality },
+    { id: "occupation",   label: "Ocupación",        weight: 0.5, value: owner.occupation },
+    { id: "internalNotes", label: "Notas internas",  weight: 0.5, value: owner.internalNotes },
   ];
 
   const totalWeight = fields.reduce((sum, f) => sum + f.weight, 0);

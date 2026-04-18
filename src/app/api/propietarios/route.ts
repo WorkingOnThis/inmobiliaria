@@ -20,8 +20,8 @@ const createPropietarioSchema = z.object({
   birthDate: z.string().optional().nullable(),
   cbu: z.string().optional().nullable(),
   alias: z.string().optional().nullable(),
-  banco: z.string().optional().nullable(),
-  tipoCuenta: z.string().optional().nullable(),
+  bank: z.string().optional().nullable(),
+  accountType: z.string().optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -214,8 +214,8 @@ export async function POST(request: NextRequest) {
         birthDate: data.birthDate ?? null,
         cbu: data.cbu ?? null,
         alias: data.alias ?? null,
-        banco: data.banco ?? null,
-        tipoCuenta: data.tipoCuenta ?? null,
+        bank: data.bank ?? null,
+        accountType: data.accountType ?? null,
         createdAt: now,
         updatedAt: now,
       })
