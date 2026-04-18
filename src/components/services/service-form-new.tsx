@@ -58,7 +58,7 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
           holderType: form.holderType,
           paymentResponsible: form.paymentResponsible,
           dueDay: form.dueDay ? parseInt(form.dueDay, 10) : undefined,
-          activaBloqueo: form.activatesBlock,
+          triggersBlock: form.activatesBlock,
         }),
       });
       const data = await res.json();

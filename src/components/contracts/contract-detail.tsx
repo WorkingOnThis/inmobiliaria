@@ -251,7 +251,7 @@ export function ContractDetail({ id }: { id: string }) {
           estado: string;
           diasSinComprobante: number;
           responsablePago: string;
-          activaBloqueo: boolean;
+          triggersBlock: boolean;
         }[];
       }>;
     },

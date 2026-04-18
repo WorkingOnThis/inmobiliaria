@@ -38,7 +38,7 @@ type ServiceItem = {
   holderType: string;
   paymentResponsible: string;
   dueDay: number | null;
-  activaBloqueo: boolean;
+  triggersBlock: boolean;
   estado: ServiceStatus;
   diasSinComprobante: number;
   periodo: string;
@@ -199,8 +199,8 @@ export function ServiceTabProperty({ propertyId, initialServiceId }: Props) {
                   <StatusBadge variant={STATUS_CONFIG[s.estado].variant}>
                     {STATUS_CONFIG[s.estado].label}
                   </StatusBadge>
-                  <span className={`text-[0.6rem] font-bold rounded-full px-2 py-0.5 ${s.activaBloqueo ? "bg-primary/10 text-primary" : "bg-card text-muted-foreground"}`}>
-                    {s.activaBloqueo ? "Activa bloqueo" : "No bloquea"}
+                  <span className={`text-[0.6rem] font-bold rounded-full px-2 py-0.5 ${s.triggersBlock ? "bg-primary/10 text-primary" : "bg-card text-muted-foreground"}`}>
+                    {s.triggersBlock ? "Activa bloqueo" : "No bloquea"}
                   </span>
                   {s.diasSinComprobante > 0 && (
                     <span className={`text-[0.63rem] ${s.estado === "alert" ? "text-mustard" : "text-muted-foreground"}`}>

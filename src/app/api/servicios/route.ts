@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       holderType: servicio.holderType,
       paymentResponsible: servicio.paymentResponsible,
       dueDay: servicio.dueDay,
-      activaBloqueo: servicio.triggersBlock,   // alias for component compat
+      triggersBlock: servicio.triggersBlock,
       createdAt: servicio.createdAt,
       propertyAddress: property.address,
       propertyType: property.type,
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
       const estadoCalculado = calculateServiceStatus({
         hasReceipt: !!comprobante,
         daysWithoutReceipt: diasSinComprobante,
-        activatesBlock: s.activaBloqueo,
+        activatesBlock: s.triggersBlock,
         hasOmission: !!omision,
       });
 

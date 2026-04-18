@@ -193,7 +193,7 @@ export function ServicesControlPanel() {
           holderType: string;
           paymentResponsible: string;
           dueDay: number | null;
-          activaBloqueo: boolean;
+          triggersBlock: boolean;
           estado: ServiceStatus;
           diasSinComprobante: number;
           periodo: string;

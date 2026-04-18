@@ -69,9 +69,8 @@ export async function GET(
     hasOmission: !!omisionPeriodo,
   });
 
-  // Return item with activaBloqueo alias for component compat
   return NextResponse.json({
-    item: { ...s, activaBloqueo: s.triggersBlock },
+    item: s,
     periodo,
     estado,
     daysWithoutReceipt: comprobantePeriodo ? 0 : diasTranscurridos,
@@ -100,12 +99,7 @@ export async function PUT(
   }
 
   const body = await request.json();
-  // Accept both activatesBlock (new) and activaBloqueo (legacy from component)
-  const normalizedBody = {
-    ...body,
-    activatesBlock: body.activatesBlock ?? body.activaBloqueo,
-  };
-  const result = actualizarServicioSchema.safeParse(normalizedBody);
+  const result = actualizarServicioSchema.safeParse(body);
   if (!result.success) {
     return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
   }
@@ -127,5 +121,5 @@ export async function PUT(
     .where(eq(servicio.id, id))
     .returning();
 
-  return NextResponse.json({ message: "Servicio actualizado", item: { ...actualizado, activaBloqueo: actualizado.triggersBlock } });
+  return NextResponse.json({ message: "Servicio actualizado", item: actualizado });
 }

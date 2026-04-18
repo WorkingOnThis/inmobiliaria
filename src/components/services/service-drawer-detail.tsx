@@ -143,13 +143,13 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
     enabled: !!serviceId && open,
   });
 
-  // Mutation: toggle activaBloqueo
+  // Mutation: toggle triggersBlock
   const toggleBloqueo = useMutation({
-    mutationFn: async (activaBloqueo: boolean) => {
+    mutationFn: async (triggersBlock: boolean) => {
       const res = await fetch(`/api/servicios/${serviceId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activaBloqueo }),
+        body: JSON.stringify({ triggersBlock }),
       });
       if (!res.ok) throw new Error("Error al actualizar");
       return res.json();
@@ -223,7 +223,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
           holderType: editForm.holderType,
           paymentResponsible: editForm.paymentResponsible,
           dueDay: editForm.dueDay ? parseInt(editForm.dueDay) : null,
-          activaBloqueo: editForm.activatesBlock,
+          triggersBlock: editForm.activatesBlock,
         }),
       });
       if (!res.ok) throw new Error("Error al guardar");
@@ -260,7 +260,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
       holderType: (item.holderType as HolderType) ?? "propietario",
       paymentResponsible: (item.paymentResponsible as PaymentResponsibleType) ?? "propietario",
       dueDay: item.dueDay ? String(item.dueDay) : "",
-      activatesBlock: item.activaBloqueo ?? true,
+      activatesBlock: item.triggersBlock ?? true,
     });
     setEditing(true);
   }
@@ -420,16 +420,16 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className="text-[0.68rem] text-muted-foreground min-w-[20px] text-right">
-                        {s.activaBloqueo ? "Sí" : "No"}
+                        {s.triggersBlock ? "Sí" : "No"}
                       </span>
                       <button
                         type="button"
                         disabled={toggleBloqueo.isPending}
-                        onClick={() => toggleBloqueo.mutate(!s.activaBloqueo)}
-                        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50 ${s.activaBloqueo ? "bg-primary" : "bg-surface-highest"}`}
+                        onClick={() => toggleBloqueo.mutate(!s.triggersBlock)}
+                        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50 ${s.triggersBlock ? "bg-primary" : "bg-surface-highest"}`}
                       >
                         <span
-                          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${s.activaBloqueo ? "left-[18px]" : "left-0.5"}`}
+                          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${s.triggersBlock ? "left-[18px]" : "left-0.5"}`}
                         />
                       </button>
                     </div>
