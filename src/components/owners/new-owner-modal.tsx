@@ -13,13 +13,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-interface NuevoPropietarioModalProps {
+interface NewOwnerModalProps {
   open: boolean;
   onClose: () => void;
-  onCreated?: (propietario: CreatedPropietario) => void;
+  onCreated?: (owner: CreatedOwner) => void;
 }
 
-interface CreatedPropietario {
+interface CreatedOwner {
   id: string;
   firstName: string;
   lastName: string | null;
@@ -54,11 +54,11 @@ const emptyForm: FormState = {
   banco: "",
 };
 
-export function NuevoPropietarioModal({
+export function NewOwnerModal({
   open,
   onClose,
   onCreated,
-}: NuevoPropietarioModalProps) {
+}: NewOwnerModalProps) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [loading, setLoading] = useState(false);
@@ -80,7 +80,7 @@ export function NuevoPropietarioModal({
 
     setLoading(true);
     try {
-      const res = await fetch("/api/propietarios", {
+      const res = await fetch("/api/owners", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -101,9 +101,9 @@ export function NuevoPropietarioModal({
       }
 
       const data = await res.json();
-      await queryClient.invalidateQueries({ queryKey: ["propietarios"] });
+      await queryClient.invalidateQueries({ queryKey: ["owners"] });
       toast.success(`${form.firstName} fue agregado como propietario`);
-      onCreated?.(data.propietario);
+      onCreated?.(data.owner);
       handleClose();
     } catch (err) {
       toast.error((err as Error).message);

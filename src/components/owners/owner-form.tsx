@@ -15,7 +15,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-export function PropietarioForm() {
+export function OwnerForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -49,7 +49,7 @@ export function PropietarioForm() {
       return response.json();
     },
     onSuccess: () => {
-      toast.success("Propietario creado exitosamente");
+      toast.success("Owner creado exitosamente");
       queryClient.invalidateQueries({ queryKey: ["clients", "propietario"] });
       router.push("/propietarios");
     },
@@ -262,7 +262,7 @@ export function PropietarioForm() {
           Cancelar
         </Button>
         <Button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? "Guardando..." : "Crear Propietario"}
+          {mutation.isPending ? "Guardando..." : "Crear Owner"}
         </Button>
       </div>
     </form>

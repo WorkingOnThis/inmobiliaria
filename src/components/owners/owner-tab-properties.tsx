@@ -30,8 +30,8 @@ interface ContratoActivo {
   monthlyAmount: string;
 }
 
-interface PropietarioTabPropiedadesProps {
-  propietarioId: string;
+interface OwnerTabPropertiesProps {
+  ownerId: string;
   propiedades: PropertyData[];
   contratosActivos: ContratoActivo[];
 }
@@ -85,11 +85,11 @@ function PropertyInitial({ address }: { address: string }) {
   );
 }
 
-export function PropietarioTabPropiedades({
-  propietarioId,
+export function OwnerTabProperties({
+  ownerId,
   propiedades,
   contratosActivos,
-}: PropietarioTabPropiedadesProps) {
+}: OwnerTabPropertiesProps) {
   if (propiedades.length === 0) {
     return (
       <div className="p-7 flex flex-col items-center justify-center py-20 gap-4">
@@ -99,7 +99,7 @@ export function PropietarioTabPropiedades({
           <p className="text-[0.78rem] text-text-muted">Este propietario no tiene propiedades asociadas todavía.</p>
         </div>
         <Link
-          href={`/propiedades/nueva?propietarioId=${propietarioId}`}
+          href={`/propiedades/nueva?ownerId=${ownerId}`}
           className="inline-flex items-center gap-2 px-4 py-2 text-[0.78rem] font-semibold rounded-[6px] transition-all hover:opacity-90"
           style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
         >
@@ -117,7 +117,7 @@ export function PropietarioTabPropiedades({
           {propiedades.length} {propiedades.length === 1 ? "propiedad" : "propiedades"}
         </span>
         <Link
-          href={`/propiedades/nueva?propietarioId=${propietarioId}`}
+          href={`/propiedades/nueva?ownerId=${ownerId}`}
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[0.72rem] font-semibold rounded-[6px] transition-all hover:opacity-90"
           style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
         >

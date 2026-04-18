@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PropietarioTabDatos } from "@/components/propietarios/propietario-tab-datos";
-import { PropietarioTabCuentaCorriente } from "@/components/propietarios/propietario-tab-cuenta-corriente";
-import { PropietarioTabPropiedades } from "@/components/propietarios/propietario-tab-propiedades";
-import { PropietarioTabDocumentos } from "@/components/propietarios/propietario-tab-documentos";
+import { OwnerTabData } from "@/components/owners/owner-tab-data";
+import { OwnerTabCurrentAccount } from "@/components/owners/owner-tab-current-account";
+import { OwnerTabProperties } from "@/components/owners/owner-tab-properties";
+import { OwnerTabDocuments } from "@/components/owners/owner-tab-documents";
 
-interface Propietario {
+interface Owner {
   id: string;
   firstName: string;
   lastName: string | null;
@@ -86,7 +86,7 @@ const statusVariantMap: Record<string, { variant: "active" | "suspended" | "baja
   baja:       { variant: "baja",      label: "Baja" },
 };
 
-function computeCompletitud(p: Propietario) {
+function computeCompletitud(p: Owner) {
   const fields = [
     { weight: 3,   value: p.cbu },
     { weight: 2,   value: p.dni },
@@ -111,7 +111,7 @@ function computeCompletitud(p: Propietario) {
   };
 }
 
-export default function PropietarioFichaPage() {
+export default function OwnerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -123,11 +123,11 @@ export default function PropietarioFichaPage() {
   const setTab = (tab: Tab) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
-    router.replace(`/propietarios/${id}?${params.toString()}`, { scroll: false });
+    router.replace(`/owners/${id}?${params.toString()}`, { scroll: false });
   };
 
   const { data, isLoading, error } = useQuery<{
-    propietario: Propietario;
+    owner: Owner;
     propiedades: PropertyData[];
     contratosActivos: ContratoActivo[];
   }>({
@@ -142,12 +142,12 @@ export default function PropietarioFichaPage() {
     },
   });
 
-  const propietario = data?.propietario;
+  const owner = data?.owner;
   const propiedadesCount = data?.propiedades?.length ?? 0;
   const [ccPendingCount, setCcPendingCount] = useState(0);
 
   const handleStatusChange = () => {
-    queryClient.invalidateQueries({ queryKey: ["propietario", id] });
+    queryClient.invalidateQueries({ queryKey: ["owner", id] });
   };
 
   const tabs: { key: Tab; label: string; count?: number }[] = [
@@ -164,9 +164,9 @@ export default function PropietarioFichaPage() {
         <div className="flex h-screen items-center justify-center">
           <Loader2 className="size-8 animate-spin text-text-muted" />
         </div>
-      ) : error || !propietario ? (
+      ) : error || !owner ? (
         <div className="flex h-screen flex-col items-center justify-center gap-4 text-text-muted">
-          <div className="text-sm">{(error as Error)?.message ?? "Propietario no encontrado"}</div>
+          <div className="text-sm">{(error as Error)?.message ?? "Owner no encontrado"}</div>
           <Link
             href="/propietarios"
             className="text-[0.72rem] text-primary hover:underline flex items-center gap-1"
@@ -189,7 +189,7 @@ export default function PropietarioFichaPage() {
                     className="text-[1.375rem] font-bold text-white rounded-[12px]"
                     style={{ background: "var(--gradient-owner)" }}
                   >
-                    {getInitials(propietario.firstName, propietario.lastName)}
+                    {getInitials(owner.firstName, owner.lastName)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -197,26 +197,26 @@ export default function PropietarioFichaPage() {
                     className="text-[1.375rem] font-bold text-on-bg font-headline"
                     style={{ letterSpacing: "-0.015em" }}
                   >
-                    {propietario.lastName
-                      ? `${propietario.firstName} ${propietario.lastName}`
-                      : propietario.firstName}
+                    {owner.lastName
+                      ? `${owner.firstName} ${owner.lastName}`
+                      : owner.firstName}
                   </h1>
                   <div className="flex items-center gap-2.5 mt-1">
                     <Badge
-                      variant={statusVariantMap[propietario.status]?.variant ?? "draft"}
+                      variant={statusVariantMap[owner.status]?.variant ?? "draft"}
                       className="normal-case font-medium text-[0.75rem] tracking-normal gap-1.5"
                     >
                       <span
                         className={cn(
                           "size-1.5 rounded-full bg-current flex-shrink-0",
-                          propietario.status === "activo" && "animate-pulse"
+                          owner.status === "activo" && "animate-pulse"
                         )}
                       />
-                      {statusVariantMap[propietario.status]?.label ?? propietario.status}
+                      {statusVariantMap[owner.status]?.label ?? owner.status}
                     </Badge>
-                    {propietario.dni && (
+                    {owner.dni && (
                       <span className="text-[0.72rem] text-text-muted font-mono">
-                        DNI {propietario.dni}
+                        DNI {owner.dni}
                       </span>
                     )}
                   </div>
@@ -236,7 +236,7 @@ export default function PropietarioFichaPage() {
 
             {/* Compact completitud chip — only on cuenta-corriente */}
             {(() => {
-              const { pct, missingCount } = computeCompletitud(propietario);
+              const { pct, missingCount } = computeCompletitud(owner);
               return activeTab === "cuenta-corriente" && missingCount > 0 ? (
                 <button
                   onClick={() => { setTab("datos"); setPendingFocus(null); }}
@@ -287,30 +287,30 @@ export default function PropietarioFichaPage() {
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto bg-bg">
             {activeTab === "datos" && (
-              <PropietarioTabDatos
-                propietario={propietario}
+              <OwnerTabData
+                owner={owner}
                 onStatusChange={handleStatusChange}
                 focusField={pendingFocus}
                 onFocusHandled={() => setPendingFocus(null)}
               />
             )}
             {activeTab === "cuenta-corriente" && (
-              <PropietarioTabCuentaCorriente propietarioId={propietario.id} onPendingCount={setCcPendingCount} />
+              <OwnerTabCurrentAccount ownerId={owner.id} onPendingCount={setCcPendingCount} />
             )}
             {activeTab === "propiedades" && (
-              <PropietarioTabPropiedades
-                propietarioId={propietario.id}
+              <OwnerTabProperties
+                ownerId={owner.id}
                 propiedades={data?.propiedades ?? []}
                 contratosActivos={data?.contratosActivos ?? []}
               />
             )}
             {activeTab === "documentos" && (
-              <PropietarioTabDocumentos
-                propietarioId={propietario.id}
-                propietarioName={
-                  propietario.lastName
-                    ? `${propietario.firstName} ${propietario.lastName}`
-                    : propietario.firstName
+              <OwnerTabDocuments
+                ownerId={owner.id}
+                ownerName={
+                  owner.lastName
+                    ? `${owner.firstName} ${owner.lastName}`
+                    : owner.firstName
                 }
               />
             )}

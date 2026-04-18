@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-interface Propietario {
+interface Owner {
   id: string;
   firstName: string;
   lastName: string | null;
@@ -39,8 +39,8 @@ interface CuentaCorrienteData {
   }>;
 }
 
-interface PropietarioSlidePanelProps {
-  propietario: Propietario | null;
+interface OwnerSlidePanelProps {
+  owner: Owner | null;
   open: boolean;
   onClose: () => void;
 }
@@ -62,25 +62,25 @@ function getInitials(firstName: string, lastName: string | null) {
     .slice(0, 2);
 }
 
-export function PropietarioSlidePanel({
-  propietario,
+export function OwnerSlidePanel({
+  owner,
   open,
   onClose,
-}: PropietarioSlidePanelProps) {
+}: OwnerSlidePanelProps) {
   const router = useRouter();
 
   const { data: ccData, isLoading: ccLoading } = useQuery<CuentaCorrienteData>({
-    queryKey: ["propietario-cc", propietario?.id],
+    queryKey: ["owner-cc", owner?.id],
     queryFn: async () => {
-      const res = await fetch(`/api/propietarios/${propietario!.id}/cuenta-corriente`);
+      const res = await fetch(`/api/owners/${owner!.id}/cuenta-corriente`);
       if (!res.ok) throw new Error("Error al cargar cuenta corriente");
       return res.json();
     },
-    enabled: !!propietario?.id && open,
+    enabled: !!owner?.id && open,
   });
 
   const handleVerFicha = () => {
-    if (propietario) router.push(`/propietarios/${propietario.id}`);
+    if (owner) router.push(`/owners/${owner.id}`);
   };
 
   // Últimas 3 liquidaciones del historial
@@ -107,23 +107,23 @@ export function PropietarioSlidePanel({
         }`}
         style={{ transition: "transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)" }}
       >
-        {!propietario ? null : (
+        {!owner ? null : (
           <>
             {/* Header */}
             <div className="p-5 border-b border-white/7 bg-card flex-shrink-0">
               <div className="flex items-start gap-3">
                 <div className="size-10 rounded-[12px] bg-primary-dark flex items-center justify-center text-[0.85rem] font-extrabold text-white font-brand flex-shrink-0">
-                  {getInitials(propietario.firstName, propietario.lastName)}
+                  {getInitials(owner.firstName, owner.lastName)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-on-surface text-[0.95rem] leading-tight truncate">
-                    {propietario.lastName
-                      ? `${propietario.lastName}, ${propietario.firstName}`
-                      : propietario.firstName}
+                    {owner.lastName
+                      ? `${owner.lastName}, ${owner.firstName}`
+                      : owner.firstName}
                   </div>
-                  {propietario.dni && (
+                  {owner.dni && (
                     <div className="text-[0.68rem] text-text-muted mt-1">
-                      DNI {propietario.dni}
+                      DNI {owner.dni}
                     </div>
                   )}
                 </div>
@@ -136,21 +136,21 @@ export function PropietarioSlidePanel({
               </div>
 
               <div className="flex gap-4 mt-3 flex-wrap">
-                {propietario.phone && (
+                {owner.phone && (
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-text-muted">
                       Teléfono
                     </span>
-                    <span className="text-[0.75rem] text-text-secondary">{propietario.phone}</span>
+                    <span className="text-[0.75rem] text-text-secondary">{owner.phone}</span>
                   </div>
                 )}
-                {propietario.cbu ? (
+                {owner.cbu ? (
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[0.58rem] font-bold uppercase tracking-[0.1em] text-text-muted">
                       CBU
                     </span>
                     <span className="text-[0.72rem] text-text-secondary font-mono tracking-[0.02em]">
-                      {propietario.cbu.slice(0, 8)}…
+                      {owner.cbu.slice(0, 8)}…
                     </span>
                   </div>
                 ) : (
@@ -166,7 +166,7 @@ export function PropietarioSlidePanel({
                     Propiedades
                   </span>
                   <span className="text-[0.75rem] text-text-secondary">
-                    {propietario.propiedadesCount}
+                    {owner.propiedadesCount}
                   </span>
                 </div>
               </div>

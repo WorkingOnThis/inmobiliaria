@@ -63,8 +63,8 @@ interface CuentaCorrienteData {
   movimientos: Movimiento[];
 }
 
-interface PropietarioTabCuentaCorrienteProps {
-  propietarioId: string;
+interface OwnerTabCurrentAccountProps {
+  ownerId: string;
   onPendingCount?: (count: number) => void;
 }
 
@@ -382,10 +382,10 @@ function FilaMovimiento({
 
 // ── Componente principal ──────────────────────────────────────────────────────
 
-export function PropietarioTabCuentaCorriente({
-  propietarioId,
+export function OwnerTabCurrentAccount({
+  ownerId,
   onPendingCount,
-}: PropietarioTabCuentaCorrienteProps) {
+}: OwnerTabCurrentAccountProps) {
   const queryClient = useQueryClient();
 
   const [movFilter, setMovFilter] = useState<MovFilter>("todos");
@@ -419,10 +419,10 @@ export function PropietarioTabCuentaCorriente({
   if (periodoFiltro) queryParams.set("periodo", periodoFiltro);
 
   const { data, isLoading, error } = useQuery<CuentaCorrienteData>({
-    queryKey: ["propietario-cc-full", propietarioId, periodoFiltro],
+    queryKey: ["owner-cc-full", ownerId, periodoFiltro],
     queryFn: async () => {
       const res = await fetch(
-        `/api/propietarios/${propietarioId}/cuenta-corriente?${queryParams}`
+        `/api/owners/${ownerId}/cuenta-corriente?${queryParams}`
       );
       if (!res.ok) throw new Error("Error al cargar cuenta corriente");
       return res.json();
@@ -527,7 +527,7 @@ export function PropietarioTabCuentaCorriente({
 
     setSaving(true);
     try {
-      const res = await fetch(`/api/propietarios/${propietarioId}/movimientos`, {
+      const res = await fetch(`/api/owners/${ownerId}/movimientos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -541,8 +541,8 @@ export function PropietarioTabCuentaCorriente({
         }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Error al guardar"); }
-      await queryClient.invalidateQueries({ queryKey: ["propietario-cc-full", propietarioId] });
-      await queryClient.invalidateQueries({ queryKey: ["propietario-cc", propietarioId] });
+      await queryClient.invalidateQueries({ queryKey: ["owner-cc-full", ownerId] });
+      await queryClient.invalidateQueries({ queryKey: ["owner-cc", ownerId] });
       toast.success("Movimiento registrado");
       setFabAction(null);
       setMovForm({
@@ -563,7 +563,7 @@ export function PropietarioTabCuentaCorriente({
     if (!liqForm.fecha)              { toast.error("Completá la fecha"); return; }
     setSaving(true);
     try {
-      const res = await fetch(`/api/propietarios/${propietarioId}/movimientos`, {
+      const res = await fetch(`/api/owners/${ownerId}/movimientos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -576,8 +576,8 @@ export function PropietarioTabCuentaCorriente({
         }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Error al guardar"); }
-      await queryClient.invalidateQueries({ queryKey: ["propietario-cc-full", propietarioId] });
-      await queryClient.invalidateQueries({ queryKey: ["propietario-cc", propietarioId] });
+      await queryClient.invalidateQueries({ queryKey: ["owner-cc-full", ownerId] });
+      await queryClient.invalidateQueries({ queryKey: ["owner-cc", ownerId] });
       toast.success("Liquidación ejecutada");
       setFabAction(null);
       setLiqForm({ descripcion: "Liquidación mensual", monto: "", fecha: localDateString(), nota: "" });
@@ -589,8 +589,8 @@ export function PropietarioTabCuentaCorriente({
   };
 
   const invalidarMovimientos = () => {
-    queryClient.invalidateQueries({ queryKey: ["propietario-cc-full", propietarioId] });
-    queryClient.invalidateQueries({ queryKey: ["propietario-cc", propietarioId] });
+    queryClient.invalidateQueries({ queryKey: ["owner-cc-full", ownerId] });
+    queryClient.invalidateQueries({ queryKey: ["owner-cc", ownerId] });
   };
 
   return (
@@ -905,7 +905,7 @@ export function PropietarioTabCuentaCorriente({
           <Button variant="secondary" size="sm" onClick={() => setFabAction("movimiento")} className="gap-1.5">
             <Plus size={13} /> Agregar movimiento manual
           </Button>
-          <Link href={`/propietarios/${propietarioId}/liquidacion${periodoFiltro ? `?periodo=${periodoFiltro}` : ""}`}>
+          <Link href={`/owners/${ownerId}/liquidacion${periodoFiltro ? `?periodo=${periodoFiltro}` : ""}`}>
             <Button variant="outline" size="sm" className="gap-1.5">
               <FileText size={13} /> Vista previa
             </Button>

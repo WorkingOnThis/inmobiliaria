@@ -6,9 +6,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-interface PropietarioTabDocumentosProps {
-  propietarioId: string;
-  propietarioName: string;
+interface OwnerTabDocumentsProps {
+  ownerId: string;
+  ownerName: string;
 }
 
 interface DocumentoItem {
@@ -42,9 +42,9 @@ function fileIcon(nombre: string) {
   return <File size={16} className="text-text-muted" />;
 }
 
-export function PropietarioTabDocumentos({
-  propietarioName,
-}: PropietarioTabDocumentosProps) {
+export function OwnerTabDocuments({
+  ownerName,
+}: OwnerTabDocumentsProps) {
   const [showModal, setShowModal] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -108,7 +108,7 @@ export function PropietarioTabDocumentos({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-muted">
-            Documentos · {propietarioName}
+            Documentos · {ownerName}
           </p>
           <p className="text-[0.75rem] text-text-muted mt-0.5">
             {documentos.length === 0 ? "Sin documentos cargados" : `${documentos.length} archivos`}
@@ -283,7 +283,7 @@ export function PropietarioTabDocumentos({
                     className={inputCls}
                   >
                     <option value="staff">Solo staff</option>
-                    <option value="propietario">Propietario</option>
+                    <option value="propietario">Owner</option>
                     <option value="ambos">Staff y propietario</option>
                   </select>
                 </div>

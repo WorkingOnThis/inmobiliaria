@@ -4,15 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Search, User, Loader2 } from "lucide-react";
-import { PropietarioSlidePanel } from "./propietario-slide-panel";
-import { NuevoPropietarioModal } from "./nuevo-propietario-modal";
+import { OwnerSlidePanel } from "./owner-slide-panel";
+import { NewOwnerModal } from "./new-owner-modal";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-interface Propietario {
+interface Owner {
   id: string;
   firstName: string;
   lastName: string | null;
@@ -26,8 +26,8 @@ interface Propietario {
   matchedProperty: string | null;
 }
 
-interface PropietariosResponse {
-  propietarios: Propietario[];
+interface OwnersResponse {
+  owners: Owner[];
   pagination: { total: number; page: number; limit: number; totalPages: number };
 }
 
@@ -40,19 +40,19 @@ function getInitials(firstName: string, lastName: string | null) {
     .slice(0, 2);
 }
 
-function propietarioStatusVariant(status: string): StatusBadgeVariant {
+function ownerStatusVariant(status: string): StatusBadgeVariant {
   if (status === "activo") return "active";
   if (status === "suspendido") return "suspended";
   return "baja";
 }
 
-function propietarioStatusLabel(status: string): string {
+function ownerStatusLabel(status: string): string {
   if (status === "activo") return "Activo";
   if (status === "suspendido") return "Suspendido";
   return "Baja";
 }
 
-export function PropietariosList() {
+export function OwnersList() {
   const router = useRouter();
 
   // Filtros y búsqueda
@@ -64,7 +64,7 @@ export function PropietariosList() {
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Panel y modal
-  const [selectedProp, setSelectedProp] = useState<Propietario | null>(null);
+  const [selectedProp, setSelectedProp] = useState<Owner | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [newlyCreatedId, setNewlyCreatedId] = useState<string | null>(null);
@@ -100,8 +100,8 @@ export function PropietariosList() {
     ...(debouncedSearch.length >= 2 ? { q: debouncedSearch } : {}),
   });
 
-  const { data, isLoading, error } = useQuery<PropietariosResponse>({
-    queryKey: ["propietarios", statusFilter, page, debouncedSearch],
+  const { data, isLoading, error } = useQuery<OwnersResponse>({
+    queryKey: ["owners", statusFilter, page, debouncedSearch],
     queryFn: async () => {
       const res = await fetch(`/api/propietarios?${queryParams}`);
       if (!res.ok) throw new Error("Error al obtener propietarios");
@@ -109,22 +109,22 @@ export function PropietariosList() {
     },
   });
 
-  const handleRowClick = (p: Propietario) => {
+  const handleRowClick = (p: Owner) => {
     setSelectedProp(p);
     setPanelOpen(true);
   };
 
   const handleFichaClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    router.push(`/propietarios/${id}`);
+    router.push(`/owners/${id}`);
   };
 
-  const handleCreated = (propietario: Propietario) => {
-    setNewlyCreatedId(propietario.id);
+  const handleCreated = (owner: Owner) => {
+    setNewlyCreatedId(owner.id);
     setTimeout(() => setNewlyCreatedId(null), 8000);
   };
 
-  const propietarios = data?.propietarios ?? [];
+  const propietarios = data?.owners ?? [];
   const total = data?.pagination.total ?? 0;
   const totalPages = data?.pagination.totalPages ?? 1;
 
@@ -210,7 +210,7 @@ export function PropietariosList() {
                     )}
                   </div>
                   <Badge variant="secondary" className="text-[0.58rem]">
-                    {p.matchedProperty ? "Por propiedad" : "Propietario"}
+                    {p.matchedProperty ? "Por propiedad" : "Owner"}
                   </Badge>
                 </div>
               ))}
@@ -282,7 +282,7 @@ export function PropietariosList() {
                 <thead>
                   <tr>
                     <th className="px-3.5 py-2.5 text-left text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground bg-card whitespace-nowrap">
-                      Propietario
+                      Owner
                     </th>
                     <th className="px-3.5 py-2.5 text-left text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground bg-card">
                       Teléfono
@@ -380,8 +380,8 @@ export function PropietariosList() {
                           </span>
                         </td>
                         <td className="px-3.5 py-3 align-middle">
-                          <StatusBadge variant={propietarioStatusVariant(p.status)}>
-                            {propietarioStatusLabel(p.status)}
+                          <StatusBadge variant={ownerStatusVariant(p.status)}>
+                            {ownerStatusLabel(p.status)}
                           </StatusBadge>
                         </td>
                         <td className="px-3.5 py-3 align-middle">
@@ -451,18 +451,18 @@ export function PropietariosList() {
       </div>
 
       {/* Slide panel */}
-      <PropietarioSlidePanel
-        propietario={selectedProp}
+      <OwnerSlidePanel
+        owner={selectedProp}
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
       />
 
       {/* Modal nuevo propietario */}
-      <NuevoPropietarioModal
+      <NewOwnerModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onCreated={(p) => {
-          handleCreated(p as Propietario);
+          handleCreated(p as Owner);
         }}
       />
     </div>

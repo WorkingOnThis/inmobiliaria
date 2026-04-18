@@ -1,17 +1,17 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { PropietarioForm } from "@/components/propietarios/propietario-form";
+import { OwnerForm } from "@/components/owners/owner-form";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function NuevoPropietarioPage() {
+export default async function NewOwnerPage() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) {
-    redirect("/login?callbackUrl=/propietarios/nuevo");
+    redirect("/login?callbackUrl=/owners/new");
   }
 
   if (!canManageClients(session.user.role)) {
@@ -27,7 +27,7 @@ export default async function NuevoPropietarioPage() {
         </p>
       </div>
       <div className="flex flex-col items-center">
-        <PropietarioForm />
+        <OwnerForm />
       </div>
     </div>
   );

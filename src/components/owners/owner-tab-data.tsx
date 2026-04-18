@@ -7,7 +7,7 @@ import { Edit2, Save, X, Loader2, AlertCircle, AlertTriangle } from "lucide-reac
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-interface Propietario {
+interface Owner {
   id: string;
   firstName: string;
   lastName: string | null;
@@ -35,14 +35,14 @@ interface Propietario {
   createdAt: string;
 }
 
-interface PropietarioTabDatosProps {
-  propietario: Propietario;
+interface OwnerTabDataProps {
+  owner: Owner;
   onStatusChange: () => void;
   focusField?: string | null;
   onFocusHandled?: () => void;
 }
 
-type EditableFields = Omit<Propietario, "id" | "status" | "createdAt">;
+type EditableFields = Omit<Owner, "id" | "status" | "createdAt">;
 
 // ── DataField ────────────────────────────────────────────────
 function DataField({
@@ -174,40 +174,40 @@ function SectionCard({
 }
 
 // ── Main component ────────────────────────────────────────────
-export function PropietarioTabDatos({
-  propietario,
+export function OwnerTabData({
+  owner,
   onStatusChange,
   focusField,
   onFocusHandled,
-}: PropietarioTabDatosProps) {
+}: OwnerTabDataProps) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState<"suspendido" | "baja" | null>(null);
 
   const [form, setForm] = useState<EditableFields>({
-    firstName:        propietario.firstName,
-    lastName:         propietario.lastName,
-    dni:              propietario.dni,
-    cuit:             propietario.cuit,
-    phone:            propietario.phone,
-    email:            propietario.email,
-    address:          propietario.address,
-    birthDate:        propietario.birthDate,
-    cbu:              propietario.cbu,
-    alias:            propietario.alias,
-    banco:            propietario.banco,
-    tipoCuenta:       propietario.tipoCuenta,
-    condicionFiscal:  propietario.condicionFiscal,
-    nacionalidad:     propietario.nacionalidad,
-    ocupacion:        propietario.ocupacion,
-    notasInternas:    propietario.notasInternas,
-    confianzaNombre:  propietario.confianzaNombre,
-    confianzaApellido: propietario.confianzaApellido,
-    confianzaDni:     propietario.confianzaDni,
-    confianzaEmail:   propietario.confianzaEmail,
-    confianzaTelefono: propietario.confianzaTelefono,
-    confianzaVinculo: propietario.confianzaVinculo,
+    firstName:        owner.firstName,
+    lastName:         owner.lastName,
+    dni:              owner.dni,
+    cuit:             owner.cuit,
+    phone:            owner.phone,
+    email:            owner.email,
+    address:          owner.address,
+    birthDate:        owner.birthDate,
+    cbu:              owner.cbu,
+    alias:            owner.alias,
+    banco:            owner.banco,
+    tipoCuenta:       owner.tipoCuenta,
+    condicionFiscal:  owner.condicionFiscal,
+    nacionalidad:     owner.nacionalidad,
+    ocupacion:        owner.ocupacion,
+    notasInternas:    owner.notasInternas,
+    confianzaNombre:  owner.confianzaNombre,
+    confianzaApellido: owner.confianzaApellido,
+    confianzaDni:     owner.confianzaDni,
+    confianzaEmail:   owner.confianzaEmail,
+    confianzaTelefono: owner.confianzaTelefono,
+    confianzaVinculo: owner.confianzaVinculo,
   });
 
   const setField = (key: keyof EditableFields) => (val: string) =>
@@ -230,7 +230,7 @@ export function PropietarioTabDatos({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/propietarios/${propietario.id}`, {
+      const res = await fetch(`/api/owners/${owner.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -239,7 +239,7 @@ export function PropietarioTabDatos({
         const data = await res.json();
         throw new Error(data.error || "Error al guardar");
       }
-      await queryClient.invalidateQueries({ queryKey: ["propietario", propietario.id] });
+      await queryClient.invalidateQueries({ queryKey: ["owner", owner.id] });
       toast.success("Cambios guardados");
       setEditing(false);
     } catch (err) {
@@ -251,43 +251,43 @@ export function PropietarioTabDatos({
 
   const handleCancelEdit = () => {
     setForm({
-      firstName:        propietario.firstName,
-      lastName:         propietario.lastName,
-      dni:              propietario.dni,
-      cuit:             propietario.cuit,
-      phone:            propietario.phone,
-      email:            propietario.email,
-      address:          propietario.address,
-      birthDate:        propietario.birthDate,
-      cbu:              propietario.cbu,
-      alias:            propietario.alias,
-      banco:            propietario.banco,
-      tipoCuenta:       propietario.tipoCuenta,
-      condicionFiscal:  propietario.condicionFiscal,
-      nacionalidad:     propietario.nacionalidad,
-      ocupacion:        propietario.ocupacion,
-      notasInternas:    propietario.notasInternas,
-      confianzaNombre:  propietario.confianzaNombre,
-      confianzaApellido: propietario.confianzaApellido,
-      confianzaDni:     propietario.confianzaDni,
-      confianzaEmail:   propietario.confianzaEmail,
-      confianzaTelefono: propietario.confianzaTelefono,
-      confianzaVinculo: propietario.confianzaVinculo,
+      firstName:        owner.firstName,
+      lastName:         owner.lastName,
+      dni:              owner.dni,
+      cuit:             owner.cuit,
+      phone:            owner.phone,
+      email:            owner.email,
+      address:          owner.address,
+      birthDate:        owner.birthDate,
+      cbu:              owner.cbu,
+      alias:            owner.alias,
+      banco:            owner.banco,
+      tipoCuenta:       owner.tipoCuenta,
+      condicionFiscal:  owner.condicionFiscal,
+      nacionalidad:     owner.nacionalidad,
+      ocupacion:        owner.ocupacion,
+      notasInternas:    owner.notasInternas,
+      confianzaNombre:  owner.confianzaNombre,
+      confianzaApellido: owner.confianzaApellido,
+      confianzaDni:     owner.confianzaDni,
+      confianzaEmail:   owner.confianzaEmail,
+      confianzaTelefono: owner.confianzaTelefono,
+      confianzaVinculo: owner.confianzaVinculo,
     });
     setEditing(false);
   };
 
   const handleStatusChange = async (newStatus: "suspendido" | "baja") => {
     try {
-      const res = await fetch(`/api/propietarios/${propietario.id}`, {
+      const res = await fetch(`/api/owners/${owner.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error("Error al cambiar estado");
-      await queryClient.invalidateQueries({ queryKey: ["propietario", propietario.id] });
-      await queryClient.invalidateQueries({ queryKey: ["propietarios"] });
-      toast.success(newStatus === "baja" ? "Propietario dado de baja" : "Propietario suspendido");
+      await queryClient.invalidateQueries({ queryKey: ["owner", owner.id] });
+      await queryClient.invalidateQueries({ queryKey: ["owners"] });
+      toast.success(newStatus === "baja" ? "Owner dado de baja" : "Owner suspendido");
       setConfirmStatus(null);
       onStatusChange();
     } catch (err) {
@@ -297,15 +297,15 @@ export function PropietarioTabDatos({
 
   const handleReactivar = async () => {
     try {
-      const res = await fetch(`/api/propietarios/${propietario.id}`, {
+      const res = await fetch(`/api/owners/${owner.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "activo" }),
       });
       if (!res.ok) throw new Error("Error al reactivar");
-      await queryClient.invalidateQueries({ queryKey: ["propietario", propietario.id] });
-      await queryClient.invalidateQueries({ queryKey: ["propietarios"] });
-      toast.success("Propietario reactivado");
+      await queryClient.invalidateQueries({ queryKey: ["owner", owner.id] });
+      await queryClient.invalidateQueries({ queryKey: ["owners"] });
+      toast.success("Owner reactivado");
       onStatusChange();
     } catch (err) {
       toast.error((err as Error).message);
@@ -450,15 +450,15 @@ export function PropietarioTabDatos({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <DataField id="confianzaDni"     label="DNI"      value={form.confianzaDni}     editing={editing} onChange={setField("confianzaDni")}     mono placeholder="28441100" />
-            <DataField id="confianzaVinculo" label="Vínculo"  value={form.confianzaVinculo} editing={editing} onChange={setField("confianzaVinculo")} placeholder="Ej: cónyuge, familiar, apoderado" hint="Relación con el propietario" />
+            <DataField id="confianzaVinculo" label="Vínculo"  value={form.confianzaVinculo} editing={editing} onChange={setField("confianzaVinculo")} placeholder="Ej: cónyuge, familiar, apoderado" hint="Relación con el owner" />
           </div>
           <DataField id="confianzaEmail"    label="Email"    value={form.confianzaEmail}    editing={editing} onChange={setField("confianzaEmail")}    type="email" placeholder="contacto@gmail.com" />
           <DataField id="confianzaTelefono" label="Teléfono" value={form.confianzaTelefono} editing={editing} onChange={setField("confianzaTelefono")} placeholder="351 612-4400" />
         </div>
       </SectionCard>
 
-      {/* ── Estado del propietario ── */}
-      <SectionCard title="Estado del propietario">
+      {/* ── Estado del owner ── */}
+      <SectionCard title="Estado del owner">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -466,25 +466,25 @@ export function PropietarioTabDatos({
               <span
                 className={cn(
                   "status-pill",
-                  propietario.status === "activo"
+                  owner.status === "activo"
                     ? "status-active"
-                    : propietario.status === "suspendido"
+                    : owner.status === "suspendido"
                     ? "status-suspended"
                     : "status-baja"
                 )}
               >
-                {propietario.status === "activo" ? "Activo" : propietario.status === "suspendido" ? "Suspendido" : "Dado de baja"}
+                {owner.status === "activo" ? "Activo" : owner.status === "suspendido" ? "Suspendido" : "Dado de baja"}
               </span>
             </div>
             <div className="text-[12px] text-text-muted">
-              {propietario.status === "activo"
-                ? "El propietario está activo y puede recibir liquidaciones."
-                : propietario.status === "suspendido"
+              {owner.status === "activo"
+                ? "El owner está activo y puede recibir liquidaciones."
+                : owner.status === "suspendido"
                 ? "Las liquidaciones están pausadas temporalmente."
-                : "El propietario fue dado de baja del sistema."}
+                : "El owner fue dado de baja del sistema."}
             </div>
           </div>
-          {propietario.status !== "activo" && (
+          {owner.status !== "activo" && (
             <button
               onClick={handleReactivar}
               className="flex-shrink-0 px-3.5 py-2 text-[12px] font-semibold rounded-[6px] transition-all border"
@@ -501,7 +501,7 @@ export function PropietarioTabDatos({
       </SectionCard>
 
       {/* ── Zona de riesgo ── */}
-      {propietario.status === "activo" && (
+      {owner.status === "activo" && (
         <div className="bg-surface border border-border rounded-[10px] overflow-hidden">
           <div className="px-4 py-3 border-b border-border bg-surface-mid flex items-center gap-2">
             <AlertTriangle size={13} style={{ color: "var(--error)" }} />
@@ -515,7 +515,7 @@ export function PropietarioTabDatos({
                 <div className="text-[13px] text-on-surface">
                   ¿Estás seguro de que querés{" "}
                   <strong>{confirmStatus === "suspendido" ? "suspender" : "dar de baja"}</strong>{" "}
-                  a este propietario?
+                  a este owner?
                   {confirmStatus === "baja" && (
                     <span style={{ color: "var(--error)" }}> Esta acción es difícil de revertir.</span>
                   )}

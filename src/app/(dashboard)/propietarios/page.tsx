@@ -1,10 +1,10 @@
 "use client";
 
 import { Suspense } from "react";
-import { PropietariosList } from "@/components/propietarios/propietarios-list";
+import { OwnersList } from "@/components/owners/owners-list";
 import { Loader2 } from "lucide-react";
 
-export default function PropietariosPage() {
+export default function OwnersPage() {
   return (
     <Suspense
       fallback={
@@ -13,7 +13,7 @@ export default function PropietariosPage() {
         </div>
       }
     >
-      <PropietariosList />
+      <OwnersList />
     </Suspense>
   );
 }
