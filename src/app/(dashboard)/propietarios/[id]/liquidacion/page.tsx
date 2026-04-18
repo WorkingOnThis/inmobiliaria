@@ -14,25 +14,25 @@ import { es } from "date-fns/locale";
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface AgencyData {
-  razonSocial?: string | null;
+  legalName?: string | null;
   cuit?: string | null;
-  condicionIVA?: string | null;
-  domicilioFiscal?: string | null;
-  localidad?: string | null;
-  telefono?: string | null;
-  emailContacto?: string | null;
-  matricula?: string | null;
-  firmante?: string | null;
-  firmanteCargo?: string | null;
-  firmaUrl?: string | null;
-  puntoVenta?: string | null;
-  proximoNumero?: string | null;
-  tipoComprobante?: string | null;
+  vatStatus?: string | null;
+  fiscalAddress?: string | null;
+  city?: string | null;
+  phone?: string | null;
+  contactEmail?: string | null;
+  licenseNumber?: string | null;
+  signatory?: string | null;
+  signatoryTitle?: string | null;
+  signatureUrl?: string | null;
+  invoicePoint?: string | null;
+  nextNumber?: string | null;
+  receiptType?: string | null;
   bancoCBU?: string | null;
   bancoAlias?: string | null;
   bancoNombre?: string | null;
   logoUrl?: string | null;
-  clausulas?: string | null;
+  clauses?: string | null;
   prefShowQR?: boolean | null;
   prefShowDetalle?: boolean | null;
   prefFirma?: boolean | null;
@@ -381,44 +381,44 @@ export default function LiquidacionPreviewPage() {
                   }}>
                     {agency?.logoUrl
                       ? <img src={agency.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                      : (agency?.razonSocial?.[0] ?? "A")
+                      : (agency?.legalName?.[0] ?? "A")
                     }
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "18px", fontWeight: 700, letterSpacing: "-.01em" }}>
-                      {agency?.razonSocial ?? "Arce Administración"}
+                      {agency?.legalName ?? "Arce Administración"}
                     </div>
-                    {(agency?.cuit || agency?.condicionIVA) && (
+                    {(agency?.cuit || agency?.vatStatus) && (
                       <div style={{ fontSize: "11px", color: P.muted, marginTop: "2px", fontFamily: P.mono }}>
                         {agency.cuit ? `CUIT ${agency.cuit}` : ""}
-                        {agency.cuit && agency.condicionIVA ? " · " : ""}
-                        {agency.condicionIVA ?? ""}
+                        {agency.cuit && agency.vatStatus ? " · " : ""}
+                        {agency.vatStatus ?? ""}
                       </div>
                     )}
-                    {agency?.domicilioFiscal && (
+                    {agency?.fiscalAddress && (
                       <div style={{ fontSize: "11px", color: P.muted }}>
-                        {agency.domicilioFiscal}{agency.localidad ? ` · ${agency.localidad}` : ""}
+                        {agency.fiscalAddress}{agency.city ? ` · ${agency.city}` : ""}
                       </div>
                     )}
-                    {(agency?.telefono || agency?.emailContacto) && (
+                    {(agency?.phone || agency?.contactEmail) && (
                       <div style={{ fontSize: "11px", color: P.muted }}>
-                        {agency.telefono ? `Tel. ${agency.telefono}` : ""}
-                        {agency.telefono && agency.emailContacto ? " · " : ""}
-                        {agency.emailContacto ?? ""}
+                        {agency.phone ? `Tel. ${agency.phone}` : ""}
+                        {agency.phone && agency.contactEmail ? " · " : ""}
+                        {agency.contactEmail ?? ""}
                       </div>
                     )}
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ display: "inline-block", padding: "2px 10px", border: `1.5px solid ${P.text}`, borderRadius: "4px", fontSize: "10px", fontWeight: 700, letterSpacing: ".1em", marginBottom: "6px" }}>
-                      {agency?.tipoComprobante?.toUpperCase() ?? "RECIBO C"}
+                      {agency?.receiptType?.toUpperCase() ?? "RECIBO C"}
                     </div>
                     <div style={{ fontFamily: P.mono, fontSize: "15px", fontWeight: 700 }}>
-                      {agency?.puntoVenta ?? "0001"} - {agency?.proximoNumero ?? periodo.replace("-", "")}
+                      {agency?.invoicePoint ?? "0001"} - {agency?.nextNumber ?? periodo.replace("-", "")}
                     </div>
-                    {agency?.matricula && (
+                    {agency?.licenseNumber && (
                       <>
                         <div style={{ ...P.label, marginTop: "6px" }}>Mat. Profesional</div>
-                        <div style={{ fontFamily: P.mono, fontSize: "11px", fontWeight: 500 }}>{agency.matricula}</div>
+                        <div style={{ fontFamily: P.mono, fontSize: "11px", fontWeight: 500 }}>{agency.licenseNumber}</div>
                       </>
                     )}
                     <div style={{ ...P.label, marginTop: "6px" }}>Fecha emisión</div>
@@ -559,15 +559,15 @@ export default function LiquidacionPreviewPage() {
                     )}
                   </div>
                   <div style={{ width: "200px", textAlign: "center" }}>
-                    {agency?.firmaUrl ? (
-                      <img src={agency.firmaUrl} alt="Firma" style={{ height: "50px", objectFit: "contain", margin: "0 auto 4px", display: "block" }} />
+                    {agency?.signatureUrl ? (
+                      <img src={agency.signatureUrl} alt="Firma" style={{ height: "50px", objectFit: "contain", margin: "0 auto 4px", display: "block" }} />
                     ) : (
                       <div style={{ fontFamily: '"Brush Script MT", cursive', fontSize: "28px", transform: "rotate(-3deg)", marginBottom: "2px", color: P.text }}>
-                        {agency?.firmante ?? "Administrador"}
+                        {agency?.signatory ?? "Administrador"}
                       </div>
                     )}
                     <div style={{ borderTop: `1px solid ${P.text}`, paddingTop: "6px", fontSize: "9.5px", color: P.muted, textTransform: "uppercase", letterSpacing: ".08em" }}>
-                      {agency?.firmante ?? "Administrador"} · {agency?.firmanteCargo ?? "Administrador"}
+                      {agency?.signatory ?? "Administrador"} · {agency?.signatoryTitle ?? "Administrador"}
                     </div>
                   </div>
                 </div>
@@ -576,8 +576,8 @@ export default function LiquidacionPreviewPage() {
                 <div style={{ marginTop: "40px", paddingTop: "18px", borderTop: `1px solid ${P.border}`, display: "grid", gridTemplateColumns: showQR ? "1fr 180px" : "1fr", gap: "24px" }}>
                   <div style={{ fontSize: "9.5px", color: P.muted, lineHeight: 1.55 }}>
                     {(() => {
-                      const parsed: { id: string; texto: string }[] = agency?.clausulas
-                        ? (() => { try { return JSON.parse(agency.clausulas); } catch { return []; } })()
+                      const parsed: { id: string; texto: string }[] = agency?.clauses
+                        ? (() => { try { return JSON.parse(agency.clauses); } catch { return []; } })()
                         : [];
                       const clausulasToShow = parsed.length > 0 ? parsed : [
                         { id: "1", texto: "El presente recibo no constituye factura. Válido como constancia de liquidación de alquileres según contrato vigente." },

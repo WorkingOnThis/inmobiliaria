@@ -24,37 +24,37 @@ import { CSS } from "@dnd-kit/utilities";
 
 interface AgencyData {
   id?: string;
-  razonSocial?: string | null;
-  nombreFantasia?: string | null;
+  legalName?: string | null;
+  tradeName?: string | null;
   cuit?: string | null;
-  condicionIVA?: string | null;
-  ingresosBrutos?: string | null;
-  inicioActividades?: string | null;
+  vatStatus?: string | null;
+  grossIncome?: string | null;
+  activityStart?: string | null;
   logoUrl?: string | null;
-  domicilioFiscal?: string | null;
-  localidad?: string | null;
-  codigoPostal?: string | null;
-  provincia?: string | null;
-  pais?: string | null;
-  telefono?: string | null;
-  emailContacto?: string | null;
-  sitioWeb?: string | null;
-  colegio?: string | null;
-  matricula?: string | null;
-  firmante?: string | null;
-  firmanteCargo?: string | null;
-  firmaUrl?: string | null;
-  puntoVenta?: string | null;
-  proximoNumero?: string | null;
-  tipoComprobante?: string | null;
-  prefijoLiquidacion?: string | null;
-  moneda?: string | null;
-  decimales?: number | null;
+  fiscalAddress?: string | null;
+  city?: string | null;
+  zipCode?: string | null;
+  province?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  contactEmail?: string | null;
+  website?: string | null;
+  professionalAssociation?: string | null;
+  licenseNumber?: string | null;
+  signatory?: string | null;
+  signatoryTitle?: string | null;
+  signatureUrl?: string | null;
+  invoicePoint?: string | null;
+  nextNumber?: string | null;
+  receiptType?: string | null;
+  settlementPrefix?: string | null;
+  currency?: string | null;
+  decimals?: number | null;
   bancoNombre?: string | null;
   bancoTitular?: string | null;
   bancoCBU?: string | null;
   bancoAlias?: string | null;
-  clausulas?: string | null;
+  clauses?: string | null;
   prefShowQR?: boolean | null;
   prefShowDetalle?: boolean | null;
   prefEmailAuto?: boolean | null;
@@ -64,7 +64,7 @@ interface AgencyData {
 
 interface Clausula { id: string; texto: string; }
 
-function parseClausulas(raw: string | null | undefined): Clausula[] {
+function parseClauses(raw: string | null | undefined): Clausula[] {
   if (!raw) return DEFAULT_CLAUSULAS;
   try { return JSON.parse(raw); } catch { return DEFAULT_CLAUSULAS; }
 }
@@ -287,9 +287,9 @@ function LivePreview({ form, clausulas }: { form: FormState; clausulas: Clausula
     bg: "#f7f5ef", text: "#1a1614", muted: "#5a514c", border: "#d9d1c3",
     mono: '"JetBrains Mono", ui-monospace, monospace',
   };
-  const pv = form.puntoVenta || "0001";
-  const num = form.proximoNumero || "00000001";
-  const tipo = form.tipoComprobante || "Recibo C";
+  const pv = form.invoicePoint || "0001";
+  const num = form.nextNumber || "00000001";
+  const tipo = form.receiptType || "Recibo C";
 
   return (
     <div
@@ -312,31 +312,31 @@ function LivePreview({ form, clausulas }: { form: FormState; clausulas: Clausula
         }}>
           {form.logoUrl
             ? <img src={form.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-            : (form.razonSocial?.[0] ?? "A")
+            : (form.legalName?.[0] ?? "A")
           }
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: "14px", fontWeight: 700, letterSpacing: "-.01em" }}>
-            {form.razonSocial || "Razón Social"}
+            {form.legalName || "Razón Social"}
           </div>
           <div style={{ fontSize: "10px", color: P.muted }}>
-            CUIT {form.cuit || "00-00000000-0"} · {form.condicionIVA || "Monotributo"}
+            CUIT {form.cuit || "00-00000000-0"} · {form.vatStatus || "Monotributo"}
           </div>
           <div style={{ fontSize: "10px", color: P.muted }}>
-            {form.domicilioFiscal || "Domicilio"}
-            {form.localidad ? `, ${form.localidad}` : ""}
+            {form.fiscalAddress || "Domicilio"}
+            {form.city ? `, ${form.city}` : ""}
           </div>
           <div style={{ fontSize: "10px", color: P.muted }}>
-            {form.telefono ? `Tel. ${form.telefono}` : ""}
-            {form.telefono && form.emailContacto ? " · " : ""}
-            {form.emailContacto || ""}
+            {form.phone ? `Tel. ${form.phone}` : ""}
+            {form.phone && form.contactEmail ? " · " : ""}
+            {form.contactEmail || ""}
           </div>
         </div>
         <div style={{ textAlign: "right", fontFamily: P.mono }}>
           <div style={{ fontSize: "9px", color: P.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{tipo}</div>
           <div style={{ fontSize: "12px", fontWeight: 600 }}>{pv}-{num}</div>
-          {form.matricula && (
-            <div style={{ fontSize: "9px", color: P.muted, marginTop: "4px" }}>Mat. {form.matricula}</div>
+          {form.licenseNumber && (
+            <div style={{ fontSize: "9px", color: P.muted, marginTop: "4px" }}>Mat. {form.licenseNumber}</div>
           )}
         </div>
       </div>
@@ -393,18 +393,18 @@ function LivePreview({ form, clausulas }: { form: FormState; clausulas: Clausula
           </div>
         )}
 
-        {(form.firmante || form.firmaUrl) && (
+        {(form.signatory || form.signatureUrl) && (
           <div style={{ marginTop: "30px", display: "flex", justifyContent: "flex-end" }}>
             <div style={{ width: "160px", textAlign: "center" }}>
-              {form.firmaUrl ? (
-                <img src={form.firmaUrl} alt="Firma" style={{ height: "40px", objectFit: "contain", margin: "0 auto 4px" }} />
+              {form.signatureUrl ? (
+                <img src={form.signatureUrl} alt="Firma" style={{ height: "40px", objectFit: "contain", margin: "0 auto 4px" }} />
               ) : (
                 <div style={{ fontFamily: '"Brush Script MT", cursive', fontSize: "18px", transform: "rotate(-3deg)", marginBottom: "4px" }}>
-                  {form.firmante}
+                  {form.signatory}
                 </div>
               )}
               <div style={{ borderTop: `1px solid ${P.text}`, paddingTop: "4px", fontSize: "9px", color: P.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>
-                {form.firmante} · {form.firmanteCargo || "Administrador"}
+                {form.signatory} · {form.signatoryTitle || "Administrador"}
               </div>
             </div>
           </div>
@@ -417,16 +417,16 @@ function LivePreview({ form, clausulas }: { form: FormState; clausulas: Clausula
 // ── Form state ────────────────────────────────────────────────────────────────
 
 type FormState = {
-  razonSocial: string; nombreFantasia: string; cuit: string;
-  condicionIVA: string; ingresosBrutos: string; inicioActividades: string;
+  legalName: string; tradeName: string; cuit: string;
+  vatStatus: string; grossIncome: string; activityStart: string;
   logoUrl: string | null;
-  domicilioFiscal: string; localidad: string; codigoPostal: string;
-  provincia: string; pais: string; telefono: string;
-  emailContacto: string; sitioWeb: string;
-  colegio: string; matricula: string; firmante: string;
-  firmanteCargo: string; firmaUrl: string | null;
-  puntoVenta: string; proximoNumero: string; tipoComprobante: string;
-  prefijoLiquidacion: string; moneda: string; decimales: string;
+  fiscalAddress: string; city: string; zipCode: string;
+  province: string; country: string; phone: string;
+  contactEmail: string; website: string;
+  professionalAssociation: string; licenseNumber: string; signatory: string;
+  signatoryTitle: string; signatureUrl: string | null;
+  invoicePoint: string; nextNumber: string; receiptType: string;
+  settlementPrefix: string; currency: string; decimals: string;
   bancoNombre: string; bancoTitular: string; bancoCBU: string; bancoAlias: string;
   prefShowQR: boolean; prefShowDetalle: boolean;
   prefEmailAuto: boolean; prefFirma: boolean; prefBorrador: boolean;
@@ -434,41 +434,41 @@ type FormState = {
 
 function toFormState(d: AgencyData | null): FormState {
   return {
-    razonSocial:        d?.razonSocial        ?? "",
-    nombreFantasia:     d?.nombreFantasia     ?? "",
-    cuit:               d?.cuit               ?? "",
-    condicionIVA:       d?.condicionIVA       ?? "Monotributo",
-    ingresosBrutos:     d?.ingresosBrutos     ?? "",
-    inicioActividades:  d?.inicioActividades  ?? "",
-    logoUrl:            d?.logoUrl            ?? null,
-    domicilioFiscal:    d?.domicilioFiscal    ?? "",
-    localidad:          d?.localidad          ?? "",
-    codigoPostal:       d?.codigoPostal       ?? "",
-    provincia:          d?.provincia          ?? "",
-    pais:               d?.pais               ?? "",
-    telefono:           d?.telefono           ?? "",
-    emailContacto:      d?.emailContacto      ?? "",
-    sitioWeb:           d?.sitioWeb           ?? "",
-    colegio:            d?.colegio            ?? "",
-    matricula:          d?.matricula          ?? "",
-    firmante:           d?.firmante           ?? "",
-    firmanteCargo:      d?.firmanteCargo      ?? "",
-    firmaUrl:           d?.firmaUrl           ?? null,
-    puntoVenta:         d?.puntoVenta         ?? "0001",
-    proximoNumero:      d?.proximoNumero      ?? "00000001",
-    tipoComprobante:    d?.tipoComprobante    ?? "Recibo C",
-    prefijoLiquidacion: d?.prefijoLiquidacion ?? "LIQ-",
-    moneda:             d?.moneda             ?? "ARS",
-    decimales:          d?.decimales != null  ? String(d.decimales) : "2",
-    bancoNombre:        d?.bancoNombre        ?? "",
-    bancoTitular:       d?.bancoTitular       ?? "",
-    bancoCBU:           d?.bancoCBU           ?? "",
-    bancoAlias:         d?.bancoAlias         ?? "",
-    prefShowQR:         d?.prefShowQR         ?? true,
-    prefShowDetalle:    d?.prefShowDetalle    ?? true,
-    prefEmailAuto:      d?.prefEmailAuto      ?? true,
-    prefFirma:          d?.prefFirma          ?? true,
-    prefBorrador:       d?.prefBorrador       ?? false,
+    legalName:               d?.legalName               ?? "",
+    tradeName:               d?.tradeName               ?? "",
+    cuit:                    d?.cuit                    ?? "",
+    vatStatus:               d?.vatStatus               ?? "Monotributo",
+    grossIncome:             d?.grossIncome             ?? "",
+    activityStart:           d?.activityStart           ?? "",
+    logoUrl:                 d?.logoUrl                 ?? null,
+    fiscalAddress:           d?.fiscalAddress           ?? "",
+    city:                    d?.city                    ?? "",
+    zipCode:                 d?.zipCode                 ?? "",
+    province:                d?.province                ?? "",
+    country:                 d?.country                 ?? "",
+    phone:                   d?.phone                   ?? "",
+    contactEmail:            d?.contactEmail            ?? "",
+    website:                 d?.website                 ?? "",
+    professionalAssociation: d?.professionalAssociation ?? "",
+    licenseNumber:           d?.licenseNumber           ?? "",
+    signatory:               d?.signatory               ?? "",
+    signatoryTitle:          d?.signatoryTitle          ?? "",
+    signatureUrl:            d?.signatureUrl            ?? null,
+    invoicePoint:            d?.invoicePoint            ?? "0001",
+    nextNumber:              d?.nextNumber              ?? "00000001",
+    receiptType:             d?.receiptType             ?? "Recibo C",
+    settlementPrefix:        d?.settlementPrefix        ?? "LIQ-",
+    currency:                d?.currency                ?? "ARS",
+    decimals:                d?.decimals != null        ? String(d.decimals) : "2",
+    bancoNombre:             d?.bancoNombre             ?? "",
+    bancoTitular:            d?.bancoTitular            ?? "",
+    bancoCBU:                d?.bancoCBU                ?? "",
+    bancoAlias:              d?.bancoAlias              ?? "",
+    prefShowQR:              d?.prefShowQR              ?? true,
+    prefShowDetalle:         d?.prefShowDetalle         ?? true,
+    prefEmailAuto:           d?.prefEmailAuto           ?? true,
+    prefFirma:               d?.prefFirma               ?? true,
+    prefBorrador:            d?.prefBorrador            ?? false,
   };
 }
 
@@ -499,7 +499,7 @@ export default function AdministracionPage() {
       const fs = toFormState(data.agency);
       setForm(fs);
       setSavedForm(fs);
-      const cl = parseClausulas(data.agency?.clausulas);
+      const cl = parseClauses(data.agency?.clauses);
       setClausulas(cl);
       setSavedClausulas(cl);
     }
@@ -550,15 +550,15 @@ export default function AdministracionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          decimales: form.decimales ? parseInt(form.decimales) : null,
-          clausulas: JSON.stringify(clausulas),
+          decimals: form.decimals ? parseInt(form.decimals) : null,
+          clauses: JSON.stringify(clausulas),
         }),
       });
       if (!res.ok) throw new Error("Error al guardar");
       const updated = await res.json();
       const fs = toFormState(updated.agency);
       setSavedForm(fs);
-      const cl = parseClausulas(updated.agency?.clausulas);
+      const cl = parseClauses(updated.agency?.clauses);
       setSavedClausulas(cl);
       queryClient.invalidateQueries({ queryKey: ["agency"] });
       toast.success("Datos de la administración guardados");
@@ -575,10 +575,10 @@ export default function AdministracionPage() {
   };
 
   // Completeness hints
-  const sec1Ok = !!(form.razonSocial && form.cuit && form.condicionIVA);
-  const sec2Ok = !!(form.domicilioFiscal && form.localidad);
-  const sec3Ok = !!(form.matricula && form.firmante);
-  const sec4Ok = !!(form.puntoVenta && form.proximoNumero);
+  const sec1Ok = !!(form.legalName && form.cuit && form.vatStatus);
+  const sec2Ok = !!(form.fiscalAddress && form.city);
+  const sec3Ok = !!(form.licenseNumber && form.signatory);
+  const sec4Ok = !!(form.invoicePoint && form.nextNumber);
   const sec5Ok = !!(form.bancoCBU);
 
   if (isLoading) {
@@ -634,26 +634,26 @@ export default function AdministracionPage() {
                 <LogoUpload value={form.logoUrl} onChange={(v) => setField("logoUrl", v)} />
                 <div className="grid grid-cols-2 gap-3.5">
                   <Field label="Razón social" req>
-                    <input type="text" value={form.razonSocial} onChange={(e) => setField("razonSocial", e.target.value)} placeholder="Ej: Arce Administración" className={inputCls} />
+                    <input type="text" value={form.legalName} onChange={(e) => setField("legalName", e.target.value)} placeholder="Ej: Arce Administración" className={inputCls} />
                   </Field>
                   <Field label="Nombre de fantasía" hint="(opcional)">
-                    <input type="text" value={form.nombreFantasia} onChange={(e) => setField("nombreFantasia", e.target.value)} placeholder="Ej: Arce" className={inputCls} />
+                    <input type="text" value={form.tradeName} onChange={(e) => setField("tradeName", e.target.value)} placeholder="Ej: Arce" className={inputCls} />
                   </Field>
                   <Field label="CUIT" req>
                     <input type="text" value={form.cuit} onChange={(e) => setField("cuit", e.target.value)} placeholder="30-00000000-0" className={cn(inputCls, "font-mono")} />
                   </Field>
                   <Field label="Condición IVA" req>
-                    <select value={form.condicionIVA} onChange={(e) => setField("condicionIVA", e.target.value)} className={inputCls}>
+                    <select value={form.vatStatus} onChange={(e) => setField("vatStatus", e.target.value)} className={inputCls}>
                       <option>Responsable Inscripto</option>
                       <option>Monotributo</option>
                       <option>Exento</option>
                     </select>
                   </Field>
                   <Field label="Ingresos Brutos">
-                    <input type="text" value={form.ingresosBrutos} onChange={(e) => setField("ingresosBrutos", e.target.value)} placeholder="901-123456-7" className={cn(inputCls, "font-mono")} />
+                    <input type="text" value={form.grossIncome} onChange={(e) => setField("grossIncome", e.target.value)} placeholder="901-123456-7" className={cn(inputCls, "font-mono")} />
                   </Field>
                   <Field label="Inicio de actividades">
-                    <input type="date" value={form.inicioActividades} onChange={(e) => setField("inicioActividades", e.target.value)} className={inputCls} />
+                    <input type="date" value={form.activityStart} onChange={(e) => setField("activityStart", e.target.value)} className={inputCls} />
                   </Field>
                 </div>
               </SectionCard>
@@ -662,28 +662,28 @@ export default function AdministracionPage() {
               <SectionCard num={2} title="Domicilio y contacto" desc="Se imprimen en el pie del recibo." state={{ label: sec2Ok ? "Completo" : "Incompleto", ok: sec2Ok }}>
                 <div className="grid grid-cols-2 gap-3.5">
                   <Field label="Domicilio fiscal" req span2>
-                    <input type="text" value={form.domicilioFiscal} onChange={(e) => setField("domicilioFiscal", e.target.value)} placeholder="Av. Callao 1280, Piso 4º B" className={inputCls} />
+                    <input type="text" value={form.fiscalAddress} onChange={(e) => setField("fiscalAddress", e.target.value)} placeholder="Av. Callao 1280, Piso 4º B" className={inputCls} />
                   </Field>
                   <Field label="Localidad">
-                    <input type="text" value={form.localidad} onChange={(e) => setField("localidad", e.target.value)} placeholder="C.A.B.A." className={inputCls} />
+                    <input type="text" value={form.city} onChange={(e) => setField("city", e.target.value)} placeholder="C.A.B.A." className={inputCls} />
                   </Field>
                   <Field label="Código postal">
-                    <input type="text" value={form.codigoPostal} onChange={(e) => setField("codigoPostal", e.target.value)} placeholder="C1000AAA" className={inputCls} />
+                    <input type="text" value={form.zipCode} onChange={(e) => setField("zipCode", e.target.value)} placeholder="C1000AAA" className={inputCls} />
                   </Field>
                   <Field label="Provincia">
-                    <input type="text" value={form.provincia} onChange={(e) => setField("provincia", e.target.value)} placeholder="Buenos Aires" className={inputCls} />
+                    <input type="text" value={form.province} onChange={(e) => setField("province", e.target.value)} placeholder="Buenos Aires" className={inputCls} />
                   </Field>
                   <Field label="País">
-                    <input type="text" value={form.pais} onChange={(e) => setField("pais", e.target.value)} placeholder="Argentina" className={inputCls} />
+                    <input type="text" value={form.country} onChange={(e) => setField("country", e.target.value)} placeholder="Argentina" className={inputCls} />
                   </Field>
                   <Field label="Teléfono">
-                    <input type="text" value={form.telefono} onChange={(e) => setField("telefono", e.target.value)} placeholder="+54 11 0000-0000" className={inputCls} />
+                    <input type="text" value={form.phone} onChange={(e) => setField("phone", e.target.value)} placeholder="+54 11 0000-0000" className={inputCls} />
                   </Field>
                   <Field label="Email">
-                    <input type="email" value={form.emailContacto} onChange={(e) => setField("emailContacto", e.target.value)} placeholder="hola@tuinmobiliaria.com.ar" className={inputCls} />
+                    <input type="email" value={form.contactEmail} onChange={(e) => setField("contactEmail", e.target.value)} placeholder="hola@tuinmobiliaria.com.ar" className={inputCls} />
                   </Field>
                   <Field label="Sitio web" span2>
-                    <input type="url" value={form.sitioWeb} onChange={(e) => setField("sitioWeb", e.target.value)} placeholder="tuinmobiliaria.com.ar" className={inputCls} />
+                    <input type="url" value={form.website} onChange={(e) => setField("website", e.target.value)} placeholder="tuinmobiliaria.com.ar" className={inputCls} />
                   </Field>
                 </div>
               </SectionCard>
@@ -692,21 +692,21 @@ export default function AdministracionPage() {
               <SectionCard num={3} title="Matrícula profesional" desc="Colegio, número de matrícula y firmante que aparece al pie." state={{ label: sec3Ok ? "Completo" : "Incompleto", ok: sec3Ok }}>
                 <div className="grid grid-cols-2 gap-3.5">
                   <Field label="Colegio / Registro">
-                    <input type="text" value={form.colegio} onChange={(e) => setField("colegio", e.target.value)} placeholder="Ej: CUCICBA, CMCPSI…" className={inputCls} />
+                    <input type="text" value={form.professionalAssociation} onChange={(e) => setField("professionalAssociation", e.target.value)} placeholder="Ej: CUCICBA, CMCPSI…" className={inputCls} />
                   </Field>
                   <Field label="N.º de matrícula" req>
-                    <input type="text" value={form.matricula} onChange={(e) => setField("matricula", e.target.value)} placeholder="MAT-0000" className={cn(inputCls, "font-mono")} />
+                    <input type="text" value={form.licenseNumber} onChange={(e) => setField("licenseNumber", e.target.value)} placeholder="MAT-0000" className={cn(inputCls, "font-mono")} />
                   </Field>
                   <Field label="Firmante" req>
-                    <input type="text" value={form.firmante} onChange={(e) => setField("firmante", e.target.value)} placeholder="Nombre del firmante" className={inputCls} />
+                    <input type="text" value={form.signatory} onChange={(e) => setField("signatory", e.target.value)} placeholder="Nombre del firmante" className={inputCls} />
                   </Field>
                   <Field label="Cargo">
-                    <input type="text" value={form.firmanteCargo} onChange={(e) => setField("firmanteCargo", e.target.value)} placeholder="Administrador" className={inputCls} />
+                    <input type="text" value={form.signatoryTitle} onChange={(e) => setField("signatoryTitle", e.target.value)} placeholder="Administrador" className={inputCls} />
                   </Field>
                   <Field label="Firma digital" span2>
                     <SignaturePad
-                      value={form.firmaUrl}
-                      onChange={(v) => setField("firmaUrl", v)}
+                      value={form.signatureUrl}
+                      onChange={(v) => setField("signatureUrl", v)}
                     />
                   </Field>
                 </div>
@@ -716,29 +716,29 @@ export default function AdministracionPage() {
               <SectionCard num={4} title="Numeración y formato del recibo" desc="Cómo se nombran y numeran los documentos que emitís." state={{ label: sec4Ok ? "Completo" : "Incompleto", ok: sec4Ok }}>
                 <div className="grid grid-cols-3 gap-3.5">
                   <Field label="Punto de venta">
-                    <input type="text" value={form.puntoVenta} onChange={(e) => setField("puntoVenta", e.target.value)} placeholder="0001" className={cn(inputCls, "font-mono")} />
+                    <input type="text" value={form.invoicePoint} onChange={(e) => setField("invoicePoint", e.target.value)} placeholder="0001" className={cn(inputCls, "font-mono")} />
                   </Field>
                   <Field label="Próximo número">
-                    <input type="text" value={form.proximoNumero} onChange={(e) => setField("proximoNumero", e.target.value)} placeholder="00000001" className={cn(inputCls, "font-mono")} />
+                    <input type="text" value={form.nextNumber} onChange={(e) => setField("nextNumber", e.target.value)} placeholder="00000001" className={cn(inputCls, "font-mono")} />
                   </Field>
                   <Field label="Tipo">
-                    <select value={form.tipoComprobante} onChange={(e) => setField("tipoComprobante", e.target.value)} className={inputCls}>
+                    <select value={form.receiptType} onChange={(e) => setField("receiptType", e.target.value)} className={inputCls}>
                       <option>Recibo X</option>
                       <option>Recibo C</option>
                       <option>Factura C</option>
                     </select>
                   </Field>
                   <Field label="Prefijo liquidación">
-                    <input type="text" value={form.prefijoLiquidacion} onChange={(e) => setField("prefijoLiquidacion", e.target.value)} placeholder="LIQ-" className={cn(inputCls, "font-mono")} />
+                    <input type="text" value={form.settlementPrefix} onChange={(e) => setField("settlementPrefix", e.target.value)} placeholder="LIQ-" className={cn(inputCls, "font-mono")} />
                   </Field>
                   <Field label="Moneda">
-                    <select value={form.moneda} onChange={(e) => setField("moneda", e.target.value)} className={inputCls}>
+                    <select value={form.currency} onChange={(e) => setField("currency", e.target.value)} className={inputCls}>
                       <option value="ARS">ARS · Peso argentino</option>
                       <option value="USD">USD · Dólar</option>
                     </select>
                   </Field>
                   <Field label="Decimales">
-                    <select value={form.decimales} onChange={(e) => setField("decimales", e.target.value)} className={inputCls}>
+                    <select value={form.decimals} onChange={(e) => setField("decimals", e.target.value)} className={inputCls}>
                       <option value="0">0 (enteros)</option>
                       <option value="2">2 decimales</option>
                     </select>

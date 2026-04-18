@@ -10,38 +10,38 @@ export const agency = pgTable("agency", {
     .unique(),
 
   // 1. Identidad y marca
-  razonSocial: text("razonSocial"),
-  nombreFantasia: text("nombreFantasia"),
+  legalName: text("legalName"),
+  tradeName: text("tradeName"),
   cuit: text("cuit"),
-  condicionIVA: text("condicionIVA"),
-  ingresosBrutos: text("ingresosBrutos"),
-  inicioActividades: text("inicioActividades"),
+  vatStatus: text("vatStatus"),
+  grossIncome: text("grossIncome"),
+  activityStart: text("activityStart"),
   logoUrl: text("logoUrl"),
 
   // 2. Domicilio y contacto
-  domicilioFiscal: text("domicilioFiscal"),
-  localidad: text("localidad"),
-  codigoPostal: text("codigoPostal"),
-  provincia: text("provincia"),
-  pais: text("pais"),
-  telefono: text("telefono"),
-  emailContacto: text("emailContacto"),
-  sitioWeb: text("sitioWeb"),
+  fiscalAddress: text("fiscalAddress"),
+  city: text("city"),
+  zipCode: text("zipCode"),
+  province: text("province"),
+  country: text("country"),
+  phone: text("phone"),
+  contactEmail: text("contactEmail"),
+  website: text("website"),
 
   // 3. Matrícula profesional
-  colegio: text("colegio"),
-  matricula: text("matricula"),
-  firmante: text("firmante"),
-  firmanteCargo: text("firmanteCargo"),
-  firmaUrl: text("firmaUrl"),
+  professionalAssociation: text("professionalAssociation"),
+  licenseNumber: text("licenseNumber"),
+  signatory: text("signatory"),
+  signatoryTitle: text("signatoryTitle"),
+  signatureUrl: text("signatureUrl"),
 
   // 4. Numeración y formato del recibo
-  puntoVenta: text("puntoVenta"),
-  proximoNumero: text("proximoNumero"),
-  tipoComprobante: text("tipoComprobante"),
-  prefijoLiquidacion: text("prefijoLiquidacion"),
-  moneda: text("moneda"),
-  decimales: integer("decimales"),
+  invoicePoint: text("invoicePoint"),
+  nextNumber: text("nextNumber"),
+  receiptType: text("receiptType"),
+  settlementPrefix: text("settlementPrefix"),
+  currency: text("currency"),
+  decimals: integer("decimals"),
 
   // 5. Datos bancarios de la agencia (para recibir de inquilinos)
   bancoNombre: text("bancoNombre"),
@@ -50,7 +50,7 @@ export const agency = pgTable("agency", {
   bancoAlias: text("bancoAlias"),
 
   // 6. Cláusulas legales (JSON: [{id, texto}])
-  clausulas: text("clausulas"),
+  clauses: text("clauses"),
 
   // 7. Preferencias de emisión
   prefShowQR: boolean("prefShowQR"),
