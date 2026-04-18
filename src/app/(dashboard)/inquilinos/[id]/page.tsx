@@ -6,13 +6,13 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { InquilinoTabCuentaCorriente } from "@/components/inquilinos/inquilino-tab-cuenta-corriente";
-import { InquilinoTabContrato } from "@/components/inquilinos/inquilino-tab-contrato";
-import { InquilinoTabPropiedad } from "@/components/inquilinos/inquilino-tab-propiedad";
-import { InquilinoTabPropietario } from "@/components/inquilinos/inquilino-tab-propietario";
+import { TenantTabCurrentAccount } from "@/components/tenants/tenant-tab-current-account";
+import { TenantTabContract } from "@/components/tenants/tenant-tab-contract";
+import { TenantTabProperty } from "@/components/tenants/tenant-tab-property";
+import { TenantTabOwner } from "@/components/tenants/tenant-tab-owner";
 import { ServiceTabProperty } from "@/components/services/service-tab-property";
 
-type Tab = "cc" | "contrato" | "propiedad" | "propietario" | "servicios" | "tareas" | "documentos" | "notificaciones";
+type Tab = "cc" | "contrato" | "property" | "propietario" | "servicios" | "tareas" | "documentos" | "notificaciones";
 
 function getInitials(firstName: string, lastName: string | null) {
   return [firstName, lastName]
@@ -29,13 +29,13 @@ function formatMonto(val: string | number | null) {
 }
 
 const estadoBadge: Record<string, { label: string; variant: StatusBadgeVariant }> = {
-  activo:       { label: "Inquilino activo", variant: "active" },
+  activo:       { label: "Tenant activo", variant: "active" },
   en_mora:      { label: "En mora",          variant: "baja" },
   por_vencer:   { label: "Por vencer",       variant: "expiring" },
   sin_contrato: { label: "Sin contrato",     variant: "draft" },
 };
 
-export default function InquilinoFichaPage() {
+export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,11 +45,11 @@ export default function InquilinoFichaPage() {
   const setTab = (tab: Tab) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
-    router.replace(`/inquilinos/${id}?${params.toString()}`, { scroll: false });
+    router.replace(`/tenants/${id}?${params.toString()}`, { scroll: false });
   };
 
   const { data, isLoading, error } = useQuery<{
-    inquilino: {
+    tenant: {
       id: string;
       firstName: string;
       lastName: string | null;
@@ -75,7 +75,7 @@ export default function InquilinoFichaPage() {
       adjustmentIndex: string;
       adjustmentFrequency: number;
     } | null;
-    propiedad: {
+    property: {
       id: string;
       address: string;
       type: string;
@@ -88,7 +88,7 @@ export default function InquilinoFichaPage() {
       price: string | null;
       title: string | null;
     } | null;
-    propietario: {
+    owner: {
       id: string;
       firstName: string;
       lastName: string | null;
@@ -113,24 +113,24 @@ export default function InquilinoFichaPage() {
       contratoId: string | null;
     }[];
   }>({
-    queryKey: ["inquilino", id],
+    queryKey: ["tenant", id],
     queryFn: async () => {
-      const res = await fetch(`/api/inquilinos/${id}`);
+      const res = await fetch(`/api/tenants/${id}`);
       if (!res.ok) {
         const d = await res.json();
-        throw new Error(d.error || "Error al cargar el inquilino");
+        throw new Error(d.error || "Error al cargar el tenant");
       }
       return res.json();
     },
   });
 
-  const inquilino = data?.inquilino;
-  const estadoInfo = estadoBadge[inquilino?.estado ?? "sin_contrato"];
+  const tenant = data?.tenant;
+  const estadoInfo = estadoBadge[tenant?.estado ?? "sin_contrato"];
 
   const tabs: { key: Tab; label: string; badge?: number }[] = [
     { key: "cc", label: "💰 Cuenta Corriente" },
     { key: "contrato", label: "📄 Contrato" },
-    { key: "propiedad", label: "🏢 Propiedad" },
+    { key: "property", label: "🏢 Propiedad" },
     { key: "propietario", label: "🏠 Propietario" },
     { key: "servicios", label: "⚡ Servicios" },
     { key: "tareas", label: "✅ Tareas" },
@@ -144,13 +144,13 @@ export default function InquilinoFichaPage() {
         <div className="flex h-screen items-center justify-center">
           <Loader2 className="size-8 animate-spin text-text-muted" />
         </div>
-      ) : error || !inquilino ? (
+      ) : error || !tenant ? (
         <div className="flex h-screen flex-col items-center justify-center gap-4 text-text-muted">
           <div className="text-[0.85rem]">
-            {(error as Error)?.message ?? "Inquilino no encontrado"}
+            {(error as Error)?.message ?? "Tenant no encontrado"}
           </div>
           <button
-            onClick={() => router.push("/inquilinos")}
+            onClick={() => router.push("/tenants")}
             className="text-[0.72rem] text-primary hover:underline flex items-center gap-1"
           >
             <ArrowLeft size={12} /> Volver a la lista
@@ -161,7 +161,7 @@ export default function InquilinoFichaPage() {
           {/* Breadcrumb */}
           <div className="h-14 bg-surface border-b border-border flex items-center px-7 gap-2.5 flex-shrink-0">
             <button
-              onClick={() => router.push("/inquilinos")}
+              onClick={() => router.push("/tenants")}
               className="text-[0.8rem] text-text-secondary hover:text-primary transition-colors flex items-center gap-1"
             >
               <ArrowLeft size={13} />
@@ -169,9 +169,9 @@ export default function InquilinoFichaPage() {
             </button>
             <span className="text-text-muted">›</span>
             <span className="text-[0.8rem] font-semibold text-on-bg">
-              {inquilino.lastName
-                ? `${inquilino.lastName}, ${inquilino.firstName}`
-                : inquilino.firstName}
+              {tenant.lastName
+                ? `${tenant.lastName}, ${tenant.firstName}`
+                : tenant.firstName}
             </span>
           </div>
 
@@ -180,28 +180,28 @@ export default function InquilinoFichaPage() {
             <div className="flex items-start gap-5">
               {/* Avatar */}
               <div className="size-14 rounded-full bg-purple/10 border-2 border-purple/30 flex items-center justify-center font-headline text-[1.3rem] text-purple flex-shrink-0">
-                {getInitials(inquilino.firstName, inquilino.lastName)}
+                {getInitials(tenant.firstName, tenant.lastName)}
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <h1 className="text-[1.3rem] font-bold text-on-bg font-headline tracking-[-0.02em] mb-1">
-                  {inquilino.lastName
-                    ? `${inquilino.firstName} ${inquilino.lastName}`
-                    : inquilino.firstName}
+                  {tenant.lastName
+                    ? `${tenant.firstName} ${tenant.lastName}`
+                    : tenant.firstName}
                 </h1>
                 <div className="flex items-center flex-wrap gap-4 text-[0.78rem] text-text-secondary mb-3">
-                  {inquilino.email && <span>✉ {inquilino.email}</span>}
-                  {inquilino.phone && <span>📱 {inquilino.phone}</span>}
-                  {inquilino.dni && <span>🪪 DNI {inquilino.dni}</span>}
+                  {tenant.email && <span>✉ {tenant.email}</span>}
+                  {tenant.phone && <span>📱 {tenant.phone}</span>}
+                  {tenant.dni && <span>🪪 DNI {tenant.dni}</span>}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <StatusBadge variant={estadoInfo.variant}>
                     {estadoInfo.label}
                   </StatusBadge>
-                  {inquilino.estado === "en_mora" && data?.inquilino.diasMora ? (
+                  {tenant.estado === "en_mora" && data?.tenant.diasMora ? (
                     <Badge variant="baja">
-                      ⚠ {data.inquilino.diasMora} días en mora
+                      ⚠ {data.tenant.diasMora} días en mora
                     </Badge>
                   ) : null}
                   {data?.contrato && (
@@ -227,7 +227,7 @@ export default function InquilinoFichaPage() {
                     Alquiler actual
                   </div>
                 </div>
-                {inquilino.estado === "en_mora" && data?.contrato && (
+                {tenant.estado === "en_mora" && data?.contrato && (
                   <div className="px-5 text-center border-r border-border last:border-r-0">
                     <div className="font-headline text-[1.25rem] text-error leading-none mb-1">
                       {formatMonto(data.contrato.monthlyAmount)}
@@ -269,55 +269,55 @@ export default function InquilinoFichaPage() {
           {/* Contenido del tab activo */}
           <div className="flex-1 overflow-y-auto bg-bg">
             {activeTab === "cc" && (
-              <InquilinoTabCuentaCorriente
-                inquilinoId={inquilino.id}
-                inquilinoNombre={
-                  inquilino.lastName
-                    ? `${inquilino.firstName} ${inquilino.lastName}`
-                    : inquilino.firstName
+              <TenantTabCurrentAccount
+                tenantId={tenant.id}
+                tenantName={
+                  tenant.lastName
+                    ? `${tenant.firstName} ${tenant.lastName}`
+                    : tenant.firstName
                 }
-                estado={inquilino.estado}
-                diasMora={inquilino.diasMora}
+                estado={tenant.estado}
+                diasMora={tenant.diasMora}
                 contrato={data?.contrato ?? null}
                 movimientos={data?.movimientos ?? []}
-                propiedadId={data?.propiedad?.id ?? null}
+                propertyId={data?.property?.id ?? null}
               />
             )}
 
             {activeTab === "contrato" && (
-              <InquilinoTabContrato contrato={data?.contrato ?? null} />
+              <TenantTabContract contrato={data?.contrato ?? null} />
             )}
 
-            {activeTab === "propiedad" && (
-              <InquilinoTabPropiedad
-                propiedad={data?.propiedad ?? null}
-                propietarioNombre={
-                  data?.propietario
-                    ? data.propietario.lastName
-                      ? `${data.propietario.firstName} ${data.propietario.lastName}`
-                      : data.propietario.firstName
+            {activeTab === "property" && (
+              <TenantTabProperty
+                property={data?.property ?? null}
+                ownerName={
+                  data?.owner
+                    ? data.owner.lastName
+                      ? `${data.owner.firstName} ${data.owner.lastName}`
+                      : data.owner.firstName
                     : undefined
                 }
-                onVerPropietario={() => setTab("propietario")}
+                onVerOwner={() => setTab("propietario")}
               />
             )}
 
             {activeTab === "propietario" && (
-              <InquilinoTabPropietario
-                propietario={data?.propietario ?? null}
+              <TenantTabOwner
+                owner={data?.owner ?? null}
                 contrato={data?.contrato ?? null}
               />
             )}
 
-            {activeTab === "servicios" && data?.propiedad?.id && (
+            {activeTab === "servicios" && data?.property?.id && (
               <div className="p-7">
-                <ServiceTabProperty propertyId={data.propiedad.id} />
+                <ServiceTabProperty propertyId={data.property.id} />
               </div>
             )}
-            {activeTab === "servicios" && !data?.propiedad?.id && (
+            {activeTab === "servicios" && !data?.property?.id && (
               <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-text-muted">
                 <div className="text-3xl opacity-30">⚡</div>
-                <div className="text-[0.85rem]">Este inquilino no tiene propiedad vinculada</div>
+                <div className="text-[0.85rem]">Este tenant no tiene propiedad vinculada</div>
               </div>
             )}
 
@@ -330,7 +330,7 @@ export default function InquilinoFichaPage() {
                   {activeTab === "tareas"
                     ? "Gestión de tareas"
                     : activeTab === "documentos"
-                    ? "Documentación del inquilino"
+                    ? "Documentación del tenant"
                     : "Notificaciones vinculadas"}{" "}
                   — próximamente
                 </div>

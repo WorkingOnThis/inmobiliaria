@@ -1,10 +1,10 @@
 "use client";
 
 import { Suspense } from "react";
-import { InquilinosList } from "@/components/inquilinos/inquilinos-list";
+import { TenantsList } from "@/components/tenants/tenants-list";
 import { Loader2 } from "lucide-react";
 
-export default function InquilinosPage() {
+export default function TenantsPage() {
   return (
     <Suspense
       fallback={
@@ -13,7 +13,7 @@ export default function InquilinosPage() {
         </div>
       }
     >
-      <InquilinosList />
+      <TenantsList />
     </Suspense>
   );
 }

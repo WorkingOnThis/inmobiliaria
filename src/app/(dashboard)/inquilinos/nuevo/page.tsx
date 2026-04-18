@@ -1,17 +1,17 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { InquilinoForm } from "@/components/inquilinos/inquilino-form";
+import { TenantForm } from "@/components/tenants/tenant-form";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function NuevoInquilinoPage() {
+export default async function NewTenantPage() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) {
-    redirect("/login?callbackUrl=/inquilinos/nuevo");
+    redirect("/login?callbackUrl=/tenants/new");
   }
 
   if (!canManageClients(session.user.role)) {
@@ -27,7 +27,7 @@ export default async function NuevoInquilinoPage() {
         </p>
       </div>
       <div className="flex flex-col items-center">
-        <InquilinoForm />
+        <TenantForm />
       </div>
     </div>
   );

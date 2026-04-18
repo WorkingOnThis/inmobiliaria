@@ -57,13 +57,13 @@ interface ContratoData {
 }
 
 interface Props {
-  inquilinoId: string;
-  inquilinoNombre: string;
+  tenantId: string;
+  tenantName: string;
   estado: string;
   diasMora: number;
   contrato: ContratoData | null;
   movimientos: Movimiento[];
-  propiedadId?: string | null;
+  propertyId?: string | null;
 }
 
 function formatMonto(val: string | number) {
@@ -106,13 +106,13 @@ function descripcionPorDefecto(categoria: string, tipo: string): string {
 
 type FiltroEstado = "todos" | "ingreso" | "egreso";
 
-export function InquilinoTabCuentaCorriente({
-  inquilinoId,
+export function TenantTabCurrentAccount({
+  tenantId,
   estado,
   diasMora,
   contrato,
   movimientos,
-  propiedadId,
+  propertyId,
 }: Props) {
   const queryClient = useQueryClient();
   const [filtro, setFiltro] = useState<FiltroEstado>("todos");
@@ -180,7 +180,7 @@ export function InquilinoTabCuentaCorriente({
     }
     setGuardando(true);
     try {
-      const res = await fetch(`/api/inquilinos/${inquilinoId}/movimientos`, {
+      const res = await fetch(`/api/inquilinos/${tenantId}/movimientos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -192,14 +192,14 @@ export function InquilinoTabCuentaCorriente({
           nota: nota.trim() || null,
           periodo: tipo === "ingreso" && categoria === "alquiler" ? periodo : null,
           contratoId: contrato?.id ?? null,
-          propiedadId: propiedadId ?? null,
+          propertyId: propertyId ?? null,
         }),
       });
       if (!res.ok) {
         const d = await res.json();
         throw new Error(d.error || "Error al guardar");
       }
-      await queryClient.invalidateQueries({ queryKey: ["inquilino", inquilinoId] });
+      await queryClient.invalidateQueries({ queryKey: ["inquilino", tenantId] });
       setModalOpen(false);
     } catch (e) {
       setErrorMsg((e as Error).message);
@@ -215,7 +215,7 @@ export function InquilinoTabCuentaCorriente({
       {enMora && (
         <Alert variant="destructive">
           <AlertTriangle className="size-4" />
-          <AlertTitle>Inquilino en mora — {diasMora} días</AlertTitle>
+          <AlertTitle>Tenant en mora — {diasMora} días</AlertTitle>
           <AlertDescription>
             El vencimiento del período actual ya pasó sin registro de pago.
           </AlertDescription>

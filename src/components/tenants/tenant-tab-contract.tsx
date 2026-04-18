@@ -44,7 +44,7 @@ function calcularDuracionMeses(start: string, end: string) {
 
 const modalidadLabel: Record<string, string> = {
   A: "Modalidad A — CBU Inmobiliaria",
-  B: "Modalidad B — Pago directo al propietario",
+  B: "Modalidad B — Pago directo al owner",
 };
 
 const tipoLabel: Record<string, string> = {
@@ -63,14 +63,14 @@ const statusLabel: Record<string, { label: string; variant: StatusBadgeVariant }
   pending_signature: { label: "Pendiente firma", variant: "reserved" },
 };
 
-export function InquilinoTabContrato({ contrato }: Props) {
+export function TenantTabContract({ contrato }: Props) {
   const router = useRouter();
 
   if (!contrato) {
     return (
       <div className="p-7 flex flex-col items-center justify-center min-h-[200px] text-center gap-2">
         <div className="text-2xl opacity-40">📄</div>
-        <div className="text-[0.85rem] text-text-muted">Este inquilino no tiene contrato activo</div>
+        <div className="text-[0.85rem] text-text-muted">Este tenant no tiene contrato activo</div>
       </div>
     );
   }

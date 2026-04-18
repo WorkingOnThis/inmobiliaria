@@ -9,7 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-export function InquilinoForm() {
+export function TenantForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -34,13 +34,13 @@ export function InquilinoForm() {
       });
       if (!response.ok) {
         const res = await response.json();
-        throw new Error(res.error || "Error al crear el inquilino");
+        throw new Error(res.error || "Error al crear el tenant");
       }
       return response.json();
     },
     onSuccess: () => {
-      toast.success("Inquilino creado exitosamente");
-      queryClient.invalidateQueries({ queryKey: ["clients", "inquilino"] });
+      toast.success("Tenant creado exitosamente");
+      queryClient.invalidateQueries({ queryKey: ["clients", "tenant"] });
       router.push("/inquilinos");
     },
     onError: (error: Error) => {
@@ -61,7 +61,7 @@ export function InquilinoForm() {
 
     setFieldErrors({});
     mutation.mutate({
-      type: "inquilino",
+      type: "tenant",
       firstName: firstName.trim(),
       lastName: lastName.trim() || null,
       dni: dni.trim() || null,
@@ -197,7 +197,7 @@ export function InquilinoForm() {
             Cancelar
           </Button>
           <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Guardando..." : "Crear Inquilino"}
+            {mutation.isPending ? "Guardando..." : "Crear Tenant"}
           </Button>
         </CardFooter>
       </Card>

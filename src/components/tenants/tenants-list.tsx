@@ -46,7 +46,7 @@ interface ContratoInfo {
   completitud: number | null;
 }
 
-interface InquilinoRow {
+interface TenantRow {
   id: string;
   firstName: string;
   lastName: string | null;
@@ -55,7 +55,7 @@ interface InquilinoRow {
   email: string | null;
   createdAt: string;
   contrato: ContratoInfo | null;
-  propiedad: string | null;
+  property: string | null;
   ultimoPago: string | null;
   estado: EstadoInquilino;
   diasMora: number;
@@ -69,8 +69,8 @@ interface Stats {
   sinContrato: number;
 }
 
-interface InquilinosResponse {
-  inquilinos: InquilinoRow[];
+interface TenantsResponse {
+  tenants: TenantRow[];
   pagination: { total: number; page: number; limit: number; totalPages: number };
   stats: Stats;
 }
@@ -150,7 +150,7 @@ const FILTROS = [
 
 // ─── Export CSV ───────────────────────────────────────────────────────────────
 
-function exportarCSV(inquilinos: InquilinoRow[]) {
+function exportarCSV(inquilinos: TenantRow[]) {
   const encabezados = [
     "Nombre",
     "DNI",
@@ -172,7 +172,7 @@ function exportarCSV(inquilinos: InquilinoRow[]) {
     `${i.firstName} ${i.lastName ?? ""}`.trim(),
     i.dni ?? "",
     i.phone ?? "",
-    i.propiedad ?? "",
+    i.property ?? "",
     i.contrato?.numero ?? "",
     i.contrato?.endDate ? formatFecha(i.contrato.endDate) : "",
     i.ultimoPago ? formatFecha(i.ultimoPago) : "",
@@ -195,7 +195,7 @@ function exportarCSV(inquilinos: InquilinoRow[]) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export function InquilinosList() {
+export function TenantsList() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -214,8 +214,8 @@ export function InquilinosList() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const { data, isLoading, error, refetch } = useQuery<InquilinosResponse>({
-    queryKey: ["inquilinos", page, search, estadoFilter],
+  const { data, isLoading, error, refetch } = useQuery<TenantsResponse>({
+    queryKey: ["tenants", page, search, estadoFilter],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: "10" });
       if (search) params.set("search", search);
@@ -244,7 +244,7 @@ export function InquilinosList() {
   };
 
   const stats = data?.stats;
-  const inquilinos = data?.inquilinos ?? [];
+  const inquilinos = data?.tenants ?? [];
   const pagination = data?.pagination;
 
   // ─── Render ──────────────────────────────────────────────────────────────
@@ -254,7 +254,7 @@ export function InquilinosList() {
       {/* Encabezado */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Inquilinos</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Tenants</h1>
           <p className="text-sm text-muted-foreground">
             Todas las personas con contrato activo o historial en el sistema.
           </p>
@@ -270,9 +270,9 @@ export function InquilinosList() {
             Exportar
           </Button>
           <Button asChild size="sm">
-            <Link href="/inquilinos/nuevo">
+            <Link href="/tenants/nuevo">
               <PlusCircle className="mr-2 size-4" />
-              Nuevo Inquilino
+              Nuevo Tenant
             </Link>
           </Button>
         </div>
@@ -286,7 +286,7 @@ export function InquilinosList() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Total Inquilinos
+                  Total Tenants
                 </p>
                 <p className="mt-1 text-3xl font-bold">
                   {isLoading ? "—" : (stats?.total ?? 0)}
@@ -417,7 +417,7 @@ export function InquilinosList() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
-                  <TableHead className="font-semibold">Inquilino</TableHead>
+                  <TableHead className="font-semibold">Tenant</TableHead>
                   <TableHead className="font-semibold">Propiedad</TableHead>
                   <TableHead className="font-semibold">Contrato</TableHead>
                   <TableHead className="font-semibold">Vencimiento</TableHead>
@@ -435,10 +435,10 @@ export function InquilinosList() {
                         key={inq.id}
                         className="cursor-pointer hover:bg-muted/30 transition-colors"
                         onClick={() =>
-                          router.push(`/inquilinos/${inq.id}`)
+                          router.push(`/tenants/${inq.id}`)
                         }
                       >
-                        {/* Inquilino */}
+                        {/* Tenant */}
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <EntityAvatar
@@ -467,7 +467,7 @@ export function InquilinosList() {
                         {/* Propiedad */}
                         <TableCell>
                           <span className="text-sm">
-                            {inq.propiedad ?? (
+                            {inq.property ?? (
                               <span className="field-value empty"></span>
                             )}
                           </span>
@@ -562,7 +562,7 @@ export function InquilinosList() {
                   pagination.page * pagination.limit,
                   pagination.total
                 )}{" "}
-                de {pagination.total} inquilino
+                de {pagination.total} tenant
                 {pagination.total !== 1 ? "s" : ""}
               </p>
             </div>
