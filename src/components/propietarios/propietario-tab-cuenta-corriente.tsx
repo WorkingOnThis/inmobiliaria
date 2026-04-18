@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -37,6 +37,7 @@ interface CuentaCorrienteData {
 
 interface PropietarioTabCuentaCorrienteProps {
   propietarioId: string;
+  onPendingCount?: (count: number) => void;
 }
 
 function formatMoney(n: number) {
@@ -94,6 +95,7 @@ const labelCls =
 
 export function PropietarioTabCuentaCorriente({
   propietarioId,
+  onPendingCount,
 }: PropietarioTabCuentaCorrienteProps) {
   const queryClient = useQueryClient();
 
@@ -145,6 +147,10 @@ export function PropietarioTabCuentaCorriente({
     pendientes: movimientos.filter((m) => m.origen !== "liquidacion").length,
     confirmar:  movimientos.filter((m) => m.categoria === "pendiente_confirmacion").length,
   };
+
+  useEffect(() => {
+    onPendingCount?.(counts.pendientes);
+  }, [counts.pendientes, onPendingCount]);
 
   const movimientosFiltrados = movimientos.filter((m) => {
     if (movFilter === "liquidados") return m.origen === "liquidacion";
