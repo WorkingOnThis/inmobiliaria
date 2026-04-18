@@ -127,8 +127,8 @@ export async function GET(
 }
 
 const patchSchema = z.object({
-  prioridad: z.enum(["urgente", "alta", "media", "baja"]).optional(),
-  estado: z.enum(["pendiente", "en_curso", "resuelta"]).optional(),
+  prioridad: z.enum(["urgent", "high", "medium", "low"]).optional(),
+  estado: z.enum(["pending", "in_progress", "resolved"]).optional(),
   assignedTo: z.string().nullable().optional(),
   descripcion: z.string().nullable().optional(),
   titulo: z.string().min(1).optional(),
@@ -161,16 +161,16 @@ export async function PATCH(
     const now = new Date();
 
     const ESTADO_LABELS: Record<string, string> = {
-      pendiente: "Pendiente",
-      en_curso: "En curso",
-      resuelta: "Resuelta",
+      pending: "Pendiente",
+      in_progress: "En curso",
+      resolved: "Resuelta",
     };
 
     const PRIORIDAD_LABELS: Record<string, string> = {
-      urgente: "Urgente",
-      alta: "Alta",
-      media: "Media",
-      baja: "Baja",
+      urgent: "Urgente",
+      high: "Alta",
+      medium: "Media",
+      low: "Baja",
     };
 
     await db.transaction(async (tx) => {

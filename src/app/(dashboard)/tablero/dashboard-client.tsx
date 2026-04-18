@@ -10,7 +10,7 @@ type TrendDir = "up" | "down" | "neutral";
 type AlertaTipo = "mora" | "vence" | "servicio" | "icl" | "ok";
 type SemaforoColor = "red" | "yellow" | "green" | "gray";
 type TareaOrigen = "auto" | "manual" | "onboarding";
-type TareaPrioridad = "urgente" | "alta" | "media";
+type TareaPrioridad = "urgent" | "high" | "medium";
 
 interface KPIData {
   salud: { valor: number; alertas: number; tendencia: string; dir: TrendDir };
@@ -145,7 +145,7 @@ export default function DashboardClient() {
   const { data: tareas } = useQuery<TareasData>({
     queryKey: ["tareas-urgentes"],
     queryFn: () =>
-      fetch("/api/tareas?prioridad=urgente&limit=5").then((r) => r.json()),
+      fetch("/api/tareas?prioridad=urgent&limit=5").then((r) => r.json()),
   });
 
   const { data: mora } = useQuery<MoraData>({

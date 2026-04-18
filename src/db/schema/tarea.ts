@@ -11,17 +11,17 @@ import { client } from "./client";
  * Puede ser generada automáticamente por el sistema (ej: mora, vencimiento)
  * o creada manualmente por un agente.
  *
- * prioridad: "urgente" | "alta" | "media" | "baja"
- * estado:    "pendiente" | "en_curso" | "resuelta"
+ * prioridad: "urgent" | "high" | "medium" | "low"
+ * estado:    "pending" | "in_progress" | "resolved"
  * tipo:      "auto" | "manual"
- * categoria: "alquiler" | "servicios" | "contratos" | "onboarding" | null
+ * categoria: "rent" | "services" | "contracts" | "onboarding" | null
  */
 export const tarea = pgTable("tarea", {
   id: text("id").primaryKey(),
   titulo: text("titulo").notNull(),
   descripcion: text("descripcion"),
-  prioridad: text("prioridad").notNull().default("media"),
-  estado: text("estado").notNull().default("pendiente"),
+  prioridad: text("prioridad").notNull().default("medium"),
+  estado: text("estado").notNull().default("pending"),
   tipo: text("tipo").notNull().default("manual"),
   categoria: text("categoria"),
   fechaVencimiento: timestamp("fechaVencimiento"),

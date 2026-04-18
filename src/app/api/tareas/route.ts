@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     if (categoria) conditions.push(eq(tarea.categoria, categoria));
     if (tipo) conditions.push(eq(tarea.tipo, tipo));
     if (estado) conditions.push(eq(tarea.estado, estado));
-    if (excluirResuelta) conditions.push(ne(tarea.estado, "resuelta"));
+    if (excluirResuelta) conditions.push(ne(tarea.estado, "resolved"));
 
     const items = await db
       .select({
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       .leftJoin(assignedUserAlias, eq(tarea.assignedTo, assignedUserAlias.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(
-        sql`CASE ${tarea.prioridad} WHEN 'urgente' THEN 1 WHEN 'alta' THEN 2 WHEN 'media' THEN 3 WHEN 'baja' THEN 4 ELSE 5 END`,
+        sql`CASE ${tarea.prioridad} WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END`,
         desc(tarea.createdAt)
       );
 
@@ -81,8 +81,8 @@ export async function GET(request: NextRequest) {
         .from(tarea)
         .where(
           and(
-            inArray(tarea.prioridad, ["urgente", "alta"]),
-            inArray(tarea.estado, ["pendiente", "en_curso"]),
+            inArray(tarea.prioridad, ["urgent", "high"]),
+            inArray(tarea.estado, ["pending", "in_progress"]),
             isNotNull(tarea.propertyId)
           )
         );
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
 const crearTareaSchema = z.object({
   titulo: z.string().min(1, "El título es obligatorio"),
   descripcion: z.string().nullable().optional(),
-  prioridad: z.enum(["urgente", "alta", "media", "baja"]).default("media"),
+  prioridad: z.enum(["urgent", "high", "medium", "low"]).default("medium"),
   tipo: z.enum(["auto", "manual"]).default("manual"),
   categoria: z.string().nullable().optional(),
   fechaVencimiento: z
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
           titulo: data.titulo,
           descripcion: data.descripcion ?? null,
           prioridad: data.prioridad,
-          estado: "pendiente",
+          estado: "pending",
           tipo: data.tipo,
           categoria: data.categoria ?? null,
           fechaVencimiento: data.fechaVencimiento ?? null,

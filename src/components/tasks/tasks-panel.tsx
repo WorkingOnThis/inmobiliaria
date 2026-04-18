@@ -15,10 +15,10 @@ import { cn } from "@/lib/utils";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
-type Priority = "urgente" | "alta" | "media" | "baja";
-type TaskStatus = "pendiente" | "en_curso" | "resuelta";
+type Priority = "urgent" | "high" | "medium" | "low";
+type TaskStatus = "pending" | "in_progress" | "resolved";
 type TaskType = "auto" | "manual";
-type FilterKey = "todas" | "auto" | "manual" | "alquiler" | "servicios" | "contratos";
+type FilterKey = "todas" | "auto" | "manual" | "rent" | "services" | "contracts";
 
 type TaskPatch = {
   prioridad?: Priority;
@@ -134,16 +134,16 @@ function formatBytes(bytes: number | null): string {
 }
 
 const PRIORITY_CONFIG: Record<Priority, { label: string; pill: string; border: string }> = {
-  urgente: { label: "Urgente", pill: "bg-error-dim text-destructive",         border: "var(--error)" },
-  alta:    { label: "Alta",    pill: "bg-mustard-dim text-mustard",            border: "var(--mustard)" },
-  media:   { label: "Media",   pill: "bg-neutral-dim text-neutral",            border: "var(--neutral)" },
-  baja:    { label: "Baja",    pill: "bg-surface-highest text-text-muted",     border: "transparent" },
+  urgent: { label: "Urgente", pill: "bg-error-dim text-destructive",         border: "var(--error)" },
+  high:   { label: "Alta",    pill: "bg-mustard-dim text-mustard",            border: "var(--mustard)" },
+  medium: { label: "Media",   pill: "bg-neutral-dim text-neutral",            border: "var(--neutral)" },
+  low:    { label: "Baja",    pill: "bg-surface-highest text-text-muted",     border: "transparent" },
 };
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; badge: string }> = {
-  pendiente: { label: "Pendiente", badge: "bg-muted text-muted-foreground" },
-  en_curso:  { label: "En curso",  badge: "bg-neutral-dim text-neutral" },
-  resuelta:  { label: "Resuelta",  badge: "bg-income-dim text-income" },
+  pending:     { label: "Pendiente", badge: "bg-muted text-muted-foreground" },
+  in_progress: { label: "En curso",  badge: "bg-neutral-dim text-neutral" },
+  resolved:    { label: "Resuelta",  badge: "bg-income-dim text-income" },
 };
 
 const TYPE_TAG: Record<TaskType, { label: string; cls: string }> = {
@@ -446,9 +446,9 @@ function PriorityGroup({
 
 function KanbanView({ items }: { items: TaskSummary[] }) {
   const cols: { estado: TaskStatus; label: string; labelColor: string }[] = [
-    { estado: "pendiente", label: "Pendiente", labelColor: "text-text-secondary" },
-    { estado: "en_curso",  label: "En curso",  labelColor: "text-neutral" },
-    { estado: "resuelta",  label: "Resuelta",  labelColor: "text-green" },
+    { estado: "pending",     label: "Pendiente", labelColor: "text-text-secondary" },
+    { estado: "in_progress", label: "En curso",  labelColor: "text-neutral" },
+    { estado: "resolved",    label: "Resuelta",  labelColor: "text-green" },
   ];
 
   return (
@@ -711,7 +711,7 @@ function SidePanel({
               <div className="p-[14px_20px] border-b border-border">
                 <SectionTitle>Prioridad</SectionTitle>
                 <div className="flex gap-1">
-                  {(["urgente", "alta", "media", "baja"] as Priority[]).map(p => (
+                  {(["urgent", "high", "medium", "low"] as Priority[]).map(p => (
                     <button
                       key={p}
                       onClick={() => onUpdate(t.id, { prioridad: p })}
@@ -729,7 +729,7 @@ function SidePanel({
                 <div className="h-3" />
                 <SectionTitle>Estado</SectionTitle>
                 <div className="flex gap-1">
-                  {(["pendiente", "en_curso", "resuelta"] as TaskStatus[]).map(e => (
+                  {(["pending", "in_progress", "resolved"] as TaskStatus[]).map(e => (
                     <button
                       key={e}
                       onClick={() => onUpdate(t.id, { estado: e })}
@@ -931,11 +931,11 @@ function SidePanel({
 
             {/* Footer */}
             <div className="p-[14px_20px] border-t border-border flex gap-2 shrink-0">
-              {t.estado !== "resuelta" ? (
+              {t.estado !== "resolved" ? (
                 <Button
                   size="sm"
                   className="flex-1 bg-income text-income-foreground hover:bg-income/90"
-                  onClick={() => onUpdate(t.id, { estado: "resuelta" })}
+                  onClick={() => onUpdate(t.id, { estado: "resolved" })}
                 >
                   ✓ Marcar como resuelta
                 </Button>
@@ -944,7 +944,7 @@ function SidePanel({
                   variant="ghost"
                   size="sm"
                   className="flex-1"
-                  onClick={() => onUpdate(t.id, { estado: "pendiente" })}
+                  onClick={() => onUpdate(t.id, { estado: "pending" })}
                 >
                   ↩ Reabrir tarea
                 </Button>
@@ -974,7 +974,7 @@ function NewTaskModal({
   const [form, setForm] = useState({
     titulo: "",
     descripcion: "",
-    prioridad: "media" as Priority,
+    prioridad: "medium" as Priority,
     categoria: "",
     fechaVencimiento: "",
   });
@@ -1007,7 +1007,7 @@ function NewTaskModal({
       }
       onCreated();
       onClose();
-      setForm({ titulo: "", descripcion: "", prioridad: "media", categoria: "", fechaVencimiento: "" });
+      setForm({ titulo: "", descripcion: "", prioridad: "medium", categoria: "", fechaVencimiento: "" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
@@ -1069,10 +1069,10 @@ function NewTaskModal({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="urgente">Urgente</SelectItem>
-                    <SelectItem value="alta">Alta</SelectItem>
-                    <SelectItem value="media">Media</SelectItem>
-                    <SelectItem value="baja">Baja</SelectItem>
+                    <SelectItem value="urgent">Urgente</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="medium">Media</SelectItem>
+                    <SelectItem value="low">Baja</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -1103,9 +1103,9 @@ function NewTaskModal({
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="__none__">Sin categoría</SelectItem>
-                  <SelectItem value="alquiler">Alquiler</SelectItem>
-                  <SelectItem value="servicios">Servicios</SelectItem>
-                  <SelectItem value="contratos">Contratos</SelectItem>
+                  <SelectItem value="rent">Alquiler</SelectItem>
+                  <SelectItem value="services">Servicios</SelectItem>
+                  <SelectItem value="contracts">Contratos</SelectItem>
                   <SelectItem value="onboarding">Onboarding</SelectItem>
                 </SelectGroup>
               </SelectContent>
@@ -1138,10 +1138,10 @@ export function TasksPanel() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [grupoCerrado, setGrupoCerrado] = useState<Record<Priority, boolean>>({
-    urgente: false,
-    alta: false,
-    media: false,
-    baja: false,
+    urgent: false,
+    high: false,
+    medium: false,
+    low: false,
   });
 
   const queryClient = useQueryClient();
@@ -1154,7 +1154,7 @@ export function TasksPanel() {
       if (filtro === "auto" || filtro === "manual") p.set("tipo", filtro);
       else if (filtro !== "todas") p.set("categoria", filtro);
       if (verFinalizadas) {
-        p.set("estado", "resuelta");
+        p.set("estado", "resolved");
       } else {
         p.set("excluirResuelta", "true");
       }
@@ -1183,7 +1183,7 @@ export function TasksPanel() {
     onSuccess: (_, { patch }) => {
       queryClient.invalidateQueries({ queryKey: ["tareas"] });
       queryClient.invalidateQueries({ queryKey: ["tarea", selectedId] });
-      if (patch.estado === "resuelta") {
+      if (patch.estado === "resolved") {
         closePanel();
       }
     },
@@ -1194,7 +1194,7 @@ export function TasksPanel() {
       const res = await fetch(`/api/tareas/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: "resuelta" }),
+        body: JSON.stringify({ estado: "resolved" }),
       });
       if (!res.ok) throw new Error("Error al completar");
       return res.json();
@@ -1217,19 +1217,19 @@ export function TasksPanel() {
 
   const items = data?.items ?? [];
   const grouped = {
-    urgente: items.filter(t => t.prioridad === "urgente"),
-    alta:    items.filter(t => t.prioridad === "alta"),
-    media:   items.filter(t => t.prioridad === "media"),
-    baja:    items.filter(t => t.prioridad === "baja"),
+    urgent: items.filter(t => t.prioridad === "urgent"),
+    high:   items.filter(t => t.prioridad === "high"),
+    medium: items.filter(t => t.prioridad === "medium"),
+    low:    items.filter(t => t.prioridad === "low"),
   };
 
   const FILTROS: { key: FilterKey; label: string; dotColor?: string }[] = [
     { key: "todas",     label: "Todas" },
     { key: "auto",      label: "Automáticas", dotColor: "var(--neutral)" },
     { key: "manual",    label: "Manuales",    dotColor: "var(--primary)" },
-    { key: "alquiler",  label: "Alquiler" },
-    { key: "servicios", label: "Servicios" },
-    { key: "contratos", label: "Contratos" },
+    { key: "rent",      label: "Alquiler" },
+    { key: "services",  label: "Servicios" },
+    { key: "contracts", label: "Contratos" },
   ];
 
   return (
@@ -1349,7 +1349,7 @@ export function TasksPanel() {
                 ))}
               </div>
             ) : (
-              (["urgente", "alta", "media", "baja"] as Priority[]).map(prioridad => (
+              (["urgent", "high", "medium", "low"] as Priority[]).map(prioridad => (
                 <PriorityGroup
                   key={prioridad}
                   prioridad={prioridad}
