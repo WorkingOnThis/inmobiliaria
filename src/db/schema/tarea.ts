@@ -4,118 +4,57 @@ import { property } from "./property";
 import { contract } from "./contract";
 import { client } from "./client";
 
-/**
- * Tarea
- *
- * Representa una tarea de gestión asignada a un miembro del staff.
- * Puede ser generada automáticamente por el sistema (ej: mora, vencimiento)
- * o creada manualmente por un agente.
- *
- * prioridad: "urgent" | "high" | "medium" | "low"
- * estado:    "pending" | "in_progress" | "resolved"
- * tipo:      "auto" | "manual"
- * categoria: "rent" | "services" | "contracts" | "onboarding" | null
- */
-export const tarea = pgTable("tarea", {
+export const tarea = pgTable("task", {
   id: text("id").primaryKey(),
-  titulo: text("titulo").notNull(),
-  descripcion: text("descripcion"),
-  prioridad: text("prioridad").notNull().default("medium"),
-  estado: text("estado").notNull().default("pending"),
-  tipo: text("tipo").notNull().default("manual"),
-  categoria: text("categoria"),
-  fechaVencimiento: timestamp("fechaVencimiento"),
+  title: text("title").notNull(),
+  description: text("description"),
+  priority: text("priority").notNull().default("medium"), // "urgent" | "high" | "medium" | "low"
+  status: text("status").notNull().default("pending"),    // "pending" | "in_progress" | "resolved"
+  tipo: text("tipo").notNull().default("manual"),         // "auto" | "manual" — not renamed (enum value, not column)
+  categoria: text("categoria"),                           // "rent" | "services" | "contracts" | "onboarding"
 
-  // Entidades vinculadas (todas opcionales)
-  propertyId: text("propertyId").references(() => property.id, {
-    onDelete: "set null",
-  }),
-  contractId: text("contractId").references(() => contract.id, {
-    onDelete: "set null",
-  }),
-  tenantId: text("tenantId").references(() => client.id, {
-    onDelete: "set null",
-  }),
-  ownerId: text("ownerId").references(() => client.id, {
-    onDelete: "set null",
-  }),
+  dueDate: timestamp("dueDate"),
 
-  // Cliente vinculado genérico (propietario, inquilino, garante, contacto, etc.)
-  clienteId: text("clienteId").references(() => client.id, {
-    onDelete: "set null",
-  }),
+  propertyId: text("propertyId").references(() => property.id, { onDelete: "set null" }),
+  contractId: text("contractId").references(() => contract.id, { onDelete: "set null" }),
+  tenantId: text("tenantId").references(() => client.id, { onDelete: "set null" }),
+  ownerId: text("ownerId").references(() => client.id, { onDelete: "set null" }),
+  clientId: text("clientId").references(() => client.id, { onDelete: "set null" }),
 
-  // Responsable asignado y auditoría
-  assignedTo: text("assignedTo").references(() => user.id, {
-    onDelete: "set null",
-  }),
-  createdBy: text("createdBy")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+  assignedTo: text("assignedTo").references(() => user.id, { onDelete: "set null" }),
+  createdBy: text("createdBy").notNull().references(() => user.id, { onDelete: "cascade" }),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
-/**
- * TareaHistorial
- *
- * Registro cronológico de eventos sobre una tarea.
- * Los eventos automáticos (cambios de estado, creación) tienen tipo "auto".
- * Las notas del staff tienen tipo "manual".
- */
-export const tareaHistorial = pgTable("tareaHistorial", {
+export const tareaHistorial = pgTable("task_history", {
   id: text("id").primaryKey(),
-  tareaId: text("tareaId")
-    .notNull()
-    .references(() => tarea.id, { onDelete: "cascade" }),
-  texto: text("texto").notNull(),
+  taskId: text("taskId").notNull().references(() => tarea.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
   tipo: text("tipo").notNull().default("auto"), // "auto" | "manual"
-  creadoPor: text("creadoPor").references(() => user.id, {
-    onDelete: "set null",
-  }),
+  createdBy: text("createdBy").references(() => user.id, { onDelete: "set null" }),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
-/**
- * TareaComentario
- *
- * Comentarios internos del staff sobre una tarea.
- * Solo visibles para usuarios del sistema (no para propietarios/inquilinos).
- */
-export const tareaComentario = pgTable("tareaComentario", {
+export const tareaComentario = pgTable("task_comment", {
   id: text("id").primaryKey(),
-  tareaId: text("tareaId")
-    .notNull()
-    .references(() => tarea.id, { onDelete: "cascade" }),
-  texto: text("texto").notNull(),
-  creadoPor: text("creadoPor")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+  taskId: text("taskId").notNull().references(() => tarea.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  createdBy: text("createdBy").notNull().references(() => user.id, { onDelete: "cascade" }),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
-/**
- * TareaArchivo
- *
- * Archivos adjuntos a una tarea (imágenes, PDFs, etc.).
- * Se almacenan en /public/uploads/tareas/[tareaId]/.
- */
-export const tareaArchivo = pgTable("tareaArchivo", {
+export const tareaArchivo = pgTable("task_file", {
   id: text("id").primaryKey(),
-  tareaId: text("tareaId")
-    .notNull()
-    .references(() => tarea.id, { onDelete: "cascade" }),
-  nombre: text("nombre").notNull(),
+  taskId: text("taskId").notNull().references(() => tarea.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
   url: text("url").notNull(),
   tipo: text("tipo"),
-  tamaño: integer("tamaño"),
-  creadoPor: text("creadoPor").references(() => user.id, {
-    onDelete: "set null",
-  }),
+  size: integer("size"),
+  createdBy: text("createdBy").references(() => user.id, { onDelete: "set null" }),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
-// Tipos inferidos
 export type Tarea = typeof tarea.$inferSelect;
 export type NuevaTarea = typeof tarea.$inferInsert;
 export type TareaHistorial = typeof tareaHistorial.$inferSelect;

@@ -33,13 +33,13 @@ export async function GET(
     const [row] = await db
       .select({
         id: tarea.id,
-        titulo: tarea.titulo,
-        descripcion: tarea.descripcion,
-        prioridad: tarea.prioridad,
-        estado: tarea.estado,
+        title: tarea.title,
+        description: tarea.description,
+        priority: tarea.priority,
+        status: tarea.status,
         tipo: tarea.tipo,
         categoria: tarea.categoria,
-        fechaVencimiento: tarea.fechaVencimiento,
+        dueDate: tarea.dueDate,
         propertyId: tarea.propertyId,
         propertyAddress: property.address,
         contractId: tarea.contractId,
@@ -48,7 +48,7 @@ export async function GET(
         tenantNombre: sql<string | null>`NULLIF(TRIM(COALESCE(${tenantAlias.firstName}, '') || ' ' || COALESCE(${tenantAlias.lastName}, '')), '')`,
         ownerId: tarea.ownerId,
         ownerNombre: sql<string | null>`NULLIF(TRIM(COALESCE(${ownerAlias.firstName}, '') || ' ' || COALESCE(${ownerAlias.lastName}, '')), '')`,
-        clienteId: tarea.clienteId,
+        clientId: tarea.clientId,
         clienteNombre: sql<string | null>`NULLIF(TRIM(COALESCE(${clienteAlias.firstName}, '') || ' ' || COALESCE(${clienteAlias.lastName}, '')), '')`,
         clienteTipo: clienteAlias.type,
         assignedToId: tarea.assignedTo,
@@ -61,79 +61,67 @@ export async function GET(
       .leftJoin(contract, eq(tarea.contractId, contract.id))
       .leftJoin(tenantAlias, eq(tarea.tenantId, tenantAlias.id))
       .leftJoin(ownerAlias, eq(tarea.ownerId, ownerAlias.id))
-      .leftJoin(clienteAlias, eq(tarea.clienteId, clienteAlias.id))
+      .leftJoin(clienteAlias, eq(tarea.clientId, clienteAlias.id))
       .leftJoin(assignedUserAlias, eq(tarea.assignedTo, assignedUserAlias.id))
       .where(eq(tarea.id, id));
 
     if (!row) {
-      return NextResponse.json(
-        { error: "Tarea no encontrada" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Tarea no encontrada" }, { status: 404 });
     }
 
     const historial = await db
       .select({
         id: tareaHistorial.id,
-        texto: tareaHistorial.texto,
+        text: tareaHistorial.text,
         tipo: tareaHistorial.tipo,
-        creadoPorNombre: historialUserAlias.name,
+        createdByName: historialUserAlias.name,
         createdAt: tareaHistorial.createdAt,
       })
       .from(tareaHistorial)
-      .leftJoin(
-        historialUserAlias,
-        eq(tareaHistorial.creadoPor, historialUserAlias.id)
-      )
-      .where(eq(tareaHistorial.tareaId, id))
+      .leftJoin(historialUserAlias, eq(tareaHistorial.createdBy, historialUserAlias.id))
+      .where(eq(tareaHistorial.taskId, id))
       .orderBy(desc(tareaHistorial.createdAt));
 
     const comentarios = await db
       .select({
         id: tareaComentario.id,
-        texto: tareaComentario.texto,
-        creadoPorNombre: comentarioUserAlias.name,
+        text: tareaComentario.text,
+        createdByName: comentarioUserAlias.name,
         createdAt: tareaComentario.createdAt,
       })
       .from(tareaComentario)
-      .leftJoin(
-        comentarioUserAlias,
-        eq(tareaComentario.creadoPor, comentarioUserAlias.id)
-      )
-      .where(eq(tareaComentario.tareaId, id))
+      .leftJoin(comentarioUserAlias, eq(tareaComentario.createdBy, comentarioUserAlias.id))
+      .where(eq(tareaComentario.taskId, id))
       .orderBy(desc(tareaComentario.createdAt));
 
     const archivos = await db
       .select({
         id: tareaArchivo.id,
-        nombre: tareaArchivo.nombre,
+        name: tareaArchivo.name,
         url: tareaArchivo.url,
         tipo: tareaArchivo.tipo,
-        tamaño: tareaArchivo.tamaño,
+        size: tareaArchivo.size,
         createdAt: tareaArchivo.createdAt,
       })
       .from(tareaArchivo)
-      .where(eq(tareaArchivo.tareaId, id))
+      .where(eq(tareaArchivo.taskId, id))
       .orderBy(desc(tareaArchivo.createdAt));
 
     return NextResponse.json({ ...row, historial, comentarios, archivos });
   } catch (error) {
     console.error("Error fetching tarea:", error);
-    return NextResponse.json(
-      { error: "Error al obtener la tarea" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error al obtener la tarea" }, { status: 500 });
   }
 }
 
 const patchSchema = z.object({
-  prioridad: z.enum(["urgent", "high", "medium", "low"]).optional(),
-  estado: z.enum(["pending", "in_progress", "resolved"]).optional(),
+  priority: z.enum(["urgent", "high", "medium", "low"]).optional(),
+  status: z.enum(["pending", "in_progress", "resolved"]).optional(),
   assignedTo: z.string().nullable().optional(),
-  descripcion: z.string().nullable().optional(),
-  titulo: z.string().min(1).optional(),
-  fechaVencimiento: z.string().nullable().optional(),
-  clienteId: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  title: z.string().min(1).optional(),
+  dueDate: z.string().nullable().optional(),
+  clientId: z.string().nullable().optional(),
   propertyId: z.string().nullable().optional(),
 });
 
@@ -151,10 +139,7 @@ export async function PATCH(
     const body = await request.json();
     const result = patchSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.errors[0].message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
     }
 
     const patch = result.data;
@@ -175,63 +160,61 @@ export async function PATCH(
 
     await db.transaction(async (tx) => {
       const updateData: Record<string, unknown> = { updatedAt: now };
-      if (patch.prioridad !== undefined) updateData.prioridad = patch.prioridad;
-      if (patch.estado !== undefined) updateData.estado = patch.estado;
+      if (patch.priority !== undefined) updateData.priority = patch.priority;
+      if (patch.status !== undefined) updateData.status = patch.status;
       if (patch.assignedTo !== undefined) updateData.assignedTo = patch.assignedTo;
-      if (patch.descripcion !== undefined) updateData.descripcion = patch.descripcion;
-      if (patch.titulo !== undefined) updateData.titulo = patch.titulo;
-      if (patch.clienteId !== undefined) updateData.clienteId = patch.clienteId;
+      if (patch.description !== undefined) updateData.description = patch.description;
+      if (patch.title !== undefined) updateData.title = patch.title;
+      if (patch.clientId !== undefined) updateData.clientId = patch.clientId;
       if (patch.propertyId !== undefined) updateData.propertyId = patch.propertyId;
-      if (patch.fechaVencimiento !== undefined) {
-        updateData.fechaVencimiento = patch.fechaVencimiento
-          ? new Date(patch.fechaVencimiento)
-          : null;
+      if (patch.dueDate !== undefined) {
+        updateData.dueDate = patch.dueDate ? new Date(patch.dueDate) : null;
       }
 
       await tx.update(tarea).set(updateData).where(eq(tarea.id, id));
 
       const histEntries = [];
 
-      if (patch.estado) {
+      if (patch.status) {
         histEntries.push({
           id: crypto.randomUUID(),
-          tareaId: id,
-          texto: `Estado cambiado a "${ESTADO_LABELS[patch.estado] ?? patch.estado}"`,
+          taskId: id,
+          text: `Estado cambiado a "${ESTADO_LABELS[patch.status] ?? patch.status}"`,
           tipo: "manual" as const,
-          creadoPor: session.user.id,
+          createdBy: session.user.id,
           createdAt: now,
         });
       }
 
-      if (patch.prioridad) {
+      if (patch.priority) {
         histEntries.push({
           id: crypto.randomUUID(),
-          tareaId: id,
-          texto: `Prioridad cambiada a "${PRIORIDAD_LABELS[patch.prioridad] ?? patch.prioridad}"`,
+          taskId: id,
+          text: `Prioridad cambiada a "${PRIORIDAD_LABELS[patch.priority] ?? patch.priority}"`,
           tipo: "manual" as const,
-          creadoPor: session.user.id,
+          createdBy: session.user.id,
           createdAt: now,
         });
       }
 
-      if (patch.titulo !== undefined) {
+      if (patch.title !== undefined) {
         histEntries.push({
           id: crypto.randomUUID(),
-          tareaId: id,
-          texto: `Título actualizado`,
+          taskId: id,
+          text: `Título actualizado`,
           tipo: "manual" as const,
-          creadoPor: session.user.id,
+          createdBy: session.user.id,
           createdAt: now,
         });
       }
 
-      if (patch.clienteId !== undefined) {
+      if (patch.clientId !== undefined) {
         histEntries.push({
           id: crypto.randomUUID(),
-          tareaId: id,
-          texto: patch.clienteId ? `Persona vinculada actualizada` : `Persona vinculada eliminada`,
+          taskId: id,
+          text: patch.clientId ? `Persona vinculada actualizada` : `Persona vinculada eliminada`,
           tipo: "manual" as const,
-          creadoPor: session.user.id,
+          createdBy: session.user.id,
           createdAt: now,
         });
       }
@@ -239,10 +222,10 @@ export async function PATCH(
       if (patch.propertyId !== undefined) {
         histEntries.push({
           id: crypto.randomUUID(),
-          tareaId: id,
-          texto: patch.propertyId ? `Propiedad vinculada actualizada` : `Propiedad vinculada eliminada`,
+          taskId: id,
+          text: patch.propertyId ? `Propiedad vinculada actualizada` : `Propiedad vinculada eliminada`,
           tipo: "manual" as const,
-          creadoPor: session.user.id,
+          createdBy: session.user.id,
           createdAt: now,
         });
       }
@@ -255,15 +238,12 @@ export async function PATCH(
     return NextResponse.json({ message: "Tarea actualizada" });
   } catch (error) {
     console.error("Error updating tarea:", error);
-    return NextResponse.json(
-      { error: "Error al actualizar la tarea" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error al actualizar la tarea" }, { status: 500 });
   }
 }
 
 const comentarioSchema = z.object({
-  texto: z.string().min(1, "El comentario no puede estar vacío"),
+  text: z.string().min(1, "El comentario no puede estar vacío"),
 });
 
 export async function POST(
@@ -280,33 +260,24 @@ export async function POST(
     const body = await request.json();
     const result = comentarioSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.errors[0].message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
     }
 
     const [comentario] = await db
       .insert(tareaComentario)
       .values({
         id: crypto.randomUUID(),
-        tareaId: id,
-        texto: result.data.texto,
-        creadoPor: session.user.id,
+        taskId: id,
+        text: result.data.text,
+        createdBy: session.user.id,
         createdAt: new Date(),
       })
       .returning();
 
-    return NextResponse.json(
-      { message: "Comentario agregado", comentario },
-      { status: 201 }
-    );
+    return NextResponse.json({ message: "Comentario agregado", comentario }, { status: 201 });
   } catch (error) {
     console.error("Error adding comment:", error);
-    return NextResponse.json(
-      { error: "Error al agregar el comentario" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error al agregar el comentario" }, { status: 500 });
   }
 }
 
@@ -325,9 +296,6 @@ export async function DELETE(
     return NextResponse.json({ message: "Tarea eliminada" });
   } catch (error) {
     console.error("Error deleting tarea:", error);
-    return NextResponse.json(
-      { error: "Error al eliminar la tarea" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error al eliminar la tarea" }, { status: 500 });
   }
 }

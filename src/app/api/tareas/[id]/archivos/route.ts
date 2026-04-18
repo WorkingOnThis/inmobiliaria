@@ -21,7 +21,7 @@ export async function GET(
     const archivos = await db
       .select()
       .from(tareaArchivo)
-      .where(eq(tareaArchivo.tareaId, id));
+      .where(eq(tareaArchivo.taskId, id));
 
     return NextResponse.json({ archivos });
   } catch (error) {
@@ -65,12 +65,12 @@ export async function POST(
       .insert(tareaArchivo)
       .values({
         id: crypto.randomUUID(),
-        tareaId: id,
-        nombre: file.name,
+        taskId: id,
+        name: file.name,
         url,
         tipo: file.type || null,
-        tamaño: file.size,
-        creadoPor: session.user.id,
+        size: file.size,
+        createdBy: session.user.id,
         createdAt: new Date(),
       })
       .returning();
@@ -104,7 +104,7 @@ export async function DELETE(
       .from(tareaArchivo)
       .where(eq(tareaArchivo.id, archivoId));
 
-    if (!archivo || archivo.tareaId !== id) {
+    if (!archivo || archivo.taskId !== id) {
       return NextResponse.json({ error: "Archivo no encontrado" }, { status: 404 });
     }
 

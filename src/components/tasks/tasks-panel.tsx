@@ -21,24 +21,24 @@ type TaskType = "auto" | "manual";
 type FilterKey = "todas" | "auto" | "manual" | "rent" | "services" | "contracts";
 
 type TaskPatch = {
-  prioridad?: Priority;
-  estado?: TaskStatus;
-  titulo?: string;
-  descripcion?: string | null;
-  fechaVencimiento?: string | null;
-  clienteId?: string | null;
+  priority?: Priority;
+  status?: TaskStatus;
+  title?: string;
+  description?: string | null;
+  dueDate?: string | null;
+  clientId?: string | null;
   propertyId?: string | null;
 };
 
 type TaskSummary = {
   id: string;
-  titulo: string;
-  descripcion: string | null;
-  prioridad: Priority;
-  estado: TaskStatus;
+  title: string;
+  description: string | null;
+  priority: Priority;
+  status: TaskStatus;
   tipo: TaskType;
   categoria: string | null;
-  fechaVencimiento: string | null;
+  dueDate: string | null;
   propertyId: string | null;
   propertyAddress: string | null;
   contractId: string | null;
@@ -54,28 +54,28 @@ type TaskSummary = {
 type TaskDetail = TaskSummary & {
   ownerId: string | null;
   ownerNombre: string | null;
-  clienteId: string | null;
+  clientId: string | null;
   clienteNombre: string | null;
   clienteTipo: string | null;
   archivos: {
     id: string;
-    nombre: string;
+    name: string;
     url: string;
     tipo: string | null;
-    tamaño: number | null;
+    size: number | null;
     createdAt: string;
   }[];
   historial: {
     id: string;
-    texto: string;
+    text: string;
     tipo: string;
-    creadoPorNombre: string | null;
+    createdByName: string | null;
     createdAt: string;
   }[];
   comentarios: {
     id: string;
-    texto: string;
-    creadoPorNombre: string | null;
+    text: string;
+    createdByName: string | null;
     createdAt: string;
   }[];
 };
@@ -321,8 +321,8 @@ function TaskRow({
   onClick: () => void;
   onComplete: (id: string) => void;
 }) {
-  const pCfg = PRIORITY_CONFIG[t.prioridad];
-  const fecha = formatDate(t.fechaVencimiento);
+  const pCfg = PRIORITY_CONFIG[t.priority];
+  const fecha = formatDate(t.dueDate);
 
   return (
     <div
@@ -340,7 +340,7 @@ function TaskRow({
       />
 
       <div className="flex-1 min-w-0">
-        <div className="text-[0.82rem] font-semibold text-on-surface truncate">{t.titulo}</div>
+        <div className="text-[0.82rem] font-semibold text-on-surface truncate">{t.title}</div>
         <div className="flex items-center gap-[6px] mt-[2px] flex-wrap">
           <TagBadge type={t.tipo} />
           {t.categoria && (
@@ -358,7 +358,7 @@ function TaskRow({
         </div>
       </div>
 
-      <TaskStatusBadge status={t.estado} />
+      <TaskStatusBadge status={t.status} />
       <span className={`text-[0.65rem] font-semibold shrink-0 whitespace-nowrap ${fecha.colorClass}`}>
         {fecha.label}
       </span>
@@ -380,7 +380,7 @@ function CompletedTaskRow({ t, onClick }: { t: TaskSummary; onClick: () => void 
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-[0.82rem] font-semibold text-on-surface truncate line-through">
-          {t.titulo}
+          {t.title}
         </div>
         <div className="text-[0.63rem] text-text-muted mt-[1px]">
           {t.categoria ?? ""}
@@ -445,18 +445,18 @@ function PriorityGroup({
 // ── Vista Kanban ───────────────────────────────────────────────────────────
 
 function KanbanView({ items }: { items: TaskSummary[] }) {
-  const cols: { estado: TaskStatus; label: string; labelColor: string }[] = [
-    { estado: "pending",     label: "Pendiente", labelColor: "text-text-secondary" },
-    { estado: "in_progress", label: "En curso",  labelColor: "text-neutral" },
-    { estado: "resolved",    label: "Resuelta",  labelColor: "text-green" },
+  const cols: { status: TaskStatus; label: string; labelColor: string }[] = [
+    { status: "pending",     label: "Pendiente", labelColor: "text-text-secondary" },
+    { status: "in_progress", label: "En curso",  labelColor: "text-neutral" },
+    { status: "resolved",    label: "Resuelta",  labelColor: "text-green" },
   ];
 
   return (
     <div className="flex-1 overflow-x-auto overflow-y-hidden p-[20px_28px] flex gap-4 items-start">
       {cols.map(col => {
-        const colItems = items.filter(t => t.estado === col.estado);
+        const colItems = items.filter(t => t.status === col.status);
         return (
-          <div key={col.estado} className="w-[290px] shrink-0 flex flex-col gap-[10px]">
+          <div key={col.status} className="w-[290px] shrink-0 flex flex-col gap-[10px]">
             <div className="flex items-center justify-between px-3 py-2 bg-surface border border-border rounded-xl">
               <span className={`text-[0.72rem] font-bold uppercase tracking-[0.1em] ${col.labelColor}`}>
                 {col.label}
@@ -473,8 +473,8 @@ function KanbanView({ items }: { items: TaskSummary[] }) {
                 </div>
               )}
               {colItems.map(t => {
-                const pCfg = PRIORITY_CONFIG[t.prioridad];
-                const fecha = formatDate(t.fechaVencimiento);
+                const pCfg = PRIORITY_CONFIG[t.priority];
+                const fecha = formatDate(t.dueDate);
                 return (
                   <div
                     key={t.id}
@@ -482,7 +482,7 @@ function KanbanView({ items }: { items: TaskSummary[] }) {
                     className="bg-card border border-border border-t-[3px] rounded-[18px] p-[14px] cursor-pointer transition-all hover:border-border-accent hover:bg-surface-mid"
                   >
                     <div className="text-[0.78rem] font-semibold text-on-surface mb-[6px] leading-snug">
-                      {t.titulo}
+                      {t.title}
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[0.65rem] text-text-muted">
@@ -572,26 +572,26 @@ function SidePanel({
 
   useEffect(() => {
     if (t) {
-      setTituloDraft(t.titulo);
-      setNotaDraft(t.descripcion ?? "");
+      setTituloDraft(t.title);
+      setNotaDraft(t.description ?? "");
       setHistorialOpen(false);
     }
   }, [t?.id]);
 
   function saveTitulo() {
-    if (!t || !tituloDraft.trim() || tituloDraft.trim() === t.titulo) {
+    if (!t || !tituloDraft.trim() || tituloDraft.trim() === t.title) {
       setEditingTitulo(false);
       return;
     }
-    onUpdate(t.id, { titulo: tituloDraft.trim() });
+    onUpdate(t.id, { title: tituloDraft.trim() });
     setEditingTitulo(false);
   }
 
   function saveNota() {
     if (!t) return;
     const val = notaDraft.trim() || null;
-    if (val === t.descripcion) return;
-    onUpdate(t.id, { descripcion: val });
+    if (val === t.description) return;
+    onUpdate(t.id, { description: val });
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -630,7 +630,7 @@ function SidePanel({
         className="top-14 w-[420px] sm:max-w-[420px] p-0 flex flex-col gap-0 overflow-hidden"
       >
         <SheetHeader className="sr-only">
-          <SheetTitle>{t?.titulo ?? "Detalle de tarea"}</SheetTitle>
+          <SheetTitle>{t?.title ?? "Detalle de tarea"}</SheetTitle>
         </SheetHeader>
 
         {isLoading && (
@@ -668,11 +668,11 @@ function SidePanel({
                 />
               ) : (
                 <div
-                  onClick={() => { setEditingTitulo(true); setTituloDraft(t.titulo); }}
+                  onClick={() => { setEditingTitulo(true); setTituloDraft(t.title); }}
                   className="text-[0.95rem] font-bold text-on-bg font-headline leading-snug cursor-text hover:text-primary transition-colors"
                   title="Clic para editar título"
                 >
-                  {t.titulo}
+                  {t.title}
                 </div>
               )}
             </div>
@@ -696,13 +696,13 @@ function SidePanel({
                 <SectionTitle>Fecha límite</SectionTitle>
                 <input
                   type="date"
-                  defaultValue={t.fechaVencimiento ? t.fechaVencimiento.substring(0, 10) : ""}
-                  onChange={e => onUpdate(t.id, { fechaVencimiento: e.target.value || null })}
+                  defaultValue={t.dueDate ? t.dueDate.substring(0, 10) : ""}
+                  onChange={e => onUpdate(t.id, { dueDate: e.target.value || null })}
                   className="w-full text-[0.78rem] bg-surface-high border border-border rounded-lg px-3 py-[7px] text-on-surface outline-none focus:border-primary transition-colors"
                 />
-                {t.fechaVencimiento && (
-                  <p className={`text-[0.65rem] mt-[5px] font-semibold ${formatDate(t.fechaVencimiento).colorClass}`}>
-                    {formatDate(t.fechaVencimiento).label}
+                {t.dueDate && (
+                  <p className={`text-[0.65rem] mt-[5px] font-semibold ${formatDate(t.dueDate).colorClass}`}>
+                    {formatDate(t.dueDate).label}
                   </p>
                 )}
               </div>
@@ -714,9 +714,9 @@ function SidePanel({
                   {(["urgent", "high", "medium", "low"] as Priority[]).map(p => (
                     <button
                       key={p}
-                      onClick={() => onUpdate(t.id, { prioridad: p })}
+                      onClick={() => onUpdate(t.id, { priority: p })}
                       className={`px-[10px] py-[3px] text-[0.6rem] font-bold rounded-full border transition-all ${
-                        t.prioridad === p
+                        t.priority === p
                           ? PRIORITY_CONFIG[p].pill + " border-current/30"
                           : "bg-surface-high border-border text-text-muted hover:text-on-surface"
                       }`}
@@ -732,9 +732,9 @@ function SidePanel({
                   {(["pending", "in_progress", "resolved"] as TaskStatus[]).map(e => (
                     <button
                       key={e}
-                      onClick={() => onUpdate(t.id, { estado: e })}
+                      onClick={() => onUpdate(t.id, { status: e })}
                       className={`px-[10px] py-[3px] text-[0.6rem] font-bold rounded-full border transition-all ${
-                        t.estado === e
+                        t.status === e
                           ? STATUS_CONFIG[e].badge + " border-current/30"
                           : "bg-surface-high border-border text-text-muted hover:text-on-surface"
                       }`}
@@ -750,15 +750,15 @@ function SidePanel({
                 <SectionTitle>Persona vinculada</SectionTitle>
                 <SearchCombobox
                   options={clienteOptions}
-                  selectedId={t.clienteId ?? null}
+                  selectedId={t.clientId ?? null}
                   selectedLabel={
                     t.clienteNombre
                       ? `${t.clienteNombre}${t.clienteTipo ? ` · ${CLIENT_TYPE_LABELS[t.clienteTipo] ?? t.clienteTipo}` : ""}`
                       : null
                   }
                   placeholder="Buscar persona…"
-                  onSelect={id => onUpdate(t.id, { clienteId: id })}
-                  onClear={() => onUpdate(t.id, { clienteId: null })}
+                  onSelect={id => onUpdate(t.id, { clientId: id })}
+                  onClear={() => onUpdate(t.id, { clientId: null })}
                 />
               </div>
 
@@ -850,11 +850,11 @@ function SidePanel({
                           rel="noopener noreferrer"
                           className="flex-1 text-[0.75rem] text-primary hover:underline truncate"
                         >
-                          {a.nombre}
+                          {a.name}
                         </a>
-                        {a.tamaño && (
+                        {a.size && (
                           <span className="text-[0.6rem] text-text-muted shrink-0">
-                            {formatBytes(a.tamaño)}
+                            {formatBytes(a.size)}
                           </span>
                         )}
                         <button
@@ -908,7 +908,7 @@ function SidePanel({
                             }`} />
                             <div>
                               <div className="text-[0.72rem] text-text-secondary leading-snug">
-                                {h.texto}
+                                {h.text}
                               </div>
                               <div className="text-[0.6rem] text-text-muted mt-[2px]">
                                 {new Date(h.createdAt).toLocaleDateString("es-AR", {
@@ -917,7 +917,7 @@ function SidePanel({
                                   year: "numeric",
                                 })}
                                 {" · "}
-                                {h.creadoPorNombre ?? "Automático"}
+                                {h.createdByName ?? "Automático"}
                               </div>
                             </div>
                           </div>
@@ -931,11 +931,11 @@ function SidePanel({
 
             {/* Footer */}
             <div className="p-[14px_20px] border-t border-border flex gap-2 shrink-0">
-              {t.estado !== "resolved" ? (
+              {t.status !== "resolved" ? (
                 <Button
                   size="sm"
                   className="flex-1 bg-income text-income-foreground hover:bg-income/90"
-                  onClick={() => onUpdate(t.id, { estado: "resolved" })}
+                  onClick={() => onUpdate(t.id, { status: "resolved" })}
                 >
                   ✓ Marcar como resuelta
                 </Button>
@@ -944,7 +944,7 @@ function SidePanel({
                   variant="ghost"
                   size="sm"
                   className="flex-1"
-                  onClick={() => onUpdate(t.id, { estado: "pending" })}
+                  onClick={() => onUpdate(t.id, { status: "pending" })}
                 >
                   ↩ Reabrir tarea
                 </Button>
@@ -972,18 +972,18 @@ function NewTaskModal({
   onCreated: () => void;
 }) {
   const [form, setForm] = useState({
-    titulo: "",
-    descripcion: "",
-    prioridad: "medium" as Priority,
+    title: "",
+    description: "",
+    priority: "medium" as Priority,
     categoria: "",
-    fechaVencimiento: "",
+    dueDate: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.titulo.trim()) {
+    if (!form.title.trim()) {
       setError("El título es obligatorio");
       return;
     }
@@ -994,11 +994,11 @@ function NewTaskModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          titulo: form.titulo.trim(),
-          descripcion: form.descripcion.trim() || null,
-          prioridad: form.prioridad,
+          title: form.title.trim(),
+          description: form.description.trim() || null,
+          priority: form.priority,
           categoria: form.categoria || null,
-          fechaVencimiento: form.fechaVencimiento || null,
+          dueDate: form.dueDate || null,
         }),
       });
       if (!res.ok) {
@@ -1007,7 +1007,7 @@ function NewTaskModal({
       }
       onCreated();
       onClose();
-      setForm({ titulo: "", descripcion: "", prioridad: "medium", categoria: "", fechaVencimiento: "" });
+      setForm({ title: "", description: "", priority: "medium", categoria: "", dueDate: "" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
@@ -1037,8 +1037,8 @@ function NewTaskModal({
               Título <span className="text-destructive">*</span>
             </label>
             <Input
-              value={form.titulo}
-              onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))}
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Describí la tarea brevemente…"
             />
           </div>
@@ -1048,8 +1048,8 @@ function NewTaskModal({
               Nota <span className="font-normal normal-case text-[0.6rem]">(opcional)</span>
             </label>
             <Textarea
-              value={form.descripcion}
-              onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
+              value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Contexto, pasos a seguir, notas…"
               className="resize-y min-h-[72px]"
             />
@@ -1061,8 +1061,8 @@ function NewTaskModal({
                 Prioridad
               </label>
               <Select
-                value={form.prioridad}
-                onValueChange={v => setForm(f => ({ ...f, prioridad: v as Priority }))}
+                value={form.priority}
+                onValueChange={v => setForm(f => ({ ...f, priority: v as Priority }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -1083,8 +1083,8 @@ function NewTaskModal({
               </label>
               <Input
                 type="date"
-                value={form.fechaVencimiento}
-                onChange={e => setForm(f => ({ ...f, fechaVencimiento: e.target.value }))}
+                value={form.dueDate}
+                onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
               />
             </div>
           </div>
@@ -1183,7 +1183,7 @@ export function TasksPanel() {
     onSuccess: (_, { patch }) => {
       queryClient.invalidateQueries({ queryKey: ["tareas"] });
       queryClient.invalidateQueries({ queryKey: ["tarea", selectedId] });
-      if (patch.estado === "resolved") {
+      if (patch.status === "resolved") {
         closePanel();
       }
     },
@@ -1194,7 +1194,7 @@ export function TasksPanel() {
       const res = await fetch(`/api/tareas/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: "resolved" }),
+        body: JSON.stringify({ status: "resolved" }),
       });
       if (!res.ok) throw new Error("Error al completar");
       return res.json();
@@ -1217,10 +1217,10 @@ export function TasksPanel() {
 
   const items = data?.items ?? [];
   const grouped = {
-    urgent: items.filter(t => t.prioridad === "urgent"),
-    high:   items.filter(t => t.prioridad === "high"),
-    medium: items.filter(t => t.prioridad === "medium"),
-    low:    items.filter(t => t.prioridad === "low"),
+    urgent: items.filter(t => t.priority === "urgent"),
+    high:   items.filter(t => t.priority === "high"),
+    medium: items.filter(t => t.priority === "medium"),
+    low:    items.filter(t => t.priority === "low"),
   };
 
   const FILTROS: { key: FilterKey; label: string; dotColor?: string }[] = [

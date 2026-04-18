@@ -29,24 +29,22 @@ export async function GET(request: NextRequest) {
     const excluirResuelta = params.get("excluirResuelta") === "true";
 
     const conditions = [];
-    if (scope === "mine") {
-      conditions.push(eq(tarea.assignedTo, session.user.id));
-    }
+    if (scope === "mine") conditions.push(eq(tarea.assignedTo, session.user.id));
     if (categoria) conditions.push(eq(tarea.categoria, categoria));
     if (tipo) conditions.push(eq(tarea.tipo, tipo));
-    if (estado) conditions.push(eq(tarea.estado, estado));
-    if (excluirResuelta) conditions.push(ne(tarea.estado, "resolved"));
+    if (estado) conditions.push(eq(tarea.status, estado));
+    if (excluirResuelta) conditions.push(ne(tarea.status, "resolved"));
 
     const items = await db
       .select({
         id: tarea.id,
-        titulo: tarea.titulo,
-        descripcion: tarea.descripcion,
-        prioridad: tarea.prioridad,
-        estado: tarea.estado,
+        title: tarea.title,
+        description: tarea.description,
+        priority: tarea.priority,
+        status: tarea.status,
         tipo: tarea.tipo,
         categoria: tarea.categoria,
-        fechaVencimiento: tarea.fechaVencimiento,
+        dueDate: tarea.dueDate,
         propertyId: tarea.propertyId,
         propertyAddress: property.address,
         contractId: tarea.contractId,
@@ -65,14 +63,11 @@ export async function GET(request: NextRequest) {
       .leftJoin(assignedUserAlias, eq(tarea.assignedTo, assignedUserAlias.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(
-        sql`CASE ${tarea.prioridad} WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END`,
+        sql`CASE ${tarea.priority} WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END`,
         desc(tarea.createdAt)
       );
 
-    // Salud del portfolio: % de propiedades sin tareas urgente/alta abiertas
-    const [{ totalProps }] = await db
-      .select({ totalProps: count() })
-      .from(property);
+    const [{ totalProps }] = await db.select({ totalProps: count() }).from(property);
 
     let saludPortfolio = 100;
     if (totalProps > 0) {
@@ -81,41 +76,28 @@ export async function GET(request: NextRequest) {
         .from(tarea)
         .where(
           and(
-            inArray(tarea.prioridad, ["urgent", "high"]),
-            inArray(tarea.estado, ["pending", "in_progress"]),
+            inArray(tarea.priority, ["urgent", "high"]),
+            inArray(tarea.status, ["pending", "in_progress"]),
             isNotNull(tarea.propertyId)
           )
         );
-      saludPortfolio = Math.round(
-        ((totalProps - alertProps.length) / totalProps) * 100
-      );
+      saludPortfolio = Math.round(((totalProps - alertProps.length) / totalProps) * 100);
     }
 
-    return NextResponse.json({
-      total: items.length,
-      saludPortfolio,
-      items,
-    });
+    return NextResponse.json({ total: items.length, saludPortfolio, items });
   } catch (error) {
     console.error("Error fetching tareas:", error);
-    return NextResponse.json(
-      { error: "Error al obtener tareas" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error al obtener tareas" }, { status: 500 });
   }
 }
 
 const crearTareaSchema = z.object({
-  titulo: z.string().min(1, "El título es obligatorio"),
-  descripcion: z.string().nullable().optional(),
-  prioridad: z.enum(["urgent", "high", "medium", "low"]).default("medium"),
+  title: z.string().min(1, "El título es obligatorio"),
+  description: z.string().nullable().optional(),
+  priority: z.enum(["urgent", "high", "medium", "low"]).default("medium"),
   tipo: z.enum(["auto", "manual"]).default("manual"),
   categoria: z.string().nullable().optional(),
-  fechaVencimiento: z
-    .string()
-    .nullable()
-    .optional()
-    .transform((v) => (v ? new Date(v) : null)),
+  dueDate: z.string().nullable().optional().transform((v) => (v ? new Date(v) : null)),
   propertyId: z.string().nullable().optional(),
   contractId: z.string().nullable().optional(),
   tenantId: z.string().nullable().optional(),
@@ -133,10 +115,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const result = crearTareaSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.errors[0].message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
     }
 
     const data = result.data;
@@ -149,13 +128,13 @@ export async function POST(request: NextRequest) {
         .insert(tarea)
         .values({
           id,
-          titulo: data.titulo,
-          descripcion: data.descripcion ?? null,
-          prioridad: data.prioridad,
-          estado: "pending",
+          title: data.title,
+          description: data.description ?? null,
+          priority: data.priority,
+          status: "pending",
           tipo: data.tipo,
           categoria: data.categoria ?? null,
-          fechaVencimiento: data.fechaVencimiento ?? null,
+          dueDate: data.dueDate ?? null,
           propertyId: data.propertyId ?? null,
           contractId: data.contractId ?? null,
           tenantId: data.tenantId ?? null,
@@ -169,25 +148,19 @@ export async function POST(request: NextRequest) {
 
       await tx.insert(tareaHistorial).values({
         id: historialId,
-        tareaId: id,
-        texto: "Tarea creada",
+        taskId: id,
+        text: "Tarea creada",
         tipo: "manual",
-        creadoPor: session.user.id,
+        createdBy: session.user.id,
         createdAt: now,
       });
 
       return t;
     });
 
-    return NextResponse.json(
-      { message: "Tarea creada exitosamente", tarea: nuevaTarea },
-      { status: 201 }
-    );
+    return NextResponse.json({ message: "Tarea creada exitosamente", tarea: nuevaTarea }, { status: 201 });
   } catch (error) {
     console.error("Error creating tarea:", error);
-    return NextResponse.json(
-      { error: "Error al crear la tarea" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error al crear la tarea" }, { status: 500 });
   }
 }
