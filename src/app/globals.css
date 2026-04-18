@@ -52,6 +52,11 @@
   --color-status-maintenance-dim: var(--status-maintenance-dim);
   --color-status-reserved:       var(--status-reserved);
   --color-status-reserved-dim:   var(--status-reserved-dim);
+  /* --- Tokens Arce: origen de movimiento --- */
+  --color-origin-auto:           var(--origin-auto);
+  --color-origin-auto-dim:       var(--origin-auto-dim);
+  /* --- Tokens Arce: sparkline --- */
+  --color-spark-neutral:         var(--spark-neutral);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -195,7 +200,13 @@
   --border-subtle:          rgba(0,0,0,0.04);
   --primary-subtle:         rgba(107,23,2,0.04);
   --gradient-property:      linear-gradient(135deg, #1a2a1a, #2a4a2a);
-  --gradient-owner:         linear-gradient(135deg, #1a2a30, #1a4060);
+  --gradient-owner:         linear-gradient(145deg, oklch(0.56 0.14 30), oklch(0.42 0.12 25));
+  --inset-highlight:        rgba(255, 255, 255, 0.08);
+  /* --- Tokens Arce: origen de movimiento --- */
+  --origin-auto:            oklch(0.48 0.09 210);
+  --origin-auto-dim:        oklch(0.48 0.09 210 / 0.08);
+  /* --- Tokens Arce: sparkline --- */
+  --spark-neutral:          rgba(140, 140, 144, 0.45);
   /* --- Tokens Arce: info (azul informativo) --- */
   --info:                   #8ab4f8;
   --info-dim:               rgba(138,180,248,0.12);
@@ -300,7 +311,13 @@
   --border-subtle:          rgba(255,255,255,0.02);
   --primary-subtle:         rgba(255,180,162,0.05);
   --gradient-property:      linear-gradient(135deg, #1a2a1a, #2a4a2a);
-  --gradient-owner:         linear-gradient(135deg, #1a2a30, #1a4060);
+  --gradient-owner:         linear-gradient(145deg, oklch(0.56 0.14 30), oklch(0.42 0.12 25));
+  --inset-highlight:        rgba(255, 255, 255, 0.08);
+  /* --- Tokens Arce: origen de movimiento --- */
+  --origin-auto:            oklch(0.75 0.1 210);
+  --origin-auto-dim:        oklch(0.75 0.1 210 / 0.08);
+  /* --- Tokens Arce: sparkline --- */
+  --spark-neutral:          oklch(0.5 0.01 40);
   --status-available:       #ffdea8;
   --status-available-dim:   rgba(253,222,168,0.15);
   --status-rented:          #8dcf95;

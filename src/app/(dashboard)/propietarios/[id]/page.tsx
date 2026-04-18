@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, MoreHorizontal, Bell, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { PropietarioCompletitudBar } from "@/components/propietarios/propietario-completitud-bar";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropietarioTabDatos } from "@/components/propietarios/propietario-tab-datos";
 import { PropietarioTabCuentaCorriente } from "@/components/propietarios/propietario-tab-cuenta-corriente";
 import { PropietarioTabPropiedades } from "@/components/propietarios/propietario-tab-propiedades";
@@ -77,38 +80,35 @@ function getInitials(firstName: string, lastName: string | null) {
 
 type Tab = "datos" | "cuenta-corriente" | "propiedades" | "documentos" | "historial";
 
-function StatusDot({ status }: { status: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-block size-1.5 rounded-full flex-shrink-0",
-        status === "activo" ? "bg-success" : status === "suspendido" ? "bg-warning" : "bg-error"
-      )}
-    />
-  );
-}
+const statusVariantMap: Record<string, { variant: "active" | "suspended" | "baja" | "draft"; label: string }> = {
+  activo:     { variant: "active",    label: "Activo" },
+  suspendido: { variant: "suspended", label: "Suspendido" },
+  baja:       { variant: "baja",      label: "Baja" },
+};
 
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    activo:     { label: "Activo",     cls: "status-pill status-active" },
-    suspendido: { label: "Suspendido", cls: "status-pill status-suspended" },
-    baja:       { label: "Baja",       cls: "status-pill status-baja" },
+function computeCompletitud(p: Propietario) {
+  const fields = [
+    { weight: 3,   value: p.cbu },
+    { weight: 2,   value: p.dni },
+    { weight: 2,   value: p.cuit },
+    { weight: 1.5, value: p.condicionFiscal },
+    { weight: 1.5, value: p.phone },
+    { weight: 1.5, value: p.email },
+    { weight: 1,   value: p.alias },
+    { weight: 1,   value: p.banco },
+    { weight: 1,   value: p.tipoCuenta },
+    { weight: 1,   value: p.address },
+    { weight: 0.5, value: p.birthDate },
+    { weight: 0.5, value: p.nacionalidad },
+    { weight: 0.5, value: p.ocupacion },
+    { weight: 0.5, value: p.notasInternas },
+  ];
+  const total = fields.reduce((s, f) => s + f.weight, 0);
+  const done  = fields.reduce((s, f) => s + (f.value ? f.weight : 0), 0);
+  return {
+    pct: Math.round((done / total) * 100),
+    missingCount: fields.filter((f) => !f.value).length,
   };
-  const { label, cls } = map[status] ?? { label: status, cls: "status-pill status-draft" };
-  return (
-    <span className={cls}>
-      <StatusDot status={status} />
-      {label}
-    </span>
-  );
-}
-
-function CountBadge({ count }: { count: number }) {
-  return (
-    <span className="font-mono text-[11px] bg-surface-mid border border-border px-[7px] py-[2px] rounded-[4px] leading-none">
-      {count}
-    </span>
-  );
 }
 
 export default function PropietarioFichaPage() {
@@ -145,11 +145,6 @@ export default function PropietarioFichaPage() {
   const propietario = data?.propietario;
   const propiedadesCount = data?.propiedades?.length ?? 0;
 
-  const handleChipClick = (fieldId: string) => {
-    setTab("datos");
-    setPendingFocus(fieldId);
-  };
-
   const handleStatusChange = () => {
     queryClient.invalidateQueries({ queryKey: ["propietario", id] });
   };
@@ -180,37 +175,23 @@ export default function PropietarioFichaPage() {
         </div>
       ) : (
         <div className="flex flex-col min-h-full">
-          {/* Topbar / breadcrumb */}
-          <div className="h-14 bg-surface border-b border-border flex items-center px-7 gap-2.5 flex-shrink-0">
-            <Link
-              href="/propietarios"
-              className="text-[0.8rem] text-text-secondary hover:text-primary transition-colors flex items-center gap-1"
-            >
-              <ArrowLeft size={13} />
-              Propietarios
-            </Link>
-            <span className="text-text-muted">›</span>
-            <span className="text-[0.8rem] font-semibold text-on-bg">
-              {propietario.lastName
-                ? `${propietario.firstName} ${propietario.lastName}`
-                : propietario.firstName}
-            </span>
-          </div>
-
-          {/* Profile header */}
-          <div className="bg-surface border-b border-border px-7 py-5">
-            <div className="flex items-start gap-4">
-              {/* Avatar 56×56, gradient-owner */}
-              <div
-                className="size-14 rounded-[12px] flex items-center justify-center text-[1.375rem] font-bold text-white flex-shrink-0"
-                style={{ background: "var(--gradient-owner)" }}
-              >
-                {getInitials(propietario.firstName, propietario.lastName)}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Page head */}
+          <div className="px-6 pt-5 pb-0 bg-bg border-b border-border">
+            {/* Owner row */}
+            <div className="flex items-start justify-between gap-6 mb-4">
+              <div className="flex items-center gap-4">
+                <Avatar
+                  className="size-14 rounded-[12px] flex-shrink-0"
+                  style={{ boxShadow: "inset 0 0 0 1px var(--inset-highlight)" }}
+                >
+                  <AvatarFallback
+                    className="text-[1.375rem] font-bold text-white rounded-[12px]"
+                    style={{ background: "var(--gradient-owner)" }}
+                  >
+                    {getInitials(propietario.firstName, propietario.lastName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
                   <h1
                     className="text-[1.375rem] font-bold text-on-bg font-headline"
                     style={{ letterSpacing: "-0.015em" }}
@@ -219,41 +200,87 @@ export default function PropietarioFichaPage() {
                       ? `${propietario.firstName} ${propietario.lastName}`
                       : propietario.firstName}
                   </h1>
-                  <StatusPill status={propietario.status} />
-                  {propietario.dni && (
-                    <span className="text-[0.72rem] text-text-muted font-mono">
-                      DNI {propietario.dni}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2.5 mt-1">
+                    <Badge
+                      variant={statusVariantMap[propietario.status]?.variant ?? "draft"}
+                      className="normal-case font-medium text-[0.75rem] tracking-normal gap-1.5"
+                    >
+                      <span
+                        className={cn(
+                          "size-1.5 rounded-full bg-current flex-shrink-0",
+                          propietario.status === "activo" && "animate-pulse"
+                        )}
+                      />
+                      {statusVariantMap[propietario.status]?.label ?? propietario.status}
+                    </Badge>
+                    {propietario.dni && (
+                      <span className="text-[0.72rem] text-text-muted font-mono">
+                        DNI {propietario.dni}
+                      </span>
+                    )}
+                  </div>
                 </div>
+              </div>
 
-                <PropietarioCompletitudBar
-                  propietario={propietario}
-                  onChipClick={handleChipClick}
-                />
+              {/* Actions */}
+              <div className="flex items-center gap-2 flex-shrink-0 pt-1">
+                <Button variant="ghost" size="icon" className="size-8">
+                  <MoreHorizontal size={15} />
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Bell size={13} /> Notificar
+                </Button>
               </div>
             </div>
-          </div>
 
-          {/* Tabs */}
-          <div className="bg-surface border-b border-border px-7">
-            <div className="flex gap-0">
-              {tabs.map(({ key, label, count }) => (
+            {/* Compact completitud chip — only on cuenta-corriente */}
+            {(() => {
+              const { pct, missingCount } = computeCompletitud(propietario);
+              return activeTab === "cuenta-corriente" && missingCount > 0 ? (
                 <button
-                  key={key}
-                  onClick={() => setTab(key)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-3 text-[0.8rem] font-semibold border-b-2 transition-all",
-                    activeTab === key
-                      ? "border-primary text-on-surface"
-                      : "border-transparent text-text-secondary hover:text-on-surface"
-                  )}
+                  onClick={() => { setTab("datos"); setPendingFocus(null); }}
+                  className="mb-4 inline-flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] border border-border bg-surface-mid text-left hover:border-primary transition-colors"
                 >
-                  {label}
-                  {count !== undefined && count > 0 && <CountBadge count={count} />}
+                  <div
+                    className="size-9 rounded-full grid place-items-center relative flex-shrink-0"
+                    style={{ background: `conic-gradient(var(--primary) ${pct}%, var(--border) 0)` }}
+                  >
+                    <div className="absolute size-[27px] rounded-full bg-bg" />
+                    <span className="relative z-10 text-[10.5px] font-bold font-mono">{pct}%</span>
+                  </div>
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[10.5px] uppercase tracking-[.06em] text-text-muted">Completitud de ficha</span>
+                    <span className="text-[12.5px] mt-0.5 text-on-surface">
+                      <b className="text-primary font-semibold">{missingCount} pts</b> pendientes
+                    </span>
+                  </div>
+                  <ChevronRight size={13} className="text-text-muted ml-1" />
                 </button>
-              ))}
-            </div>
+              ) : null;
+            })()}
+
+            {/* Tabs */}
+            <Tabs value={activeTab} onValueChange={(v) => setTab(v as Tab)}>
+              <TabsList
+                variant="line"
+                className="w-full justify-start h-auto rounded-none bg-transparent p-0 gap-0"
+              >
+                {tabs.map(({ key, label, count }) => (
+                  <TabsTrigger
+                    key={key}
+                    value={key}
+                    className="px-4 py-3 text-[0.8rem] gap-2 rounded-none flex-none after:bg-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  >
+                    {label}
+                    {count !== undefined && count > 0 && (
+                      <Badge className="font-mono text-[11px] px-[7px] py-[2px] h-auto rounded-[4px] bg-surface-mid border-border normal-case tracking-normal font-normal leading-none">
+                        {count}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </div>
 
           {/* Tab content */}

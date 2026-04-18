@@ -1,17 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
   Search,
   Zap,
-  CheckCircle2,
-  AlertTriangle,
-  Lock,
-  Clock,
   ArrowRight,
 } from "lucide-react";
 import {
@@ -95,14 +91,14 @@ function ServicioChip({
   const diasLabel = diasSinComprobante > 0 ? ` ${diasSinComprobante}d` : "";
 
   const clases: Record<ServicioEstado, string> = {
-    al_dia:    "bg-income-dim text-income",
+    al_dia: "bg-income-dim text-income",
     pendiente: "bg-muted text-muted-foreground",
     en_alerta: "bg-mustard-dim text-mustard",
     bloqueado: "bg-destructive-dim text-destructive",
   };
 
   const dotClases: Record<ServicioEstado, string> = {
-    al_dia:    "bg-current",
+    al_dia: "bg-current",
     pendiente: "bg-current",
     en_alerta: "bg-current",
     bloqueado: "bg-current",
@@ -216,8 +212,8 @@ export function ServiciosControlPanel() {
   // Filtrar por búsqueda en cliente
   const propiedadesFiltradas = busqueda.trim()
     ? propiedades.filter((p) =>
-        p.propertyAddress?.toLowerCase().includes(busqueda.toLowerCase())
-      )
+      p.propertyAddress?.toLowerCase().includes(busqueda.toLowerCase())
+    )
     : propiedades;
 
   const kpis = resumen?.kpis;
@@ -341,15 +337,14 @@ export function ServiciosControlPanel() {
             <button
               key={key}
               onClick={() => { setFiltro(key); setPage(1); }}
-              className={`rounded-full border px-3 py-1 text-[0.68rem] font-semibold transition-colors ${
-                filtro === key
-                  ? key === "en_alerta"
-                    ? "border-mustard/25 bg-mustard-dim text-mustard"
-                    : key === "bloqueado"
+              className={`rounded-full border px-3 py-1 text-[0.68rem] font-semibold transition-colors ${filtro === key
+                ? key === "en_alerta"
+                  ? "border-mustard/25 bg-mustard-dim text-mustard"
+                  : key === "bloqueado"
                     ? "border-destructive/25 bg-destructive-dim text-destructive"
                     : "border-primary/30 bg-primary/10 text-primary"
-                  : "border-border bg-transparent text-text-muted hover:text-text-secondary"
-              }`}
+                : "border-border bg-transparent text-text-muted hover:text-text-secondary"
+                }`}
             >
               {label}
             </button>
@@ -399,13 +394,12 @@ export function ServiciosControlPanel() {
                 <tr
                   key={prop.propertyId}
                   onClick={() => router.push(`/propiedades/${prop.propertyId}`)}
-                  className={`group cursor-pointer transition-colors hover:bg-border/50 ${
-                    prop.peorEstado === "bloqueado"
-                      ? "[&>td:first-child]:border-l-2 [&>td:first-child]:border-l-destructive"
-                      : prop.peorEstado === "en_alerta"
+                  className={`group cursor-pointer transition-colors hover:bg-border/50 ${prop.peorEstado === "bloqueado"
+                    ? "[&>td:first-child]:border-l-2 [&>td:first-child]:border-l-destructive"
+                    : prop.peorEstado === "en_alerta"
                       ? "[&>td:first-child]:border-l-2 [&>td:first-child]:border-l-mustard"
                       : ""
-                  }`}
+                    }`}
                 >
                   <td className="border-b border-border px-3.5 py-3">
                     <div className="font-semibold">{prop.propertyAddress ?? "Sin dirección"}</div>
@@ -453,11 +447,10 @@ export function ServiciosControlPanel() {
                     <div className="flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
                       <button
                         onClick={(e) => { e.stopPropagation(); router.push(`/propiedades/${prop.propertyId}`); }}
-                        className={`rounded-md border px-2.5 py-1 text-[0.67rem] font-semibold transition-colors ${
-                          prop.peorEstado === "bloqueado"
-                            ? "border-destructive/30 text-destructive hover:bg-destructive-dim"
-                            : "border-border text-text-muted hover:text-text-secondary"
-                        }`}
+                        className={`rounded-md border px-2.5 py-1 text-[0.67rem] font-semibold transition-colors ${prop.peorEstado === "bloqueado"
+                          ? "border-destructive/30 text-destructive hover:bg-destructive-dim"
+                          : "border-border text-text-muted hover:text-text-secondary"
+                          }`}
                       >
                         {prop.peorEstado === "bloqueado" ? "Resolver" : prop.peorEstado === "en_alerta" ? "Gestionar" : "Ver detalle"}
                       </button>
@@ -487,11 +480,10 @@ export function ServiciosControlPanel() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`flex h-7 w-7 items-center justify-center rounded-md border text-xs font-semibold transition-colors ${
-                    p === page
-                      ? "border-primary/30 bg-primary/10 text-primary"
-                      : "border-border bg-surface-mid text-text-muted hover:bg-surface-high"
-                  }`}
+                  className={`flex h-7 w-7 items-center justify-center rounded-md border text-xs font-semibold transition-colors ${p === page
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-border bg-surface-mid text-text-muted hover:bg-surface-high"
+                    }`}
                 >
                   {p}
                 </button>

@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Loader2, Plus, X, ChevronLeft, ChevronRight,
-  Banknote, Download, FileText,
+  Banknote, Download, FileText, Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -101,6 +101,7 @@ export function PropietarioTabCuentaCorriente({
   const [fabAction, setFabAction] = useState<FabAction>(null);
   const [saving, setSaving] = useState(false);
   const [periodoFiltro, setPeriodoFiltro] = useState<string>("");
+  const [conciliado, setConciliado] = useState(true);
 
   const [movForm, setMovForm] = useState<MovimientoFormState>({
     descripcion: "",
@@ -287,19 +288,27 @@ export function PropietarioTabCuentaCorriente({
       {data && (
         <div className="grid grid-cols-3 gap-[14px]">
           {/* Card 1: Liquidado acumulado */}
-          <div className="bg-surface border border-border rounded-[10px] p-[16px_18px]">
-            <div className="kpi-label mb-2">Liquidado acumulado · {new Date().getFullYear()}</div>
+          <div className="bg-surface border border-border rounded-[10px] p-[14px_16px] overflow-hidden relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="kpi-label">Liquidado acumulado · {new Date().getFullYear()}</div>
+              <span className="font-mono text-[11px] text-text-muted">YTD</span>
+            </div>
             <div className="flex items-baseline gap-1">
               <span className="text-[16px] font-semibold text-text-secondary tabular-nums">$</span>
-              <span className="text-[28px] font-semibold text-on-surface tabular-nums font-variant-numeric leading-none">
+              <span className="text-[28px] font-semibold text-on-surface tabular-nums leading-none">
                 {new Intl.NumberFormat("es-AR").format(Math.round(data.kpis.liquidadoAcumulado))}
               </span>
             </div>
-            <div className="kpi-sub mt-1.5">Total enviado al propietario</div>
+            <div className="kpi-sub mt-1.5">
+              {data.kpis.liquidadoAcumulado === 0 ? "Todavía no se liquidó al propietario" : "Total enviado al propietario"}
+            </div>
+            <svg className="mt-2.5 block w-full" height="22" viewBox="0 0 220 22" preserveAspectRatio="none">
+              <polyline points="0,18 220,18" fill="none" style={{ stroke: "var(--spark-neutral)" }} strokeWidth="1.5"/>
+            </svg>
           </div>
 
-          {/* Card 2: Próxima liquidación */}
-          <div className="bg-surface border border-border rounded-[10px] p-[16px_18px]" style={{ borderLeft: "3px solid var(--primary)" }}>
+          {/* Card 2: Próxima liquidación — con accent bar y sparkline */}
+          <div className="bg-surface border border-border rounded-[10px] p-[14px_16px] overflow-hidden relative" style={{ borderLeft: "3px solid var(--primary)" }}>
             <div className="flex items-center justify-between mb-2">
               <div className="kpi-label">Próxima liquidación estimada</div>
               <span className="font-mono text-[11px] text-primary">30 abr</span>
@@ -310,15 +319,31 @@ export function PropietarioTabCuentaCorriente({
                 {new Intl.NumberFormat("es-AR").format(Math.round(data.kpis.proximaLiquidacionEstimada))}
               </span>
             </div>
-            <div className="kpi-sub mt-1.5">Ingresos pendientes de liquidar</div>
+            <div className="kpi-sub mt-1.5">
+              {counts.pendientes > 0
+                ? `Incluye ${counts.pendientes} partida${counts.pendientes !== 1 ? "s" : ""} no liquidada${counts.pendientes !== 1 ? "s" : ""}`
+                : "Sin movimientos pendientes"}
+            </div>
+            <svg className="mt-2.5 block w-full" height="22" viewBox="0 0 220 22" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sparkGradA" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" style={{ stopColor: "var(--primary)", stopOpacity: 0.4 }} />
+                  <stop offset="1" style={{ stopColor: "var(--primary)", stopOpacity: 0 }} />
+                </linearGradient>
+              </defs>
+              <polyline points="0,18 20,16 40,14 60,15 80,12 100,10 120,11 140,9 160,7 180,8 200,6 220,4"
+                style={{ fill: "none", stroke: "var(--primary)" }} strokeWidth="1.6"/>
+              <polygon points="0,22 0,18 20,16 40,14 60,15 80,12 100,10 120,11 140,9 160,7 180,8 200,6 220,4 220,22"
+                fill="url(#sparkGradA)"/>
+            </svg>
           </div>
 
           {/* Card 3: Pendiente de confirmar */}
-          <div className="bg-surface border border-border rounded-[10px] p-[16px_18px]">
+          <div className="bg-surface border border-border rounded-[10px] p-[14px_16px] overflow-hidden relative">
             <div className="flex items-center justify-between mb-2">
               <div className="kpi-label">Pendiente de confirmar</div>
               {counts.confirmar > 0 && (
-                <span className="font-mono text-[11px] text-warning">{counts.confirmar} items</span>
+                <span className="font-mono text-[11px] text-warning">{counts.confirmar} item{counts.confirmar !== 1 ? "s" : ""}</span>
               )}
             </div>
             <div className="flex items-baseline gap-1">
@@ -330,7 +355,13 @@ export function PropietarioTabCuentaCorriente({
                 {new Intl.NumberFormat("es-AR").format(Math.round(data.kpis.pendienteConfirmar))}
               </span>
             </div>
-            <div className="kpi-sub mt-1.5">Transferencias sin confirmar</div>
+            <div className="kpi-sub mt-1.5">
+              {counts.confirmar > 0 ? `Movimientos sin conciliar` : "Todo conciliado"}
+            </div>
+            <svg className="mt-2.5 block w-full" height="22" viewBox="0 0 220 22" preserveAspectRatio="none">
+              <polyline points="0,18 20,18 40,17 60,18 80,18 100,16 120,18 140,17 160,18 180,17 200,18 220,18"
+                style={{ fill: "none", stroke: "var(--spark-neutral)" }} strokeWidth="1.5" strokeDasharray="2,3"/>
+            </svg>
           </div>
         </div>
       )}
@@ -343,33 +374,23 @@ export function PropietarioTabCuentaCorriente({
           <span className="text-[0.82rem] font-semibold text-on-surface">Movimientos</span>
 
           {/* Período */}
-          <div className="flex items-center gap-0.5">
-            <button
-              onClick={handlePeriodoPrev}
-              className="w-6 h-6 flex items-center justify-center text-text-muted hover:text-on-surface transition-colors rounded"
-            >
-              <ChevronLeft size={14} />
+          <div className="flex items-center border border-border rounded-[7px] overflow-hidden" style={{ background: "var(--surface-mid)" }}>
+            <button onClick={handlePeriodoPrev} className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-on-surface transition-colors">
+              <ChevronLeft size={12} />
             </button>
             <button
               onClick={() => setPeriodoFiltro("")}
-              className="text-[13px] font-semibold text-text-secondary hover:text-on-surface transition-colors px-2 min-w-[130px] text-center"
+              className="text-[12.5px] text-text-secondary hover:text-on-surface transition-colors px-2.5 border-x border-border min-w-[110px] text-center h-7 tabular-nums"
             >
               {periodoLabel}
             </button>
-            <button
-              onClick={handlePeriodoNext}
-              disabled={!periodoFiltro}
-              className="w-6 h-6 flex items-center justify-center text-text-muted hover:text-on-surface transition-colors disabled:opacity-30 rounded"
-            >
-              <ChevronRight size={14} />
+            <button onClick={handlePeriodoNext} disabled={!periodoFiltro} className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-on-surface transition-colors disabled:opacity-30">
+              <ChevronRight size={12} />
             </button>
           </div>
 
           {/* Segmented filter */}
-          <div
-            className="inline-flex rounded-[7px] p-[2px] border border-border"
-            style={{ background: "var(--surface-mid)" }}
-          >
+          <div className="inline-flex rounded-[7px] p-[2px] border border-border" style={{ background: "var(--surface-mid)" }}>
             {(
               [
                 { key: "todos",      label: "Todos" },
@@ -382,22 +403,53 @@ export function PropietarioTabCuentaCorriente({
                 key={key}
                 onClick={() => setMovFilter(key)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1 text-[0.7rem] font-semibold rounded-[5px] transition-all",
+                  "flex items-center gap-1.5 px-2.5 py-1 text-[0.7rem] font-semibold rounded-[5px] transition-all",
                   movFilter === key
                     ? "bg-surface-high text-on-surface shadow-[0_1px_0_rgba(0,0,0,0.2)]"
                     : "text-text-secondary hover:text-on-surface"
                 )}
               >
                 {label}
-                <span className="font-mono text-[10px] opacity-70">{counts[key]}</span>
+                <span className="font-mono text-[10px] px-[5px] py-px rounded-[3px] leading-none border border-border bg-surface text-text-muted">
+                  {counts[key]}
+                </span>
               </button>
             ))}
           </div>
 
-          {/* CSV button */}
-          <button className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[0.72rem] font-semibold text-text-secondary border border-border rounded-[6px] hover:text-on-surface hover:border-border transition-all bg-surface">
-            <Download size={12} /> CSV
-          </button>
+          {/* Toolbar: Filtros · Conciliado · CSV */}
+          <div className="ml-auto flex items-center gap-2">
+            <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-[0.72rem] font-medium text-text-secondary border border-border rounded-[6px] hover:text-on-surface transition-all bg-surface">
+              <Filter size={11} /> Filtros
+            </button>
+            <button
+              onClick={() => setConciliado((v) => !v)}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 text-[0.72rem] font-medium border rounded-[6px] transition-all",
+                conciliado
+                  ? "border-primary text-primary bg-primary/10"
+                  : "border-border text-text-muted bg-surface hover:text-on-surface"
+              )}
+            >
+              <span
+                className={cn(
+                  "inline-block w-[26px] h-[14px] rounded-full relative transition-all flex-shrink-0",
+                  conciliado ? "bg-primary/30" : "bg-border"
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-[2px] w-[10px] h-[10px] rounded-full transition-all",
+                    conciliado ? "left-[14px] bg-primary" : "left-[2px] bg-text-muted"
+                  )}
+                />
+              </span>
+              Conciliado
+            </button>
+            <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-[0.72rem] font-medium text-text-secondary border border-border rounded-[6px] hover:text-on-surface transition-all bg-surface">
+              <Download size={11} /> CSV
+            </button>
+          </div>
         </div>
 
         {/* Tabla */}
@@ -431,16 +483,19 @@ export function PropietarioTabCuentaCorriente({
                     <React.Fragment key={periodo}>
                       {/* Grupo header */}
                       <tr>
-                        <td colSpan={6} className="px-3.5 py-2 bg-surface-mid">
-                          <span className="text-[11px] font-bold text-text-muted uppercase tracking-[0.06em]">
-                            {periodo !== "sin-periodo" ? formatMonthYear(periodo) : "Sin período"}
+                        <td colSpan={5} className="px-3.5 py-2 bg-surface-mid border-b border-border/50">
+                          <span className="text-[10.5px] font-bold text-text-muted uppercase tracking-[0.07em]">
+                            {periodo !== "sin-periodo"
+                              ? formatMonthYear(periodo).toUpperCase()
+                              : "SIN PERÍODO"}
                           </span>
                         </td>
-                        <td className="px-3.5 py-2 bg-surface-mid text-right">
-                          <span className="text-[12px] font-semibold font-mono" style={{ color: "var(--success)" }}>
+                        <td className="px-3.5 py-2 bg-surface-mid border-b border-border/50 text-right">
+                          <span className="text-[12px] font-semibold font-mono tabular-nums" style={{ color: "var(--success)" }}>
                             +{formatMoney(items.filter((i) => i.tipo === "ingreso").reduce((s, i) => s + Number(i.monto), 0))}
                           </span>
                         </td>
+                        <td className="px-2 py-2 bg-surface-mid border-b border-border/50" />
                       </tr>
 
                       {items.map((m) => (
@@ -487,16 +542,25 @@ export function PropietarioTabCuentaCorriente({
 
                           {/* Origen badge */}
                           <td className="px-3.5 py-[11px] align-middle">
-                            <span
-                              className={cn(
-                                "inline-block font-mono text-[11px] px-[7px] py-[2px] rounded-[4px]",
-                                m.origen === "liquidacion"
-                                  ? "bg-warning-dim text-warning"
-                                  : "bg-neutral-dim text-neutral"
-                              )}
-                            >
-                              {m.origen === "liquidacion" ? "Liquidación" : m.origen === "manual" ? "Manual" : "Contrato"}
-                            </span>
+                            {m.origen === "manual" ? (
+                              <span className="inline-flex items-center font-semibold text-[10.5px] uppercase tracking-[.05em] px-[7px] py-[2px] rounded-[4px] border"
+                                style={{
+                                  color: "var(--warning)",
+                                  borderColor: "color-mix(in srgb, var(--warning) 25%, transparent)",
+                                  background: "var(--warning-dim)",
+                                }}>
+                                Manual
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center font-semibold text-[10.5px] uppercase tracking-[.05em] px-[7px] py-[2px] rounded-[4px] border"
+                                style={{
+                                  color: "var(--origin-auto)",
+                                  borderColor: "color-mix(in srgb, var(--origin-auto) 25%, transparent)",
+                                  background: "var(--origin-auto-dim)",
+                                }}>
+                                Automático
+                              </span>
+                            )}
                           </td>
 
                           {/* Monto */}
