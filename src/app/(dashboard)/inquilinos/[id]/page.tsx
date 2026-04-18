@@ -209,7 +209,7 @@ export default function TenantDetailPage() {
                       Contrato vigente
                     </Badge>
                   )}
-                  {data?.contrato?.adjustmentIndex && data.contrato.adjustmentIndex !== "sin_ajuste" && (
+                  {data?.contrato?.adjustmentIndex && data.contrato.adjustmentIndex !== "none" && (
                     <Badge variant="secondary">
                       Índice {data.contrato.adjustmentIndex}
                     </Badge>

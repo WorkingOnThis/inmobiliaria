@@ -27,7 +27,7 @@ const createContractSchema = z.object({
   agencyCommission: z.coerce.number().min(0).max(100).optional().nullable(),
   paymentDay: z.coerce.number().int().min(1).max(28),
   paymentModality: z.enum(["A", "B"]).default("A"),
-  adjustmentIndex: z.string().min(1).default("sin_ajuste"),
+  adjustmentIndex: z.string().min(1).default("none"),
   adjustmentFrequency: z.coerce.number().int().min(1).max(12).default(12),
 });
 
@@ -269,7 +269,7 @@ export async function POST(request: NextRequest) {
         data.tenantIds.map((clientId, index) => ({
           contractId,
           clientId,
-          role: index === 0 ? "principal" : "cotitular",
+          role: index === 0 ? "primary" : "co-tenant",
         }))
       );
 

@@ -77,7 +77,7 @@ export function ContractForm() {
     agencyCommission: "",
     paymentDay: "1",
     paymentModality: "A",
-    adjustmentIndex: "sin_ajuste",
+    adjustmentIndex: "none",
     adjustmentFrequency: "12",
   });
 

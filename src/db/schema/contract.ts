@@ -9,9 +9,9 @@ import { property } from "./property";
  * Vincula una propiedad con uno o más inquilinos y un propietario.
  * Los inquilinos se vinculan a través de la tabla intermedia contract_tenant.
  * status: "draft" | "pending_signature" | "active" | "expiring_soon" | "expired" | "terminated"
- * contractType: "vivienda" | "oficina" | "local" | "otro"
+ * contractType: "residential" | "office" | "commercial" | "other"
  * paymentModality: "A" (inmobiliaria recibe y liquida) | "B" (pago directo al propietario)
- * adjustmentIndex: "ICL" | "IPC" | "CER" | "UVA" | "manual" | "sin_ajuste"
+ * adjustmentIndex: "ICL" | "IPC" | "CER" | "UVA" | "manual" | "none"
  */
 export const contract = pgTable("contract", {
   id: text("id").primaryKey(),
@@ -36,7 +36,7 @@ export const contract = pgTable("contract", {
 
   paymentDay: integer("paymentDay").notNull(),
   paymentModality: text("paymentModality").notNull().default("A"),
-  adjustmentIndex: text("adjustmentIndex").notNull().default("sin_ajuste"),
+  adjustmentIndex: text("adjustmentIndex").notNull().default("none"),
   adjustmentFrequency: integer("adjustmentFrequency").notNull().default(12), // meses entre actualizaciones
 
   createdBy: text("createdBy")

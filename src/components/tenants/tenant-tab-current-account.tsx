@@ -267,7 +267,7 @@ export function TenantTabCurrentAccount({
         </Card>
       </div>
 
-      {contrato && contrato.adjustmentIndex !== "sin_ajuste" && (
+      {contrato && contrato.adjustmentIndex !== "none" && (
         <div className="bg-surface border border-blue/20 border-l-[3px] border-l-blue rounded-[10px] px-5 py-4">
           <div className="text-[0.82rem] font-semibold text-blue flex items-center gap-2 mb-3">
             📈 Actualización por índice

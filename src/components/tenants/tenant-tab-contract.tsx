@@ -48,10 +48,10 @@ const modalidadLabel: Record<string, string> = {
 };
 
 const tipoLabel: Record<string, string> = {
-  vivienda: "Vivienda",
-  oficina: "Oficina",
-  local: "Local comercial",
-  otro: "Otro",
+  residential: "Vivienda",
+  office: "Oficina",
+  commercial: "Local comercial",
+  other: "Otro",
 };
 
 const statusLabel: Record<string, { label: string; variant: StatusBadgeVariant }> = {
@@ -135,7 +135,7 @@ export function TenantTabContract({ contrato }: Props) {
           <div>
             <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Índice de actualización</div>
             <div className="text-[0.85rem] font-medium text-on-bg">
-              {contrato.adjustmentIndex === "sin_ajuste"
+              {contrato.adjustmentIndex === "none"
                 ? "Sin ajuste"
                 : `${contrato.adjustmentIndex} (cada ${contrato.adjustmentFrequency} meses)`}
             </div>

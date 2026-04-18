@@ -34,15 +34,15 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   terminated: "Rescindido",
 };
 
-export const CONTRACT_TYPES = ["vivienda", "oficina", "local", "otro"] as const;
+export const CONTRACT_TYPES = ["residential", "office", "commercial", "other"] as const;
 
 export type ContractType = (typeof CONTRACT_TYPES)[number];
 
 export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
-  vivienda: "Vivienda",
-  oficina: "Oficina",
-  local: "Local comercial",
-  otro: "Otro",
+  residential: "Vivienda",
+  office: "Oficina",
+  commercial: "Local comercial",
+  other: "Otro",
 };
 
 export const ADJUSTMENT_INDEXES = [
@@ -51,7 +51,7 @@ export const ADJUSTMENT_INDEXES = [
   "CER",
   "UVA",
   "manual",
-  "sin_ajuste",
+  "none",
 ] as const;
 
 export type AdjustmentIndex = (typeof ADJUSTMENT_INDEXES)[number];
@@ -62,7 +62,7 @@ export const ADJUSTMENT_INDEX_LABELS: Record<AdjustmentIndex, string> = {
   CER: "CER — Coeficiente de Estabilización de Referencia",
   UVA: "UVA — Unidad de Valor Adquisitivo",
   manual: "Ajuste manual",
-  sin_ajuste: "Sin ajuste",
+  none: "Sin ajuste",
 };
 
 export const ADJUSTMENT_FREQUENCIES = [1, 2, 3, 4, 6, 12] as const;

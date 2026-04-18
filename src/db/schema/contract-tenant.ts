@@ -8,9 +8,9 @@ import { client } from "./client";
  * Un contrato puede tener múltiples inquilinos (cotitulares).
  * Un inquilino puede estar en múltiples contratos.
  *
- * role: "principal" | "cotitular"
- *   - principal: el inquilino firmante principal
- *   - cotitular: inquilino adicional en el contrato
+ * role: "primary" | "co-tenant"
+ *   - primary: el inquilino firmante principal
+ *   - co-tenant: inquilino adicional en el contrato
  */
 export const contractTenant = pgTable(
   "contract_tenant",
@@ -21,7 +21,7 @@ export const contractTenant = pgTable(
     clientId: text("clientId")
       .notNull()
       .references(() => client.id, { onDelete: "restrict" }),
-    role: text("role").notNull().default("principal"),
+    role: text("role").notNull().default("primary"),
   },
   (table) => [primaryKey({ columns: [table.contractId, table.clientId] })]
 );

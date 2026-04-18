@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       .from(contract)
       .innerJoin(
         contractTenant,
-        and(eq(contractTenant.contractId, contract.id), eq(contractTenant.role, "principal"))
+        and(eq(contractTenant.contractId, contract.id), eq(contractTenant.role, "primary"))
       )
       .innerJoin(client, eq(client.id, contractTenant.clientId))
       .where(

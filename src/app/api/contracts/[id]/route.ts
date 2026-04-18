@@ -253,7 +253,7 @@ export async function PATCH(
           data.tenantIds!.map((clientId, index) => ({
             contractId: id,
             clientId,
-            role: index === 0 ? "principal" : "cotitular",
+            role: index === 0 ? "primary" : "co-tenant",
           }))
         );
       });
