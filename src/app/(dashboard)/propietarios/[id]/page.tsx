@@ -162,10 +162,10 @@ export default function OwnerDetailPage() {
     <>
       {isLoading ? (
         <div className="flex h-screen items-center justify-center">
-          <Loader2 className="size-8 animate-spin text-text-muted" />
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </div>
       ) : error || !owner ? (
-        <div className="flex h-screen flex-col items-center justify-center gap-4 text-text-muted">
+        <div className="flex h-screen flex-col items-center justify-center gap-4 text-muted-foreground">
           <div className="text-sm">{(error as Error)?.message ?? "Propietario no encontrado"}</div>
           <Link
             href="/propietarios"
@@ -215,7 +215,7 @@ export default function OwnerDetailPage() {
                       {statusVariantMap[owner.status]?.label ?? owner.status}
                     </Badge>
                     {owner.dni && (
-                      <span className="text-[0.72rem] text-text-muted font-mono">
+                      <span className="text-[0.72rem] text-muted-foreground font-mono">
                         DNI {owner.dni}
                       </span>
                     )}
@@ -250,12 +250,12 @@ export default function OwnerDetailPage() {
                     <span className="relative z-10 text-[10.5px] font-bold font-mono">{pct}%</span>
                   </div>
                   <div className="flex flex-col leading-tight">
-                    <span className="text-[10.5px] uppercase tracking-[.06em] text-text-muted">Completitud de ficha</span>
+                    <span className="text-[10.5px] uppercase tracking-[.06em] text-muted-foreground">Completitud de ficha</span>
                     <span className="text-[12.5px] mt-0.5 text-on-surface">
                       <b className="text-primary font-semibold">{missingCount} pts</b> pendientes
                     </span>
                   </div>
-                  <ChevronRight size={13} className="text-text-muted ml-1" />
+                  <ChevronRight size={13} className="text-muted-foreground ml-1" />
                 </button>
               ) : null;
             })()}
@@ -315,7 +315,7 @@ export default function OwnerDetailPage() {
               />
             )}
             {activeTab === "historial" && (
-              <div className="flex items-center justify-center h-40 text-text-muted text-sm">
+              <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
                 Historial próximamente
               </div>
             )}

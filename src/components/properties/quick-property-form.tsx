@@ -162,7 +162,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
         {!inline && (
           <div className="p-6 pb-0">
             <h2 className="text-xl font-semibold text-on-surface">Nueva propiedad</h2>
-            <p className="text-sm text-text-muted mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Los campos con <span className="text-primary">*</span> son obligatorios. El resto se completa en la ficha.
             </p>
           </div>
@@ -172,7 +172,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
 
           {/* Dirección */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="address" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+            <Label htmlFor="address" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Dirección <span className="text-primary">*</span>
             </Label>
             <Input
@@ -180,14 +180,14 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Ej: Godoy Cruz 2814, 3B"
-              className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted"
+              className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Tipo */}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="type" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              <Label htmlFor="type" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                 Tipo <span className="text-primary">*</span>
               </Label>
               <Select value={type} onValueChange={(v: PropertyType) => setType(v)}>
@@ -208,7 +208,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
 
             {/* Barrio / Zona */}
             <div className="flex flex-col gap-2">
-              <Label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                 Barrio / Zona
               </Label>
               <ZoneCombobox
@@ -221,7 +221,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
 
           {/* Piso / Unidad — ocupa todo el ancho (superficie eliminada del alta rápida) */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="floorUnit" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+            <Label htmlFor="floorUnit" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Piso / Unidad
             </Label>
             <Input
@@ -229,13 +229,13 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
               value={floorUnit}
               onChange={(e) => setFloorUnit(e.target.value)}
               placeholder="Ej: 3° B"
-              className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted"
+              className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground"
             />
           </div>
 
           {/* Propietario */}
           <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
-            <Label htmlFor="owner" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+            <Label htmlFor="owner" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Propietario <span className="text-primary">*</span>
             </Label>
             <div className="relative">
@@ -247,9 +247,9 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
                   if (selectedOwner) handleClearOwner();
                 }}
                 placeholder="Buscar por nombre o DNI..."
-                className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted pr-10"
+                className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground pr-10"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 {isSearchingOwners ? (
                   <Loader2 size={17} className="animate-spin" />
                 ) : selectedOwner ? (
@@ -275,7 +275,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
                       <span className="text-[13px] font-medium">
                         {o.firstName} {o.lastName}
                       </span>
-                      <span className="text-[11px] text-text-muted">
+                      <span className="text-[11px] text-muted-foreground">
                         {o.dni ? `DNI ${o.dni}` : o.email || o.whatsapp || "Sin más datos"}
                       </span>
                     </button>
@@ -313,7 +313,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
               type="button"
               variant="ghost"
               onClick={onCancel}
-              className="text-text-muted hover:text-on-surface hover:bg-white/5 rounded-xl px-6 h-12"
+              className="text-muted-foreground hover:text-on-surface hover:bg-white/5 rounded-xl px-6 h-12"
             >
               Cancelar
             </Button>

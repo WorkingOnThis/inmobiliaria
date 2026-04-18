@@ -92,7 +92,7 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="size-8 text-text-muted hover:text-on-surface"
+            className="size-8 text-muted-foreground hover:text-on-surface"
           >
             <X size={18} />
           </Button>
@@ -100,14 +100,14 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
-          <p className="text-[11px] text-text-muted -mt-1">
+          <p className="text-[11px] text-muted-foreground -mt-1">
             Los campos con <span className="text-primary">*</span> son obligatorios.
             El resto se completa en la ficha del propietario.
           </p>
 
           {/* Nombre */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Nombre <span className="text-primary">*</span>
             </Label>
             <Input
@@ -115,33 +115,33 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Ej: Roberto Suárez"
-              className="bg-surface-mid border-none text-on-surface h-11 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted"
+              className="bg-surface-mid border-none text-on-surface h-11 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground"
             />
           </div>
 
           {/* DNI */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               DNI
             </Label>
             <Input
               value={dni}
               onChange={(e) => setDni(e.target.value)}
               placeholder="Ej: 28.456.789"
-              className="bg-surface-mid border-none text-on-surface h-11 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted"
+              className="bg-surface-mid border-none text-on-surface h-11 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground"
             />
           </div>
 
           {/* WhatsApp */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               WhatsApp / Celular
             </Label>
             <Input
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
               placeholder="Ej: 351 456 7890"
-              className="bg-surface-mid border-none text-on-surface h-11 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted"
+              className="bg-surface-mid border-none text-on-surface h-11 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground"
             />
           </div>
 

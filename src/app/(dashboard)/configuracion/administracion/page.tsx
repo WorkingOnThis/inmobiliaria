@@ -103,9 +103,9 @@ function nanoid() {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 const inputCls =
-  "w-full bg-bg border border-border rounded-[7px] text-on-surface text-[13px] px-[11px] py-[9px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-text-muted font-[inherit]";
+  "w-full bg-bg border border-border rounded-[7px] text-on-surface text-[13px] px-[11px] py-[9px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground font-[inherit]";
 const labelCls =
-  "text-[11px] text-text-muted uppercase tracking-[.05em] flex items-center gap-1.5";
+  "text-[11px] text-muted-foreground uppercase tracking-[.05em] flex items-center gap-1.5";
 
 function Field({
   label, req, hint, children, span2,
@@ -117,7 +117,7 @@ function Field({
       <label className={labelCls}>
         {label}
         {req && <span className="text-primary">*</span>}
-        {hint && <span className="text-text-muted normal-case tracking-normal text-[11px]">{hint}</span>}
+        {hint && <span className="text-muted-foreground normal-case tracking-normal text-[11px]">{hint}</span>}
       </label>
       {children}
     </div>
@@ -139,7 +139,7 @@ function SectionCard({
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-[14px] font-semibold text-on-surface m-0">{title}</h3>
-          <div className="text-[12px] text-text-muted mt-0.5">{desc}</div>
+          <div className="text-[12px] text-muted-foreground mt-0.5">{desc}</div>
         </div>
         {state && (
           <span className={cn(
@@ -162,7 +162,7 @@ function PrefToggle({ label, desc, value, onChange }: { label: string; desc: str
     <div className="flex items-center gap-3 py-2.5 border-b border-border/40 last:border-0">
       <div className="flex-1">
         <div className="text-[13px] font-medium text-on-surface">{label}</div>
-        <div className="text-[12px] text-text-muted mt-[2px]">{desc}</div>
+        <div className="text-[12px] text-muted-foreground mt-[2px]">{desc}</div>
       </div>
       <button
         type="button"
@@ -197,7 +197,7 @@ function SortableClause({ clausula, onChange, onDelete }: {
     >
       <button
         type="button"
-        className="text-text-muted cursor-grab pt-[3px] flex-shrink-0 touch-none"
+        className="text-muted-foreground cursor-grab pt-[3px] flex-shrink-0 touch-none"
         {...attributes}
         {...listeners}
       >
@@ -212,7 +212,7 @@ function SortableClause({ clausula, onChange, onDelete }: {
       <button
         type="button"
         onClick={onDelete}
-        className="text-text-muted hover:text-error transition-colors flex-shrink-0 pt-[2px]"
+        className="text-muted-foreground hover:text-error transition-colors flex-shrink-0 pt-[2px]"
       >
         <X size={13} />
       </button>
@@ -253,14 +253,14 @@ function LogoUpload({ value, onChange }: { value: string | null | undefined; onC
         {value ? (
           <img src={value} alt="Logo" className="w-full h-full object-contain p-1" />
         ) : (
-          <div className="text-center text-[11px] text-text-muted leading-tight px-2">
+          <div className="text-center text-[11px] text-muted-foreground leading-tight px-2">
             <Upload size={16} className="mx-auto mb-1" />
             Logo
           </div>
         )}
       </div>
       <div className="flex-1">
-        <div className="text-[12px] text-text-muted mb-2">
+        <div className="text-[12px] text-muted-foreground mb-2">
           PNG, SVG o JPG transparente · recomendado 512×512 px · máx. 2 MB
         </div>
         <div className="flex items-center gap-2">
@@ -269,7 +269,7 @@ function LogoUpload({ value, onChange }: { value: string | null | undefined; onC
             <Upload size={13} /> Subir logo
           </Button>
           {value && (
-            <Button variant="ghost" size="sm" onClick={() => onChange(null)} className="text-text-muted">
+            <Button variant="ghost" size="sm" onClick={() => onChange(null)} className="text-muted-foreground">
               Quitar
             </Button>
           )}
@@ -584,7 +584,7 @@ export default function AdministracionPage() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-text-muted" />
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -593,10 +593,10 @@ export default function AdministracionPage() {
     <div className="flex flex-col min-h-full">
       {/* Topbar */}
       <div className="h-12 bg-surface border-b border-border flex items-center px-6 gap-2 flex-shrink-0 sticky top-0 z-10">
-        <div className="flex items-center gap-2 text-[13px] text-text-muted">
+        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
           <Settings size={14} />
           <span>Configuración</span>
-          <span className="text-text-muted/50">/</span>
+          <span className="text-muted-foreground/50">/</span>
           <span className="text-on-surface font-medium">Datos de la Administración</span>
         </div>
         <div className="ml-auto">
@@ -614,7 +614,7 @@ export default function AdministracionPage() {
           <div className="flex items-start gap-4 mb-6">
             <div className="flex-1">
               <h1 className="text-[22px] font-bold text-on-bg tracking-tight m-0">Datos de la Administración</h1>
-              <p className="text-[13px] text-text-muted mt-1">
+              <p className="text-[13px] text-muted-foreground mt-1">
                 Información fija que aparece en recibos, liquidaciones y comprobantes que emitís a propietarios e inquilinos.
               </p>
             </div>
@@ -788,7 +788,7 @@ export default function AdministracionPage() {
                 <button
                   type="button"
                   onClick={addClausula}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-[7px] rounded-[6px] border border-dashed border-border text-text-muted hover:text-on-surface hover:border-border/80 hover:bg-surface text-[12.5px] transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-[7px] rounded-[6px] border border-dashed border-border text-muted-foreground hover:text-on-surface hover:border-border/80 hover:bg-surface text-[12.5px] transition-colors"
                 >
                   <Plus size={12} /> Agregar cláusula
                 </button>
@@ -834,7 +834,7 @@ export default function AdministracionPage() {
             {/* RIGHT: live preview */}
             <div className="sticky top-[70px]">
               <div className="bg-surface-mid border border-border rounded-[10px] p-3.5">
-                <div className="flex items-center gap-2 text-[11px] text-text-muted uppercase tracking-[.06em] mb-3">
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground uppercase tracking-[.06em] mb-3">
                   <span className="size-1.5 rounded-full bg-success animate-pulse" />
                   Vista previa en vivo
                 </div>
@@ -847,7 +847,7 @@ export default function AdministracionPage() {
 
       {/* Save bar (sticky at bottom) */}
       <div className="sticky bottom-0 z-10 bg-surface/92 backdrop-blur-[8px] border-t border-border px-6 py-3 flex items-center gap-3">
-        <div className={cn("flex items-center gap-2 text-[12.5px]", isDirty ? "text-warning" : "text-text-muted")}>
+        <div className={cn("flex items-center gap-2 text-[12.5px]", isDirty ? "text-warning" : "text-muted-foreground")}>
           <span className={cn("size-1.5 rounded-full", isDirty ? "bg-warning" : "bg-success")} />
           {isDirty ? "Cambios sin guardar" : "Guardado"}
         </div>

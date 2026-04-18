@@ -72,11 +72,11 @@ function DataField({
   return (
     <div id={`field-${id}`} className="flex flex-col gap-1">
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
           {label}
         </span>
         {hint && (
-          <span className="text-[10px] text-text-muted italic normal-case tracking-normal">
+          <span className="text-[10px] text-muted-foreground italic normal-case tracking-normal">
             — {hint}
           </span>
         )}
@@ -88,7 +88,7 @@ function DataField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder || "Sin cargar"}
           className={cn(
-            "w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all placeholder:text-text-muted",
+            "w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all placeholder:text-muted-foreground",
             mono && "font-mono text-[12.5px]"
           )}
         />
@@ -102,7 +102,7 @@ function DataField({
           Sin cargar — necesario para liquidar
         </div>
       ) : (
-        <div className="text-[12px] text-text-muted italic">Sin cargar</div>
+        <div className="text-[12px] text-muted-foreground italic">Sin cargar</div>
       )}
     </div>
   );
@@ -128,11 +128,11 @@ function TextareaField({
   return (
     <div id={`field-${id}`} className="flex flex-col gap-1">
       <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
           {label}
         </span>
         {hint && (
-          <span className="text-[10px] text-text-muted italic normal-case tracking-normal">
+          <span className="text-[10px] text-muted-foreground italic normal-case tracking-normal">
             — {hint}
           </span>
         )}
@@ -143,12 +143,12 @@ function TextareaField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder || "Sin cargar"}
           rows={3}
-          className="w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all placeholder:text-text-muted resize-none"
+          className="w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all placeholder:text-muted-foreground resize-none"
         />
       ) : value ? (
         <div className="text-[13.5px] text-on-surface whitespace-pre-wrap">{value}</div>
       ) : (
-        <div className="text-[12px] text-text-muted italic">Sin cargar</div>
+        <div className="text-[12px] text-muted-foreground italic">Sin cargar</div>
       )}
     </div>
   );
@@ -165,7 +165,7 @@ function SectionCard({
   return (
     <div className="bg-surface border border-border rounded-[10px] overflow-hidden">
       <div className="px-4 py-3 border-b border-border bg-surface-mid">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
           {title}
         </span>
       </div>
@@ -363,7 +363,7 @@ export function OwnerTabData({
             </div>
             {/* Condición fiscal */}
             <div className="flex flex-col gap-1" id="field-condicionFiscal">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 Condición fiscal
               </div>
               {editing ? (
@@ -379,7 +379,7 @@ export function OwnerTabData({
                   <option value="consumidor_final">Consumidor final</option>
                 </select>
               ) : (
-                <div className={cn("text-[13.5px]", !form.condicionFiscal ? "text-text-muted italic text-[12px]" : "text-on-surface")}>
+                <div className={cn("text-[13.5px]", !form.condicionFiscal ? "text-muted-foreground italic text-[12px]" : "text-on-surface")}>
                   {form.condicionFiscal === "responsable_inscripto" ? "Responsable inscripto"
                     : form.condicionFiscal === "monotributista" ? "Monotributista"
                     : form.condicionFiscal === "exento" ? "Exento"
@@ -407,7 +407,7 @@ export function OwnerTabData({
             <DataField id="bank" label="Banco" value={form.bank} editing={editing} onChange={setField("bank")} placeholder="Banco Nación" />
             {/* Tipo de cuenta */}
             <div className="flex flex-col gap-1" id="field-accountType">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 Tipo de cuenta
               </div>
               {editing ? (
@@ -421,7 +421,7 @@ export function OwnerTabData({
                   <option value="cuenta_corriente">Cuenta corriente</option>
                 </select>
               ) : (
-                <div className={cn("text-[13.5px]", !form.accountType ? "text-text-muted italic text-[12px]" : "text-on-surface")}>
+                <div className={cn("text-[13.5px]", !form.accountType ? "text-muted-foreground italic text-[12px]" : "text-on-surface")}>
                   {form.accountType === "caja_ahorro"
                     ? "Caja de ahorro"
                     : form.accountType === "cuenta_corriente"
@@ -491,7 +491,7 @@ export function OwnerTabData({
                 {owner.status === "activo" ? "Activo" : owner.status === "suspendido" ? "Suspendido" : "Dado de baja"}
               </span>
             </div>
-            <div className="text-[12px] text-text-muted">
+            <div className="text-[12px] text-muted-foreground">
               {owner.status === "activo"
                 ? "El owner está activo y puede recibir liquidaciones."
                 : owner.status === "suspendido"
@@ -558,13 +558,13 @@ export function OwnerTabData({
                   <button onClick={() => setConfirmStatus("suspendido")} className="btn btn-danger btn-sm">
                     Suspender temporalmente
                   </button>
-                  <div className="text-[11px] text-text-muted mt-1.5">Pausa las liquidaciones, se puede revertir</div>
+                  <div className="text-[11px] text-muted-foreground mt-1.5">Pausa las liquidaciones, se puede revertir</div>
                 </div>
                 <div>
                   <button onClick={() => setConfirmStatus("baja")} className="btn btn-danger btn-sm">
                     Dar de baja
                   </button>
-                  <div className="text-[11px] text-text-muted mt-1.5">Cierra la relación comercial</div>
+                  <div className="text-[11px] text-muted-foreground mt-1.5">Cierra la relación comercial</div>
                 </div>
               </div>
             )}

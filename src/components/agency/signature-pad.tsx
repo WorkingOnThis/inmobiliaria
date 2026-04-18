@@ -141,7 +141,7 @@ export function SignaturePad({ value, onChange }: SignaturePadProps) {
         <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} className="gap-1.5">
           <Upload size={13} /> Subir firma
         </Button>
-        <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1.5 ml-auto text-text-muted">
+        <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1.5 ml-auto text-muted-foreground">
           <Trash2 size={13} /> Limpiar
         </Button>
       </div>

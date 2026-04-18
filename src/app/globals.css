@@ -23,7 +23,7 @@
   --color-on-bg:                 var(--on-bg);
   --color-on-surface:            var(--on-surface);
   --color-text-secondary:        var(--text-secondary);
-  --color-text-muted:            var(--text-muted);
+  --color-text-muted:            var(--muted-foreground);
   /* --- Tokens Arce: primario extendido --- */
   --color-primary-dark:          var(--primary-dark);
   --color-primary-dim:           var(--primary-dim);
@@ -258,11 +258,11 @@
 
   /* --- Sidebar (modo oscuro) --- */
   --sidebar:                    oklch(0.165 0.006 40);
-  --sidebar-foreground:         oklch(0.972 0.004 60);
+  --sidebar-foreground:         oklch(0.72 0.012 50);
   --sidebar-primary:            oklch(0.585 0.135 32);
   --sidebar-primary-foreground: oklch(0.97 0.02 34);
-  --sidebar-accent:             oklch(0.585 0.135 32 / 0.12);
-  --sidebar-accent-foreground:  oklch(0.585 0.135 32);
+  --sidebar-accent:             oklch(0.28 0.005 40);
+  --sidebar-accent-foreground:  oklch(0.972 0.004 60);
   --sidebar-border:             oklch(0.285 0.010 40);
   --sidebar-ring:               #ffb4a2;
 
@@ -277,7 +277,7 @@
   --on-bg:                  oklch(0.972 0.004 60);
   --on-surface:             oklch(0.972 0.004 60);
   --text-secondary:         oklch(0.72 0.012 50);
-  --text-muted:             oklch(0.54 0.012 40);
+  --text-muted:             oklch(0.72 0.012 50);
   --text-dim:               oklch(0.54 0.012 40 / 0.6);
 
   /* --- Tokens Arce: primario extendido --- */
@@ -337,7 +337,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     line-height: 1.6;
   }
   h1, h2, h3, h4, h5, h6 {
@@ -489,7 +489,7 @@
   }
 
   .field-value.empty {
-    color: var(--text-muted);
+    color: var(--muted-foreground);
     font-style: italic;
   }
   /* Usado junto a .field-value.empty para reemplazar el contenido con texto genérico */
@@ -550,12 +550,12 @@
   }
   .page-subtitle {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: var(--muted-foreground);
     margin-top: 3px;
   }
   .page-meta {
     font-size: 0.72rem;
-    color: var(--text-muted);
+    color: var(--muted-foreground);
     text-align: right;
     line-height: 1.6;
   }
@@ -587,14 +587,14 @@
   .kpi-card.mustard::before { background: var(--mustard); }
   .kpi-card.error::before   { background: var(--error); }
   .kpi-card.primary::before { background: var(--primary); }
-  .kpi-card.neutral::before { background: var(--text-muted); }
+  .kpi-card.neutral::before { background: var(--muted-foreground); }
 
   .kpi-label {
     font-size: 0.68rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: var(--text-muted);
+    color: var(--muted-foreground);
   }
   .kpi-value {
     font-family: var(--font-headline);
@@ -620,7 +620,7 @@
   }
   .kpi-trend.up      { color: var(--success); }
   .kpi-trend.down    { color: var(--error); }
-  .kpi-trend.neutral { color: var(--text-muted); }
+  .kpi-trend.neutral { color: var(--muted-foreground); }
 
   /* ── DASHBOARD — Two-column layout ── */
   .dashboard-cols {
@@ -657,7 +657,7 @@
   }
   .panel-subtitle {
     font-size: 0.7rem;
-    color: var(--text-muted);
+    color: var(--muted-foreground);
     margin-top: 1px;
   }
   .panel-actions {
@@ -689,7 +689,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: var(--text-muted);
+    color: var(--muted-foreground);
     text-align: left;
     background: var(--surface-mid);
     white-space: nowrap;
@@ -718,10 +718,10 @@
   .status-dot.green  { background: var(--success); }
   .status-dot.yellow { background: var(--warning); }
   .status-dot.red    { background: var(--error); }
-  .status-dot.gray   { background: var(--text-muted); }
+  .status-dot.gray   { background: var(--muted-foreground); }
 
   .prop-name    { font-weight: 600; color: var(--on-surface); font-size: 0.82rem; }
-  .prop-address { font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
+  .prop-address { font-size: 0.7rem; color: var(--muted-foreground); margin-top: 1px; }
 
   /* Alert tags en tabla */
   .alert-tag {
@@ -787,14 +787,14 @@
   }
   .tarea-propiedad {
     font-size: 0.68rem;
-    color: var(--text-muted);
+    color: var(--muted-foreground);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .tarea-fecha {
     font-size: 0.65rem;
-    color: var(--text-muted);
+    color: var(--muted-foreground);
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -851,12 +851,12 @@
   }
   .mora-prop {
     font-size: 0.68rem;
-    color: var(--text-muted);
+    color: var(--muted-foreground);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .mora-right  { text-align: right; flex-shrink: 0; }
   .mora-monto  { font-size: 0.82rem; font-weight: 700; color: var(--error); }
-  .mora-dias   { font-size: 0.65rem; color: var(--text-muted); margin-top: 1px; }
+  .mora-dias   { font-size: 0.65rem; color: var(--muted-foreground); margin-top: 1px; }
 }

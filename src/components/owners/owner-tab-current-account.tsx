@@ -116,9 +116,9 @@ function formatMonthYear(periodo: string) {
 }
 
 const inputCls =
-  "w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[0.82rem] px-3 py-2 outline-none focus:border-primary transition-all placeholder:text-text-muted";
+  "w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[0.82rem] px-3 py-2 outline-none focus:border-primary transition-all placeholder:text-muted-foreground";
 const labelCls =
-  "text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5 block";
+  "text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-0.5 block";
 
 // ── MovementRow — individual row component ────────────────────────────────────
 //
@@ -251,11 +251,11 @@ function MovementRow({
               className="transition-opacity disabled:opacity-40 flex items-center justify-center mx-auto"
             >
               {toggling ? (
-                <Loader2 size={15} className="animate-spin text-text-muted" />
+                <Loader2 size={15} className="animate-spin text-muted-foreground" />
               ) : movimiento.conciliado ? (
                 <CheckCircle2 size={15} className="text-success" />
               ) : (
-                <Circle size={15} className="text-border hover:text-text-muted transition-colors" />
+                <Circle size={15} className="text-border hover:text-muted-foreground transition-colors" />
               )}
             </button>
           </TooltipTrigger>
@@ -269,7 +269,7 @@ function MovementRow({
       <td className="px-3.5 py-[11px] align-middle">
         <div className="text-[13.5px] font-medium text-on-surface">{movimiento.descripcion}</div>
         {movimiento.categoria && movimiento.categoria !== "pendiente_confirmacion" && (
-          <div className="text-[12px] text-text-muted italic mt-0.5">{movimiento.categoria}</div>
+          <div className="text-[12px] text-muted-foreground italic mt-0.5">{movimiento.categoria}</div>
         )}
         {movimiento.categoria === "pendiente_confirmacion" && (
           <div className="text-[12px] mt-0.5" style={{ color: "var(--warning)" }}>
@@ -279,7 +279,7 @@ function MovementRow({
       </td>
 
       {/* ── Celda 3: propiedad ── */}
-      <td className="px-3.5 py-[11px] align-middle text-[12px] text-text-muted">
+      <td className="px-3.5 py-[11px] align-middle text-[12px] text-muted-foreground">
         {movimiento.propiedadAddress
           ? movimiento.propiedadAddress.length > 22
             ? movimiento.propiedadAddress.slice(0, 22) + "…"
@@ -365,7 +365,7 @@ function MovementRow({
               <button
                 onClick={handleAbrirFilePicker}
                 disabled={uploadingFile}
-                className="flex items-center justify-center mx-auto text-border hover:text-text-muted transition-colors disabled:opacity-40 opacity-0 group-hover:opacity-100"
+                className="flex items-center justify-center mx-auto text-border hover:text-muted-foreground transition-colors disabled:opacity-40 opacity-0 group-hover:opacity-100"
               >
                 {uploadingFile
                   ? <Loader2 size={13} className="animate-spin" />
@@ -649,7 +649,7 @@ export function OwnerTabCurrentAccount({
           <div className="bg-surface border border-border rounded-[10px] p-[14px_16px] overflow-hidden relative">
             <div className="flex items-center justify-between mb-2">
               <div className="kpi-label">Liquidado acumulado · {new Date().getFullYear()}</div>
-              <span className="font-mono text-[11px] text-text-muted">YTD</span>
+              <span className="font-mono text-[11px] text-muted-foreground">YTD</span>
             </div>
             <div className="flex items-baseline gap-1">
               <span className="text-[16px] font-semibold text-text-secondary tabular-nums">$</span>
@@ -748,7 +748,7 @@ export function OwnerTabCurrentAccount({
           >
             <button
               onClick={handlePeriodoPrev}
-              className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-on-surface transition-colors"
+              className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-on-surface transition-colors"
             >
               <ChevronLeft size={12} />
             </button>
@@ -761,7 +761,7 @@ export function OwnerTabCurrentAccount({
             <button
               onClick={handlePeriodoNext}
               disabled={!periodoFiltro}
-              className="w-7 h-7 flex items-center justify-center text-text-muted hover:text-on-surface transition-colors disabled:opacity-30"
+              className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-on-surface transition-colors disabled:opacity-30"
             >
               <ChevronRight size={12} />
             </button>
@@ -791,7 +791,7 @@ export function OwnerTabCurrentAccount({
                 )}
               >
                 {label}
-                <span className="font-mono text-[10px] px-[5px] py-px rounded-[3px] leading-none border border-border bg-surface text-text-muted">
+                <span className="font-mono text-[10px] px-[5px] py-px rounded-[3px] leading-none border border-border bg-surface text-muted-foreground">
                   {counts[key]}
                 </span>
               </button>
@@ -811,7 +811,7 @@ export function OwnerTabCurrentAccount({
                 "flex items-center gap-1.5 px-2.5 py-1.5 text-[0.72rem] font-medium border rounded-[6px] transition-all",
                 filtroPendientesConciliacion
                   ? "border-primary text-primary bg-primary/10"
-                  : "border-border text-text-muted bg-surface hover:text-on-surface"
+                  : "border-border text-muted-foreground bg-surface hover:text-on-surface"
               )}
             >
               <span
@@ -844,12 +844,12 @@ export function OwnerTabCurrentAccount({
         {/* Tabla */}
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
-            <Loader2 size={22} className="animate-spin text-text-muted" />
+            <Loader2 size={22} className="animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
           <div className="p-8 text-center text-error text-sm">Error al cargar los movimientos</div>
         ) : movimientosFiltrados.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-text-muted text-sm">
+          <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-sm">
             Sin movimientos en este período
           </div>
         ) : (
@@ -859,15 +859,15 @@ export function OwnerTabCurrentAccount({
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-surface border-b border-border">
                     <th className="w-8 px-2 py-2.5 text-center">
-                      <CheckCircle2 size={12} className="text-text-muted mx-auto" />
+                      <CheckCircle2 size={12} className="text-muted-foreground mx-auto" />
                     </th>
-                    <th className="px-3.5 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.07em] text-text-muted w-[33%]">Concepto</th>
-                    <th className="px-3.5 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.07em] text-text-muted w-[18%]">Propiedad</th>
-                    <th className="px-3.5 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.07em] text-text-muted w-[11%]">Fecha</th>
-                    <th className="px-3.5 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.07em] text-text-muted w-[12%]">Origen</th>
-                    <th className="px-3.5 py-2.5 text-right text-[10.5px] font-bold uppercase tracking-[0.07em] text-text-muted w-[14%]">Monto</th>
+                    <th className="px-3.5 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.07em] text-muted-foreground w-[33%]">Concepto</th>
+                    <th className="px-3.5 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.07em] text-muted-foreground w-[18%]">Propiedad</th>
+                    <th className="px-3.5 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.07em] text-muted-foreground w-[11%]">Fecha</th>
+                    <th className="px-3.5 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.07em] text-muted-foreground w-[12%]">Origen</th>
+                    <th className="px-3.5 py-2.5 text-right text-[10.5px] font-bold uppercase tracking-[0.07em] text-muted-foreground w-[14%]">Monto</th>
                     <th className="w-16 px-2 py-2.5 text-center">
-                      <Paperclip size={12} className="text-text-muted mx-auto" />
+                      <Paperclip size={12} className="text-muted-foreground mx-auto" />
                     </th>
                   </tr>
                 </thead>
@@ -876,7 +876,7 @@ export function OwnerTabCurrentAccount({
                     <React.Fragment key={periodo}>
                       <tr>
                         <td colSpan={6} className="px-3.5 py-2 bg-surface-mid border-b border-border/50">
-                          <span className="text-[10.5px] font-bold text-text-muted uppercase tracking-[0.07em]">
+                          <span className="text-[10.5px] font-bold text-muted-foreground uppercase tracking-[0.07em]">
                             {periodo !== "sin-periodo"
                               ? formatMonthYear(periodo).toUpperCase()
                               : "SIN PERÍODO"}
@@ -910,7 +910,7 @@ export function OwnerTabCurrentAccount({
 
             {/* Footer */}
             <div className="bg-surface border-t border-border px-5 py-3 flex items-center justify-between">
-              <span className="text-[12px] text-text-muted">
+              <span className="text-[12px] text-muted-foreground">
                 {movimientosFiltrados.length} movimiento{movimientosFiltrados.length !== 1 ? "s" : ""}
                 {counts.confirmar > 0 && (
                   <> · <span className="text-on-surface">{counts.confirmar} a confirmar</span></>
@@ -931,7 +931,7 @@ export function OwnerTabCurrentAccount({
                   },
                 ].map(({ label, value, color, prefix }) => (
                   <div key={label} className="text-right">
-                    <div className="text-[10.5px] uppercase tracking-[0.07em] text-text-muted">{label}</div>
+                    <div className="text-[10.5px] uppercase tracking-[0.07em] text-muted-foreground">{label}</div>
                     <div className="font-mono font-semibold text-[13px] tabular-nums" style={{ color }}>
                       {prefix}{formatMoney(Math.abs(value))}
                     </div>
@@ -1032,7 +1032,7 @@ export function OwnerTabCurrentAccount({
                         min="0" max="100" step="0.1"
                         className={cn(inputCls, "pr-7")}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-[0.82rem]">%</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[0.82rem]">%</span>
                     </div>
                   </div>
                   <div>
@@ -1054,7 +1054,7 @@ export function OwnerTabCurrentAccount({
                   <div>
                     <label className={labelCls}>Monto base <span className="text-error">*</span></label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[0.82rem]">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[0.82rem]">$</span>
                       <input
                         type="number"
                         value={movForm.pctMontoManual}
@@ -1069,7 +1069,7 @@ export function OwnerTabCurrentAccount({
 
                 {movForm.pctValor && calcPorcentajeMonto() !== null && (
                   <div className="flex items-center justify-between text-[12px] border-t border-border pt-2 mt-1">
-                    <span className="text-text-muted">Monto calculado:</span>
+                    <span className="text-muted-foreground">Monto calculado:</span>
                     <span
                       className="font-mono font-semibold tabular-nums"
                       style={{ color: movForm.pctDireccion === "income" ? "var(--success)" : "var(--error)" }}
@@ -1113,7 +1113,7 @@ export function OwnerTabCurrentAccount({
               <div>
                 <label className={labelCls}>Monto <span className="text-error">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[0.82rem]">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[0.82rem]">$</span>
                   <input
                     type="number"
                     value={movForm.monto}
@@ -1189,7 +1189,7 @@ export function OwnerTabCurrentAccount({
                   </span>
                 </div>
                 <div className="border-t border-border pt-2 flex justify-between items-baseline">
-                  <span className="text-[12px] text-text-muted uppercase tracking-wide font-bold">Total a transferir</span>
+                  <span className="text-[12px] text-muted-foreground uppercase tracking-wide font-bold">Total a transferir</span>
                   <span
                     className="font-mono font-bold text-[18px] tabular-nums"
                     style={{ color: data.kpis.proximaLiquidacionEstimada * 0.93 >= 0 ? "var(--green)" : "var(--error)" }}
@@ -1212,7 +1212,7 @@ export function OwnerTabCurrentAccount({
             <div>
               <label className={labelCls}>Monto a liquidar <span className="text-error">*</span></label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[0.82rem]">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[0.82rem]">$</span>
                 <input
                   type="number"
                   value={liqForm.monto}
@@ -1357,7 +1357,7 @@ export function OwnerTabCurrentAccount({
                     placeholder="Opcional"
                   />
                 ) : (
-                  <div className="text-[0.85rem] text-text-muted italic">
+                  <div className="text-[0.85rem] text-muted-foreground italic">
                     {(selectedMovement as Movement & { nota?: string | null }).nota || "Sin nota"}
                   </div>
                 )}

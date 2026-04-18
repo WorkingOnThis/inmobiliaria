@@ -100,14 +100,14 @@ export default function ReciboPage() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-text-muted" />
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4 text-text-muted">
+      <div className="flex h-screen flex-col items-center justify-center gap-4 text-muted-foreground">
         <div className="text-[0.85rem]">{(error as Error)?.message ?? "Recibo no encontrado"}</div>
         <button onClick={() => router.back()} className="text-[0.72rem] text-primary hover:underline flex items-center gap-1">
           <ArrowLeft size={12} /> Volver
@@ -164,18 +164,18 @@ export default function ReciboPage() {
             {/* Datos del recibo */}
             <div className="grid grid-cols-2 gap-6 border-b border-border pb-6">
               <div>
-                <div className="text-[0.65rem] text-text-muted uppercase tracking-wider mb-1">Fecha de emisión</div>
+                <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-1">Fecha de emisión</div>
                 <div className="text-[0.9rem] font-semibold text-on-bg">{formatFecha(movimiento.fecha)}</div>
               </div>
               {movimiento.periodo && (
                 <div>
-                  <div className="text-[0.65rem] text-text-muted uppercase tracking-wider mb-1">Período</div>
+                  <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-1">Período</div>
                   <div className="text-[0.9rem] font-semibold text-on-bg">{formatPeriodo(movimiento.periodo)}</div>
                 </div>
               )}
               {contrato && (
                 <div>
-                  <div className="text-[0.65rem] text-text-muted uppercase tracking-wider mb-1">N° de contrato</div>
+                  <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-1">N° de contrato</div>
                   <div className="text-[0.9rem] font-semibold text-on-bg">{contrato.contractNumber}</div>
                 </div>
               )}
@@ -183,7 +183,7 @@ export default function ReciboPage() {
 
             {/* Datos del inquilino */}
             <div className="border-b border-border pb-6">
-              <div className="text-[0.65rem] text-text-muted uppercase tracking-wider mb-3">Recibido de</div>
+              <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-3">Recibido de</div>
               <div className="text-[1.1rem] font-bold text-on-bg mb-1">{nombreInquilino}</div>
               {inquilino?.dni && (
                 <div className="text-[0.8rem] text-text-secondary">DNI {inquilino.dni}</div>
@@ -197,19 +197,19 @@ export default function ReciboPage() {
 
             {/* Concepto y monto */}
             <div className="border-b border-border pb-6">
-              <div className="text-[0.65rem] text-text-muted uppercase tracking-wider mb-3">Concepto</div>
+              <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-3">Concepto</div>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="text-[0.9rem] text-on-bg">{movimiento.descripcion}</div>
                   {movimiento.nota && (
-                    <div className="text-[0.75rem] text-text-muted mt-1">{movimiento.nota}</div>
+                    <div className="text-[0.75rem] text-muted-foreground mt-1">{movimiento.nota}</div>
                   )}
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="text-[1.6rem] font-bold text-primary">{formatMonto(movimiento.monto)}</div>
                 </div>
               </div>
-              <div className="mt-3 text-[0.72rem] text-text-muted italic">
+              <div className="mt-3 text-[0.72rem] text-muted-foreground italic">
                 Son: {montoEnLetras(montoNum)}
               </div>
             </div>
@@ -219,7 +219,7 @@ export default function ReciboPage() {
               <div className="flex justify-end">
                 <div className="text-center">
                   <div className="border-t border-border w-48 pt-2 mt-12">
-                    <div className="text-[0.72rem] text-text-muted">Firma y sello</div>
+                    <div className="text-[0.72rem] text-muted-foreground">Firma y sello</div>
                     <div className="text-[0.72rem] font-semibold text-on-bg mt-0.5">Arce Administración</div>
                   </div>
                 </div>
@@ -229,7 +229,7 @@ export default function ReciboPage() {
 
           {/* Pie */}
           <div className="bg-surface-mid px-8 py-3 border-t border-border">
-            <div className="text-[0.65rem] text-text-muted text-center">
+            <div className="text-[0.65rem] text-muted-foreground text-center">
               Este recibo es un comprobante válido de pago emitido por Arce Administración.
             </div>
           </div>

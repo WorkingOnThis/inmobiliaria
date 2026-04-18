@@ -226,27 +226,27 @@ export function TenantTabCurrentAccount({
       <div className="grid grid-cols-3 gap-4">
         <Card className={cn("rounded-[10px] border py-0 gap-0", enMora ? "border-error/30 bg-error/5" : "border-border")}>
           <CardContent className="p-5">
-            <div className={cn("text-[0.68rem] font-semibold uppercase tracking-[0.08em] mb-2", enMora ? "text-error/70" : "text-text-muted")}>
+            <div className={cn("text-[0.68rem] font-semibold uppercase tracking-[0.08em] mb-2", enMora ? "text-error/70" : "text-muted-foreground")}>
               {enMora ? "Deuda en mora" : "Estado de cuenta"}
             </div>
             <div className={cn("font-headline text-[1.6rem] leading-none mb-1", enMora ? "text-error" : "text-success")}>
               {enMora && contrato ? formatMonto(contrato.monthlyAmount) : "Al día"}
             </div>
             {enMora && (
-              <div className="text-[0.7rem] text-text-muted">{diasMora} días sin pago registrado</div>
+              <div className="text-[0.7rem] text-muted-foreground">{diasMora} días sin pago registrado</div>
             )}
           </CardContent>
         </Card>
 
         <Card className="rounded-[10px] border py-0 gap-0">
           <CardContent className="p-5">
-            <div className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">
+            <div className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">
               Próximo vencimiento
             </div>
             <div className="font-headline text-[1.6rem] leading-none mb-1 text-on-bg">
               {contrato ? formatMonto(contrato.monthlyAmount) : "—"}
             </div>
-            <div className="text-[0.7rem] text-text-muted">
+            <div className="text-[0.7rem] text-muted-foreground">
               {proximoVto ? `Vence el ${proximoVto}` : "Sin contrato activo"}
             </div>
           </CardContent>
@@ -254,13 +254,13 @@ export function TenantTabCurrentAccount({
 
         <Card className="rounded-[10px] border border-success/25 bg-success/5 py-0 gap-0">
           <CardContent className="p-5">
-            <div className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">
+            <div className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">
               Total cobrado (registrado)
             </div>
             <div className="font-headline text-[1.6rem] leading-none mb-1 text-success">
               {formatMonto(totalCobrado)}
             </div>
-            <div className="text-[0.7rem] text-text-muted">
+            <div className="text-[0.7rem] text-muted-foreground">
               {ingresos.length} ingreso{ingresos.length !== 1 ? "s" : ""} registrado{ingresos.length !== 1 ? "s" : ""}
             </div>
           </CardContent>
@@ -274,15 +274,15 @@ export function TenantTabCurrentAccount({
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <div className="text-[0.65rem] text-text-muted uppercase tracking-[0.07em] mb-1">Índice</div>
+              <div className="text-[0.65rem] text-muted-foreground uppercase tracking-[0.07em] mb-1">Índice</div>
               <div className="text-[0.85rem] font-semibold text-blue">{contrato.adjustmentIndex} (BCRA)</div>
             </div>
             <div>
-              <div className="text-[0.65rem] text-text-muted uppercase tracking-[0.07em] mb-1">Frecuencia</div>
+              <div className="text-[0.65rem] text-muted-foreground uppercase tracking-[0.07em] mb-1">Frecuencia</div>
               <div className="text-[0.85rem] font-semibold text-on-bg">Cada {contrato.adjustmentFrequency} meses</div>
             </div>
             <div>
-              <div className="text-[0.65rem] text-text-muted uppercase tracking-[0.07em] mb-1">Alquiler actual</div>
+              <div className="text-[0.65rem] text-muted-foreground uppercase tracking-[0.07em] mb-1">Alquiler actual</div>
               <div className="text-[0.85rem] font-semibold text-on-bg">{formatMonto(contrato.monthlyAmount)}</div>
             </div>
           </div>
@@ -319,7 +319,7 @@ export function TenantTabCurrentAccount({
 
         <CardContent className="p-0">
           {filtrados.length === 0 ? (
-            <div className="px-5 py-10 text-center text-[0.8rem] text-text-muted">
+            <div className="px-5 py-10 text-center text-[0.8rem] text-muted-foreground">
               No hay movimientos registrados aún.
             </div>
           ) : (
@@ -343,13 +343,13 @@ export function TenantTabCurrentAccount({
                     <TableCell className="px-4 py-3 text-[0.82rem] text-on-bg font-medium">
                       {mov.description}
                       {mov.period && (
-                        <div className="text-[0.68rem] text-text-muted font-normal">{mov.period}</div>
+                        <div className="text-[0.68rem] text-muted-foreground font-normal">{mov.period}</div>
                       )}
                       {mov.note && (
-                        <div className="text-[0.7rem] text-text-muted font-normal mt-0.5">{mov.note}</div>
+                        <div className="text-[0.7rem] text-muted-foreground font-normal mt-0.5">{mov.note}</div>
                       )}
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-[0.75rem] text-text-muted capitalize">
+                    <TableCell className="px-4 py-3 text-[0.75rem] text-muted-foreground capitalize">
                       {mov.categoria ?? "—"}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
@@ -375,7 +375,7 @@ export function TenantTabCurrentAccount({
                           {mov.reciboNumero}
                         </a>
                       ) : (
-                        <span className="text-[0.72rem] text-text-muted">—</span>
+                        <span className="text-[0.72rem] text-muted-foreground">—</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -405,7 +405,7 @@ export function TenantTabCurrentAccount({
                       ? t === "income"
                         ? "bg-success/10 border-success text-success"
                         : "bg-error/10 border-error text-error"
-                      : "bg-surface border-border text-text-muted hover:border-text-muted"
+                      : "bg-surface border-border text-muted-foreground hover:border-text-muted"
                   )}
                 >
                   {t === "income" ? "💰 Ingreso" : "💸 Egreso"}
@@ -414,7 +414,7 @@ export function TenantTabCurrentAccount({
             </div>
 
             <div>
-              <label className="text-[0.72rem] font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
+              <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
                 Categoría
               </label>
               <Select value={categoria} onValueChange={handleCategoriaChange}>
@@ -433,7 +433,7 @@ export function TenantTabCurrentAccount({
 
             {tipo === "income" && categoria === "alquiler" && (
               <div>
-                <label className="text-[0.72rem] font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
+                <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
                   Período
                 </label>
                 <input
@@ -446,7 +446,7 @@ export function TenantTabCurrentAccount({
             )}
 
             <div>
-              <label className="text-[0.72rem] font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
+              <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
                 Descripción
               </label>
               <input
@@ -459,11 +459,11 @@ export function TenantTabCurrentAccount({
             </div>
 
             <div>
-              <label className="text-[0.72rem] font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
+              <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
                 Monto
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[0.82rem] text-text-muted">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[0.82rem] text-muted-foreground">$</span>
                 <input
                   type="number"
                   value={monto}
@@ -477,7 +477,7 @@ export function TenantTabCurrentAccount({
             </div>
 
             <div>
-              <label className="text-[0.72rem] font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
+              <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
                 Fecha
               </label>
               <input
@@ -489,7 +489,7 @@ export function TenantTabCurrentAccount({
             </div>
 
             <div>
-              <label className="text-[0.72rem] font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
+              <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
                 Nota interna (opcional)
               </label>
               <textarea
@@ -508,7 +508,7 @@ export function TenantTabCurrentAccount({
             )}
 
             {tipo === "income" && categoria === "alquiler" && (
-              <div className="text-[0.72rem] text-text-muted bg-surface-mid rounded-[8px] px-3 py-2">
+              <div className="text-[0.72rem] text-muted-foreground bg-surface-mid rounded-[8px] px-3 py-2">
                 Se generará automáticamente un número de recibo para este cobro.
               </div>
             )}

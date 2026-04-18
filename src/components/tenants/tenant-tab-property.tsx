@@ -46,7 +46,7 @@ export function TenantTabProperty({ property, ownerName, onVerOwner }: Props) {
     return (
       <div className="p-7 flex flex-col items-center justify-center min-h-[200px] text-center gap-2">
         <div className="text-2xl opacity-40">🏢</div>
-        <div className="text-[0.85rem] text-text-muted">Sin property vinculada</div>
+        <div className="text-[0.85rem] text-muted-foreground">Sin property vinculada</div>
       </div>
     );
   }
@@ -73,14 +73,14 @@ export function TenantTabProperty({ property, ownerName, onVerOwner }: Props) {
           </div>
           <div className="flex-1">
             <div className="text-[0.85rem] font-semibold text-on-bg">{direccionCompleta}</div>
-            <div className="text-[0.75rem] text-text-muted mt-0.5">
+            <div className="text-[0.75rem] text-muted-foreground mt-0.5">
               {tipoLabel[property.type] ?? property.type}
               {property.rooms ? ` · ${property.rooms} amb` : ""}
               {property.surface ? ` · ${property.surface} m²` : ""}
             </div>
           </div>
           <StatusBadge variant={status.variant}>{status.label}</StatusBadge>
-          <span className="text-text-muted text-lg ml-1">›</span>
+          <span className="text-muted-foreground text-lg ml-1">›</span>
         </CardContent>
       </Card>
 
@@ -91,42 +91,42 @@ export function TenantTabProperty({ property, ownerName, onVerOwner }: Props) {
         </CardHeader>
         <CardContent className="p-5 grid grid-cols-2 gap-x-8 gap-y-4">
           <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Tipo</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Tipo</div>
             <div className="text-[0.85rem] font-medium text-on-bg">{tipoLabel[property.type] ?? property.type}</div>
           </div>
           {property.surface && (
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Superficie</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Superficie</div>
               <div className="text-[0.85rem] font-medium text-on-bg">{property.surface} m²</div>
             </div>
           )}
           {property.rooms !== null && (
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Ambientes</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Ambientes</div>
               <div className="text-[0.85rem] font-medium text-on-bg">{property.rooms}</div>
             </div>
           )}
           {property.bathrooms !== null && (
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Baños</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Baños</div>
               <div className="text-[0.85rem] font-medium text-on-bg">{property.bathrooms}</div>
             </div>
           )}
           {property.zone && (
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Zona</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Zona</div>
               <div className="text-[0.85rem] font-medium text-on-bg">{property.zone}</div>
             </div>
           )}
           {property.floorUnit && (
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Piso / Unidad</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Piso / Unidad</div>
               <div className="text-[0.85rem] font-medium text-on-bg">{property.floorUnit}</div>
             </div>
           )}
           {ownerName && (
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Propietario</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Propietario</div>
               <button
                 onClick={onVerOwner}
                 className="text-[0.85rem] font-medium text-primary hover:underline text-left"

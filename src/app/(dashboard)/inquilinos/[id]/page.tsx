@@ -142,10 +142,10 @@ export default function TenantDetailPage() {
     <>
       {isLoading ? (
         <div className="flex h-screen items-center justify-center">
-          <Loader2 className="size-8 animate-spin text-text-muted" />
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </div>
       ) : error || !tenant ? (
-        <div className="flex h-screen flex-col items-center justify-center gap-4 text-text-muted">
+        <div className="flex h-screen flex-col items-center justify-center gap-4 text-muted-foreground">
           <div className="text-[0.85rem]">
             {(error as Error)?.message ?? "Tenant no encontrado"}
           </div>
@@ -167,7 +167,7 @@ export default function TenantDetailPage() {
               <ArrowLeft size={13} />
               Inquilinos
             </button>
-            <span className="text-text-muted">›</span>
+            <span className="text-muted-foreground">›</span>
             <span className="text-[0.8rem] font-semibold text-on-bg">
               {tenant.lastName
                 ? `${tenant.lastName}, ${tenant.firstName}`
@@ -223,7 +223,7 @@ export default function TenantDetailPage() {
                   <div className="font-headline text-[1.25rem] text-primary leading-none mb-1">
                     {data?.contrato ? formatMonto(data.contrato.monthlyAmount) : "—"}
                   </div>
-                  <div className="text-[0.62rem] text-text-muted uppercase tracking-[0.06em] whitespace-nowrap">
+                  <div className="text-[0.62rem] text-muted-foreground uppercase tracking-[0.06em] whitespace-nowrap">
                     Alquiler actual
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export default function TenantDetailPage() {
                     <div className="font-headline text-[1.25rem] text-error leading-none mb-1">
                       {formatMonto(data.contrato.monthlyAmount)}
                     </div>
-                    <div className="text-[0.62rem] text-text-muted uppercase tracking-[0.06em] whitespace-nowrap">
+                    <div className="text-[0.62rem] text-muted-foreground uppercase tracking-[0.06em] whitespace-nowrap">
                       Deuda actual
                     </div>
                   </div>
@@ -241,7 +241,7 @@ export default function TenantDetailPage() {
                   <div className="font-headline text-[1.25rem] text-on-bg leading-none mb-1">
                     {data?.movimientos.filter((m) => m.tipo === "income").length ?? 0}
                   </div>
-                  <div className="text-[0.62rem] text-text-muted uppercase tracking-[0.06em] whitespace-nowrap">
+                  <div className="text-[0.62rem] text-muted-foreground uppercase tracking-[0.06em] whitespace-nowrap">
                     Pagos registrados
                   </div>
                 </div>
@@ -257,7 +257,7 @@ export default function TenantDetailPage() {
                   <TabsTrigger
                     key={key}
                     value={key}
-                    className="px-4 py-3 text-[0.8rem] font-semibold border-b-2 transition-all whitespace-nowrap rounded-none bg-transparent shadow-none data-[state=active]:border-purple data-[state=active]:text-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=inactive]:border-transparent data-[state=inactive]:text-text-muted hover:text-text-secondary"
+                    className="px-4 py-3 text-[0.8rem] font-semibold border-b-2 transition-all whitespace-nowrap rounded-none bg-transparent shadow-none data-[state=active]:border-purple data-[state=active]:text-purple data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=inactive]:border-transparent data-[state=inactive]:text-muted-foreground hover:text-text-secondary"
                   >
                     {label}
                   </TabsTrigger>
@@ -315,14 +315,14 @@ export default function TenantDetailPage() {
               </div>
             )}
             {activeTab === "servicios" && !data?.property?.id && (
-              <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-text-muted">
+              <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-muted-foreground">
                 <div className="text-3xl opacity-30">⚡</div>
                 <div className="text-[0.85rem]">Este tenant no tiene propiedad vinculada</div>
               </div>
             )}
 
             {(activeTab === "tareas" || activeTab === "documentos" || activeTab === "notificaciones") && (
-              <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-text-muted">
+              <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-muted-foreground">
                 <div className="text-3xl opacity-30">
                   {activeTab === "tareas" ? "✅" : activeTab === "documentos" ? "📁" : "🔔"}
                 </div>

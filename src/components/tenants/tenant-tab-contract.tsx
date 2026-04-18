@@ -70,7 +70,7 @@ export function TenantTabContract({ contrato }: Props) {
     return (
       <div className="p-7 flex flex-col items-center justify-center min-h-[200px] text-center gap-2">
         <div className="text-2xl opacity-40">📄</div>
-        <div className="text-[0.85rem] text-text-muted">Este tenant no tiene contrato activo</div>
+        <div className="text-[0.85rem] text-muted-foreground">Este tenant no tiene contrato activo</div>
       </div>
     );
   }
@@ -91,14 +91,14 @@ export function TenantTabContract({ contrato }: Props) {
           </div>
           <div className="flex-1">
             <div className="text-[0.8rem] font-semibold text-blue">{contrato.contractNumber}</div>
-            <div className="text-[0.75rem] text-text-muted mt-0.5">
+            <div className="text-[0.75rem] text-muted-foreground mt-0.5">
               Vigente desde {formatFecha(contrato.startDate)} · Vence {formatFecha(contrato.endDate)}
             </div>
           </div>
           <StatusBadge variant={status.variant}>
             {status.label}
           </StatusBadge>
-          <span className="text-text-muted text-lg ml-1">›</span>
+          <span className="text-muted-foreground text-lg ml-1">›</span>
         </CardContent>
       </Card>
 
@@ -109,31 +109,31 @@ export function TenantTabContract({ contrato }: Props) {
         </CardHeader>
         <CardContent className="p-5 grid grid-cols-2 gap-x-8 gap-y-4">
           <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Tipo de contrato</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Tipo de contrato</div>
             <div className="text-[0.85rem] font-medium text-on-bg">{tipoLabel[contrato.contractType] ?? contrato.contractType}</div>
           </div>
           <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Duración</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Duración</div>
             <div className="text-[0.85rem] font-medium text-on-bg">{duracion} meses</div>
           </div>
           <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Inicio</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Inicio</div>
             <div className="text-[0.85rem] font-medium text-on-bg">{formatFecha(contrato.startDate)}</div>
           </div>
           <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Fin</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Fin</div>
             <div className="text-[0.85rem] font-medium text-on-bg">{formatFecha(contrato.endDate)}</div>
           </div>
           <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Alquiler vigente</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Alquiler vigente</div>
             <div className="text-[0.85rem] font-medium text-on-bg">{formatMonto(contrato.monthlyAmount)}</div>
           </div>
           <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Día de pago</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Día de pago</div>
             <div className="text-[0.85rem] font-medium text-on-bg">Día {contrato.paymentDay} de cada mes</div>
           </div>
           <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Índice de actualización</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Índice de actualización</div>
             <div className="text-[0.85rem] font-medium text-on-bg">
               {contrato.adjustmentIndex === "none"
                 ? "Sin ajuste"
@@ -141,20 +141,20 @@ export function TenantTabContract({ contrato }: Props) {
             </div>
           </div>
           <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Modalidad de pago</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Modalidad de pago</div>
             <div className="text-[0.85rem] font-medium text-on-bg">
               {modalidadLabel[contrato.paymentModality] ?? contrato.paymentModality}
             </div>
           </div>
           {contrato.depositAmount && (
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Depósito</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Depósito</div>
               <div className="text-[0.85rem] font-medium text-on-bg">{formatMonto(contrato.depositAmount)}</div>
             </div>
           )}
           {contrato.agencyCommission && (
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Honorarios inmobiliaria</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Honorarios inmobiliaria</div>
               <div className="text-[0.85rem] font-medium text-on-bg">{contrato.agencyCommission}%</div>
             </div>
           )}

@@ -279,7 +279,7 @@ export function ServicesControlPanel() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setPeriod(previousPeriod(period)); setPage(1); }}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-mid text-text-muted transition-colors hover:bg-surface-high hover:text-on-bg"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-mid text-muted-foreground transition-colors hover:bg-surface-high hover:text-on-bg"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -288,7 +288,7 @@ export function ServicesControlPanel() {
           </div>
           <button
             onClick={() => { setPeriod(nextPeriod(period)); setPage(1); }}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-mid text-text-muted transition-colors hover:bg-surface-high hover:text-on-bg"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-mid text-muted-foreground transition-colors hover:bg-surface-high hover:text-on-bg"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -378,7 +378,7 @@ export function ServicesControlPanel() {
                   : key === "blocked"
                     ? "border-destructive/25 bg-destructive-dim text-destructive"
                     : "border-primary/30 bg-primary/10 text-primary"
-                : "border-border bg-transparent text-text-muted hover:text-text-secondary"
+                : "border-border bg-transparent text-muted-foreground hover:text-text-secondary"
                 }`}
             >
               {label}
@@ -454,7 +454,7 @@ export function ServicesControlPanel() {
                     ) : prop.inquilinoNombre ? (
                       <span className="text-sm text-on-bg">{prop.inquilinoNombre}</span>
                     ) : (
-                      <span className="text-[0.75rem] text-text-muted italic">Sin inquilino</span>
+                      <span className="text-[0.75rem] text-muted-foreground italic">Sin inquilino</span>
                     )}
                   </td>
                   <td
@@ -484,7 +484,7 @@ export function ServicesControlPanel() {
                         onClick={(e) => { e.stopPropagation(); router.push(`/propiedades/${prop.propertyId}`); }}
                         className={`rounded-md border px-2.5 py-1 text-[0.67rem] font-semibold transition-colors ${prop.peorEstado === "blocked"
                           ? "border-destructive/30 text-destructive hover:bg-destructive-dim"
-                          : "border-border text-text-muted hover:text-text-secondary"
+                          : "border-border text-muted-foreground hover:text-text-secondary"
                           }`}
                       >
                         {prop.peorEstado === "blocked" ? "Resolver" : prop.peorEstado === "alert" ? "Gestionar" : "Ver detalle"}
@@ -507,7 +507,7 @@ export function ServicesControlPanel() {
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-mid text-text-muted transition-colors hover:bg-surface-high disabled:opacity-30"
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-mid text-muted-foreground transition-colors hover:bg-surface-high disabled:opacity-30"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
@@ -517,7 +517,7 @@ export function ServicesControlPanel() {
                   onClick={() => setPage(p)}
                   className={`flex h-7 w-7 items-center justify-center rounded-md border text-xs font-semibold transition-colors ${p === page
                     ? "border-primary/30 bg-primary/10 text-primary"
-                    : "border-border bg-surface-mid text-text-muted hover:bg-surface-high"
+                    : "border-border bg-surface-mid text-muted-foreground hover:bg-surface-high"
                     }`}
                 >
                   {p}
@@ -526,7 +526,7 @@ export function ServicesControlPanel() {
               <button
                 disabled={page === pagination.totalPages}
                 onClick={() => setPage(page + 1)}
-                className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-mid text-text-muted transition-colors hover:bg-surface-high disabled:opacity-30"
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-mid text-muted-foreground transition-colors hover:bg-surface-high disabled:opacity-30"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>

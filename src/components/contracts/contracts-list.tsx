@@ -106,7 +106,7 @@ function statusTagClasses(status: string): { pill: string; dot: string } {
       };
     case "terminated":
       return {
-        pill: "bg-surface-highest text-text-muted border border-border",
+        pill: "bg-surface-highest text-muted-foreground border border-border",
         dot: "bg-text-muted",
       };
     case "draft":
@@ -120,7 +120,7 @@ function statusTagClasses(status: string): { pill: string; dot: string } {
         dot: "bg-primary",
       };
     default:
-      return { pill: "bg-surface-highest text-text-muted", dot: "bg-text-muted" };
+      return { pill: "bg-surface-highest text-muted-foreground", dot: "bg-text-muted" };
   }
 }
 
@@ -135,7 +135,7 @@ const STATUS_FILTERS = [
   { value: "draft", label: "En redacción", activeClasses: "bg-info-dim text-info border-info/25" },
   { value: "pending_signature", label: "Pend. firma", activeClasses: "bg-primary-dim text-primary border-border-accent" },
   { value: "expired", label: "Vencidos", activeClasses: "bg-error-dim text-error border-error/25" },
-  { value: "terminated", label: "Rescindidos", activeClasses: "bg-surface-highest text-text-muted border-border" },
+  { value: "terminated", label: "Rescindidos", activeClasses: "bg-surface-highest text-muted-foreground border-border" },
 ];
 
 /* ──────────────────────────────────────────────────────────
@@ -221,7 +221,7 @@ export function ContractsList() {
           <h1 className="font-headline text-[1.35rem] font-bold text-on-bg tracking-tight leading-tight">
             Contratos
           </h1>
-          <p className="text-[0.78rem] text-text-muted mt-1">
+          <p className="text-[0.78rem] text-muted-foreground mt-1">
             Gestión del ciclo de vida contractual
           </p>
         </div>
@@ -239,57 +239,57 @@ export function ContractsList() {
           {/* Vigentes — accent */}
           <div className="rounded-[18px] border p-4 px-[18px]"
             style={{ borderColor: "var(--border-accent)", background: "linear-gradient(135deg, var(--surface) 0%, rgba(107,23,2,0.08) 100%)" }}>
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Vigentes</p>
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Vigentes</p>
             <p className="font-headline text-[1.6rem] font-bold text-primary leading-none">
               {isLoading ? "—" : counts.active ?? 0}
             </p>
-            <p className="text-[0.68rem] text-text-muted mt-1.5">contratos activos</p>
+            <p className="text-[0.68rem] text-muted-foreground mt-1.5">contratos activos</p>
           </div>
 
           {/* Por vencer — warn */}
           <div className="rounded-[18px] border p-4 px-[18px]"
             style={{ borderColor: "rgba(253,222,168,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--mustard-dim) 100%)" }}>
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Por vencer</p>
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Por vencer</p>
             <p className="font-headline text-[1.6rem] font-bold text-mustard leading-none">
               {isLoading ? "—" : counts.expiring_soon ?? 0}
             </p>
-            <p className="text-[0.68rem] text-text-muted mt-1.5">vencen en ≤ 60 días</p>
+            <p className="text-[0.68rem] text-muted-foreground mt-1.5">vencen en ≤ 60 días</p>
           </div>
 
           {/* En redacción — draft/info */}
           <div className="rounded-[18px] border p-4 px-[18px]"
             style={{ borderColor: "rgba(147,197,253,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--info-dim) 100%)" }}>
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">En redacción</p>
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">En redacción</p>
             <p className="font-headline text-[1.6rem] font-bold text-info leading-none">
               {isLoading ? "—" : counts.draft ?? 0}
             </p>
-            <p className="text-[0.68rem] text-text-muted mt-1.5">borradores activos</p>
+            <p className="text-[0.68rem] text-muted-foreground mt-1.5">borradores activos</p>
           </div>
 
           {/* Pend. de firma */}
           <div className="rounded-[18px] border border-border p-4 px-[18px] bg-surface">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Pend. de firma</p>
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Pend. de firma</p>
             <p className="font-headline text-[1.6rem] font-bold text-on-bg leading-none">
               {isLoading ? "—" : counts.pending_signature ?? 0}
             </p>
-            <p className="text-[0.68rem] text-text-muted mt-1.5">esperando firmas</p>
+            <p className="text-[0.68rem] text-muted-foreground mt-1.5">esperando firmas</p>
           </div>
 
           {/* Vencidos — err */}
           <div className="rounded-[18px] border p-4 px-[18px]"
             style={{ borderColor: "rgba(255,180,171,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--error-dim) 100%)" }}>
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Vencidos</p>
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Vencidos</p>
             <p className="font-headline text-[1.6rem] font-bold text-error leading-none">
               {isLoading ? "—" : counts.expired ?? 0}
             </p>
-            <p className="text-[0.68rem] text-text-muted mt-1.5">sin renovar ni rescindir</p>
+            <p className="text-[0.68rem] text-muted-foreground mt-1.5">sin renovar ni rescindir</p>
           </div>
         </div>
 
         {/* ── Toolbar ───────────────────────────────────── */}
         <div className="flex items-center gap-[10px] bg-surface border border-border rounded-xl px-[14px] py-[10px]">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Search className="h-[0.85rem] w-[0.85rem] text-text-muted flex-shrink-0" />
+            <Search className="h-[0.85rem] w-[0.85rem] text-muted-foreground flex-shrink-0" />
             <input
               type="text"
               value={searchInput}
@@ -299,13 +299,13 @@ export function ContractsList() {
                 if (e.key === "Escape") { setSearchInput(""); handleSearch(""); }
               }}
               placeholder="Buscar por propiedad, inquilino, propietario, N° contrato…"
-              className="flex-1 bg-transparent outline-none text-[0.82rem] text-on-surface placeholder:text-text-muted min-w-0"
+              className="flex-1 bg-transparent outline-none text-[0.82rem] text-on-surface placeholder:text-muted-foreground min-w-0"
             />
             {searchInput && (
               <button
                 type="button"
                 onClick={() => { setSearchInput(""); handleSearch(""); }}
-                className="text-text-muted hover:text-on-surface transition-colors flex-shrink-0"
+                className="text-muted-foreground hover:text-on-surface transition-colors flex-shrink-0"
               >
                 <XCircle className="h-4 w-4" />
               </button>
@@ -339,17 +339,17 @@ export function ContractsList() {
           </div>
         ) : isLoading ? (
           <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-text-muted" />
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <div className="bg-surface border border-border rounded-[18px] overflow-hidden">
             {/* Tabla header */}
             <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
               <div className="flex items-center gap-2">
-                <span className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-text-muted">
+                <span className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   Contratos
                 </span>
-                <span className="text-[0.72rem] text-text-muted">{total} resultado{total !== 1 ? "s" : ""}</span>
+                <span className="text-[0.72rem] text-muted-foreground">{total} resultado{total !== 1 ? "s" : ""}</span>
               </div>
               <button className="px-2 py-1 text-[0.67rem] font-semibold border border-border rounded-md text-text-secondary bg-transparent hover:bg-surface-high transition-colors">
                 ↓ Exportar
@@ -359,25 +359,25 @@ export function ContractsList() {
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="w-20 px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-text-muted bg-surface-low border-b border-border">
+                  <th className="w-20 px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
                     N°
                   </th>
-                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-text-muted bg-surface-low border-b border-border">
+                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
                     Propiedad
                   </th>
-                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-text-muted bg-surface-low border-b border-border">
+                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
                     Inquilino
                   </th>
-                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-text-muted bg-surface-low border-b border-border">
+                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
                     Propietario
                   </th>
-                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-text-muted bg-surface-low border-b border-border cursor-pointer hover:text-on-surface">
+                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border cursor-pointer hover:text-on-surface">
                     Vigencia
                   </th>
-                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-text-muted bg-surface-low border-b border-border">
+                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
                     Monto actual
                   </th>
-                  <th className="w-32 px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-text-muted bg-surface-low border-b border-border">
+                  <th className="w-32 px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
                     Estado
                   </th>
                   <th className="w-16 px-[14px] py-[10px] bg-surface-low border-b border-border" />
@@ -413,7 +413,7 @@ export function ContractsList() {
                               : undefined,
                           }}
                         >
-                          <span className="font-mono text-[0.67rem] text-text-muted">
+                          <span className="font-mono text-[0.67rem] text-muted-foreground">
                             {c.contractNumber}
                           </span>
                         </td>
@@ -422,7 +422,7 @@ export function ContractsList() {
                         <td className="px-[14px] py-[11px] border-b border-border align-middle">
                           <div className="flex flex-col gap-0.5">
                             <span className="font-semibold text-[0.82rem] text-on-surface leading-tight">
-                              {c.propertyAddress || <span className="text-text-muted italic">Sin dirección</span>}
+                              {c.propertyAddress || <span className="text-muted-foreground italic">Sin dirección</span>}
                             </span>
                           </div>
                         </td>
@@ -439,7 +439,7 @@ export function ContractsList() {
                               </span>
                             </div>
                           ) : (
-                            <span className="text-text-muted text-[0.78rem]">—</span>
+                            <span className="text-muted-foreground text-[0.78rem]">—</span>
                           )}
                         </td>
 
@@ -459,7 +459,7 @@ export function ContractsList() {
                         <td className="px-[14px] py-[11px] border-b border-border align-middle">
                           <div className="flex flex-col gap-0.5">
                             {isDraft ? (
-                              <span className="text-[0.75rem] text-text-muted">A definir</span>
+                              <span className="text-[0.75rem] text-muted-foreground">A definir</span>
                             ) : (
                               <span className="text-[0.75rem] text-on-surface whitespace-nowrap">
                                 {format(new Date(c.startDate), "dd/MM/yyyy")} →{" "}
@@ -472,7 +472,7 @@ export function ContractsList() {
                                   ? "text-mustard"
                                   : dias.variant === "vencida"
                                   ? "text-error"
-                                  : "text-text-muted"
+                                  : "text-muted-foreground"
                               }`}
                             >
                               {dias.text}
@@ -487,14 +487,14 @@ export function ContractsList() {
                               <div className="font-headline font-semibold text-[0.9rem] text-on-bg whitespace-nowrap">
                                 ${parseFloat(c.monthlyAmount).toLocaleString("es-AR")}
                               </div>
-                              <div className="text-[0.65rem] text-text-muted mt-0.5">
+                              <div className="text-[0.65rem] text-muted-foreground mt-0.5">
                                 {c.adjustmentIndex ?? "—"}{c.adjustmentFrequency ? ` · ${freqShort(c.adjustmentFrequency)}` : ""}
                               </div>
                             </div>
                           ) : (
                             <div>
-                              <div className="font-headline font-semibold text-[0.9rem] text-text-muted">—</div>
-                              <div className="text-[0.65rem] text-text-muted mt-0.5">Pendiente</div>
+                              <div className="font-headline font-semibold text-[0.9rem] text-muted-foreground">—</div>
+                              <div className="text-[0.65rem] text-muted-foreground mt-0.5">Pendiente</div>
                             </div>
                           )}
                         </td>
@@ -527,7 +527,7 @@ export function ContractsList() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="h-24 text-center text-[0.82rem] text-text-muted">
+                    <td colSpan={8} className="h-24 text-center text-[0.82rem] text-muted-foreground">
                       No hay contratos registrados.
                     </td>
                   </tr>

@@ -93,10 +93,10 @@ export function OwnerTabProperties({
   if (propiedades.length === 0) {
     return (
       <div className="p-7 flex flex-col items-center justify-center py-20 gap-4">
-        <Building2 size={40} className="text-text-muted" />
+        <Building2 size={40} className="text-muted-foreground" />
         <div className="text-center">
           <p className="text-[0.9rem] font-semibold text-text-secondary mb-1">Sin propiedades cargadas</p>
-          <p className="text-[0.78rem] text-text-muted">Este propietario no tiene propiedades asociadas todavía.</p>
+          <p className="text-[0.78rem] text-muted-foreground">Este propietario no tiene propiedades asociadas todavía.</p>
         </div>
         <Link
           href={`/propiedades/nueva?ownerId=${ownerId}`}
@@ -113,7 +113,7 @@ export function OwnerTabProperties({
     <div className="p-7 flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted">
+        <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-muted-foreground">
           {propiedades.length} {propiedades.length === 1 ? "propiedad" : "propiedades"}
         </span>
         <Link
@@ -168,7 +168,7 @@ export function OwnerTabProperties({
 
                 {contrato && (
                   <div
-                    className="text-[12px] text-text-muted border-t border-border pt-2 mt-0.5"
+                    className="text-[12px] text-muted-foreground border-t border-border pt-2 mt-0.5"
                   >
                     {/* Inquilino no disponible en los datos actuales — mostrar vencimiento */}
                     <span className="font-mono tabular-nums">

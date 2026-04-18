@@ -109,7 +109,7 @@ function KVRow({
       "flex justify-between py-1.5 text-[12.5px] border-b border-border/50 last:border-0",
       bold && "font-semibold pt-2.5 mt-1 border-t border-border border-b-0",
     )}>
-      <span className="text-text-muted">{label}</span>
+      <span className="text-muted-foreground">{label}</span>
       <span className={cn(mono ? "font-mono" : "", cls)}>{value}</span>
     </div>
   );
@@ -133,7 +133,7 @@ function ToggleOpt({
       </div>
       <div className="flex-1">
         <div className="text-[12.5px] text-on-surface">{label}</div>
-        <div className="text-[11px] text-text-muted mt-[1px]">{desc}</div>
+        <div className="text-[11px] text-muted-foreground mt-[1px]">{desc}</div>
       </div>
     </button>
   );
@@ -244,7 +244,7 @@ export default function LiquidacionPreviewPage() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-bg">
-        <Loader2 className="size-8 animate-spin text-text-muted" />
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -257,7 +257,7 @@ export default function LiquidacionPreviewPage() {
       <div className="print:hidden sticky top-0 z-20 h-14 bg-surface border-b border-border flex items-center gap-3.5 px-6 flex-shrink-0">
         <Link
           href={`/propietarios/${id}?tab=cuenta-corriente`}
-          className="size-8 rounded-[7px] border border-border bg-surface-mid flex items-center justify-center text-text-muted hover:text-on-surface transition-colors flex-shrink-0"
+          className="size-8 rounded-[7px] border border-border bg-surface-mid flex items-center justify-center text-muted-foreground hover:text-on-surface transition-colors flex-shrink-0"
         >
           <ArrowLeft size={14} />
         </Link>
@@ -267,13 +267,13 @@ export default function LiquidacionPreviewPage() {
         >
           A
         </div>
-        <div className="flex items-center gap-2 text-[13px] text-text-muted">
+        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
           <Link href={`/propietarios/${id}?tab=cuenta-corriente`} className="hover:text-on-surface transition-colors">
             {propietarioName}
           </Link>
-          <span className="text-text-muted/50">/</span>
+          <span className="text-muted-foreground/50">/</span>
           <span className="text-on-surface">Vista previa · Liquidación</span>
-          <span className="font-mono text-[11.5px] px-2 py-[2px] border border-border rounded-[4px] bg-surface-mid text-text-muted">
+          <span className="font-mono text-[11.5px] px-2 py-[2px] border border-border rounded-[4px] bg-surface-mid text-muted-foreground">
             {periodo}
           </span>
         </div>
@@ -292,13 +292,13 @@ export default function LiquidacionPreviewPage() {
         <div className="ml-auto flex items-center gap-2">
           {/* Zoom */}
           <div className="flex items-center rounded-[7px] border border-border bg-surface-mid overflow-hidden">
-            <button onClick={() => handleZoom(-0.1)} className="px-2 py-1.5 text-text-muted hover:text-on-surface hover:bg-surface transition-colors">
+            <button onClick={() => handleZoom(-0.1)} className="px-2 py-1.5 text-muted-foreground hover:text-on-surface hover:bg-surface transition-colors">
               <Minus size={13} />
             </button>
             <span className="px-2.5 py-1 font-mono text-[12px] border-x border-border text-on-surface select-none">
               {Math.round(zoom * 100)}%
             </span>
-            <button onClick={() => handleZoom(0.1)} className="px-2 py-1.5 text-text-muted hover:text-on-surface hover:bg-surface transition-colors">
+            <button onClick={() => handleZoom(0.1)} className="px-2 py-1.5 text-muted-foreground hover:text-on-surface hover:bg-surface transition-colors">
               <Plus size={13} />
             </button>
           </div>
@@ -618,7 +618,7 @@ export default function LiquidacionPreviewPage() {
           <div className="p-[18px] pb-6 flex flex-col gap-5">
             {/* Summary */}
             <div>
-              <h3 className="text-[12px] text-text-muted uppercase tracking-[.08em] font-semibold mb-3">Resumen</h3>
+              <h3 className="text-[12px] text-muted-foreground uppercase tracking-[.08em] font-semibold mb-3">Resumen</h3>
               <div className="bg-surface-mid border border-border rounded-[10px] p-3.5">
                 <KVRow label="Propietario" value={propietarioName} />
                 <KVRow label="Período" value={periodLabel(periodo)} mono />
@@ -633,7 +633,7 @@ export default function LiquidacionPreviewPage() {
 
             {/* Print options */}
             <div>
-              <h3 className="text-[12px] text-text-muted uppercase tracking-[.08em] font-semibold mb-3">Opciones de impresión</h3>
+              <h3 className="text-[12px] text-muted-foreground uppercase tracking-[.08em] font-semibold mb-3">Opciones de impresión</h3>
               <div className="flex flex-col gap-2">
                 <ToggleOpt
                   on={showWatermark && !isEmitido}
@@ -650,13 +650,13 @@ export default function LiquidacionPreviewPage() {
 
             {/* Recipients */}
             <div>
-              <h3 className="text-[12px] text-text-muted uppercase tracking-[.08em] font-semibold mb-3">Destinatarios</h3>
+              <h3 className="text-[12px] text-muted-foreground uppercase tracking-[.08em] font-semibold mb-3">Destinatarios</h3>
               <div className="bg-surface-mid border border-border rounded-[10px] p-3.5">
                 <div className="text-[12.5px] font-medium text-on-surface mb-1">{propietarioName}</div>
                 {propietario?.email ? (
-                  <div className="font-mono text-[11.5px] text-text-muted">{propietario.email}</div>
+                  <div className="font-mono text-[11.5px] text-muted-foreground">{propietario.email}</div>
                 ) : (
-                  <div className="text-[11px] text-text-muted italic">Sin email registrado</div>
+                  <div className="text-[11px] text-muted-foreground italic">Sin email registrado</div>
                 )}
                 <Button
                   variant="outline"
@@ -671,16 +671,16 @@ export default function LiquidacionPreviewPage() {
 
             {/* Edit */}
             <div>
-              <h3 className="text-[12px] text-text-muted uppercase tracking-[.08em] font-semibold mb-3">Editar</h3>
+              <h3 className="text-[12px] text-muted-foreground uppercase tracking-[.08em] font-semibold mb-3">Editar</h3>
               <div className="flex flex-col gap-2">
                 <Link
                   href={`/propietarios/${id}?tab=cuenta-corriente`}
                   className="flex items-center gap-2.5 px-[10px] py-[9px] rounded-[8px] bg-surface-mid border border-border hover:border-border/80 transition-colors"
                 >
-                  <ArrowLeft size={16} className="text-text-muted flex-shrink-0" />
+                  <ArrowLeft size={16} className="text-muted-foreground flex-shrink-0" />
                   <div>
                     <div className="text-[12.5px] text-on-surface">Volver a movimientos</div>
-                    <div className="text-[11px] text-text-muted mt-0.5">Editar partidas del período</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">Editar partidas del período</div>
                   </div>
                 </Link>
               </div>

@@ -65,13 +65,13 @@ export function OwnerCompletenessBar({
       {/* Left: bar */}
       <div className="flex flex-col justify-center gap-2 min-w-[180px]">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             Completitud de la ficha
           </span>
           <span className="font-mono font-bold text-[13px] text-on-surface">{pct}%</span>
         </div>
         <Progress value={pct} className="h-[5px]" />
-        <span className="text-[11px] text-text-muted">
+        <span className="text-[11px] text-muted-foreground">
           {doneFields} de {totalFields} campos completos
         </span>
       </div>
@@ -81,7 +81,7 @@ export function OwnerCompletenessBar({
 
       {/* Right: chips */}
       <div className="flex items-center gap-1.5 flex-wrap flex-1">
-        <span className="text-[11px] text-text-muted flex-shrink-0 mr-0.5">Pendiente:</span>
+        <span className="text-[11px] text-muted-foreground flex-shrink-0 mr-0.5">Pendiente:</span>
         {missing.map((f) => (
           <button
             key={f.id}

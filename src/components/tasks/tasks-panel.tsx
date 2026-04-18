@@ -116,14 +116,14 @@ function getInitials(nombre: string | null): string {
 }
 
 function formatDate(fecha: string | null): { label: string; colorClass: string } {
-  if (!fecha) return { label: "sin fecha", colorClass: "text-text-muted opacity-60" };
+  if (!fecha) return { label: "sin fecha", colorClass: "text-muted-foreground opacity-60" };
   const now = new Date();
   const d = new Date(fecha);
   const diffDays = Math.ceil((d.getTime() - now.getTime()) / 86400000);
   if (diffDays < 0) return { label: "Vencida", colorClass: "text-destructive" };
   if (diffDays === 0) return { label: "Hoy", colorClass: "text-mustard" };
   if (diffDays <= 7) return { label: `en ${diffDays} días`, colorClass: "text-text-secondary" };
-  return { label: `en ${diffDays} días`, colorClass: "text-text-muted" };
+  return { label: `en ${diffDays} días`, colorClass: "text-muted-foreground" };
 }
 
 function formatBytes(bytes: number | null): string {
@@ -137,7 +137,7 @@ const PRIORITY_CONFIG: Record<Priority, { label: string; pill: string; border: s
   urgent: { label: "Urgente", pill: "bg-error-dim text-destructive",         border: "var(--error)" },
   high:   { label: "Alta",    pill: "bg-mustard-dim text-mustard",            border: "var(--mustard)" },
   medium: { label: "Media",   pill: "bg-neutral-dim text-neutral",            border: "var(--neutral)" },
-  low:    { label: "Baja",    pill: "bg-surface-highest text-text-muted",     border: "transparent" },
+  low:    { label: "Baja",    pill: "bg-surface-highest text-muted-foreground",     border: "transparent" },
 };
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; badge: string }> = {
@@ -213,7 +213,7 @@ function AvatarMini({ nombre }: { nombre: string | null }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mb-[10px] text-[0.58rem] font-bold uppercase tracking-[0.12em] text-text-muted">
+    <div className="flex items-center gap-2 mb-[10px] text-[0.58rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
       {children}
       <div className="flex-1 h-px bg-border" />
     </div>
@@ -245,7 +245,7 @@ function SearchCombobox({
         <span className="flex-1 text-[0.78rem] text-on-surface truncate">{selectedLabel}</span>
         <button
           onClick={onClear}
-          className="text-text-muted hover:text-destructive transition-colors shrink-0"
+          className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
         >
           <X className="w-3 h-3" />
         </button>
@@ -261,12 +261,12 @@ function SearchCombobox({
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
-        className="w-full text-[0.78rem] bg-surface-high border border-border rounded-lg px-3 py-[8px] text-on-surface placeholder:text-text-muted outline-none focus:border-primary transition-colors"
+        className="w-full text-[0.78rem] bg-surface-high border border-border rounded-lg px-3 py-[8px] text-on-surface placeholder:text-muted-foreground outline-none focus:border-primary transition-colors"
       />
       {open && query.trim().length > 0 && (
         <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden">
           {results.length === 0 ? (
-            <div className="px-3 py-[10px] text-[0.72rem] text-text-muted text-center">
+            <div className="px-3 py-[10px] text-[0.72rem] text-muted-foreground text-center">
               Sin resultados
             </div>
           ) : (
@@ -278,7 +278,7 @@ function SearchCombobox({
               >
                 <div className="text-[0.78rem] font-medium text-on-surface truncate">{r.label}</div>
                 {r.sublabel && (
-                  <div className="text-[0.65rem] text-text-muted truncate mt-[1px]">{r.sublabel}</div>
+                  <div className="text-[0.65rem] text-muted-foreground truncate mt-[1px]">{r.sublabel}</div>
                 )}
               </button>
             ))
@@ -303,7 +303,7 @@ function HealthWidget({ pct }: { pct: number }) {
         />
       </div>
       <span className={`text-[0.65rem] font-bold ${color}`}>{pct}%</span>
-      <span className="text-[0.6rem] text-text-muted">salud del portfolio</span>
+      <span className="text-[0.6rem] text-muted-foreground">salud del portfolio</span>
     </div>
   );
 }
@@ -346,13 +346,13 @@ function TaskRow({
           {t.categoria && (
             <>
               <span className="text-border text-[0.7rem]">·</span>
-              <span className="text-[0.65rem] text-text-muted">{t.categoria}</span>
+              <span className="text-[0.65rem] text-muted-foreground">{t.categoria}</span>
             </>
           )}
           {t.tenantNombre && (
             <>
               <span className="text-border text-[0.7rem]">·</span>
-              <span className="text-[0.65rem] text-text-muted">{t.tenantNombre}</span>
+              <span className="text-[0.65rem] text-muted-foreground">{t.tenantNombre}</span>
             </>
           )}
         </div>
@@ -382,11 +382,11 @@ function CompletedTaskRow({ t, onClick }: { t: TaskSummary; onClick: () => void 
         <div className="text-[0.82rem] font-semibold text-on-surface truncate line-through">
           {t.title}
         </div>
-        <div className="text-[0.63rem] text-text-muted mt-[1px]">
+        <div className="text-[0.63rem] text-muted-foreground mt-[1px]">
           {t.categoria ?? ""}
         </div>
       </div>
-      <span className="text-[0.62rem] text-text-muted shrink-0">
+      <span className="text-[0.62rem] text-muted-foreground shrink-0">
         {new Date(t.updatedAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" })}
       </span>
     </div>
@@ -418,11 +418,11 @@ function PriorityGroup({
     <Collapsible open={!collapsed} onOpenChange={() => onToggle()} className="mb-[6px]">
       <CollapsibleTrigger className="flex w-full items-center gap-[10px] p-[8px_10px] cursor-pointer rounded-lg transition-all hover:bg-surface select-none">
         {collapsed
-          ? <ChevronRight className="w-[10px] h-[10px] text-text-muted shrink-0" />
-          : <ChevronDown  className="w-[10px] h-[10px] text-text-muted shrink-0" />
+          ? <ChevronRight className="w-[10px] h-[10px] text-muted-foreground shrink-0" />
+          : <ChevronDown  className="w-[10px] h-[10px] text-muted-foreground shrink-0" />
         }
         <PriorityPill priority={prioridad} />
-        <span className="text-[0.65rem] text-text-muted">
+        <span className="text-[0.65rem] text-muted-foreground">
           {items.length} {items.length === 1 ? "tarea" : "tareas"}
         </span>
       </CollapsibleTrigger>
@@ -461,14 +461,14 @@ function KanbanView({ items }: { items: TaskSummary[] }) {
               <span className={`text-[0.72rem] font-bold uppercase tracking-[0.1em] ${col.labelColor}`}>
                 {col.label}
               </span>
-              <span className="text-[0.6rem] text-text-muted bg-muted px-[7px] py-[1px] rounded-full">
+              <span className="text-[0.6rem] text-muted-foreground bg-muted px-[7px] py-[1px] rounded-full">
                 {colItems.length}
               </span>
             </div>
 
             <div className="flex flex-col gap-2">
               {colItems.length === 0 && (
-                <div className="text-[0.72rem] text-text-muted text-center py-8 border border-dashed border-border rounded-xl">
+                <div className="text-[0.72rem] text-muted-foreground text-center py-8 border border-dashed border-border rounded-xl">
                   Sin tareas
                 </div>
               )}
@@ -485,7 +485,7 @@ function KanbanView({ items }: { items: TaskSummary[] }) {
                       {t.title}
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[0.65rem] text-text-muted">
+                      <span className="text-[0.65rem] text-muted-foreground">
                         {t.categoria ?? t.propertyAddress ?? ""}
                       </span>
                       <span className={`text-[0.6rem] font-semibold ${fecha.colorClass}`}>
@@ -641,7 +641,7 @@ function SidePanel({
 
         {!isLoading && !t && open && (
           <div className="flex-1 flex items-center justify-center">
-            <span className="text-[0.78rem] text-text-muted">No se pudo cargar la tarea</span>
+            <span className="text-[0.78rem] text-muted-foreground">No se pudo cargar la tarea</span>
           </div>
         )}
 
@@ -652,7 +652,7 @@ function SidePanel({
               <div className="flex items-center gap-2 mb-2">
                 <TagBadge type={t.tipo} />
                 {t.categoria && (
-                  <span className="text-[0.6rem] text-text-muted uppercase font-bold tracking-wide">
+                  <span className="text-[0.6rem] text-muted-foreground uppercase font-bold tracking-wide">
                     {t.categoria}
                   </span>
                 )}
@@ -718,7 +718,7 @@ function SidePanel({
                       className={`px-[10px] py-[3px] text-[0.6rem] font-bold rounded-full border transition-all ${
                         t.priority === p
                           ? PRIORITY_CONFIG[p].pill + " border-current/30"
-                          : "bg-surface-high border-border text-text-muted hover:text-on-surface"
+                          : "bg-surface-high border-border text-muted-foreground hover:text-on-surface"
                       }`}
                     >
                       {PRIORITY_CONFIG[p].label}
@@ -736,7 +736,7 @@ function SidePanel({
                       className={`px-[10px] py-[3px] text-[0.6rem] font-bold rounded-full border transition-all ${
                         t.status === e
                           ? STATUS_CONFIG[e].badge + " border-current/30"
-                          : "bg-surface-high border-border text-text-muted hover:text-on-surface"
+                          : "bg-surface-high border-border text-muted-foreground hover:text-on-surface"
                       }`}
                     >
                       {STATUS_CONFIG[e].label}
@@ -781,7 +781,7 @@ function SidePanel({
                   <SectionTitle>Entidades vinculadas</SectionTitle>
                   {t.propertyAddress && (
                     <div className="mb-2">
-                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-text-muted mb-1">Propiedad</div>
+                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-1">Propiedad</div>
                       <span className="text-primary inline-flex items-center gap-1 text-[0.78rem] font-semibold cursor-pointer hover:underline">
                         🏠 {t.propertyAddress}
                       </span>
@@ -789,7 +789,7 @@ function SidePanel({
                   )}
                   {t.contractNumber && (
                     <div className="mb-2">
-                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-text-muted mb-1">Contrato</div>
+                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-1">Contrato</div>
                       <span className="text-primary inline-flex items-center gap-1 text-[0.78rem] font-semibold cursor-pointer hover:underline">
                         {t.contractNumber}
                       </span>
@@ -797,7 +797,7 @@ function SidePanel({
                   )}
                   {t.tenantNombre && (
                     <div>
-                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-text-muted mb-1">Inquilino</div>
+                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-1">Inquilino</div>
                       <span className="text-primary inline-flex items-center gap-1 text-[0.78rem] font-semibold cursor-pointer hover:underline">
                         {t.tenantNombre}
                       </span>
@@ -818,11 +818,11 @@ function SidePanel({
                       <div className="text-[0.78rem] font-medium text-on-surface">
                         {t.assignedToNombre}
                       </div>
-                      <div className="text-[0.62rem] text-text-muted">Staff Admin</div>
+                      <div className="text-[0.62rem] text-muted-foreground">Staff Admin</div>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-[0.72rem] text-text-muted">Sin responsable asignado</p>
+                  <p className="text-[0.72rem] text-muted-foreground">Sin responsable asignado</p>
                 )}
               </div>
 
@@ -843,7 +843,7 @@ function SidePanel({
                         key={a.id}
                         className="flex items-center gap-2 bg-surface-high border border-border rounded-lg px-3 py-[8px] group"
                       >
-                        <Paperclip className="w-3 h-3 text-text-muted shrink-0" />
+                        <Paperclip className="w-3 h-3 text-muted-foreground shrink-0" />
                         <a
                           href={a.url}
                           target="_blank"
@@ -853,13 +853,13 @@ function SidePanel({
                           {a.name}
                         </a>
                         {a.size && (
-                          <span className="text-[0.6rem] text-text-muted shrink-0">
+                          <span className="text-[0.6rem] text-muted-foreground shrink-0">
                             {formatBytes(a.size)}
                           </span>
                         )}
                         <button
                           onClick={() => deleteArchivo(a.id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-text-muted hover:text-destructive"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -887,16 +887,16 @@ function SidePanel({
                 <div className="p-[14px_20px]">
                   <Collapsible open={historialOpen} onOpenChange={setHistorialOpen}>
                     <CollapsibleTrigger className="flex w-full items-center gap-2 select-none cursor-pointer">
-                      <div className="text-[0.58rem] font-bold uppercase tracking-[0.12em] text-text-muted">
+                      <div className="text-[0.58rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                         Historial
                       </div>
-                      <span className="text-[0.58rem] text-text-muted bg-muted px-[6px] py-[1px] rounded-full">
+                      <span className="text-[0.58rem] text-muted-foreground bg-muted px-[6px] py-[1px] rounded-full">
                         {(t.historial ?? []).length}
                       </span>
                       <div className="flex-1 h-px bg-border" />
                       {historialOpen
-                        ? <ChevronDown className="w-3 h-3 text-text-muted shrink-0" />
-                        : <ChevronRight className="w-3 h-3 text-text-muted shrink-0" />
+                        ? <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
+                        : <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
                       }
                     </CollapsibleTrigger>
                     <CollapsibleContent>
@@ -910,7 +910,7 @@ function SidePanel({
                               <div className="text-[0.72rem] text-text-secondary leading-snug">
                                 {h.text}
                               </div>
-                              <div className="text-[0.6rem] text-text-muted mt-[2px]">
+                              <div className="text-[0.6rem] text-muted-foreground mt-[2px]">
                                 {new Date(h.createdAt).toLocaleDateString("es-AR", {
                                   day: "2-digit",
                                   month: "2-digit",
@@ -1033,7 +1033,7 @@ function NewTaskModal({
           )}
 
           <div className="flex flex-col gap-[5px]">
-            <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
+            <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
               Título <span className="text-destructive">*</span>
             </label>
             <Input
@@ -1044,7 +1044,7 @@ function NewTaskModal({
           </div>
 
           <div className="flex flex-col gap-[5px]">
-            <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
+            <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
               Nota <span className="font-normal normal-case text-[0.6rem]">(opcional)</span>
             </label>
             <Textarea
@@ -1057,7 +1057,7 @@ function NewTaskModal({
 
           <div className="grid grid-cols-2 gap-[14px]">
             <div className="flex flex-col gap-[5px]">
-              <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
+              <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
                 Prioridad
               </label>
               <Select
@@ -1078,7 +1078,7 @@ function NewTaskModal({
               </Select>
             </div>
             <div className="flex flex-col gap-[5px]">
-              <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
+              <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
                 Fecha límite
               </label>
               <Input
@@ -1090,7 +1090,7 @@ function NewTaskModal({
           </div>
 
           <div className="flex flex-col gap-[5px]">
-            <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted">
+            <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
               Categoría <span className="font-normal normal-case text-[0.6rem]">(opcional)</span>
             </label>
             <Select
@@ -1258,7 +1258,7 @@ export function TasksPanel() {
                   if (v === "kanban") closePanel();
                 }}
                 className={`px-3 py-[5px] text-[0.68rem] font-semibold transition-all ${
-                  vista === v ? "bg-primary-dim text-primary" : "text-text-muted"
+                  vista === v ? "bg-primary-dim text-primary" : "text-muted-foreground"
                 }`}
               >
                 {v === "lista" ? "≡ Lista" : "⊞ Kanban"}
@@ -1330,7 +1330,7 @@ export function TasksPanel() {
                 <div className="text-[0.9rem] font-semibold text-text-secondary">
                   {verFinalizadas ? "Sin tareas finalizadas" : "Sin tareas pendientes"}
                 </div>
-                <div className="text-[0.75rem] text-text-muted">
+                <div className="text-[0.75rem] text-muted-foreground">
                   {verFinalizadas
                     ? "Las tareas resueltas aparecen acá"
                     : scope === "mine"

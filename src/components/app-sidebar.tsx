@@ -12,6 +12,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarSeparator,
 } from "@/components/ui/sidebar"
 
 /**
@@ -74,8 +75,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        {/* TeamSwitcher removido por ahora - puede agregarse después si es necesario */}
+        <div className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm font-brand">
+            A
+          </div>
+          <div className="grid flex-1 leading-tight group-data-[collapsible=icon]:hidden">
+            <span className="font-semibold text-sm text-foreground">Arce</span>
+            <span className="text-xs" style={{ color: "oklch(0.53 0.012 45)" }}>Administración</span>
+          </div>
+        </div>
       </SidebarHeader>
+      <SidebarSeparator className="mx-0" />
       <SidebarContent>
         {isLoading ? (
           // Estado de carga - mostrar skeleton o mensaje
@@ -87,6 +97,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         )}
         {/* NavProjects removido por ahora - puede agregarse después si es necesario */}
       </SidebarContent>
+      <SidebarSeparator className="mx-0" />
       <SidebarFooter>
         {userData && (
           <NavUser 

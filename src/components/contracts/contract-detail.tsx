@@ -148,10 +148,10 @@ function statusTagClasses(status: string): string {
     case "active": return "bg-green-dim text-green";
     case "expiring_soon": return "bg-mustard-dim text-mustard";
     case "expired": return "bg-error-dim text-error";
-    case "terminated": return "bg-surface-highest text-text-muted border border-border";
+    case "terminated": return "bg-surface-highest text-muted-foreground border border-border";
     case "draft": return "bg-info-dim text-info";
     case "pending_signature": return "bg-primary-dim text-primary";
-    default: return "bg-surface-highest text-text-muted";
+    default: return "bg-surface-highest text-muted-foreground";
   }
 }
 
@@ -453,7 +453,7 @@ export function ContractDetail({ id }: { id: string }) {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-text-muted" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -554,7 +554,7 @@ export function ContractDetail({ id }: { id: string }) {
 
   const STATUS_COLOR: Record<string, { bg: string; text: string; dot: string }> = {
     current: { bg: "bg-income-dim",      text: "text-income",      dot: "bg-income" },
-    pending: { bg: "bg-surface-highest", text: "text-text-muted",  dot: "bg-text-muted" },
+    pending: { bg: "bg-surface-highest", text: "text-muted-foreground",  dot: "bg-text-muted" },
     alert:   { bg: "bg-mustard-dim",     text: "text-mustard",     dot: "bg-mustard" },
     blocked: { bg: "bg-error-dim",       text: "text-error",       dot: "bg-error" },
   };
@@ -581,7 +581,7 @@ export function ContractDetail({ id }: { id: string }) {
               {statusLabel}
             </span>
           </div>
-          <p className="text-[0.78rem] text-text-muted">
+          <p className="text-[0.78rem] text-muted-foreground">
             {data.propertyAddress || "Sin dirección"}
             {data.tenants.length > 0 && (
               <> · {data.tenants.length === 1 ? "Inquilino" : "Inquilinos"}: {data.tenants.map((t) => t.name).join(", ")}</>
@@ -649,16 +649,16 @@ export function ContractDetail({ id }: { id: string }) {
                     />
                   )}
                   <p className={`text-[0.58rem] font-bold uppercase tracking-[0.12em] ${
-                    state === "done" ? "text-green" : state === "active" ? "text-primary" : "text-text-muted"
+                    state === "done" ? "text-green" : state === "active" ? "text-primary" : "text-muted-foreground"
                   }`}>
                     {step.num}
                   </p>
                   <p className={`text-[0.78rem] font-semibold ${
-                    state === "done" ? "text-green" : state === "active" ? "text-primary" : "text-text-muted"
+                    state === "done" ? "text-green" : state === "active" ? "text-primary" : "text-muted-foreground"
                   }`}>
                     {state === "done" ? `✓ ${step.name}` : step.name}
                   </p>
-                  <p className={`text-[0.68rem] ${state === "active" ? "text-text-secondary" : "text-text-muted"}`}>
+                  <p className={`text-[0.68rem] ${state === "active" ? "text-text-secondary" : "text-muted-foreground"}`}>
                     {state === "done" ? step.statusText.done : state === "active" ? step.statusText.active : step.statusText.pending}
                   </p>
                 </div>
@@ -699,39 +699,39 @@ export function ContractDetail({ id }: { id: string }) {
         {/* ── KPI cards ─────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="rounded-[18px] border border-border bg-surface px-[18px] py-4">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Alquiler base</p>
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Alquiler base</p>
             <p className="font-headline text-[1.4rem] font-bold text-primary leading-none">
               {formatMoney(data.monthlyAmount)}
             </p>
-            <p className="text-[0.68rem] text-text-muted mt-1.5">
+            <p className="text-[0.68rem] text-muted-foreground mt-1.5">
               Ajuste {data.adjustmentIndex} · {frequencyLabel.toLowerCase()}
             </p>
           </div>
 
           <div className="rounded-[18px] border border-border bg-surface px-[18px] py-4">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Depósito</p>
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Depósito</p>
             <p className="font-headline text-[1.4rem] font-bold text-on-bg leading-none">
               {formatMoney(data.depositAmount)}
             </p>
-            <p className="text-[0.68rem] text-text-muted mt-1.5">1 mes · garantía</p>
+            <p className="text-[0.68rem] text-muted-foreground mt-1.5">1 mes · garantía</p>
           </div>
 
           <div className="rounded-[18px] border border-border bg-surface px-[18px] py-4">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Duración</p>
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Duración</p>
             <p className="font-headline text-[1.4rem] font-bold text-on-bg leading-none">
               {durationMonths} meses
             </p>
-            <p className="text-[0.68rem] text-text-muted mt-1.5">
+            <p className="text-[0.68rem] text-muted-foreground mt-1.5">
               {format(new Date(data.startDate), "dd/MM/yyyy")} → {format(new Date(data.endDate), "dd/MM/yyyy")}
             </p>
           </div>
 
           <div className="rounded-[18px] border border-border bg-surface px-[18px] py-4">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Día de pago</p>
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Día de pago</p>
             <p className="font-headline text-[1.4rem] font-bold text-on-bg leading-none">
               Día {data.paymentDay}
             </p>
-            <p className="text-[0.68rem] text-text-muted mt-1.5">
+            <p className="text-[0.68rem] text-muted-foreground mt-1.5">
               Modalidad {data.paymentModality === "A" ? "A — inmobiliaria" : "B — directo"}
             </p>
           </div>
@@ -743,7 +743,7 @@ export function ContractDetail({ id }: { id: string }) {
           {/* Condiciones */}
           <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
             <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
-              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
                 Condiciones del contrato
               </p>
               {!isEditing && (
@@ -827,7 +827,7 @@ export function ContractDetail({ id }: { id: string }) {
                 </div>
                 {/* Responsabilidad de servicios e impuestos */}
                 <div className="col-span-2 border-t border-border pt-3">
-                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.09em] text-text-muted mb-2.5">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.09em] text-muted-foreground mb-2.5">
                     Servicios e impuestos — ¿quién paga?
                   </p>
                   <div className="space-y-2">
@@ -877,7 +877,7 @@ export function ContractDetail({ id }: { id: string }) {
                   ...(data.agencyCommission ? [{ label: "Comisión", value: `${data.agencyCommission}%` }] : []),
                 ].map(({ label, value }) => (
                   <div key={label} className="grid grid-cols-2 gap-2 px-[18px] py-[11px]">
-                    <span className="text-text-muted text-[0.75rem]">{label}</span>
+                    <span className="text-muted-foreground text-[0.75rem]">{label}</span>
                     <span className="font-medium text-[0.78rem] text-on-surface">{value}</span>
                   </div>
                 ))}
@@ -888,7 +888,7 @@ export function ContractDetail({ id }: { id: string }) {
           {/* Partes firmantes */}
           <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
             <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
-              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
                 Partes firmantes
               </p>
               <div className="flex items-center gap-2">
@@ -1000,7 +1000,7 @@ export function ContractDetail({ id }: { id: string }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[0.8rem] font-semibold text-on-surface">{t.name}</p>
-                      <p className="text-[0.67rem] text-text-muted mt-0.5">
+                      <p className="text-[0.67rem] text-muted-foreground mt-0.5">
                         {i === 0 ? "Inquilino principal" : "Co-titular"}
                         {t.email && ` · ${t.email}`}
                       </p>
@@ -1008,7 +1008,7 @@ export function ContractDetail({ id }: { id: string }) {
                     <span className={`px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold flex-shrink-0 ${
                       data.status === "pending_signature" && i === 0
                         ? "bg-green-dim text-green border border-green/20"
-                        : "bg-surface-highest text-text-muted border border-border"
+                        : "bg-surface-highest text-muted-foreground border border-border"
                     }`}>
                       {data.status === "pending_signature" && i === 0 ? "✓ Firmó" : "En espera"}
                     </span>
@@ -1022,11 +1022,11 @@ export function ContractDetail({ id }: { id: string }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[0.8rem] font-semibold text-on-surface">{data.owner.name}</p>
-                      <p className="text-[0.67rem] text-text-muted mt-0.5">
+                      <p className="text-[0.67rem] text-muted-foreground mt-0.5">
                         Propietario{data.owner.email && ` · ${data.owner.email}`}
                       </p>
                     </div>
-                    <span className="px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold flex-shrink-0 bg-surface-highest text-text-muted border border-border">
+                    <span className="px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold flex-shrink-0 bg-surface-highest text-muted-foreground border border-border">
                       En espera
                     </span>
                   </div>
@@ -1039,9 +1039,9 @@ export function ContractDetail({ id }: { id: string }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[0.8rem] font-semibold text-on-surface">Arce Administración</p>
-                    <p className="text-[0.67rem] text-text-muted mt-0.5">Firma institucional</p>
+                    <p className="text-[0.67rem] text-muted-foreground mt-0.5">Firma institucional</p>
                   </div>
-                  <span className="px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold flex-shrink-0 bg-surface-highest text-text-muted border border-border">
+                  <span className="px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold flex-shrink-0 bg-surface-highest text-muted-foreground border border-border">
                     En espera
                   </span>
                 </div>
@@ -1053,11 +1053,11 @@ export function ContractDetail({ id }: { id: string }) {
         {/* ── Cláusulas ─────────────────────────────────────── */}
         <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
           <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
-            <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">
+            <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
               Cláusulas del contrato
             </p>
             <div className="flex items-center gap-2">
-              <span className="text-[0.7rem] text-text-muted">estándar</span>
+              <span className="text-[0.7rem] text-muted-foreground">estándar</span>
               <button className="px-2 py-1 text-[0.67rem] font-semibold border border-border rounded-md text-text-secondary bg-transparent hover:bg-surface-high transition-colors">
                 + Agregar cláusula
               </button>
@@ -1073,7 +1073,7 @@ export function ContractDetail({ id }: { id: string }) {
               "Depósito · Servicios · Garantías · Rescisión · Inspecciones · Mora",
             ].map((clausula, i) => (
               <div key={i} className="flex items-center gap-[10px] px-[14px] py-[10px] border border-border rounded-md hover:border-white/12 transition-colors cursor-pointer">
-                <span className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-text-muted flex-shrink-0">
+                <span className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground flex-shrink-0">
                   Cláusula {i + 1 < 6 ? i + 1 : "6–12"}
                 </span>
                 <span className="text-[0.78rem] text-on-surface flex-1">{clausula}</span>
@@ -1094,14 +1094,14 @@ export function ContractDetail({ id }: { id: string }) {
           {/* Acta de entrega */}
           <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
             <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
-              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">Acta de entrega de llaves</p>
-              <span className="px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold bg-surface-highest text-text-muted border border-border">
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">Acta de entrega de llaves</p>
+              <span className="px-[9px] py-[3px] rounded-full text-[0.65rem] font-bold bg-surface-highest text-muted-foreground border border-border">
                 {showStepper ? "Se genera al firmar" : "Completada"}
               </span>
             </div>
             <div className="p-[18px] space-y-2">
               {showStepper && (
-                <p className="text-[0.72rem] text-text-muted mb-3">
+                <p className="text-[0.72rem] text-muted-foreground mb-3">
                   Se completará luego de que todas las partes firmen. Ítems a relevar:
                 </p>
               )}
@@ -1120,7 +1120,7 @@ export function ContractDetail({ id }: { id: string }) {
                     {!showStepper && <span className="text-[0.5rem] text-white font-bold">✓</span>}
                   </div>
                   <span className="flex-1 text-[0.75rem] text-text-secondary">{label}</span>
-                  <span className="text-[0.68rem] text-text-muted font-medium">{value}</span>
+                  <span className="text-[0.68rem] text-muted-foreground font-medium">{value}</span>
                 </div>
               ))}
             </div>
@@ -1129,7 +1129,7 @@ export function ContractDetail({ id }: { id: string }) {
           {/* Actividad */}
           <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
             <div className="px-[18px] py-[14px] border-b border-border">
-              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">Actividad del contrato</p>
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">Actividad del contrato</p>
             </div>
             <div className="p-[18px]">
               {[
@@ -1179,7 +1179,7 @@ export function ContractDetail({ id }: { id: string }) {
                   </div>
                   <div className="flex-1">
                     <p className="text-[0.78rem] font-semibold text-on-surface">{item.label}</p>
-                    <p className="text-[0.68rem] text-text-muted mt-0.5">{item.meta}</p>
+                    <p className="text-[0.68rem] text-muted-foreground mt-0.5">{item.meta}</p>
                   </div>
                 </div>
               ))}
@@ -1191,8 +1191,8 @@ export function ContractDetail({ id }: { id: string }) {
         <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
           <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
             <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-text-muted" />
-              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-text-muted">
+              <Zap className="h-4 w-4 text-muted-foreground" />
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
                 Servicios e impuestos
               </p>
             </div>
@@ -1206,7 +1206,7 @@ export function ContractDetail({ id }: { id: string }) {
 
           {combinedServices.length === 0 ? (
             <div className="px-[18px] py-5 text-center">
-              <p className="text-[0.75rem] text-text-muted">No hay servicios aplicables configurados</p>
+              <p className="text-[0.75rem] text-muted-foreground">No hay servicios aplicables configurados</p>
               <button
                 onClick={() => setIsEditing(true)}
                 className="mt-2 text-[0.72rem] text-primary hover:underline"
@@ -1231,13 +1231,13 @@ export function ContractDetail({ id }: { id: string }) {
                       <span className="text-base w-6 text-center flex-shrink-0">{icon}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-[0.78rem] font-semibold text-on-surface">{nombre}</p>
-                        <p className="text-[0.66rem] text-text-muted truncate">
+                        <p className="text-[0.66rem] text-muted-foreground truncate">
                           {s.empresa ? `${s.empresa} · ` : ""}Paga: {responsableLabel}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {s.diasSinComprobante > 0 && (
-                          <span className="text-[0.63rem] text-text-muted">
+                          <span className="text-[0.63rem] text-muted-foreground">
                             {s.diasSinComprobante}d sin comprobante
                           </span>
                         )}
@@ -1246,7 +1246,7 @@ export function ContractDetail({ id }: { id: string }) {
                           {STATUS_LABEL[s.estado] ?? s.estado}
                         </span>
                       </div>
-                      <ChevronRight className="h-3.5 w-3.5 text-text-muted flex-shrink-0" />
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                     </div>
                   );
                 }
@@ -1261,8 +1261,8 @@ export function ContractDetail({ id }: { id: string }) {
                   >
                     <span className="text-base w-6 text-center flex-shrink-0">{icon}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[0.78rem] font-semibold text-text-muted">{label}</p>
-                      <p className="text-[0.66rem] text-text-muted">Paga: {responsableLabel} · sin datos cargados</p>
+                      <p className="text-[0.78rem] font-semibold text-muted-foreground">{label}</p>
+                      <p className="text-[0.66rem] text-muted-foreground">Paga: {responsableLabel} · sin datos cargados</p>
                     </div>
                     <span className="text-[0.63rem] text-primary flex-shrink-0">+ Configurar →</span>
                   </div>

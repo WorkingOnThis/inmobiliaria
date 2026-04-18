@@ -100,12 +100,12 @@ export function ZoneCombobox({
     variant === "form"
       ? cn(
           "flex w-full items-center justify-between bg-surface-mid border-none text-on-surface h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary transition-all",
-          !displayValue && "text-text-muted",
+          !displayValue && "text-muted-foreground",
           className
         )
       : cn(
           "flex w-full items-center justify-between bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all",
-          !displayValue && "text-text-muted italic text-[12px]",
+          !displayValue && "text-muted-foreground italic text-[12px]",
           className
         );
 
@@ -118,7 +118,7 @@ export function ZoneCombobox({
           </span>
           <ChevronsUpDown
             size={14}
-            className="text-text-muted flex-shrink-0 ml-2"
+            className="text-muted-foreground flex-shrink-0 ml-2"
           />
         </button>
       </PopoverTrigger>
@@ -132,17 +132,17 @@ export function ZoneCombobox({
             placeholder="Buscar zona..."
             value={search}
             onValueChange={setSearch}
-            className="text-on-surface placeholder:text-text-muted"
+            className="text-on-surface placeholder:text-muted-foreground"
           />
           <CommandList>
             {loading ? (
               <div className="flex items-center justify-center py-4">
-                <Loader2 size={14} className="animate-spin text-text-muted" />
+                <Loader2 size={14} className="animate-spin text-muted-foreground" />
               </div>
             ) : (
               <>
                 {zones.length === 0 && !showCreate && (
-                  <CommandEmpty className="text-text-muted text-[12px]">
+                  <CommandEmpty className="text-muted-foreground text-[12px]">
                     No hay zonas guardadas.
                   </CommandEmpty>
                 )}

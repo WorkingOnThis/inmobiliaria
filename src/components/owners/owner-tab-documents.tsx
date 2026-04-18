@@ -31,15 +31,15 @@ const TIPOS_DOCUMENTO = [
 ];
 
 const inputCls =
-  "w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[0.82rem] px-3 py-2 outline-none focus:border-primary transition-all placeholder:text-text-muted";
+  "w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[0.82rem] px-3 py-2 outline-none focus:border-primary transition-all placeholder:text-muted-foreground";
 const labelCls =
-  "text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5 block";
+  "text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-0.5 block";
 
 function fileIcon(nombre: string) {
   const ext = nombre.split(".").pop()?.toLowerCase() ?? "";
-  if (["jpg", "jpeg", "png", "webp"].includes(ext)) return <FileImage size={16} className="text-text-muted" />;
-  if (ext === "pdf") return <FileText size={16} className="text-text-muted" />;
-  return <File size={16} className="text-text-muted" />;
+  if (["jpg", "jpeg", "png", "webp"].includes(ext)) return <FileImage size={16} className="text-muted-foreground" />;
+  if (ext === "pdf") return <FileText size={16} className="text-muted-foreground" />;
+  return <File size={16} className="text-muted-foreground" />;
 }
 
 export function OwnerTabDocuments({
@@ -107,10 +107,10 @@ export function OwnerTabDocuments({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-muted">
+          <p className="text-[0.72rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
             Documentos · {ownerName}
           </p>
-          <p className="text-[0.75rem] text-text-muted mt-0.5">
+          <p className="text-[0.75rem] text-muted-foreground mt-0.5">
             {documentos.length === 0 ? "Sin documentos cargados" : `${documentos.length} archivos`}
           </p>
         </div>
@@ -135,13 +135,13 @@ export function OwnerTabDocuments({
             className="size-11 rounded-[10px] flex items-center justify-center"
             style={{ background: "var(--surface-mid)" }}
           >
-            <Upload size={20} className="text-text-muted" />
+            <Upload size={20} className="text-muted-foreground" />
           </div>
           <div className="text-center">
             <p className="text-[0.82rem] font-semibold text-on-surface">
               Arrastrá archivos o hacé clic para subir
             </p>
-            <p className="text-[0.72rem] text-text-muted mt-0.5">
+            <p className="text-[0.72rem] text-muted-foreground mt-0.5">
               PDF, Word, imágenes — máx. 20 MB
             </p>
           </div>
@@ -161,10 +161,10 @@ export function OwnerTabDocuments({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[13.5px] font-medium text-on-surface truncate">{doc.nombre}</p>
-                <p className="text-[11px] text-text-muted">{doc.tipo} · {doc.fecha}</p>
+                <p className="text-[11px] text-muted-foreground">{doc.tipo} · {doc.fecha}</p>
               </div>
-              <span className="text-[11px] text-text-muted font-mono">{doc.size}</span>
-              <button className="text-text-muted hover:text-on-surface transition-colors">
+              <span className="text-[11px] text-muted-foreground font-mono">{doc.size}</span>
+              <button className="text-muted-foreground hover:text-on-surface transition-colors">
                 <X size={14} />
               </button>
             </div>
@@ -179,9 +179,9 @@ export function OwnerTabDocuments({
             <div className="px-6 py-5 border-b border-border flex items-start justify-between">
               <div>
                 <div className="font-semibold text-[15px] text-on-surface">Subir documento</div>
-                <div className="text-[12px] text-text-muted mt-0.5">PDF, Word, imágenes · máx. 20 MB</div>
+                <div className="text-[12px] text-muted-foreground mt-0.5">PDF, Word, imágenes · máx. 20 MB</div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => { setShowModal(false); resetForm(); }} className="size-8 text-text-muted">
+              <Button variant="ghost" size="icon" onClick={() => { setShowModal(false); resetForm(); }} className="size-8 text-muted-foreground">
                 <X size={16} />
               </Button>
             </div>
@@ -210,10 +210,10 @@ export function OwnerTabDocuments({
                     {fileIcon(selectedFile.name)}
                     <div>
                       <p className="text-[13px] font-medium text-on-surface">{selectedFile.name}</p>
-                      <p className="text-[11px] text-text-muted">{(selectedFile.size / 1024).toFixed(0)} KB</p>
+                      <p className="text-[11px] text-muted-foreground">{(selectedFile.size / 1024).toFixed(0)} KB</p>
                     </div>
                     <button
-                      className="ml-2 text-text-muted hover:text-error transition-colors"
+                      className="ml-2 text-muted-foreground hover:text-error transition-colors"
                       onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
                     >
                       <X size={14} />
@@ -221,8 +221,8 @@ export function OwnerTabDocuments({
                   </div>
                 ) : (
                   <>
-                    <Upload size={18} className="text-text-muted" />
-                    <p className="text-[0.78rem] text-text-muted">Arrastrá un archivo o hacé clic</p>
+                    <Upload size={18} className="text-muted-foreground" />
+                    <p className="text-[0.78rem] text-muted-foreground">Arrastrá un archivo o hacé clic</p>
                   </>
                 )}
               </div>
