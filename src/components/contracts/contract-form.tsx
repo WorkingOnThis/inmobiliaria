@@ -54,7 +54,7 @@ interface Step2Data {
   adjustmentFrequency: string;
 }
 
-export function ContratoForm() {
+export function ContractForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);

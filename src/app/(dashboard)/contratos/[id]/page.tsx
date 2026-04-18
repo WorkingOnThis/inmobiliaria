@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import { ContratoDetalle } from "@/components/contratos/contrato-detalle";
+import { ContractDetail } from "@/components/contracts/contract-detail";
 
-export default async function ContratoDetallePage({
+export default async function ContractDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -17,7 +17,7 @@ export default async function ContratoDetallePage({
         </div>
       }
     >
-      <ContratoDetalle id={id} />
+      <ContractDetail id={id} />
     </Suspense>
   );
 }

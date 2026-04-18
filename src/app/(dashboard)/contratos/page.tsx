@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { ContratosList } from "@/components/contratos/contratos-list";
+import { ContractsList } from "@/components/contracts/contracts-list";
 import { Loader2 } from "lucide-react";
 
 export default function ContratosPage() {
@@ -13,7 +13,7 @@ export default function ContratosPage() {
         </div>
       }
     >
-      <ContratosList />
+      <ContractsList />
     </Suspense>
   );
 }

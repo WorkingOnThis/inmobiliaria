@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { ContratoForm } from "@/components/contratos/contrato-form";
+import { ContractForm } from "@/components/contracts/contract-form";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
 
@@ -27,7 +27,7 @@ export default async function NuevoContratoPage() {
         </p>
       </div>
       <div className="flex flex-col items-center">
-        <ContratoForm />
+        <ContractForm />
       </div>
     </div>
   );

@@ -46,9 +46,9 @@ function freqShort(freq: number): string {
   return FREQ_SHORT[freq] ?? `c/${freq}m`;
 }
 
-type VigenciaDias = { text: string; variant: "normal" | "alerta" | "vencida" };
+type ValidityDays = { text: string; variant: "normal" | "alerta" | "vencida" };
 
-function vigenciaDias(startDate: string, endDate: string, status: string): VigenciaDias {
+function validityDays(startDate: string, endDate: string, status: string): ValidityDays {
   const today = new Date();
   const end = new Date(endDate);
   const start = new Date(startDate);
@@ -156,7 +156,7 @@ interface ContractRow {
   adjustmentFrequency: number | null;
 }
 
-export function ContratosList() {
+export function ContractsList() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -386,7 +386,7 @@ export function ContratosList() {
               <tbody>
                 {contracts.length > 0 ? (
                   contracts.map((c) => {
-                    const dias = vigenciaDias(c.startDate, c.endDate, c.status);
+                    const dias = validityDays(c.startDate, c.endDate, c.status);
                     const { pill, dot } = statusTagClasses(c.status);
                     const tenantName = c.tenantNames[0] ?? "";
                     const tenantInitials = getInitials(tenantName);

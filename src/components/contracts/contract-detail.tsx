@@ -202,7 +202,7 @@ function getStepStates(status: string): Array<"done" | "active" | "pending"> {
    COMPONENT
    ────────────────────────────────────────────────────────── */
 
-export function ContratoDetalle({ id }: { id: string }) {
+export function ContractDetail({ id }: { id: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -235,8 +235,8 @@ export function ContratoDetalle({ id }: { id: string }) {
   });
   const customIndexes: { code: string; label: string }[] = customIndexesData?.indexes ?? [];
 
-  const { data: serviciosData } = useQuery({
-    queryKey: ["servicios", data?.propertyId],
+  const { data: servicesData } = useQuery({
+    queryKey: ["services", data?.propertyId],
     queryFn: async () => {
       if (!data?.propertyId) return null;
       const hoy = new Date();
@@ -298,7 +298,7 @@ export function ContratoDetalle({ id }: { id: string }) {
   };
 
   /* mutations */
-  const patchPartesMutation = useMutation({
+  const patchPartiesMutation = useMutation({
     mutationFn: async ({ ownerId, tenantIds }: { ownerId: string; tenantIds: string[] }) => {
       const res = await fetch(`/api/contracts/${id}`, {
         method: "PATCH",
@@ -373,7 +373,7 @@ export function ContratoDetalle({ id }: { id: string }) {
           expensas: "serviceExpensas",
         };
         await Promise.all(
-          (serviciosData?.items ?? []).map((srv) => {
+          (servicesData?.items ?? []).map((srv) => {
             const condKey = TIPO_COND_KEY[srv.tipo];
             if (!condKey) return Promise.resolve();
             const newVal = values[condKey];
@@ -399,7 +399,7 @@ export function ContratoDetalle({ id }: { id: string }) {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const activarMutation = useMutation({
+  const activateMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/contracts/${id}`, {
         method: "PATCH",
@@ -495,7 +495,7 @@ export function ContratoDetalle({ id }: { id: string }) {
   const showStepper = data.status === "draft" || data.status === "pending_signature";
   const stepStates = getStepStates(data.status);
 
-  const SERVICIO_TIPO_SHORT: Record<string, string> = {
+  const SERVICE_TYPE_SHORT: Record<string, string> = {
     luz: "Luz",
     gas: "Gas",
     agua: "Agua",
@@ -506,7 +506,7 @@ export function ContratoDetalle({ id }: { id: string }) {
     otro: "Otro",
   };
 
-  const SERVICIO_TIPO_ICON: Record<string, string> = {
+  const SERVICE_TYPE_ICON: Record<string, string> = {
     luz: "⚡",
     gas: "🔥",
     agua: "💧",
@@ -517,7 +517,7 @@ export function ContratoDetalle({ id }: { id: string }) {
     otro: "📄",
   };
 
-  const serviciosItems = serviciosData?.items ?? [];
+  const servicesItems = servicesData?.items ?? [];
 
   // Mapeo entre clave de propiedad y tipo de servicio en la tabla servicio
   const SERVICE_KEY_TO_TIPO: Record<string, string> = {
@@ -542,24 +542,24 @@ export function ContratoDetalle({ id }: { id: string }) {
   };
 
   // Lista unificada: servicios aplicables (no "na") con o sin registro en la tabla servicio
-  const combinedServicios = PROPERTY_SERVICES
+  const combinedServices = PROPERTY_SERVICES
     .filter(({ key }) => getServiceValue(key) !== "na")
     .map(({ key, label }) => {
       const tipo = SERVICE_KEY_TO_TIPO[key];
-      const existingServicio = serviciosItems.find((s) => s.tipo === tipo);
+      const existingServicio = servicesItems.find((s) => s.tipo === tipo);
       const responsableKey = getServiceValue(key) as ServiceResponsibility;
       const responsableLabel = SERVICE_RESPONSIBILITY_LABELS[responsableKey] || responsableKey;
       return { key, label, tipo, existingServicio, responsableLabel };
     });
 
-  const ESTADO_COLOR: Record<string, { bg: string; text: string; dot: string }> = {
+  const STATUS_COLOR: Record<string, { bg: string; text: string; dot: string }> = {
     al_dia:    { bg: "bg-income-dim",      text: "text-income",      dot: "bg-income" },
     pendiente: { bg: "bg-surface-highest", text: "text-text-muted",  dot: "bg-text-muted" },
     en_alerta: { bg: "bg-mustard-dim",     text: "text-mustard",     dot: "bg-mustard" },
     bloqueado: { bg: "bg-error-dim",       text: "text-error",       dot: "bg-error" },
   };
 
-  const ESTADO_LABEL: Record<string, string> = {
+  const STATUS_LABEL: Record<string, string> = {
     al_dia: "Al día", pendiente: "Pendiente", en_alerta: "En alerta", bloqueado: "Bloqueado",
   };
 
@@ -602,11 +602,11 @@ export function ContratoDetalle({ id }: { id: string }) {
           </button>
           {data.status === "draft" && (
             <button
-              onClick={() => activarMutation.mutate()}
-              disabled={activarMutation.isPending}
+              onClick={() => activateMutation.mutate()}
+              disabled={activateMutation.isPending}
               className="px-[14px] py-[7px] text-[0.72rem] font-semibold rounded-xl bg-primary text-primary-foreground hover:brightness-110 transition-all disabled:opacity-60 flex items-center gap-1.5"
             >
-              {activarMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+              {activateMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
               Aprobar y enviar a firma →
             </button>
           )}
@@ -980,13 +980,13 @@ export function ContratoDetalle({ id }: { id: string }) {
                   <p className="text-xs text-muted-foreground">El primero seleccionado será el inquilino principal.</p>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <Button variant="outline" size="sm" onClick={() => { setIsEditingPartes(false); setTenantSearch(""); setTenantSearchOpen(false); }} disabled={patchPartesMutation.isPending}>
+                  <Button variant="outline" size="sm" onClick={() => { setIsEditingPartes(false); setTenantSearch(""); setTenantSearchOpen(false); }} disabled={patchPartiesMutation.isPending}>
                     <X className="h-3 w-3 mr-1" /> Cancelar
                   </Button>
                   <Button size="sm"
-                    onClick={() => patchPartesMutation.mutate({ ownerId: editOwnerId, tenantIds: editTenantIds })}
-                    disabled={patchPartesMutation.isPending || !editOwnerId || editTenantIds.length === 0}>
-                    {patchPartesMutation.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                    onClick={() => patchPartiesMutation.mutate({ ownerId: editOwnerId, tenantIds: editTenantIds })}
+                    disabled={patchPartiesMutation.isPending || !editOwnerId || editTenantIds.length === 0}>
+                    {patchPartiesMutation.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
                     Guardar cambios
                   </Button>
                 </div>
@@ -1204,7 +1204,7 @@ export function ContratoDetalle({ id }: { id: string }) {
             </button>
           </div>
 
-          {combinedServicios.length === 0 ? (
+          {combinedServices.length === 0 ? (
             <div className="px-[18px] py-5 text-center">
               <p className="text-[0.75rem] text-text-muted">No hay servicios aplicables configurados</p>
               <button
@@ -1216,12 +1216,12 @@ export function ContratoDetalle({ id }: { id: string }) {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {combinedServicios.map(({ key, label, tipo, existingServicio, responsableLabel }) => {
+              {combinedServices.map(({ key, label, tipo, existingServicio, responsableLabel }) => {
                 if (existingServicio) {
                   const s = existingServicio;
-                  const estadoInfo = ESTADO_COLOR[s.estado] ?? ESTADO_COLOR.pendiente;
-                  const icon = SERVICIO_TIPO_ICON[s.tipo] ?? "📄";
-                  const nombre = SERVICIO_TIPO_SHORT[s.tipo] ?? s.tipo;
+                  const estadoInfo = STATUS_COLOR[s.estado] ?? STATUS_COLOR.pendiente;
+                  const icon = SERVICE_TYPE_ICON[s.tipo] ?? "📄";
+                  const nombre = SERVICE_TYPE_SHORT[s.tipo] ?? s.tipo;
                   return (
                     <div
                       key={s.id}
@@ -1243,7 +1243,7 @@ export function ContratoDetalle({ id }: { id: string }) {
                         )}
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.63rem] font-bold ${estadoInfo.bg} ${estadoInfo.text}`}>
                           <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${estadoInfo.dot}`} />
-                          {ESTADO_LABEL[s.estado] ?? s.estado}
+                          {STATUS_LABEL[s.estado] ?? s.estado}
                         </span>
                       </div>
                       <ChevronRight className="h-3.5 w-3.5 text-text-muted flex-shrink-0" />
@@ -1252,7 +1252,7 @@ export function ContratoDetalle({ id }: { id: string }) {
                 }
 
                 // Tarjeta fantasma: servicio aplicable pero sin datos cargados
-                const icon = SERVICIO_TIPO_ICON[tipo] ?? "📄";
+                const icon = SERVICE_TYPE_ICON[tipo] ?? "📄";
                 return (
                   <div
                     key={key}
@@ -1293,8 +1293,8 @@ export function ContratoDetalle({ id }: { id: string }) {
             )}
             {(data.status === "draft" || data.status === "pending_signature") && (
               <button
-                onClick={() => data.status === "draft" && activarMutation.mutate()}
-                disabled={activarMutation.isPending}
+                onClick={() => data.status === "draft" && activateMutation.mutate()}
+                disabled={activateMutation.isPending}
                 className="px-[14px] py-[7px] text-[0.72rem] font-semibold rounded-xl bg-primary text-primary-foreground hover:brightness-110 transition-all disabled:opacity-60"
               >
                 Aprobar y enviar a firma →
