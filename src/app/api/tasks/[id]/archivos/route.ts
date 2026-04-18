@@ -68,7 +68,7 @@ export async function POST(
         taskId: id,
         name: file.name,
         url,
-        tipo: file.type || null,
+        type: file.type || null,
         size: file.size,
         createdBy: session.user.id,
         createdAt: new Date(),

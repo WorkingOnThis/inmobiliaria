@@ -57,9 +57,22 @@ export async function GET(request: NextRequest) {
       createdAt: servicio.createdAt,
       propertyAddress: property.address,
       propertyType: property.type,
+      comprobanteId: servicioComprobante.id,
+      comprobanteMonto: servicioComprobante.monto,
+      comprobanteArchivoUrl: servicioComprobante.archivoUrl,
+      comprobanteUploadedAt: servicioComprobante.uploadedAt,
+      omisionId: servicioOmision.id,
     })
     .from(servicio)
     .leftJoin(property, eq(servicio.propertyId, property.id))
+    .leftJoin(
+      servicioComprobante,
+      and(eq(servicioComprobante.servicioId, servicio.id), eq(servicioComprobante.period, periodo))
+    )
+    .leftJoin(
+      servicioOmision,
+      and(eq(servicioOmision.servicioId, servicio.id), eq(servicioOmision.period, periodo))
+    )
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(servicio.createdAt))
     .limit(limit)
@@ -97,41 +110,49 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const serviciosConEstado = await Promise.all(
-    servicios.map(async (s) => {
-      const [comprobante] = await db
-        .select()
-        .from(servicioComprobante)
-        .where(and(eq(servicioComprobante.servicioId, s.id), eq(servicioComprobante.period, periodo)))
-        .limit(1);
+  const serviciosConEstado = servicios.map((s) => {
+    const hasReceipt = s.comprobanteId !== null;
+    const hasOmission = s.omisionId !== null;
 
-      const [omision] = await db
-        .select()
-        .from(servicioOmision)
-        .where(and(eq(servicioOmision.servicioId, s.id), eq(servicioOmision.period, periodo)))
-        .limit(1);
+    const estadoCalculado = calculateServiceStatus({
+      hasReceipt,
+      daysWithoutReceipt: hasReceipt ? 0 : diasTranscurridos,
+      activatesBlock: s.triggersBlock,
+      hasOmission,
+    });
 
-      const diasSinComprobante = comprobante ? 0 : diasTranscurridos;
+    const ultimoComprobante = hasReceipt
+      ? {
+          id: s.comprobanteId!,
+          monto: s.comprobanteMonto,
+          archivoUrl: s.comprobanteArchivoUrl,
+          uploadedAt: s.comprobanteUploadedAt,
+        }
+      : null;
 
-      const estadoCalculado = calculateServiceStatus({
-        hasReceipt: !!comprobante,
-        daysWithoutReceipt: diasSinComprobante,
-        activatesBlock: s.triggersBlock,
-        hasOmission: !!omision,
-      });
-
-      return {
-        ...s,
-        periodo,
-        estado: estadoCalculado,
-        diasSinComprobante: comprobante ? 0 : diasTranscurridos,
-        ultimoComprobante: comprobante ?? null,
-        tieneOmision: !!omision,
-        inquilinoNombre: inquilinoMap.get(s.propertyId)?.nombre ?? null,
-        inquilinoId: inquilinoMap.get(s.propertyId)?.clientId ?? null,
-      };
-    })
-  );
+    return {
+      id: s.id,
+      propertyId: s.propertyId,
+      tipo: s.tipo,
+      company: s.company,
+      accountNumber: s.accountNumber,
+      holder: s.holder,
+      holderType: s.holderType,
+      paymentResponsible: s.paymentResponsible,
+      dueDay: s.dueDay,
+      triggersBlock: s.triggersBlock,
+      createdAt: s.createdAt,
+      propertyAddress: s.propertyAddress,
+      propertyType: s.propertyType,
+      periodo,
+      estado: estadoCalculado,
+      diasSinComprobante: hasReceipt ? 0 : diasTranscurridos,
+      ultimoComprobante,
+      tieneOmision: hasOmission,
+      inquilinoNombre: inquilinoMap.get(s.propertyId)?.nombre ?? null,
+      inquilinoId: inquilinoMap.get(s.propertyId)?.clientId ?? null,
+    };
+  });
 
   const resultado = estado
     ? serviciosConEstado.filter((s) => s.estado === estado)

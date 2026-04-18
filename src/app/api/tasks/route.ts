@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
 
     const conditions = [];
     if (scope === "mine") conditions.push(eq(tarea.assignedTo, session.user.id));
-    if (categoria) conditions.push(eq(tarea.categoria, categoria));
-    if (tipo) conditions.push(eq(tarea.tipo, tipo));
+    if (categoria) conditions.push(eq(tarea.category, categoria));
+    if (tipo) conditions.push(eq(tarea.type, tipo));
     if (estado) conditions.push(eq(tarea.status, estado));
     if (excluirResuelta) conditions.push(ne(tarea.status, "resolved"));
 
@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
         description: tarea.description,
         priority: tarea.priority,
         status: tarea.status,
-        tipo: tarea.tipo,
-        categoria: tarea.categoria,
+        tipo: tarea.type,
+        categoria: tarea.category,
         dueDate: tarea.dueDate,
         propertyId: tarea.propertyId,
         propertyAddress: property.address,
@@ -95,8 +95,8 @@ const crearTareaSchema = z.object({
   title: z.string().min(1, "El título es obligatorio"),
   description: z.string().nullable().optional(),
   priority: z.enum(["urgent", "high", "medium", "low"]).default("medium"),
-  tipo: z.enum(["auto", "manual"]).default("manual"),
-  categoria: z.string().nullable().optional(),
+  type: z.enum(["auto", "manual"]).default("manual"),
+  category: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional().transform((v) => (v ? new Date(v) : null)),
   propertyId: z.string().nullable().optional(),
   contractId: z.string().nullable().optional(),
@@ -132,8 +132,8 @@ export async function POST(request: NextRequest) {
           description: data.description ?? null,
           priority: data.priority,
           status: "pending",
-          tipo: data.tipo,
-          categoria: data.categoria ?? null,
+          type: data.type,
+          category: data.category ?? null,
           dueDate: data.dueDate ?? null,
           propertyId: data.propertyId ?? null,
           contractId: data.contractId ?? null,
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
         id: historialId,
         taskId: id,
         text: "Tarea creada",
-        tipo: "manual",
+        type: "manual",
         createdBy: session.user.id,
         createdAt: now,
       });

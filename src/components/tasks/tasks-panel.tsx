@@ -86,7 +86,7 @@ type ListResponse = {
   items: TaskSummary[];
 };
 
-type ClienteSimple = {
+type ClientSummary = {
   id: string;
   firstName: string;
   lastName: string | null;
@@ -540,7 +540,7 @@ function SidePanel({
     queryFn: async () => {
       const res = await fetch("/api/clients?limit=200");
       if (!res.ok) return { clients: [] };
-      return res.json() as Promise<{ clients: ClienteSimple[] }>;
+      return res.json() as Promise<{ clients: ClientSummary[] }>;
     },
     enabled: open,
   });

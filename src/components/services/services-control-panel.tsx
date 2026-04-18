@@ -38,11 +38,11 @@ type PropertySummary = {
 };
 
 type KPIs = {
-  totalPropiedades: number;
-  alDia: number;
-  enAlerta: number;
-  bloqueadas: number;
-  pendientes: number;
+  totalProperties: number;
+  current: number;
+  alert: number;
+  blocked: number;
+  pending: number;
 };
 
 type PropiedadResumen = {
@@ -302,7 +302,7 @@ export function ServicesControlPanel() {
             Propiedades con servicio
           </p>
           <p className="font-headline text-3xl font-bold tracking-tight text-white">
-            {kpis?.totalPropiedades ?? "—"}
+            {kpis?.totalProperties ?? "—"}
           </p>
           <p className="mt-1 text-xs text-primary/50">Servicios activos este período</p>
         </div>
@@ -312,7 +312,7 @@ export function ServicesControlPanel() {
             Al día
           </p>
           <p className="font-headline text-3xl font-bold tracking-tight text-income">
-            {kpis?.alDia ?? "—"}
+            {kpis?.current ?? "—"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Todos los comprobantes cargados</p>
         </div>
@@ -322,7 +322,7 @@ export function ServicesControlPanel() {
             ⚠ En alerta (30+ días)
           </p>
           <p className="font-headline text-3xl font-bold tracking-tight text-mustard">
-            {kpis?.enAlerta ?? "—"}
+            {kpis?.alert ?? "—"}
           </p>
           <p className="mt-1 text-xs text-mustard/60">Riesgo de bloqueo de alquiler</p>
         </div>
@@ -332,7 +332,7 @@ export function ServicesControlPanel() {
             🔒 Bloqueados
           </p>
           <p className="font-headline text-3xl font-bold tracking-tight text-destructive">
-            {kpis?.bloqueadas ?? "—"}
+            {kpis?.blocked ?? "—"}
           </p>
           <p className="mt-1 text-xs text-destructive/60">Alquiler retenido — requiere acción</p>
         </div>

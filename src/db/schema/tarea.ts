@@ -10,8 +10,8 @@ export const tarea = pgTable("task", {
   description: text("description"),
   priority: text("priority").notNull().default("medium"), // "urgent" | "high" | "medium" | "low"
   status: text("status").notNull().default("pending"),    // "pending" | "in_progress" | "resolved"
-  tipo: text("tipo").notNull().default("manual"),         // "auto" | "manual" — not renamed (enum value, not column)
-  categoria: text("categoria"),                           // "rent" | "services" | "contracts" | "onboarding"
+  type: text("type").notNull().default("manual"),         // "auto" | "manual"
+  category: text("category"),                             // "rent" | "services" | "contracts" | "onboarding"
 
   dueDate: timestamp("dueDate"),
 
@@ -31,7 +31,7 @@ export const tareaHistorial = pgTable("task_history", {
   id: text("id").primaryKey(),
   taskId: text("taskId").notNull().references(() => tarea.id, { onDelete: "cascade" }),
   text: text("text").notNull(),
-  tipo: text("tipo").notNull().default("auto"), // "auto" | "manual"
+  type: text("type").notNull().default("auto"), // "auto" | "manual"
   createdBy: text("createdBy").references(() => user.id, { onDelete: "set null" }),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
@@ -49,7 +49,7 @@ export const tareaArchivo = pgTable("task_file", {
   taskId: text("taskId").notNull().references(() => tarea.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   url: text("url").notNull(),
-  tipo: text("tipo"),
+  type: text("type"),
   size: integer("size"),
   createdBy: text("createdBy").references(() => user.id, { onDelete: "set null" }),
   createdAt: timestamp("createdAt").notNull().defaultNow(),

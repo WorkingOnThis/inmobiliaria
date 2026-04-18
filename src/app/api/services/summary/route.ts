@@ -23,37 +23,34 @@ export async function GET(request: NextRequest) {
     .select({
       id: servicio.id,
       propertyId: servicio.propertyId,
-      tipo: servicio.tipo,
       activatesBlock: servicio.triggersBlock,
       propertyAddress: property.address,
+      comprobanteId: servicioComprobante.id,
+      omisionId: servicioOmision.id,
     })
     .from(servicio)
-    .leftJoin(property, eq(servicio.propertyId, property.id));
+    .leftJoin(property, eq(servicio.propertyId, property.id))
+    .leftJoin(
+      servicioComprobante,
+      and(eq(servicioComprobante.servicioId, servicio.id), eq(servicioComprobante.period, periodo))
+    )
+    .leftJoin(
+      servicioOmision,
+      and(eq(servicioOmision.servicioId, servicio.id), eq(servicioOmision.period, periodo))
+    )
+    .limit(200);
 
-  const serviciosConEstado = await Promise.all(
-    servicios.map(async (s) => {
-      const [comprobante] = await db
-        .select({ id: servicioComprobante.id })
-        .from(servicioComprobante)
-        .where(and(eq(servicioComprobante.servicioId, s.id), eq(servicioComprobante.period, periodo)))
-        .limit(1);
-
-      const [omision] = await db
-        .select({ id: servicioOmision.id })
-        .from(servicioOmision)
-        .where(and(eq(servicioOmision.servicioId, s.id), eq(servicioOmision.period, periodo)))
-        .limit(1);
-
-      const estado = calculateServiceStatus({
-        hasReceipt: !!comprobante,
-        daysWithoutReceipt: comprobante ? 0 : diasTranscurridos,
-        activatesBlock: s.activatesBlock,
-        hasOmission: !!omision,
-      });
-
-      return { ...s, estado };
-    })
-  );
+  const serviciosConEstado = servicios.map((s) => {
+    const hasReceipt = s.comprobanteId !== null;
+    const hasOmission = s.omisionId !== null;
+    const estado = calculateServiceStatus({
+      hasReceipt,
+      daysWithoutReceipt: hasReceipt ? 0 : diasTranscurridos,
+      activatesBlock: s.activatesBlock,
+      hasOmission,
+    });
+    return { propertyId: s.propertyId, propertyAddress: s.propertyAddress, estado };
+  });
 
   const propiedadesMap = new Map<string, { propertyId: string; address: string | null; estados: string[] }>();
 
@@ -66,34 +63,34 @@ export async function GET(request: NextRequest) {
 
   const prioridad = { blocked: 4, alert: 3, pending: 2, current: 1 };
 
-  let totalPropiedades = 0;
-  let alDia = 0;
-  let enAlerta = 0;
-  let bloqueadas = 0;
-  let pendientes = 0;
+  let totalProperties = 0;
+  let current = 0;
+  let alert = 0;
+  let blocked = 0;
+  let pending = 0;
 
   for (const [, prop] of propiedadesMap) {
-    totalPropiedades++;
+    totalProperties++;
     const peorEstado = prop.estados.reduce((peor, est) => {
       return (prioridad[est as keyof typeof prioridad] ?? 0) > (prioridad[peor as keyof typeof prioridad] ?? 0)
         ? est
         : peor;
     }, "current");
 
-    if (peorEstado === "current") alDia++;
-    else if (peorEstado === "alert") enAlerta++;
-    else if (peorEstado === "blocked") bloqueadas++;
-    else pendientes++;
+    if (peorEstado === "current") current++;
+    else if (peorEstado === "alert") alert++;
+    else if (peorEstado === "blocked") blocked++;
+    else pending++;
   }
 
   return NextResponse.json({
     periodo,
     kpis: {
-      totalPropiedades,
-      alDia,
-      enAlerta,
-      bloqueadas,
-      pendientes,
+      totalProperties,
+      current,
+      alert,
+      blocked,
+      pending,
     },
   });
 }

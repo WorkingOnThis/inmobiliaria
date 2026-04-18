@@ -37,8 +37,8 @@ export async function GET(
         description: tarea.description,
         priority: tarea.priority,
         status: tarea.status,
-        tipo: tarea.tipo,
-        categoria: tarea.categoria,
+        tipo: tarea.type,
+        categoria: tarea.category,
         dueDate: tarea.dueDate,
         propertyId: tarea.propertyId,
         propertyAddress: property.address,
@@ -73,7 +73,7 @@ export async function GET(
       .select({
         id: tareaHistorial.id,
         text: tareaHistorial.text,
-        tipo: tareaHistorial.tipo,
+        tipo: tareaHistorial.type,
         createdByName: historialUserAlias.name,
         createdAt: tareaHistorial.createdAt,
       })
@@ -99,7 +99,7 @@ export async function GET(
         id: tareaArchivo.id,
         name: tareaArchivo.name,
         url: tareaArchivo.url,
-        tipo: tareaArchivo.tipo,
+        tipo: tareaArchivo.type,
         size: tareaArchivo.size,
         createdAt: tareaArchivo.createdAt,
       })
@@ -180,7 +180,7 @@ export async function PATCH(
           id: crypto.randomUUID(),
           taskId: id,
           text: `Estado cambiado a "${ESTADO_LABELS[patch.status] ?? patch.status}"`,
-          tipo: "manual" as const,
+          type: "manual" as const,
           createdBy: session.user.id,
           createdAt: now,
         });
@@ -191,7 +191,7 @@ export async function PATCH(
           id: crypto.randomUUID(),
           taskId: id,
           text: `Prioridad cambiada a "${PRIORIDAD_LABELS[patch.priority] ?? patch.priority}"`,
-          tipo: "manual" as const,
+          type: "manual" as const,
           createdBy: session.user.id,
           createdAt: now,
         });
@@ -202,7 +202,7 @@ export async function PATCH(
           id: crypto.randomUUID(),
           taskId: id,
           text: `Título actualizado`,
-          tipo: "manual" as const,
+          type: "manual" as const,
           createdBy: session.user.id,
           createdAt: now,
         });
@@ -213,7 +213,7 @@ export async function PATCH(
           id: crypto.randomUUID(),
           taskId: id,
           text: patch.clientId ? `Persona vinculada actualizada` : `Persona vinculada eliminada`,
-          tipo: "manual" as const,
+          type: "manual" as const,
           createdBy: session.user.id,
           createdAt: now,
         });
@@ -224,7 +224,7 @@ export async function PATCH(
           id: crypto.randomUUID(),
           taskId: id,
           text: patch.propertyId ? `Propiedad vinculada actualizada` : `Propiedad vinculada eliminada`,
-          tipo: "manual" as const,
+          type: "manual" as const,
           createdBy: session.user.id,
           createdAt: now,
         });

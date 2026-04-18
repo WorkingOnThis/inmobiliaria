@@ -92,41 +92,45 @@ export async function GET(
     // --- KPIs ---
     const currentYear = new Date().getFullYear().toString();
 
-    // Liquidado acumulado: egresos con origen "settlement" en el año actual
-    const [liquidadoResult] = await db
-      .select({ total: sum(cajaMovimiento.amount) })
-      .from(cajaMovimiento)
-      .where(
-        and(
-          eq(cajaMovimiento.propietarioId, id),
-          eq(cajaMovimiento.tipo, "expense"),
-          eq(cajaMovimiento.source, "settlement"),
-          sql`extract(year from ${cajaMovimiento.date}::date) = ${currentYear}`
-        )
-      );
-
-    // Ingresos aún no liquidados (source != settlement): son los que deberían liquidarse
-    const [pendienteLiquidarResult] = await db
-      .select({ total: sum(cajaMovimiento.amount) })
-      .from(cajaMovimiento)
-      .where(
-        and(
-          eq(cajaMovimiento.propietarioId, id),
-          eq(cajaMovimiento.tipo, "income"),
-          sql`${cajaMovimiento.source} != 'settlement'`
-        )
-      );
-
-    // Pendiente de confirmar: categoría "pendiente_confirmacion"
-    const [pendienteConfirmarResult] = await db
-      .select({ total: sum(cajaMovimiento.amount) })
-      .from(cajaMovimiento)
-      .where(
-        and(
-          eq(cajaMovimiento.propietarioId, id),
-          eq(cajaMovimiento.categoria, "pendiente_confirmacion")
-        )
-      );
+    const [
+      [liquidadoResult],
+      [pendienteLiquidarResult],
+      [pendienteConfirmarResult],
+    ] = await Promise.all([
+      // Liquidado acumulado: egresos con origen "settlement" en el año actual
+      db
+        .select({ total: sum(cajaMovimiento.amount) })
+        .from(cajaMovimiento)
+        .where(
+          and(
+            eq(cajaMovimiento.propietarioId, id),
+            eq(cajaMovimiento.tipo, "expense"),
+            eq(cajaMovimiento.source, "settlement"),
+            sql`extract(year from ${cajaMovimiento.date}::date) = ${currentYear}`
+          )
+        ),
+      // Ingresos aún no liquidados (source != settlement): son los que deberían liquidarse
+      db
+        .select({ total: sum(cajaMovimiento.amount) })
+        .from(cajaMovimiento)
+        .where(
+          and(
+            eq(cajaMovimiento.propietarioId, id),
+            eq(cajaMovimiento.tipo, "income"),
+            sql`${cajaMovimiento.source} != 'settlement'`
+          )
+        ),
+      // Pendiente de confirmar: categoría "pendiente_confirmacion"
+      db
+        .select({ total: sum(cajaMovimiento.amount) })
+        .from(cajaMovimiento)
+        .where(
+          and(
+            eq(cajaMovimiento.propietarioId, id),
+            eq(cajaMovimiento.categoria, "pendiente_confirmacion")
+          )
+        ),
+    ]);
 
     const kpis = {
       liquidadoAcumulado: Number(liquidadoResult?.total ?? 0),
