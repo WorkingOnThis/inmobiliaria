@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   User,
   Users,
+  UserCheck,
   Settings,
   Building2,
   FileText,
@@ -9,10 +10,13 @@ import {
   Wrench,
   BarChart3,
   Shield,
+  Landmark,
+  Zap,
+  CheckSquare,
   type LucideIcon,
 } from "lucide-react";
 import type { MenuItem, MenuConfig, UserRole, MenuSubItem } from "./types";
-import { canManageClauses, canManageClients, canManageProperties, hasRouteAccess } from "@/lib/permissions";
+import { canManageClauses, canManageClients, canManageContracts, canManageProperties, canManageServices, canManageTasks, hasRouteAccess } from "@/lib/permissions";
 
 /**
  * Configuración de menú para rol visitor (menú básico)
@@ -33,9 +37,13 @@ const visitorMenuItems: MenuItem[] = [
   },
   {
     title: "Configuración",
-    url: "/tablero/settings",
+    url: "/configuracion/administracion",
     icon: Settings,
     items: [
+      {
+        title: "Datos de la Administración",
+        url: "/configuracion/administracion",
+      },
       {
         title: "General",
         url: "/tablero/settings/general",
@@ -61,36 +69,24 @@ const accountAdminMenuItems: MenuItem[] = [
     isActive: true,
   },
   {
-    title: "Clientes",
-    url: "/clientes",
+    title: "Caja General",
+    url: "/caja",
+    icon: Landmark,
+  },
+  {
+    title: "Propietarios",
+    url: "/propietarios",
+    icon: UserCheck,
+  },
+  {
+    title: "Inquilinos",
+    url: "/inquilinos",
     icon: Users,
-    items: [
-      {
-        title: "Todos los clientes",
-        url: "/clientes",
-      },
-      {
-        title: "Agregar cliente",
-        url: "/clientes/nuevo",
-        requiredPermission: "canManageClients",
-      },
-    ],
   },
   {
     title: "Propiedades",
     url: "/propiedades",
     icon: Building2,
-    items: [
-      {
-        title: "Todas las propiedades",
-        url: "/propiedades",
-      },
-      {
-        title: "Agregar propiedad",
-        url: "/propiedades/nueva",
-        requiredPermission: "canManageProperties",
-      },
-    ],
   },
   {
     title: "Contratos",
@@ -102,15 +98,22 @@ const accountAdminMenuItems: MenuItem[] = [
         url: "/contratos",
       },
       {
-        title: "Nuevo contrato",
-        url: "/contratos/nuevo",
-      },
-      {
         title: "Cláusulas",
         url: "/contratos/clausulas/nueva",
         requiredPermission: "canManageClauses",
       },
     ],
+  },
+  {
+    title: "Control Servicios",
+    url: "/servicios",
+    icon: Zap,
+  },
+  {
+    title: "Tareas",
+    url: "/tareas",
+    icon: CheckSquare,
+    requiredPermission: "canManageTasks",
   },
   {
     title: "Pagos",
@@ -159,9 +162,13 @@ const accountAdminMenuItems: MenuItem[] = [
   },
   {
     title: "Configuración",
-    url: "/tablero/settings",
+    url: "/configuracion/administracion",
     icon: Settings,
     items: [
+      {
+        title: "Datos de la Administración",
+        url: "/configuracion/administracion",
+      },
       {
         title: "General",
         url: "/tablero/settings/general",
@@ -222,7 +229,10 @@ const menuConfig: MenuConfig = {
 const permissionFunctions: Record<string, (role: string | null | undefined) => boolean> = {
   canManageClauses,
   canManageClients,
+  canManageContracts,
   canManageProperties,
+  canManageServices,
+  canManageTasks,
 };
 
 /**
@@ -391,7 +401,7 @@ function filterMenuItemsByPermissions(
           return null;
         }
       })
-      .filter((item): item is MenuItem => item !== null);
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   } catch (error) {
     // Si hay error crítico al filtrar, retornar items básicos
     if (process.env.NODE_ENV === "development") {

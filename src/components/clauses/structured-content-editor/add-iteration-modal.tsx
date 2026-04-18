@@ -45,8 +45,8 @@ export function AddIterationModal({
   onCreate,
   initialData,
 }: AddIterationModalProps) {
-  const [entity, setEntity] = useState<"propietarios" | "inquilinos">(
-    initialData?.entity || "propietarios"
+  const [entity, setEntity] = useState<"owners" | "tenants">(
+    initialData?.entity || "owners"
   );
   const [template, setTemplate] = useState(initialData?.template || "");
   const [separator, setSeparator] = useState(
@@ -73,7 +73,7 @@ export function AddIterationModal({
         setLastSeparator(initialData.lastSeparator);
         setAddPeriod(initialData.addPeriod);
       } else {
-        setEntity("propietarios");
+        setEntity("owners");
         setTemplate("");
         setSeparator(", ");
         setLastSeparator(" y ");
@@ -128,7 +128,7 @@ export function AddIterationModal({
           </DialogTitle>
           <DialogDescription>
             Crea un bloque que itera sobre múltiples elementos (ej:
-            propietarios, inquilinos) y genera texto para cada uno.
+            owners, tenants) y genera texto para cada uno.
           </DialogDescription>
         </DialogHeader>
 
@@ -141,7 +141,7 @@ export function AddIterationModal({
             <Select
               value={entity}
               onValueChange={(value) => {
-                setEntity(value as "propietarios" | "inquilinos");
+                setEntity(value as "owners" | "tenants");
                 if (errors.entity) {
                   setErrors({ ...errors, entity: "" });
                 }

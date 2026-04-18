@@ -46,7 +46,7 @@ export function ClauseContentEditor({
   >(null);
 
   // Asegurar que siempre haya al menos una parte de texto al inicio
-  const parts = value.parts.length > 0 ? value.parts : [{ type: "text", content: "" }];
+  const parts: ContentPart[] = value.parts.length > 0 ? value.parts : [{ type: "text" as const, content: "" }];
 
   const handleInsertVariable = useCallback(
     (path: string) => {

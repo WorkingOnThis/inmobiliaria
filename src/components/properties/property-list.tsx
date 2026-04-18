@@ -16,15 +16,21 @@ import {
   ChevronRight,
   Loader2,
   X,
+  ArrowRight,
 } from "lucide-react";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerClose,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { QuickPropertyForm } from "@/components/properties/quick-property-form";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+import { EntityAvatar } from "@/components/ui/entity-avatar";
+import { cn } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,12 +41,16 @@ interface PropertyRow {
   price: string;
   type: string;
   status: string;
+  zone: string | null;
   rooms: number | null;
   bathrooms: number | null;
   surface: string | null;
   ownerId: string;
   ownerFirstName: string | null;
   ownerLastName: string | null;
+  contractNumber: string | null;
+  contractEndDate: string | null;
+  contractStatus: string | null;
   createdAt: string;
 }
 
@@ -88,48 +98,29 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
   otro: <Building2 size={16} />,
 };
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; bg: string; textColor: string; dot: string }
-> = {
-  available: {
-    label: "Disponible",
-    bg: "var(--color-arce-primary-fixed)",
-    textColor: "var(--color-arce-on-primary-fixed)",
-    dot: "var(--color-arce-primary)",
-  },
-  rented: {
-    label: "Alquilada",
-    bg: "var(--color-arce-surface-highest)",
-    textColor: "var(--color-arce-on-surface)",
-    dot: "var(--color-arce-outline)",
-  },
-  reserved: {
-    label: "Reservada",
-    bg: "var(--color-arce-secondary-container)",
-    textColor: "var(--color-arce-on-secondary-container)",
-    dot: "var(--color-arce-on-secondary-container)",
-  },
-  maintenance: {
-    label: "Mantenimiento",
-    bg: "var(--color-arce-tertiary-fixed)",
-    textColor: "var(--color-arce-on-tertiary-fixed)",
-    dot: "var(--color-arce-on-tertiary-fixed)",
-  },
-  sold: {
-    label: "Vendida",
-    bg: "var(--color-arce-error-container)",
-    textColor: "var(--color-arce-on-error-container)",
-    dot: "var(--color-arce-error)",
-  },
+const STATUS_CONFIG: Record<string, { label: string; borderLeft?: string }> = {
+  available:   { label: "Disponible",    borderLeft: "var(--status-available)" },
+  rented:      { label: "Alquilada" },
+  reserved:    { label: "Reservada" },
+  maintenance: { label: "Mantenimiento", borderLeft: "var(--status-maintenance)" },
+  sold:        { label: "Vendida" },
 };
 
+const STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
+  available:   "available",
+  rented:      "rented",
+  reserved:    "reserved",
+  maintenance: "maintenance",
+  sold:        "baja",
+};
+
+/** Colores activos para cada chip de filtro */
 const FILTER_TABS = [
-  { value: "", label: "Todos" },
-  { value: "rented", label: "Alquiladas" },
-  { value: "available", label: "Disponibles" },
-  { value: "reserved", label: "Reservadas" },
-  { value: "maintenance", label: "Mantenimiento" },
+  { value: "", label: "Todos", activeBg: "var(--primary)", activeColor: "var(--primary-foreground)" },
+  { value: "rented", label: "Alquiladas", activeBg: "var(--status-rented-dim)", activeColor: "var(--status-rented)" },
+  { value: "available", label: "Disponibles", activeBg: "var(--status-available-dim)", activeColor: "var(--status-available)" },
+  { value: "reserved", label: "Reservadas", activeBg: "var(--status-reserved-dim)", activeColor: "var(--status-reserved)" },
+  { value: "maintenance", label: "Mantenimiento", activeBg: "var(--status-maintenance-dim)", activeColor: "var(--status-maintenance)" },
 ];
 
 function getOwnerInitials(firstName: string | null, lastName: string | null) {
@@ -147,7 +138,25 @@ function buildSubtitle(p: PropertyRow) {
   if (p.rooms) parts.push(`${p.rooms} amb`);
   const surf = formatSurface(p.surface);
   if (surf) parts.push(surf);
+  if (p.zone) parts.push(p.zone);
   return parts.join(" · ");
+}
+
+/**
+ * Calcula cuántos días faltan hasta una fecha ISO (YYYY-MM-DD).
+ * Retorna negativo si ya venció.
+ */
+function daysUntil(isoDate: string): number {
+  const end = new Date(isoDate);
+  const now = new Date();
+  end.setHours(0, 0, 0, 0);
+  now.setHours(0, 0, 0, 0);
+  return Math.round((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function formatDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}/${year}`;
 }
 
 function buildPageNumbers(current: number, total: number): (number | "…")[] {
@@ -162,76 +171,40 @@ function buildPageNumbers(current: number, total: number): (number | "…")[] {
   return pages;
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.available;
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap"
-      style={{ background: cfg.bg, color: cfg.textColor }}
-    >
-      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
-      {cfg.label}
-    </span>
-  );
-}
-
-function OwnerAvatar({ firstName, lastName }: { firstName: string | null; lastName: string | null }) {
-  return (
-    <span
-      className="inline-flex items-center justify-center w-7 h-7 flex-shrink-0 text-[10px] font-extrabold font-arce-brand"
-      style={{
-        background: "var(--color-arce-primary-container)",
-        color: "var(--color-arce-on-primary-fixed)",
-      }}
-    >
-      {getOwnerInitials(firstName, lastName)}
-    </span>
-  );
-}
-
+/** KPI card con colores específicos por tipo */
 function KpiCard({
   label,
   value,
   sub,
-  accent,
+  valueColor,
+  borderColor,
+  bgGradient,
 }: {
   label: string;
   value: number;
   sub: string;
-  accent?: "primary" | "tertiary" | "error";
+  valueColor: string;
+  borderColor: string;
+  bgGradient: string;
 }) {
-  const valueColor =
-    accent === "primary"
-      ? "var(--color-arce-primary)"
-      : accent === "tertiary"
-      ? "var(--color-arce-on-tertiary-fixed)"
-      : accent === "error"
-      ? "var(--color-arce-error)"
-      : "var(--color-arce-on-surface)";
-
   return (
-    <div
-      className="px-6 py-5 flex-1 min-w-0"
-      style={{ background: "var(--color-arce-surface-lowest)" }}
+    <Card
+      className="flex-1 min-w-0 rounded-lg border gap-0 py-0"
+      style={{ background: bgGradient, borderColor }}
     >
-      <p
-        className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3"
-        style={{ color: "var(--color-arce-secondary-text)" }}
-      >
-        {label}
-      </p>
-      <p
-        className="text-4xl font-bold leading-none mb-1 tabular-nums font-arce-headline"
-        style={{ color: valueColor }}
-      >
-        {value}
-      </p>
-      <p className="text-[11px]" style={{ color: "var(--color-arce-secondary-text)" }}>
-        {sub}
-      </p>
-    </div>
+      <CardContent className="px-6 py-5 flex flex-col">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3 text-muted-foreground">
+          {label}
+        </p>
+        <p
+          className="text-4xl font-bold leading-none mb-1 tabular-nums font-headline"
+          style={{ color: valueColor }}
+        >
+          {value}
+        </p>
+        <p className="text-[11px] text-muted-foreground">{sub}</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -247,62 +220,94 @@ function PaginationBtn({
   disabled?: boolean;
 }) {
   return (
-    <button
+    <Button
+      variant={active ? "default" : "secondary"}
+      size="icon"
       onClick={onClick}
       disabled={disabled}
-      className="w-7 h-7 flex items-center justify-center text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-      style={{
-        background: active ? "var(--color-arce-primary)" : "var(--color-arce-surface-container)",
-        color: active ? "var(--color-arce-on-primary)" : "var(--color-arce-on-surface)",
-      }}
+      className="size-7 rounded-sm text-[12px]"
     >
       {children}
-    </button>
+    </Button>
+  );
+}
+
+/** Columna contrato: muestra número + vencimiento con alertas de color */
+function ContratoCell({ prop }: { prop: PropertyRow }) {
+  if (!prop.contractNumber) {
+    return (
+      <span className="text-[11px] italic text-muted-foreground">
+        Sin contrato activo
+      </span>
+    );
+  }
+
+  // Contratos pendientes de firma o en redacción
+  const isPending = prop.contractStatus === "pending_signature" || prop.contractStatus === "draft";
+  if (isPending) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="font-mono text-[11px] font-bold text-status-reserved">
+          {prop.contractNumber}
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          Pend. firma{prop.contractEndDate ? ` · Inicio ${formatDate(prop.contractEndDate)}` : ""}
+        </span>
+      </div>
+    );
+  }
+
+  // Contrato activo — verificar si vence pronto
+  const days = prop.contractEndDate ? daysUntil(prop.contractEndDate) : 999;
+  const isExpiringSoon = days <= 60;
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="font-mono text-[11px] font-bold text-primary">
+        {prop.contractNumber}
+      </span>
+      {prop.contractEndDate && (
+        <span
+          className={cn(
+            "text-[10px] font-semibold",
+            isExpiringSoon ? "text-status-available" : "text-muted-foreground"
+          )}
+        >
+          {isExpiringSoon ? `⚠ Vence en ${days} días` : `Vence ${formatDate(prop.contractEndDate)}`}
+        </span>
+      )}
+    </div>
   );
 }
 
 // ── Property row ──────────────────────────────────────────────────────────────
 
-function PropertyRowItem({ prop, even }: { prop: PropertyRow; even: boolean }) {
+function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boolean; onClick: () => void }) {
+  const cfg = STATUS_CONFIG[prop.status];
   return (
     <div
-      className="grid px-4 py-3 cursor-pointer transition-colors group"
+      className={cn(
+        "grid px-4 py-3 cursor-pointer transition-colors group",
+        "hover:bg-[var(--primary-subtle)]",
+        even ? "bg-[var(--surface-mid)]" : "bg-background"
+      )}
       style={{
-        gridTemplateColumns: "minmax(220px,2fr) minmax(160px,1fr) minmax(180px,1fr) 140px 80px",
-        background: even ? "rgba(40,42,44,0.45)" : "var(--color-arce-surface-lowest)",
+        gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 130px 60px 64px",
         borderBottom: "1px solid rgba(160,132,126,0.07)",
+        borderLeft: cfg?.borderLeft ? `2px solid ${cfg.borderLeft}` : "2px solid transparent",
       }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "var(--color-arce-primary-fixed)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.background = even
-          ? "rgba(40,42,44,0.45)"
-          : "var(--color-arce-surface-lowest)";
-      }}
+      onClick={onClick}
     >
       {/* Propiedad */}
       <div className="flex items-center gap-3 min-w-0">
-        <span
-          className="flex-shrink-0 flex items-center justify-center w-8 h-8"
-          style={{
-            background: "var(--color-arce-surface-container)",
-            color: "var(--color-arce-secondary-text)",
-          }}
-        >
+        <span className="flex-shrink-0 flex items-center justify-center size-8 rounded-sm bg-muted text-muted-foreground">
           {TYPE_ICON[prop.type] ?? <Building2 size={16} />}
         </span>
         <div className="min-w-0">
-          <p
-            className="text-[13px] font-semibold leading-snug truncate font-arce-headline"
-            style={{ color: "var(--color-arce-on-surface)" }}
-          >
-            {prop.title}
+          <p className="text-[13px] font-semibold leading-snug truncate font-headline text-foreground">
+            {prop.title || prop.address}
           </p>
-          <p
-            className="text-[11px] leading-none mt-0.5 truncate"
-            style={{ color: "var(--color-arce-secondary-text)" }}
-          >
+          <p className="text-[11px] leading-none mt-0.5 truncate text-muted-foreground">
             {buildSubtitle(prop)}
           </p>
         </div>
@@ -310,33 +315,39 @@ function PropertyRowItem({ prop, even }: { prop: PropertyRow; even: boolean }) {
 
       {/* Propietario */}
       <div className="flex items-center gap-2 min-w-0">
-        <OwnerAvatar firstName={prop.ownerFirstName} lastName={prop.ownerLastName} />
-        <span
-          className="text-[12px] font-medium truncate"
-          style={{ color: "var(--color-arce-on-surface)" }}
-        >
+        <EntityAvatar
+          initials={getOwnerInitials(prop.ownerFirstName, prop.ownerLastName)}
+          size="sm"
+          colorSeed={prop.ownerFirstName ?? undefined}
+        />
+        <span className="text-[12px] font-medium truncate text-foreground">
           {prop.ownerLastName && prop.ownerFirstName
             ? `${prop.ownerLastName}, ${prop.ownerFirstName}`
-            : "—"}
+            : prop.ownerFirstName ?? "Sin cargar"}
         </span>
       </div>
 
       {/* Contrato */}
       <div className="flex flex-col justify-center">
-        <p className="text-[11px]" style={{ color: "var(--color-arce-secondary-text)" }}>
-          Sin contrato activo
-        </p>
+        <ContratoCell prop={prop} />
       </div>
 
       {/* Estado */}
       <div className="flex items-center">
-        <StatusBadge status={prop.status} />
+        <StatusBadge variant={STATUS_VARIANT[prop.status] ?? "available"}>
+          {STATUS_CONFIG[prop.status]?.label ?? prop.status}
+        </StatusBadge>
       </div>
 
-      {/* Tareas */}
-      <div className="flex items-center justify-end">
-        <span className="text-[12px]" style={{ color: "var(--color-arce-outline)" }}>
-          —
+      {/* Tareas — placeholder hasta que exista el módulo */}
+      <div className="flex items-center justify-center">
+        <span className="text-[12px] text-muted-foreground">—</span>
+      </div>
+
+      {/* Acción — visible en hover */}
+      <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="text-[11px] font-bold flex items-center gap-1 px-2 py-1 rounded text-primary bg-[var(--primary-dim)]">
+          Ver <ArrowRight size={12} />
         </span>
       </div>
     </div>
@@ -350,14 +361,24 @@ function PropertyListContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const page = parseInt(searchParams.get("page") || "1");
   const statusFilter = searchParams.get("status") || "";
-  const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
-  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zoneFilter = searchParams.get("zone") || "";
 
-  const queryKey = ["properties", page, statusFilter, searchParams.get("search") || ""];
+  const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
+  const [zoneInput, setZoneInput] = useState(zoneFilter);
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zoneDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const queryKey = [
+    "properties",
+    page,
+    statusFilter,
+    zoneFilter,
+    searchParams.get("search") || "",
+  ];
 
   const { data, isLoading, error, refetch } = useQuery<PropertiesResponse>({
     queryKey,
@@ -366,6 +387,7 @@ function PropertyListContent() {
         page: String(page),
         limit: "8",
         ...(statusFilter ? { status: statusFilter } : {}),
+        ...(zoneFilter ? { zone: zoneFilter } : {}),
         ...(searchParams.get("search") ? { search: searchParams.get("search")! } : {}),
       });
       const res = await fetch(`/api/properties?${params}`);
@@ -392,6 +414,21 @@ function PropertyListContent() {
     [searchParams, router]
   );
 
+  const handleZoneFilter = useCallback(
+    (value: string) => {
+      setZoneInput(value);
+      if (zoneDebounce.current) clearTimeout(zoneDebounce.current);
+      zoneDebounce.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("page", "1");
+        if (value.trim()) params.set("zone", value.trim());
+        else params.delete("zone");
+        router.push(`/propiedades?${params.toString()}`);
+      }, 350);
+    },
+    [searchParams, router]
+  );
+
   const handleStatusFilter = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", "1");
@@ -406,176 +443,231 @@ function PropertyListContent() {
     router.push(`/propiedades?${params.toString()}`);
   };
 
-  const handleFormSuccess = () => {
-    setDrawerOpen(false);
+  const handleFormSuccess = (propertyId: string) => {
+    setDialogOpen(false);
     queryClient.invalidateQueries({ queryKey: ["properties"] });
+    router.push(`/propiedades/${propertyId}`);
   };
 
   const counts = data?.counts;
   const pagination = data?.pagination;
   const properties = data?.properties ?? [];
 
+  const occupancyPct = counts?.total
+    ? Math.round((counts.rented / counts.total) * 100)
+    : 0;
+
   return (
-    <div className="flex flex-col min-h-full" style={{ background: "var(--color-arce-background)" }}>
+    <div className="flex flex-col min-h-full" style={{ background: "var(--background)" }}>
 
-      {/* Drawer — Nueva propiedad */}
-      <Drawer direction="right" open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent
-          className="flex flex-col h-full bg-[#1a1d1e] border-l border-white/10 max-w-lg ml-auto shadow-2xl"
-          style={{ 
-            borderTopLeftRadius: '1.5rem', 
-            borderBottomLeftRadius: '1.5rem',
-          }}
+      {/* Modal — Nueva propiedad */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent
+          className="max-w-lg p-0 gap-0 border-border overflow-hidden"
+          style={{ background: "var(--card)" }}
         >
-          <DrawerHeader className="p-6 pb-2 flex justify-between items-center border-b border-white/5">
-            <DrawerTitle className="text-xl font-bold text-white font-arce-headline">
-              Nueva propiedad
-            </DrawerTitle>
-            <DrawerClose asChild>
-              <button className="text-gray-500 hover:text-white transition-colors">
-                <X size={20} />
-              </button>
-            </DrawerClose>
-          </DrawerHeader>
-          <div className="flex-1 overflow-y-auto">
-            <QuickPropertyForm onSuccess={handleFormSuccess} onCancel={() => setDrawerOpen(false)} inline />
+          <DialogHeader className="px-6 pt-6 pb-2 border-b border-border">
+            <div className="flex items-start justify-between">
+              <div>
+                <DialogTitle className="text-xl font-bold text-white font-headline">
+                  Nueva propiedad
+                </DialogTitle>
+                <p className="text-[12px] text-muted-foreground mt-1">
+                  Los campos con <span className="text-primary">*</span> son obligatorios.
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[80vh]">
+            <QuickPropertyForm
+              onSuccess={handleFormSuccess}
+              onCancel={() => setDialogOpen(false)}
+              inline
+            />
           </div>
-        </DrawerContent>
-      </Drawer>
+        </DialogContent>
+      </Dialog>
 
-      {/* Header */}
+      {/* Page header */}
       <div className="px-8 pt-7 pb-5">
         <div className="flex items-start justify-between">
           <div>
             <h1
-              className="text-[28px] font-bold tracking-tight leading-none mb-1 font-arce-headline"
-              style={{ color: "var(--color-arce-on-surface)" }}
+              className="text-[28px] font-bold tracking-tight leading-none mb-1 font-headline"
+              style={{ color: "var(--foreground)" }}
             >
               Propiedades
             </h1>
-            <p className="text-[13px]" style={{ color: "var(--color-arce-secondary-text)" }}>
+            <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
               Portfolio completo en administración
             </p>
           </div>
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors cursor-pointer border-none"
-            style={{
-              background: "var(--color-arce-primary)",
-              color: "var(--color-arce-on-primary)",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background =
-                "var(--color-arce-primary-container)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "var(--color-arce-primary)";
-            }}
+
+          {/* Botón prominente */}
+          <Button
+            onClick={() => setDialogOpen(true)}
+            size="lg"
+            className="gap-2.5 rounded-xl shadow-lg"
+            style={{ boxShadow: "0 4px 14px rgba(255,180,162,0.25)" }}
           >
-            <Plus size={14} />
+            <Plus size={18} />
             Nueva propiedad
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* KPI cards */}
+      {/* KPI cards — colores diferenciados por tipo */}
       <div className="px-8 mb-5">
-        <div className="flex gap-4">
-          <KpiCard label="Total" value={counts?.total ?? 0} sub="propiedades en cartera" />
+        <div className="flex gap-3">
+          <KpiCard
+            label="Total"
+            value={counts?.total ?? 0}
+            sub="propiedades en cartera"
+            valueColor="var(--primary)"
+            borderColor="rgba(255,180,162,0.2)"
+            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(107,23,2,0.08) 100%)"
+          />
           <KpiCard
             label="Alquiladas"
             value={counts?.rented ?? 0}
-            sub={
-              counts?.total
-                ? `${Math.round((counts.rented / counts.total) * 100)}% de ocupación`
-                : "0% de ocupación"
-            }
-            accent="primary"
+            sub={`${occupancyPct}% de ocupación`}
+            valueColor="var(--status-rented)"
+            borderColor="rgba(141,207,149,0.2)"
+            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(141,207,149,0.06) 100%)"
           />
-          <KpiCard label="Disponibles" value={counts?.available ?? 0} sub="sin contrato activo" />
+          <KpiCard
+            label="Disponibles"
+            value={counts?.available ?? 0}
+            sub="sin contrato activo"
+            valueColor="var(--status-available)"
+            borderColor="rgba(253,222,168,0.2)"
+            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(253,222,168,0.06) 100%)"
+          />
           <KpiCard
             label="Mantenimiento"
             value={counts?.maintenance ?? 0}
             sub="fuera de disponibilidad"
-            accent="tertiary"
+            valueColor="var(--status-maintenance)"
+            borderColor="rgba(253,186,116,0.2)"
+            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(253,186,116,0.06) 100%)"
           />
         </div>
       </div>
 
-      {/* Search + filter tabs */}
-      <div className="px-8 mb-4 flex items-center justify-between gap-4">
+      {/* Toolbar: búsqueda + chips de estado */}
+      <div className="px-8 mb-2 flex items-center gap-3 flex-wrap">
+        {/* Búsqueda */}
         <div
-          className="relative flex-1 max-w-lg"
-          style={{ background: "var(--color-arce-surface-container)" }}
+          className="relative flex-1 min-w-[200px] max-w-md"
+          style={{ background: "var(--muted)", borderRadius: "8px" }}
         >
           <Search
             size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ color: "var(--color-arce-secondary-text)" }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground"
           />
-          <input
+          <Input
             type="text"
-            placeholder="Buscar por dirección, propietario, inquilino…"
+            placeholder="Buscar por dirección, propietario, barrio…"
             value={searchInput}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-[13px] bg-transparent outline-none border-none font-arce-body"
-            style={{ color: "var(--color-arce-on-surface)" }}
+            className="pl-9 pr-8 border-0 bg-transparent rounded-lg text-[13px] h-10"
           />
+          {searchInput && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
+              onClick={() => handleSearch("")}
+            >
+              <X size={13} />
+            </Button>
+          )}
         </div>
 
-        <div
-          className="flex items-center"
-          style={{ background: "var(--color-arce-surface-container)" }}
-        >
+        {/* Chips de estado — cada uno con su color */}
+        <div className="flex items-center gap-1.5 flex-wrap">
           {FILTER_TABS.map((tab) => {
             const isActive = tab.value === statusFilter;
             return (
-              <button
+              <Button
                 key={tab.value}
+                variant="outline"
                 onClick={() => handleStatusFilter(tab.value)}
-                className="px-4 py-2 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors border-none cursor-pointer"
+                className="px-3.5 py-1.5 h-auto text-[11px] rounded-full"
                 style={{
-                  background: isActive ? "var(--color-arce-primary)" : "transparent",
-                  color: isActive
-                    ? "var(--color-arce-on-primary)"
-                    : "var(--color-arce-secondary-text)",
+                  background: isActive ? tab.activeBg : "transparent",
+                  color: isActive ? tab.activeColor : "var(--muted-foreground)",
+                  borderColor: isActive ? tab.activeColor + "40" : "rgba(160,132,126,0.15)",
                 }}
               >
                 {tab.label}
-              </button>
+              </Button>
             );
           })}
         </div>
       </div>
 
+      {/* Filtro por barrio/zona — fila secundaria */}
+      <div className="px-8 mb-4">
+        <div
+          className="flex items-center gap-3 px-4 py-1 rounded-lg"
+          style={{ background: "var(--muted)", border: "1px solid rgba(160,132,126,0.08)" }}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-[0.1em] flex-shrink-0 text-muted-foreground">
+            Barrio:
+          </span>
+          <Input
+            type="text"
+            placeholder="Filtrar por barrio o zona…"
+            value={zoneInput}
+            onChange={(e) => handleZoneFilter(e.target.value)}
+            className="flex-1 border-0 bg-transparent text-[12px] h-9 px-0"
+          />
+          {zoneInput && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 flex-shrink-0"
+              onClick={() => handleZoneFilter("")}
+            >
+              <X size={13} />
+            </Button>
+          )}
+          <span className="text-[10px] ml-auto flex-shrink-0 text-muted-foreground">
+            Filtro por zona
+          </span>
+        </div>
+      </div>
+
       {/* Table */}
       <div className="px-8 flex-1">
-        {/* Label */}
+        {/* Table label + count */}
         <div
-          className="flex items-center gap-3 px-4 py-2"
-          style={{ background: "var(--color-arce-surface-low)" }}
+          className="flex items-center justify-between px-4 py-2"
+          style={{ background: "var(--muted)" }}
         >
-          <span
-            className="text-[10px] font-bold uppercase tracking-[0.14em]"
-            style={{ color: "var(--color-arce-secondary-text)" }}
-          >
-            Propiedades
-          </span>
-          {pagination && (
-            <span className="text-[10px]" style={{ color: "var(--color-arce-outline)" }}>
-              {pagination.total} propiedades
+          <div className="flex items-center gap-3">
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.14em]"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              Propiedades
             </span>
-          )}
+            {pagination && (
+              <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+                {pagination.total} {pagination.total === 1 ? "propiedad" : "propiedades"}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Table header */}
         <div
           className="grid text-[10px] font-bold uppercase tracking-[0.12em] px-4 py-3"
           style={{
-            gridTemplateColumns:
-              "minmax(220px,2fr) minmax(160px,1fr) minmax(180px,1fr) 140px 80px",
-            color: "var(--color-arce-secondary-text)",
-            background: "var(--color-arce-surface-low)",
+            gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 130px 60px 64px",
+            color: "var(--muted-foreground)",
+            background: "var(--muted)",
             borderBottom: "1px solid rgba(160,132,126,0.12)",
           }}
         >
@@ -583,59 +675,61 @@ function PropertyListContent() {
           <span>Propietario</span>
           <span>Contrato activo</span>
           <span>Estado</span>
-          <span className="text-right">Tareas</span>
+          <span className="text-center">Tareas</span>
+          <span />
         </div>
 
-        {/* States */}
+        {/* Loading */}
         {isLoading && (
           <div
             className="flex items-center justify-center py-20"
-            style={{ background: "var(--color-arce-surface-lowest)" }}
+            style={{ background: "var(--background)" }}
           >
             <Loader2
               size={28}
               className="animate-spin"
-              style={{ color: "var(--color-arce-secondary-text)" }}
+              style={{ color: "var(--muted-foreground)" }}
             />
           </div>
         )}
 
+        {/* Error */}
         {error && !isLoading && (
           <div
             className="flex flex-col items-center gap-3 py-16"
-            style={{ background: "var(--color-arce-surface-lowest)" }}
+            style={{ background: "var(--background)" }}
           >
-            <p className="text-sm" style={{ color: "var(--color-arce-error)" }}>
+            <p className="text-sm text-destructive">
               {(error as Error).message}
             </p>
-            <button
-              onClick={() => refetch()}
-              className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest"
-              style={{
-                background: "var(--color-arce-surface-container)",
-                color: "var(--color-arce-on-surface)",
-              }}
-            >
+            <Button variant="secondary" size="sm" onClick={() => refetch()}>
               Reintentar
-            </button>
+            </Button>
           </div>
         )}
 
+        {/* Empty state */}
         {!isLoading && !error && properties.length === 0 && (
           <div
             className="py-20 text-center"
-            style={{ background: "var(--color-arce-surface-lowest)" }}
+            style={{ background: "var(--background)" }}
           >
-            <p className="text-sm" style={{ color: "var(--color-arce-secondary-text)" }}>
+            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
               No se encontraron propiedades.
             </p>
           </div>
         )}
 
+        {/* Rows */}
         {!isLoading &&
           !error &&
           properties.map((prop, i) => (
-            <PropertyRowItem key={prop.id} prop={prop} even={i % 2 === 1} />
+            <PropertyRowItem
+              key={prop.id}
+              prop={prop}
+              even={i % 2 === 1}
+              onClick={() => router.push(`/propiedades/${prop.id}`)}
+            />
           ))}
 
         {/* Pagination */}
@@ -643,11 +737,11 @@ function PropertyListContent() {
           <div
             className="flex items-center justify-between px-4 py-3"
             style={{
-              background: "var(--color-arce-surface-lowest)",
+              background: "var(--background)",
               borderTop: "1px solid rgba(160,132,126,0.1)",
             }}
           >
-            <p className="text-[11px]" style={{ color: "var(--color-arce-secondary-text)" }}>
+            <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
               Mostrando{" "}
               {pagination.total === 0
                 ? "0"
@@ -655,7 +749,7 @@ function PropertyListContent() {
                     pagination.page * pagination.limit,
                     pagination.total
                   )}`}{" "}
-              de {pagination.total} propiedades
+              de {pagination.total} {pagination.total === 1 ? "propiedad" : "propiedades"}
             </p>
 
             {pagination.totalPages > 1 && (
@@ -671,7 +765,7 @@ function PropertyListContent() {
                     <span
                       key={`e-${idx}`}
                       className="px-2 text-[12px]"
-                      style={{ color: "var(--color-arce-secondary-text)" }}
+                      style={{ color: "var(--muted-foreground)" }}
                     >
                       …
                     </span>
@@ -711,7 +805,7 @@ export function PropertyList() {
         <div className="flex h-64 items-center justify-center">
           <Loader2
             className="animate-spin"
-            style={{ color: "var(--color-arce-secondary-text)" }}
+            style={{ color: "var(--muted-foreground)" }}
           />
         </div>
       }

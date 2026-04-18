@@ -6,14 +6,8 @@ import { user } from "@/db/schema/better-auth";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { z } from "zod";
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 
-/**
- * Zod schema for client creation
- */
-/**
- * Zod schema for client creation
- */
 const createClientSchema = z.object({
   firstName: z.string().min(1, "El nombre es requerido"),
   lastName: z.string().optional().nullable(),
@@ -21,19 +15,22 @@ const createClientSchema = z.object({
   whatsapp: z.string().optional().nullable(),
   dni: z.string().optional().nullable(),
   email: z.string().email("Email inválido").optional().nullable(),
-  createAsUser: z.boolean().default(false), // Si se debe crear un usuario asociado
+  createAsUser: z.boolean().default(false),
+  // Nuevos campos
+  type: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  profession: z.string().optional().nullable(),
+  birthDate: z.string().optional().nullable(),
+  cbu: z.string().optional().nullable(),
+  alias: z.string().optional().nullable(),
+  bank: z.string().optional().nullable(),
+  accountType: z.string().optional().nullable(),
 });
 
-/**
- * Generate a unique ID for database records
- */
 function generateId(): string {
   return crypto.randomUUID();
 }
 
-/**
- * Clients API Route
- */
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -49,34 +46,47 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const offset = (page - 1) * limit;
+    const typeFilter = searchParams.get("type");
 
-    const [totalCountResult] = await db.select({ value: count() }).from(client);
+    const whereCondition = typeFilter ? eq(client.type, typeFilter) : undefined;
+
+    const [totalCountResult] = await db
+      .select({ value: count() })
+      .from(client)
+      .where(whereCondition);
     const totalCount = Number(totalCountResult.value);
 
-    // Obtener lista de clientes con datos de usuario (si existe)
     const clientsData = await db
       .select({
         id: client.id,
         userId: client.userId,
+        type: client.type,
         firstName: client.firstName,
         lastName: client.lastName,
-        email: client.email, // Preferimos el email del cliente
-        userEmail: user.email, // Email del usuario si existe
+        email: client.email,
+        userEmail: user.email,
         phone: client.phone,
         whatsapp: client.whatsapp,
         dni: client.dni,
+        address: client.address,
+        profession: client.profession,
+        birthDate: client.birthDate,
+        cbu: client.cbu,
+        alias: client.alias,
+        bank: client.bank,
+        accountType: client.accountType,
         role: user.role,
         createdAt: client.createdAt,
         updatedAt: client.updatedAt,
       })
       .from(client)
       .leftJoin(user, eq(client.userId, user.id))
+      .where(whereCondition)
       .orderBy(desc(client.createdAt))
       .limit(limit)
       .offset(offset);
 
-    // Normalizar email (usar userEmail como fallback si client.email está vacío)
-    const normalizedClients = clientsData.map(c => ({
+    const normalizedClients = clientsData.map((c) => ({
       ...c,
       email: c.email || c.userEmail || "",
     }));
@@ -96,9 +106,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * POST handler for client creation
- */
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -118,15 +125,20 @@ export async function POST(request: NextRequest) {
 
     const data = result.data;
 
-    // Si pide crear usuario, verificar que no exista el email
     if (data.createAsUser && data.email) {
-      const existingUser = await db.select().from(user).where(eq(user.email, data.email)).limit(1);
+      const existingUser = await db
+        .select()
+        .from(user)
+        .where(eq(user.email, data.email))
+        .limit(1);
       if (existingUser.length > 0) {
-        return NextResponse.json({ error: "El email ya está registrado como usuario." }, { status: 409 });
+        return NextResponse.json(
+          { error: "El email ya está registrado como usuario." },
+          { status: 409 }
+        );
       }
     }
 
-    // Iniciar transacción
     const newClientData = await db.transaction(async (tx) => {
       let userId: string | null = null;
       const now = new Date();
@@ -150,21 +162,32 @@ export async function POST(request: NextRequest) {
         .values({
           id: clientId,
           userId: userId,
+          type: data.type || "contacto",
           firstName: data.firstName,
           lastName: data.lastName,
           phone: data.phone,
           whatsapp: data.whatsapp,
           email: data.email,
           dni: data.dni,
+          address: data.address,
+          profession: data.profession,
+          birthDate: data.birthDate,
+          cbu: data.cbu,
+          alias: data.alias,
+          bank: data.bank,
+          accountType: data.accountType,
           createdAt: now,
           updatedAt: now,
         })
         .returning();
-      
+
       return newClient;
     });
 
-    return NextResponse.json({ message: "Cliente creado exitosamente", client: newClientData }, { status: 201 });
+    return NextResponse.json(
+      { message: "Cliente creado exitosamente", client: newClientData },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating client:", error);
     return NextResponse.json({ error: "Error al crear el cliente" }, { status: 500 });

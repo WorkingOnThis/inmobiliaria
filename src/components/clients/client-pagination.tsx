@@ -9,6 +9,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { cn } from "@/lib/utils";
 
 interface ClientPaginationProps {
   currentPage: number;
@@ -28,7 +29,7 @@ export function ClientPagination({
     const maxVisiblePages = 5;
     
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
     
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -63,7 +64,7 @@ export function ClientPagination({
               e.preventDefault();
               if (currentPage > 1) onPageChange(currentPage - 1);
             }}
-            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+            className={cn(currentPage === 1 && "pointer-events-none opacity-50")}
           />
         </PaginationItem>
         
@@ -82,7 +83,7 @@ export function ClientPagination({
               e.preventDefault();
               if (currentPage < totalPages) onPageChange(currentPage + 1);
             }}
-            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+            className={cn(currentPage === totalPages && "pointer-events-none opacity-50")}
           />
         </PaginationItem>
       </PaginationContent>

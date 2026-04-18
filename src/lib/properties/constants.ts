@@ -32,6 +32,7 @@ export const PROPERTY_STATUSES = [
   "rented",
   "sold",
   "reserved",
+  "maintenance",
 ] as const;
 
 /**
@@ -39,9 +40,10 @@ export const PROPERTY_STATUSES = [
  */
 export const PROPERTY_STATUS_LABELS: Record<PropertyStatus, string> = {
   available: "Disponible",
-  rented: "Alquilado",
-  sold: "Vendido",
-  reserved: "Reservado",
+  rented: "Alquilada",
+  sold: "Vendida",
+  reserved: "Reservada",
+  maintenance: "En mantenimiento",
 };
 
 export type PropertyType = (typeof PROPERTY_TYPES)[number];

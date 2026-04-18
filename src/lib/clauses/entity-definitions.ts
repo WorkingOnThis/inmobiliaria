@@ -9,17 +9,17 @@ import { AVAILABLE_ENTITIES, type AvailableEntity } from "./constants";
  * Cada propiedad tiene un label legible para mostrar en la UI
  */
 export const ENTITY_PROPERTIES = {
-  propietario: {
+  owner: {
     nombre: "Nombre",
     dni: "DNI",
     domicilio: "Domicilio",
   },
-  inquilino: {
+  tenant: {
     nombre: "Nombre",
     dni: "DNI",
     domicilio: "Domicilio",
   },
-  propiedad: {
+  property: {
     direccion: "Dirección",
     ambientes: "Ambientes",
     superficie: "Superficie",
@@ -89,8 +89,8 @@ export function getAvailableEntitiesWithLabels(): Record<
   string
 > {
   return {
-    propietarios: "Propietarios",
-    inquilinos: "Inquilinos",
+    owners: "Owners",
+    tenants: "Tenants",
   };
 }
 

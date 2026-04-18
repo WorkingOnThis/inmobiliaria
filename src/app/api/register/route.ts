@@ -39,7 +39,7 @@ async function checkRateLimit(ip: string): Promise<{ exceeded: boolean; remainin
         id: generateId(),
         key: rateLimitKey,
         count: 1,
-        lastRequest: BigInt(now),
+        lastRequest: now,
       });
       return { exceeded: false };
     }
@@ -54,7 +54,7 @@ async function checkRateLimit(ip: string): Promise<{ exceeded: boolean; remainin
         .update(rateLimit)
         .set({
           count: 1,
-          lastRequest: BigInt(now),
+          lastRequest: now,
         })
         .where(eq(rateLimit.key, rateLimitKey));
       return { exceeded: false };
@@ -71,7 +71,7 @@ async function checkRateLimit(ip: string): Promise<{ exceeded: boolean; remainin
       .update(rateLimit)
       .set({
         count: record.count + 1,
-        lastRequest: BigInt(now),
+        lastRequest: now,
       })
       .where(eq(rateLimit.key, rateLimitKey));
 

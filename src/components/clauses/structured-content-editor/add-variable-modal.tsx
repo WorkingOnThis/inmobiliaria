@@ -51,26 +51,26 @@ export function AddVariableModal({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Propiedad (entity singular) */}
+          {/* Property (entity singular) */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">Propiedad</h3>
+            <h3 className="text-sm font-semibold mb-3">Property</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {(() => {
-                const propiedadProps = getEntityProperties("propiedad");
-                if (!propiedadProps) return null;
-                return Object.entries(propiedadProps).map(
+                const propertyProps = getEntityProperties("property");
+                if (!propertyProps) return null;
+                return Object.entries(propertyProps).map(
                   ([property, label]) => (
                     <Button
-                      key={`propiedad.${property}`}
+                      key={`property.${property}`}
                       type="button"
                       variant="outline"
                       className="justify-start h-auto py-3 px-4"
-                      onClick={() => handleSelect("propiedad", property)}
+                      onClick={() => handleSelect("property", property)}
                     >
                       <div className="flex flex-col items-start">
                         <span className="font-medium">{label}</span>
                         <span className="text-xs text-muted-foreground">
-                          propiedad.{property}
+                          property.{property}
                         </span>
                       </div>
                     </Button>
@@ -80,7 +80,7 @@ export function AddVariableModal({
             </div>
           </div>
 
-          {/* Entidades disponibles (propietarios, inquilinos) */}
+          {/* Available entities (owners, tenants) */}
           {AVAILABLE_ENTITIES.map((entity) => {
             const entityProps = getEntityProperties(entity);
             if (!entityProps) return null;

@@ -19,6 +19,14 @@ export const property = pgTable("property", {
   rooms: integer("rooms"),
   bathrooms: integer("bathrooms"),
   surface: decimal("surface", { precision: 10, scale: 2 }),
+  // Responsabilidad de servicios e impuestos: "inquilino" | "propietario" | "na"
+  serviceElectricity: text("serviceElectricity").notNull().default("inquilino"),
+  serviceGas: text("serviceGas").notNull().default("inquilino"),
+  serviceWater: text("serviceWater").notNull().default("inquilino"),
+  serviceCouncil: text("serviceCouncil").notNull().default("inquilino"),
+  serviceStateTax: text("serviceStateTax").notNull().default("inquilino"),
+  serviceHoa: text("serviceHoa").notNull().default("na"),
+
   ownerId: text("ownerId")
     .notNull()
     .references(() => client.id, { onDelete: "cascade" }),

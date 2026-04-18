@@ -33,12 +33,12 @@ export function VariableChip({
   const [entity, property] = path.split(".");
   const propertyLabel = getPropertyLabel(entity, property);
   const entityLabel =
-    entity === "propiedad"
-      ? "Propiedad"
-      : entity === "propietario"
-        ? "Propietario"
-        : entity === "inquilino"
-          ? "Inquilino"
+    entity === "property"
+      ? "Property"
+      : entity === "owner"
+        ? "Owner"
+        : entity === "tenant"
+          ? "Tenant"
           : entity;
 
   const displayText = propertyLabel

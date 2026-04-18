@@ -30,11 +30,35 @@ export const CLIENT_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admi
 
 /**
  * Permisos para la gestión de propiedades
- * 
+ *
  * Define qué roles pueden acceder a las rutas de gestión de propiedades:
  * - `/propiedades/nueva` (creación)
  */
 export const PROPERTY_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
+
+/**
+ * Permisos para la gestión de contratos
+ *
+ * Define qué roles pueden acceder a las rutas de gestión de contratos:
+ * - `/contratos/nuevo` (creación)
+ */
+export const CONTRACT_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
+
+/**
+ * Permisos para la gestión de servicios
+ *
+ * Define qué roles pueden crear/editar servicios y cargar comprobantes:
+ * - `/servicios` (vista y gestión)
+ */
+export const SERVICE_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
+
+/**
+ * Permisos para la gestión de tareas
+ *
+ * Define qué roles pueden crear/editar/resolver tareas:
+ * - `/tareas` (vista y gestión)
+ */
+export const TASK_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
 
 /**
  * Verifica si un rol tiene permisos para crear cláusulas
@@ -60,13 +84,46 @@ export function canManageClients(role: string | null | undefined): boolean {
 
 /**
  * Verifica si un rol tiene permisos para gestionar propiedades
- * 
+ *
  * @param role - El rol del usuario a verificar
  * @returns true si el rol tiene permisos, false en caso contrario
  */
 export function canManageProperties(role: string | null | undefined): boolean {
   if (!role) return false;
   return PROPERTY_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
+}
+
+/**
+ * Verifica si un rol tiene permisos para gestionar contratos
+ *
+ * @param role - El rol del usuario a verificar
+ * @returns true si el rol tiene permisos, false en caso contrario
+ */
+export function canManageContracts(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return CONTRACT_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
+}
+
+/**
+ * Verifica si un rol tiene permisos para gestionar servicios
+ *
+ * @param role - El rol del usuario a verificar
+ * @returns true si el rol tiene permisos, false en caso contrario
+ */
+export function canManageServices(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return SERVICE_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
+}
+
+/**
+ * Verifica si un rol tiene permisos para gestionar tareas
+ *
+ * @param role - El rol del usuario a verificar
+ * @returns true si el rol tiene permisos, false en caso contrario
+ */
+export function canManageTasks(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return TASK_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
 }
 
 /**
@@ -99,10 +156,31 @@ export function hasRouteAccess(
   }
 
   // Permisos para rutas de gestión de propiedades
-  if (
-    route.startsWith("/propiedades/nueva") &&
-    !canManageProperties(role)
-  ) {
+  if (route.startsWith("/propiedades/nueva") && !canManageProperties(role)) {
+    return false;
+  }
+
+  // Permisos para rutas de gestión de contratos
+  if (route.startsWith("/contratos/nuevo") && !canManageContracts(role)) {
+    return false;
+  }
+
+  // Permisos para rutas de gestión de propietarios e inquilinos
+  if (route.startsWith("/propietarios/nuevo") && !canManageClients(role)) {
+    return false;
+  }
+
+  if (route.startsWith("/inquilinos/nuevo") && !canManageClients(role)) {
+    return false;
+  }
+
+  // Permisos para rutas de gestión de servicios
+  if (route.startsWith("/servicios") && !canManageServices(role)) {
+    return false;
+  }
+
+  // Permisos para rutas de gestión de tareas
+  if (route.startsWith("/tareas") && !canManageTasks(role)) {
     return false;
   }
 
@@ -122,7 +200,11 @@ export function hasRouteAccess(
  * @returns Array de roles con ese permiso
  */
 export function getRolesWithPermission(
-  permission: "CLAUSE_MANAGEMENT" | "CLIENT_MANAGEMENT" | "PROPERTY_MANAGEMENT"
+  permission:
+    | "CLAUSE_MANAGEMENT"
+    | "CLIENT_MANAGEMENT"
+    | "PROPERTY_MANAGEMENT"
+    | "CONTRACT_MANAGEMENT"
 ): UserRole[] {
   switch (permission) {
     case "CLAUSE_MANAGEMENT":
@@ -131,6 +213,8 @@ export function getRolesWithPermission(
       return CLIENT_MANAGEMENT_PERMISSIONS;
     case "PROPERTY_MANAGEMENT":
       return PROPERTY_MANAGEMENT_PERMISSIONS;
+    case "CONTRACT_MANAGEMENT":
+      return CONTRACT_MANAGEMENT_PERMISSIONS;
     default:
       return [];
   }

@@ -31,6 +31,8 @@ const SIDEBAR_STORAGE_PREFIX = "sidebar-state-";
 const routeLabels: Record<string, string> = {
   tablero: "Tablero",
   clientes: "Clientes",
+  propietarios: "Propietarios",
+  inquilinos: "Inquilinos",
   contratos: "Contratos",
   clausulas: "Cláusulas",
   nueva: "Nueva",
@@ -53,6 +55,8 @@ const routeLabels: Record<string, string> = {
   usuarios: "Usuarios",
   permissions: "Permisos",
   permisos: "Permisos",
+  caja: "Caja General",
+  servicios: "Control de Servicios",
   general: "General",
   team: "Equipo",
   equipo: "Equipo",

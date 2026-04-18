@@ -84,7 +84,7 @@ export function parseContentParts(parts: unknown[]): ContentPart[] {
       typeof partObj.separator === "string" &&
       typeof partObj.lastSeparator === "string" &&
       typeof partObj.addPeriod === "boolean" &&
-      (partObj.entity === "propietarios" || partObj.entity === "inquilinos")
+      (partObj.entity === "owners" || partObj.entity === "tenants")
     ) {
       validParts.push({
         type: "iteration",

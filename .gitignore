@@ -42,3 +42,9 @@ next-env.d.ts
 
 # drizzle
 /drizzle
+
+# personal / local
+LOG.md
+claude.local.md
+
+
