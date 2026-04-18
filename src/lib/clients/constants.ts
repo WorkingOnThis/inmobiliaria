@@ -95,10 +95,10 @@ export const SERVICE_RESPONSIBILITY_LABELS: Record<
 };
 
 export const PROPERTY_SERVICES = [
-  { key: "serviceLuz", label: "Luz" },
+  { key: "serviceElectricity", label: "Luz" },
   { key: "serviceGas", label: "Gas" },
-  { key: "serviceAgua", label: "Agua" },
-  { key: "serviceMunicipalidad", label: "Municipalidad" },
-  { key: "serviceRendas", label: "Rentas" },
-  { key: "serviceExpensas", label: "Expensas" },
+  { key: "serviceWater", label: "Agua" },
+  { key: "serviceCouncil", label: "Municipalidad" },
+  { key: "serviceStateTax", label: "Rentas" },
+  { key: "serviceHoa", label: "Expensas" },
 ] as const;

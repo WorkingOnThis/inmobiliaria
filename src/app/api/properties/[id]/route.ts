@@ -19,12 +19,12 @@ const updatePropertySchema = z.object({
   bathrooms: z.coerce.number().int().min(0).optional().nullable(),
   surface: z.coerce.number().optional().nullable(),
   price: z.coerce.number().optional().nullable(),
-  serviceLuz: z.enum(["inquilino", "propietario", "na"]).optional(),
+  serviceElectricity: z.enum(["inquilino", "propietario", "na"]).optional(),
   serviceGas: z.enum(["inquilino", "propietario", "na"]).optional(),
-  serviceAgua: z.enum(["inquilino", "propietario", "na"]).optional(),
-  serviceMunicipalidad: z.enum(["inquilino", "propietario", "na"]).optional(),
-  serviceRendas: z.enum(["inquilino", "propietario", "na"]).optional(),
-  serviceExpensas: z.enum(["inquilino", "propietario", "na"]).optional(),
+  serviceWater: z.enum(["inquilino", "propietario", "na"]).optional(),
+  serviceCouncil: z.enum(["inquilino", "propietario", "na"]).optional(),
+  serviceStateTax: z.enum(["inquilino", "propietario", "na"]).optional(),
+  serviceHoa: z.enum(["inquilino", "propietario", "na"]).optional(),
 });
 
 export async function GET(
@@ -52,12 +52,12 @@ export async function GET(
         rooms: property.rooms,
         bathrooms: property.bathrooms,
         surface: property.surface,
-        serviceLuz: property.serviceLuz,
+        serviceElectricity: property.serviceElectricity,
         serviceGas: property.serviceGas,
-        serviceAgua: property.serviceAgua,
-        serviceMunicipalidad: property.serviceMunicipalidad,
-        serviceRendas: property.serviceRendas,
-        serviceExpensas: property.serviceExpensas,
+        serviceWater: property.serviceWater,
+        serviceCouncil: property.serviceCouncil,
+        serviceStateTax: property.serviceStateTax,
+        serviceHoa: property.serviceHoa,
         createdAt: property.createdAt,
         updatedAt: property.updatedAt,
         ownerId: property.ownerId,
@@ -119,12 +119,12 @@ export async function PATCH(
     if (data.bathrooms !== undefined) updateData.bathrooms = data.bathrooms;
     if (data.surface !== undefined) updateData.surface = data.surface != null ? String(data.surface) : null;
     if (data.price !== undefined) updateData.price = data.price != null ? String(data.price) : null;
-    if (data.serviceLuz !== undefined) updateData.serviceLuz = data.serviceLuz;
+    if (data.serviceElectricity !== undefined) updateData.serviceElectricity = data.serviceElectricity;
     if (data.serviceGas !== undefined) updateData.serviceGas = data.serviceGas;
-    if (data.serviceAgua !== undefined) updateData.serviceAgua = data.serviceAgua;
-    if (data.serviceMunicipalidad !== undefined) updateData.serviceMunicipalidad = data.serviceMunicipalidad;
-    if (data.serviceRendas !== undefined) updateData.serviceRendas = data.serviceRendas;
-    if (data.serviceExpensas !== undefined) updateData.serviceExpensas = data.serviceExpensas;
+    if (data.serviceWater !== undefined) updateData.serviceWater = data.serviceWater;
+    if (data.serviceCouncil !== undefined) updateData.serviceCouncil = data.serviceCouncil;
+    if (data.serviceStateTax !== undefined) updateData.serviceStateTax = data.serviceStateTax;
+    if (data.serviceHoa !== undefined) updateData.serviceHoa = data.serviceHoa;
 
     const [updated] = await db
       .update(property)

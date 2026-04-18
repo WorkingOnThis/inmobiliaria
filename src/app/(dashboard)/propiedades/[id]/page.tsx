@@ -37,12 +37,12 @@ interface PropertyDetail {
   rooms: number | null;
   bathrooms: number | null;
   surface: string | null;
-  serviceLuz: string;
+  serviceElectricity: string;
   serviceGas: string;
-  serviceAgua: string;
-  serviceMunicipalidad: string;
-  serviceRendas: string;
-  serviceExpensas: string;
+  serviceWater: string;
+  serviceCouncil: string;
+  serviceStateTax: string;
+  serviceHoa: string;
   createdAt: string;
   updatedAt: string;
   ownerId: string;
@@ -875,12 +875,12 @@ function PropiedadFichaContent() {
                       Responsabilidad de servicios
                     </div>
                     <div className="grid grid-cols-3 gap-2.5">
-                      <DatoItem label="Luz" value={SERVICIO_LABEL[prop.serviceLuz]} />
+                      <DatoItem label="Luz" value={SERVICIO_LABEL[prop.serviceElectricity]} />
                       <DatoItem label="Gas" value={SERVICIO_LABEL[prop.serviceGas]} />
-                      <DatoItem label="Agua" value={SERVICIO_LABEL[prop.serviceAgua]} />
-                      <DatoItem label="Municipalidad" value={SERVICIO_LABEL[prop.serviceMunicipalidad]} />
-                      <DatoItem label="Rentas" value={SERVICIO_LABEL[prop.serviceRendas]} />
-                      <DatoItem label="Expensas" value={SERVICIO_LABEL[prop.serviceExpensas]} />
+                      <DatoItem label="Agua" value={SERVICIO_LABEL[prop.serviceWater]} />
+                      <DatoItem label="Municipalidad" value={SERVICIO_LABEL[prop.serviceCouncil]} />
+                      <DatoItem label="Rentas" value={SERVICIO_LABEL[prop.serviceStateTax]} />
+                      <DatoItem label="Expensas" value={SERVICIO_LABEL[prop.serviceHoa]} />
                     </div>
                   </div>
                 </div>

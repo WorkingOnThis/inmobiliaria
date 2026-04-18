@@ -108,12 +108,12 @@ type EditForm = {
 
 // Mapeo tipo de servicio → clave en la tabla property
 const TIPO_TO_PROPERTY_KEY: Record<string, string> = {
-  luz: "serviceLuz",
+  luz: "serviceElectricity",
   gas: "serviceGas",
-  agua: "serviceAgua",
-  abl: "serviceMunicipalidad",
-  inmobiliario: "serviceRendas",
-  expensas: "serviceExpensas",
+  agua: "serviceWater",
+  abl: "serviceCouncil",
+  inmobiliario: "serviceStateTax",
+  expensas: "serviceHoa",
 };
 
 export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClose }: Props) {

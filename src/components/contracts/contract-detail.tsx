@@ -51,12 +51,12 @@ import {
    ────────────────────────────────────────────────────────── */
 
 interface PropertyServices {
-  serviceLuz: string;
+  serviceElectricity: string;
   serviceGas: string;
-  serviceAgua: string;
-  serviceMunicipalidad: string;
-  serviceRendas: string;
-  serviceExpensas: string;
+  serviceWater: string;
+  serviceCouncil: string;
+  serviceStateTax: string;
+  serviceHoa: string;
 }
 
 interface ContractDetail extends PropertyServices {
@@ -104,12 +104,12 @@ interface EditableConditions {
   paymentModality: "A" | "B";
   adjustmentIndex: string;
   adjustmentFrequency: string;
-  serviceLuz: string;
+  serviceElectricity: string;
   serviceGas: string;
-  serviceAgua: string;
-  serviceMunicipalidad: string;
-  serviceRendas: string;
-  serviceExpensas: string;
+  serviceWater: string;
+  serviceCouncil: string;
+  serviceStateTax: string;
+  serviceHoa: string;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -168,12 +168,12 @@ function statusDotClass(status: string): string {
 }
 
 const SERVICE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  serviceLuz: Zap,
+  serviceElectricity: Zap,
   serviceGas: Flame,
-  serviceAgua: Droplets,
-  serviceMunicipalidad: Landmark,
-  serviceRendas: ReceiptText,
-  serviceExpensas: Building,
+  serviceWater: Droplets,
+  serviceCouncil: Landmark,
+  serviceStateTax: ReceiptText,
+  serviceHoa: Building,
 };
 
 /* ──────────────────────────────────────────────────────────
@@ -354,23 +354,23 @@ export function ContractDetail({ id }: { id: string }) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            serviceLuz: values.serviceLuz,
+            serviceElectricity: values.serviceElectricity,
             serviceGas: values.serviceGas,
-            serviceAgua: values.serviceAgua,
-            serviceMunicipalidad: values.serviceMunicipalidad,
-            serviceRendas: values.serviceRendas,
-            serviceExpensas: values.serviceExpensas,
+            serviceWater: values.serviceWater,
+            serviceCouncil: values.serviceCouncil,
+            serviceStateTax: values.serviceStateTax,
+            serviceHoa: values.serviceHoa,
           }),
         });
 
         // También propagar a los registros de la tabla servicio (responsablePago)
         const TIPO_COND_KEY: Record<string, keyof EditableConditions> = {
-          luz: "serviceLuz",
+          luz: "serviceElectricity",
           gas: "serviceGas",
-          agua: "serviceAgua",
-          abl: "serviceMunicipalidad",
-          inmobiliario: "serviceRendas",
-          expensas: "serviceExpensas",
+          agua: "serviceWater",
+          abl: "serviceCouncil",
+          inmobiliario: "serviceStateTax",
+          expensas: "serviceHoa",
         };
         await Promise.all(
           (servicesData?.items ?? []).map((srv) => {
@@ -432,12 +432,12 @@ export function ContractDetail({ id }: { id: string }) {
       paymentModality: data.paymentModality as "A" | "B",
       adjustmentIndex: data.adjustmentIndex,
       adjustmentFrequency: String(data.adjustmentFrequency),
-      serviceLuz: data.serviceLuz || "inquilino",
+      serviceElectricity: data.serviceElectricity || "inquilino",
       serviceGas: data.serviceGas || "inquilino",
-      serviceAgua: data.serviceAgua || "inquilino",
-      serviceMunicipalidad: data.serviceMunicipalidad || "inquilino",
-      serviceRendas: data.serviceRendas || "inquilino",
-      serviceExpensas: data.serviceExpensas || "na",
+      serviceWater: data.serviceWater || "inquilino",
+      serviceCouncil: data.serviceCouncil || "inquilino",
+      serviceStateTax: data.serviceStateTax || "inquilino",
+      serviceHoa: data.serviceHoa || "na",
     });
     setIsEditing(true);
   };
@@ -521,22 +521,22 @@ export function ContractDetail({ id }: { id: string }) {
 
   // Mapeo entre clave de propiedad y tipo de servicio en la tabla servicio
   const SERVICE_KEY_TO_TIPO: Record<string, string> = {
-    serviceLuz: "electricity",
+    serviceElectricity: "electricity",
     serviceGas: "gas",
-    serviceAgua: "water",
-    serviceMunicipalidad: "abl",
-    serviceRendas: "property_tax",
-    serviceExpensas: "hoa",
+    serviceWater: "water",
+    serviceCouncil: "abl",
+    serviceStateTax: "property_tax",
+    serviceHoa: "hoa",
   };
 
   const getServiceValue = (key: string): string => {
     const map: Record<string, string> = {
-      serviceLuz: data.serviceLuz,
+      serviceElectricity: data.serviceElectricity,
       serviceGas: data.serviceGas,
-      serviceAgua: data.serviceAgua,
-      serviceMunicipalidad: data.serviceMunicipalidad,
-      serviceRendas: data.serviceRendas,
-      serviceExpensas: data.serviceExpensas,
+      serviceWater: data.serviceWater,
+      serviceCouncil: data.serviceCouncil,
+      serviceStateTax: data.serviceStateTax,
+      serviceHoa: data.serviceHoa,
     };
     return map[key] || "na";
   };

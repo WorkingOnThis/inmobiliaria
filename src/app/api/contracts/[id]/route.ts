@@ -66,12 +66,12 @@ export async function GET(
         propertyAddress: property.address,
         propertyType: property.type,
         // Servicios de la propiedad
-        serviceLuz: property.serviceLuz,
+        serviceElectricity: property.serviceElectricity,
         serviceGas: property.serviceGas,
-        serviceAgua: property.serviceAgua,
-        serviceMunicipalidad: property.serviceMunicipalidad,
-        serviceRendas: property.serviceRendas,
-        serviceExpensas: property.serviceExpensas,
+        serviceWater: property.serviceWater,
+        serviceCouncil: property.serviceCouncil,
+        serviceStateTax: property.serviceStateTax,
+        serviceHoa: property.serviceHoa,
       })
       .from(contract)
       .leftJoin(property, eq(contract.propertyId, property.id))
