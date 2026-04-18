@@ -125,7 +125,7 @@ export async function GET(
       .select()
       .from(cajaMovimiento)
       .where(eq(cajaMovimiento.inquilinoId, id))
-      .orderBy(desc(cajaMovimiento.fecha))
+      .orderBy(desc(cajaMovimiento.date))
       .limit(24);
 
     // Último pago registrado
@@ -136,7 +136,7 @@ export async function GET(
       contratoRow
         ? { endDate: contratoRow.endDate, paymentDay: contratoRow.paymentDay }
         : null,
-      lastPayment?.fecha ?? null
+      lastPayment?.date ?? null
     );
 
     return NextResponse.json({

@@ -40,15 +40,15 @@ export async function GET(request: NextRequest) {
   const movimientos = await db
     .select({
       id: cajaMovimiento.id,
-      fecha: cajaMovimiento.fecha,
-      descripcion: cajaMovimiento.descripcion,
+      fecha: cajaMovimiento.date,
+      descripcion: cajaMovimiento.description,
       tipo: cajaMovimiento.tipo,
       categoria: cajaMovimiento.categoria,
-      monto: cajaMovimiento.monto,
-      origen: cajaMovimiento.origen,
+      monto: cajaMovimiento.amount,
+      origen: cajaMovimiento.source,
       comprobante: cajaMovimiento.comprobante,
-      nota: cajaMovimiento.nota,
-      creadoEn: cajaMovimiento.creadoEn,
+      nota: cajaMovimiento.note,
+      creadoEn: cajaMovimiento.createdAt,
       // Contrato vinculado
       contratoId: cajaMovimiento.contratoId,
       contratoNumero: contract.contractNumber,
@@ -79,11 +79,11 @@ export async function GET(request: NextRequest) {
     .leftJoin(inquilinoAlias, eq(cajaMovimiento.inquilinoId, inquilinoAlias.id))
     .where(
       and(
-        gte(cajaMovimiento.fecha, fechaInicio),
-        lte(cajaMovimiento.fecha, fechaFin)
+        gte(cajaMovimiento.date, fechaInicio),
+        lte(cajaMovimiento.date, fechaFin)
       )
     )
-    .orderBy(sql`${cajaMovimiento.fecha} DESC, ${cajaMovimiento.creadoEn} DESC`);
+    .orderBy(sql`${cajaMovimiento.date} DESC, ${cajaMovimiento.createdAt} DESC`);
 
   // Calcular totales del período
   const totalIngresos = movimientos
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
  * Body:
  *   fecha        string  "YYYY-MM-DD"  requerido
  *   descripcion  string               requerido
- *   tipo         string  "ingreso" | "egreso"  requerido
+ *   tipo         string  "income" | "expense"  requerido
  *   monto        number               requerido, > 0
  *   categoria    string               opcional
  *   contratoId   string               opcional
@@ -156,21 +156,21 @@ export async function POST(request: NextRequest) {
   const [nuevo] = await db
     .insert(cajaMovimiento)
     .values({
-      fecha,
-      descripcion: descripcion.trim(),
+      date: fecha,
+      description: descripcion.trim(),
       tipo,
-      monto: String(montoNum),
+      amount: String(montoNum),
       categoria: categoria?.trim() || null,
-      origen: "manual" as const,
+      source: "manual",
       contratoId: contratoId || null,
       propietarioId: propietarioId || null,
       inquilinoId: inquilinoId || null,
       propiedadId: propiedadId || null,
       comprobante: comprobante?.trim() || null,
-      nota: nota?.trim() || null,
-      creadoPor: session.user.id,
-      creadoEn: new Date(),
-      actualizadoEn: new Date(),
+      note: nota?.trim() || null,
+      createdBy: session.user.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     })
     .returning();
 

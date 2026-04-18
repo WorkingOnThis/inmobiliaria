@@ -58,20 +58,20 @@ export async function POST(
     const [movimiento] = await db
       .insert(cajaMovimiento)
       .values({
-        fecha: data.fecha,
-        descripcion: data.descripcion,
+        date: data.fecha,
+        description: data.descripcion,
         tipo: data.tipo,
         categoria: data.categoria ?? null,
-        monto: String(data.monto),
-        origen: data.origen,
+        amount: String(data.monto),
+        source: data.origen,
         propietarioId: id,
         propiedadId: data.propiedadId ?? null,
         contratoId: data.contratoId ?? null,
         comprobante: data.comprobante ?? null,
-        nota: data.nota ?? null,
-        creadoPor: session.user.id,
-        creadoEn: now,
-        actualizadoEn: now,
+        note: data.nota ?? null,
+        createdBy: session.user.id,
+        createdAt: now,
+        updatedAt: now,
       })
       .returning();
 

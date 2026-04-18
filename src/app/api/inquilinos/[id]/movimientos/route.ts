@@ -66,18 +66,18 @@ export async function POST(
       .insert(cajaMovimiento)
       .values({
         tipo,
-        descripcion,
-        monto: String(monto),
-        fecha,
+        description: descripcion,
+        amount: String(monto),
+        date: fecha,
         categoria: categoria || null,
-        nota: nota || null,
-        periodo: periodo || null,
+        note: nota || null,
+        period: periodo || null,
         reciboNumero,
         inquilinoId: id,
         contratoId: contratoId || null,
         propiedadId: propiedadId || null,
-        origen: "manual" as const,
-        creadoPor: session.user.id,
+        source: "manual",
+        createdBy: session.user.id,
       })
       .returning();
 

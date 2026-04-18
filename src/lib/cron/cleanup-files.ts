@@ -20,8 +20,8 @@ export async function cleanupExpiredFiles(): Promise<CleanupResult> {
     .where(
       and(
         isNotNull(cajaMovimiento.comprobanteUrl),
-        isNotNull(cajaMovimiento.liquidadoEn),
-        lt(cajaMovimiento.liquidadoEn, cutoffDate)
+        isNotNull(cajaMovimiento.settledAt),
+        lt(cajaMovimiento.settledAt, cutoffDate)
       )
     );
 
@@ -35,7 +35,7 @@ export async function cleanupExpiredFiles(): Promise<CleanupResult> {
   if (cleanedIds.length > 0) {
     await db
       .update(cajaMovimiento)
-      .set({ comprobanteUrl: null, comprobanteMime: null, comprobanteTamano: null, actualizadoEn: new Date() })
+      .set({ comprobanteUrl: null, comprobanteMime: null, comprobanteTamano: null, updatedAt: new Date() })
       .where(inArray(cajaMovimiento.id, cleanedIds));
   }
 

@@ -27,7 +27,7 @@ export async function GET(
     const [propietario] = await db
       .select({ id: client.id, firstName: client.firstName, lastName: client.lastName })
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "propietario")))
+      .where(and(eq(client.id, id), eq(client.type, "owner")))
       .limit(1);
 
     if (!propietario) {
@@ -44,19 +44,19 @@ export async function GET(
     const movimientos = await db
       .select({
         id: cajaMovimiento.id,
-        fecha: cajaMovimiento.fecha,
-        descripcion: cajaMovimiento.descripcion,
+        fecha: cajaMovimiento.date,
+        descripcion: cajaMovimiento.description,
         tipo: cajaMovimiento.tipo,
         categoria: cajaMovimiento.categoria,
-        monto: cajaMovimiento.monto,
-        origen: cajaMovimiento.origen,
+        monto: cajaMovimiento.amount,
+        origen: cajaMovimiento.source,
         contratoId: cajaMovimiento.contratoId,
         propiedadId: cajaMovimiento.propiedadId,
         comprobante: cajaMovimiento.comprobante,
-        nota: cajaMovimiento.nota,
-        creadoEn: cajaMovimiento.creadoEn,
-        conciliado: cajaMovimiento.conciliado,
-        conciliadoEn: cajaMovimiento.conciliadoEn,
+        nota: cajaMovimiento.note,
+        creadoEn: cajaMovimiento.createdAt,
+        conciliado: cajaMovimiento.reconciled,
+        conciliadoEn: cajaMovimiento.reconciledAt,
         comprobanteUrl: cajaMovimiento.comprobanteUrl,
         comprobanteMime: cajaMovimiento.comprobanteMime,
       })
@@ -66,11 +66,11 @@ export async function GET(
           baseWhere,
           propiedadFilter ? eq(cajaMovimiento.propiedadId, propiedadFilter) : undefined,
           periodoFilter
-            ? sql`to_char(${cajaMovimiento.fecha}::date, 'YYYY-MM') = ${periodoFilter}`
+            ? sql`to_char(${cajaMovimiento.date}::date, 'YYYY-MM') = ${periodoFilter}`
             : undefined
         )
       )
-      .orderBy(desc(cajaMovimiento.fecha));
+      .orderBy(desc(cajaMovimiento.date));
 
     // Enriquecer con dirección de propiedad
     const propIds = [...new Set(movimientos.map((m) => m.propiedadId).filter(Boolean))] as string[];
@@ -92,34 +92,34 @@ export async function GET(
     // --- KPIs ---
     const currentYear = new Date().getFullYear().toString();
 
-    // Liquidado acumulado: egresos con origen "liquidacion" en el año actual
+    // Liquidado acumulado: egresos con origen "settlement" en el año actual
     const [liquidadoResult] = await db
-      .select({ total: sum(cajaMovimiento.monto) })
+      .select({ total: sum(cajaMovimiento.amount) })
       .from(cajaMovimiento)
       .where(
         and(
           eq(cajaMovimiento.propietarioId, id),
           eq(cajaMovimiento.tipo, "expense"),
-          eq(cajaMovimiento.origen, "settlement"),
-          sql`extract(year from ${cajaMovimiento.fecha}::date) = ${currentYear}`
+          eq(cajaMovimiento.source, "settlement"),
+          sql`extract(year from ${cajaMovimiento.date}::date) = ${currentYear}`
         )
       );
 
-    // Ingresos aún no liquidados (origen != liquidacion): son los que deberían liquidarse
+    // Ingresos aún no liquidados (source != settlement): son los que deberían liquidarse
     const [pendienteLiquidarResult] = await db
-      .select({ total: sum(cajaMovimiento.monto) })
+      .select({ total: sum(cajaMovimiento.amount) })
       .from(cajaMovimiento)
       .where(
         and(
           eq(cajaMovimiento.propietarioId, id),
           eq(cajaMovimiento.tipo, "income"),
-          sql`${cajaMovimiento.origen} != 'settlement'`
+          sql`${cajaMovimiento.source} != 'settlement'`
         )
       );
 
     // Pendiente de confirmar: categoría "pendiente_confirmacion"
     const [pendienteConfirmarResult] = await db
-      .select({ total: sum(cajaMovimiento.monto) })
+      .select({ total: sum(cajaMovimiento.amount) })
       .from(cajaMovimiento)
       .where(
         and(

@@ -75,7 +75,7 @@ export async function POST(
       comprobanteUrl,
       comprobanteMime: file.type,
       comprobanteTamano: file.size,
-      actualizadoEn: new Date(),
+      updatedAt: new Date(),
     })
     .where(eq(cajaMovimiento.id, id))
     .returning({
@@ -126,7 +126,7 @@ export async function DELETE(
       comprobanteUrl: null,
       comprobanteMime: null,
       comprobanteTamano: null,
-      actualizadoEn: new Date(),
+      updatedAt: new Date(),
     })
     .where(eq(cajaMovimiento.id, id));
 

@@ -9,28 +9,28 @@ import { property } from "./property";
  *
  * Registra todos los flujos de dinero de la agencia:
  *   - tipo: "income" | "expense"
- *   - origen: "manual" (cargado por staff) | "contract" (generado automático) | "settlement"
+ *   - source: "manual" (cargado por staff) | "contract" (generado automático) | "settlement"
  *
  * Las vinculaciones son todas opcionales. Un movimiento puede estar
  * ligado a un contrato, un propietario, un inquilino o una propiedad,
  * o a ninguno (ej: gasto operativo de la inmobiliaria).
  */
-export const cajaMovimiento = pgTable("caja_movimiento", {
+export const cajaMovimiento = pgTable("cash_movement", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
 
-  fecha: text("fecha").notNull(), // ISO "YYYY-MM-DD"
+  date: text("date").notNull(), // ISO "YYYY-MM-DD"
 
-  descripcion: text("descripcion").notNull(),
+  description: text("description").notNull(),
 
-  tipo: text("tipo").notNull(), // "ingreso" | "egreso"
+  tipo: text("tipo").notNull(), // "income" | "expense"
 
   categoria: text("categoria"), // texto libre, ej: "Plomería", "Operativo", "Honorarios"
 
-  monto: decimal("monto", { precision: 15, scale: 2 }).notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
 
-  origen: text("origen").notNull().default("manual"), // "manual" | "contrato" | "liquidacion"
+  source: text("source").notNull().default("manual"), // "manual" | "contract" | "settlement"
 
   // Vinculaciones opcionales
   contratoId: text("contratoId").references(() => contract.id, { onDelete: "set null" }),
@@ -39,11 +39,11 @@ export const cajaMovimiento = pgTable("caja_movimiento", {
   propiedadId: text("propiedadId").references(() => property.id, { onDelete: "set null" }),
 
   // Conciliación — verificación contra comprobante externo
-  conciliado: boolean("conciliado").notNull().default(false),
-  conciliadoEn: timestamp("conciliadoEn"),
+  reconciled: boolean("reconciled").notNull().default(false),
+  reconciledAt: timestamp("reconciledAt"),
 
   // Fecha en que el movimiento entró a una liquidación cerrada (para TTL de 90 días)
-  liquidadoEn: timestamp("liquidadoEn"),
+  settledAt: timestamp("settledAt"),
 
   // Comprobante adjunto (PDF o imagen, almacenado en /public/uploads/movimientos/)
   comprobanteUrl: text("comprobanteUrl"),
@@ -54,19 +54,19 @@ export const cajaMovimiento = pgTable("caja_movimiento", {
   comprobante: text("comprobante"),
 
   // Nota interna (solo visible para staff, no aparece en informes al cliente)
-  nota: text("nota"),
+  note: text("note"),
 
   // Número correlativo de recibo (solo para ingresos formales de alquiler)
   reciboNumero: text("reciboNumero"),
 
   // Período de alquiler al que corresponde el pago, formato "YYYY-MM"
-  periodo: text("periodo"),
+  period: text("period"),
 
   // Quién registró el movimiento
-  creadoPor: text("creadoPor").references(() => user.id, { onDelete: "set null" }),
+  createdBy: text("createdBy").references(() => user.id, { onDelete: "set null" }),
 
-  creadoEn: timestamp("creadoEn").defaultNow().notNull(),
-  actualizadoEn: timestamp("actualizadoEn").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type CajaMovimiento = typeof cajaMovimiento.$inferSelect;

@@ -103,13 +103,13 @@ export default function TenantDetailPage() {
     } | null;
     movimientos: {
       id: string;
-      fecha: string;
-      descripcion: string;
+      date: string;
+      description: string;
       tipo: string;
-      monto: string;
+      amount: string;
       categoria: string | null;
       comprobante: string | null;
-      nota: string | null;
+      note: string | null;
       contratoId: string | null;
     }[];
   }>({

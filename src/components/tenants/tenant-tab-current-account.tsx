@@ -33,16 +33,16 @@ import { StatusBadge } from "@/components/ui/status-badge";
 
 interface Movimiento {
   id: string;
-  fecha: string;
-  descripcion: string;
+  date: string;
+  description: string;
   tipo: string;
-  monto: string;
+  amount: string;
   categoria: string | null;
   comprobante: string | null;
-  nota: string | null;
+  note: string | null;
   contratoId: string | null;
   reciboNumero?: string | null;
-  periodo?: string | null;
+  period?: string | null;
 }
 
 interface ContratoData {
@@ -129,7 +129,7 @@ export function TenantTabCurrentAccount({
   const [nota, setNota] = useState("");
 
   const ingresos = movimientos.filter((m) => m.tipo === "income");
-  const totalCobrado = ingresos.reduce((acc, m) => acc + Number(m.monto), 0);
+  const totalCobrado = ingresos.reduce((acc, m) => acc + Number(m.amount), 0);
   const filtrados = filtro === "todos" ? movimientos : movimientos.filter((m) => m.tipo === (filtro as "income" | "expense"));
   const enMora = estado === "en_mora";
 
@@ -338,15 +338,15 @@ export function TenantTabCurrentAccount({
                 {filtrados.map((mov) => (
                   <TableRow key={mov.id} className="hover:bg-surface-mid/40">
                     <TableCell className="px-4 py-3 text-[0.8rem] text-text-secondary whitespace-nowrap">
-                      {formatFecha(mov.fecha)}
+                      {formatFecha(mov.date)}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-[0.82rem] text-on-bg font-medium">
-                      {mov.descripcion}
-                      {mov.periodo && (
-                        <div className="text-[0.68rem] text-text-muted font-normal">{mov.periodo}</div>
+                      {mov.description}
+                      {mov.period && (
+                        <div className="text-[0.68rem] text-text-muted font-normal">{mov.period}</div>
                       )}
-                      {mov.nota && (
-                        <div className="text-[0.7rem] text-text-muted font-normal mt-0.5">{mov.nota}</div>
+                      {mov.note && (
+                        <div className="text-[0.7rem] text-text-muted font-normal mt-0.5">{mov.note}</div>
                       )}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-[0.75rem] text-text-muted capitalize">
@@ -354,7 +354,7 @@ export function TenantTabCurrentAccount({
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
                       <span className={cn("text-[0.82rem] font-semibold", mov.tipo === "income" ? "text-success" : "text-error")}>
-                        {mov.tipo === "income" ? "+" : "-"}{formatMonto(mov.monto)}
+                        {mov.tipo === "income" ? "+" : "-"}{formatMonto(mov.amount)}
                       </span>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-center">

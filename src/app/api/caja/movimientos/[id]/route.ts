@@ -52,18 +52,18 @@ export async function PATCH(
   const [actualizado] = await db
     .update(cajaMovimiento)
     .set({
-      fecha,
-      descripcion: descripcion.trim(),
+      date: fecha,
+      description: descripcion.trim(),
       tipo,
-      monto: String(montoNum),
+      amount: String(montoNum),
       categoria: categoria?.trim() || null,
       contratoId: contratoId || null,
       propietarioId: propietarioId || null,
       inquilinoId: inquilinoId || null,
       propiedadId: propiedadId || null,
       comprobante: comprobante?.trim() || null,
-      nota: nota?.trim() || null,
-      actualizadoEn: new Date(),
+      note: nota?.trim() || null,
+      updatedAt: new Date(),
     })
     .where(eq(cajaMovimiento.id, id))
     .returning();

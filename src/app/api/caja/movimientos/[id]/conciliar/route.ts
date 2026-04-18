@@ -19,15 +19,15 @@ export async function PATCH(
   const [actualizado] = await db
     .update(cajaMovimiento)
     .set({
-      conciliado: sql`NOT ${cajaMovimiento.conciliado}`,
-      conciliadoEn: sql`CASE WHEN NOT ${cajaMovimiento.conciliado} THEN NOW() ELSE NULL END`,
-      actualizadoEn: new Date(),
+      reconciled: sql`NOT ${cajaMovimiento.reconciled}`,
+      reconciledAt: sql`CASE WHEN NOT ${cajaMovimiento.reconciled} THEN NOW() ELSE NULL END`,
+      updatedAt: new Date(),
     })
     .where(eq(cajaMovimiento.id, id))
     .returning({
       id: cajaMovimiento.id,
-      conciliado: cajaMovimiento.conciliado,
-      conciliadoEn: cajaMovimiento.conciliadoEn,
+      conciliado: cajaMovimiento.reconciled,
+      conciliadoEn: cajaMovimiento.reconciledAt,
     });
 
   if (!actualizado) {

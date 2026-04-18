@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
     const payments = await db
       .select({
         inquilinoId: cajaMovimiento.inquilinoId,
-        fecha: cajaMovimiento.fecha,
+        fecha: cajaMovimiento.date,
       })
       .from(cajaMovimiento)
       .where(
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
           eq(cajaMovimiento.tipo, "income")
         )
       )
-      .orderBy(desc(cajaMovimiento.fecha));
+      .orderBy(desc(cajaMovimiento.date));
 
     // Mapas de consulta rápida
     const contractByClient = new Map<string, (typeof contracts)[0]>();
