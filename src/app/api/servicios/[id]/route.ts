@@ -6,7 +6,7 @@ import { canManageServices } from "@/lib/permissions";
 import { servicio, servicioComprobante, servicioOmision } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
-import { calcularEstadoServicio } from "@/lib/servicios/constants";
+import { calculateServiceStatus } from "@/lib/services/constants";
 
 const actualizarServicioSchema = z.object({
   empresa: z.string().optional().nullable(),
@@ -16,7 +16,7 @@ const actualizarServicioSchema = z.object({
   titularTipo: z.enum(["propietario", "inquilino", "otro"]).optional(),
   responsablePago: z.enum(["propietario", "inquilino"]).optional(),
   vencimientoDia: z.number().int().min(1).max(31).optional().nullable(),
-  activaBloqueo: z.boolean().optional(),
+  activatesBlock: z.boolean().optional(),
 });
 
 export async function GET(
@@ -64,18 +64,18 @@ export async function GET(
   const inicioPeriodo = new Date(year, month - 1, 1);
   const diasTranscurridos = Math.floor((new Date().getTime() - inicioPeriodo.getTime()) / (1000 * 60 * 60 * 24));
 
-  const estado = calcularEstadoServicio({
-    tieneComprobante: !!comprobantePeriodo,
-    diasSinComprobante: comprobantePeriodo ? 0 : diasTranscurridos,
-    activaBloqueo: s.activaBloqueo,
-    tieneOmision: !!omisionPeriodo,
+  const estado = calculateServiceStatus({
+    hasReceipt: !!comprobantePeriodo,
+    daysWithoutReceipt: comprobantePeriodo ? 0 : diasTranscurridos,
+    activatesBlock: s.activaBloqueo,
+    hasOmission: !!omisionPeriodo,
   });
 
   return NextResponse.json({
     item: s,
     periodo,
     estado,
-    diasSinComprobante: comprobantePeriodo ? 0 : diasTranscurridos,
+    daysWithoutReceipt: comprobantePeriodo ? 0 : diasTranscurridos,
     comprobantePeriodo: comprobantePeriodo ?? null,
     omisionPeriodo: omisionPeriodo ?? null,
     historial,
@@ -117,7 +117,7 @@ export async function PUT(
       ...(data.titularTipo !== undefined && { titularTipo: data.titularTipo }),
       ...(data.responsablePago !== undefined && { responsablePago: data.responsablePago }),
       ...(data.vencimientoDia !== undefined && { vencimientoDia: data.vencimientoDia }),
-      ...(data.activaBloqueo !== undefined && { activaBloqueo: data.activaBloqueo }),
+      ...(data.activatesBlock !== undefined && { activatesBlock: data.activatesBlock }),
       updatedAt: new Date(),
     })
     .where(eq(servicio.id, id))

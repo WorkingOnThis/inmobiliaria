@@ -1,6 +1,6 @@
 "use client";
 
-import { ServiciosControlPanel } from "@/components/servicios/servicios-control-panel";
+import { ServicesControlPanel } from "@/components/services/services-control-panel";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -14,7 +14,7 @@ export default function ServiciosPage() {
           </div>
         }
       >
-        <ServiciosControlPanel />
+        <ServicesControlPanel />
       </Suspense>
     </div>
   );

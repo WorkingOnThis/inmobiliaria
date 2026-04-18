@@ -6,7 +6,7 @@ import { canManageServices } from "@/lib/permissions";
 import { servicio, servicioComprobante, servicioOmision, property, contract, contractTenant, client } from "@/db/schema";
 import { eq, and, desc, sql, inArray, or } from "drizzle-orm";
 import { z } from "zod";
-import { calcularEstadoServicio } from "@/lib/servicios/constants";
+import { calculateServiceStatus } from "@/lib/services/constants";
 
 const crearServicioSchema = z.object({
   propertyId: z.string().min(1, "La propiedad es requerida"),
@@ -126,11 +126,11 @@ export async function GET(request: NextRequest) {
       // Días sin comprobante: si hay comprobante es 0, sino los días transcurridos del período
       const diasSinComprobante = comprobante ? 0 : diasTranscurridos;
 
-      const estadoCalculado = calcularEstadoServicio({
-        tieneComprobante: !!comprobante,
-        diasSinComprobante,
-        activaBloqueo: s.activaBloqueo,
-        tieneOmision: !!omision,
+      const estadoCalculado = calculateServiceStatus({
+        hasReceipt: !!comprobante,
+        daysWithoutReceipt: diasSinComprobante,
+        activatesBlock: s.activaBloqueo,
+        hasOmission: !!omision,
       });
 
       return {

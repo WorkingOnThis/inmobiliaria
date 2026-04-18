@@ -11,30 +11,30 @@ import {
   ArrowRight,
 } from "lucide-react";
 import {
-  SERVICIO_TIPO_LABELS,
-  SERVICIO_TIPO_ICONS,
-  type ServicioTipo,
-  type ServicioEstado,
-} from "@/lib/servicios/constants";
+  SERVICE_TYPE_LABELS,
+  SERVICE_TYPE_ICONS,
+  type ServiceType,
+  type ServiceStatus,
+} from "@/lib/services/constants";
 import { StatusBadge } from "@/components/ui/status-badge";
 
-// ── Tipos ──────────────────────────────────────────────────────────────
-type ServicioResumen = {
+// ── Types ──────────────────────────────────────────────────────────────
+type ServiceSummary = {
   id: string;
-  tipo: ServicioTipo;
-  estado: ServicioEstado;
-  diasSinComprobante: number;
-  activaBloqueo: boolean;
+  type: ServiceType;
+  status: ServiceStatus;
+  daysWithoutReceipt: number;
+  activatesBlock: boolean;
 };
 
-type PropiedadResumen = {
+type PropertySummary = {
   propertyId: string;
   propertyAddress: string | null;
-  inquilinoNombre?: string;
-  inquilinoId?: string;
-  servicios: ServicioResumen[];
-  peorEstado: ServicioEstado;
-  alertasCount: number;
+  tenantName?: string;
+  tenantId?: string;
+  services: ServiceSummary[];
+  worstStatus: ServiceStatus;
+  alertsCount: number;
 };
 
 type KPIs = {
@@ -45,59 +45,74 @@ type KPIs = {
   pendientes: number;
 };
 
+type PropiedadResumen = {
+  propertyId: string;
+  propertyAddress: string | null;
+  inquilinoNombre?: string;
+  inquilinoId?: string;
+  servicios: Array<{
+    id: string;
+    tipo: ServiceType;
+    estado: ServiceStatus;
+    diasSinComprobante: number;
+  }>;
+  peorEstado: ServiceStatus;
+  alertasCount: number;
+};
+
 // ── Helpers de período ──────────────────────────────────────────────────
-function periodoLabel(periodo: string): string {
-  const [year, month] = periodo.split("-").map(Number);
+function periodLabel(period: string): string {
+  const [year, month] = period.split("-").map(Number);
   const fecha = new Date(year, month - 1, 1);
   return fecha.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
 }
 
-function periodoAnterior(periodo: string): string {
-  const [year, month] = periodo.split("-").map(Number);
+function previousPeriod(period: string): string {
+  const [year, month] = period.split("-").map(Number);
   const d = new Date(year, month - 2, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function periodoSiguiente(periodo: string): string {
-  const [year, month] = periodo.split("-").map(Number);
+function nextPeriod(period: string): string {
+  const [year, month] = period.split("-").map(Number);
   const d = new Date(year, month, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function periodoActual(): string {
+function currentPeriod(): string {
   const hoy = new Date();
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
 }
 
 // ── Chip de estado del servicio ─────────────────────────────────────────
 function ServicioChip({
-  tipo,
+  type,
   estado,
-  diasSinComprobante,
+  daysWithoutReceipt,
   onClick,
 }: {
-  tipo: ServicioTipo;
-  estado: ServicioEstado;
-  diasSinComprobante: number;
+  type: ServiceType;
+  estado: ServiceStatus;
+  daysWithoutReceipt: number;
   onClick?: (e: React.MouseEvent) => void;
 }) {
-  const icon = SERVICIO_TIPO_ICONS[tipo] ?? "📋";
-  const label = (SERVICIO_TIPO_LABELS[tipo] ?? tipo)
+  const icon = SERVICE_TYPE_ICONS[type] ?? "📋";
+  const label = (SERVICE_TYPE_LABELS[type] ?? type)
     .replace("Energía eléctrica", "Luz")
     .replace("Gas natural", "Gas")
     .replace("ABL / Impuesto inmobiliario", "ABL")
     .replace("Seguro del inmueble", "Seguro");
 
-  const diasLabel = diasSinComprobante > 0 ? ` ${diasSinComprobante}d` : "";
+  const diasLabel = daysWithoutReceipt > 0 ? ` ${daysWithoutReceipt}d` : "";
 
-  const clases: Record<ServicioEstado, string> = {
+  const clases: Record<ServiceStatus, string> = {
     al_dia: "bg-income-dim text-income",
     pendiente: "bg-muted text-muted-foreground",
     en_alerta: "bg-mustard-dim text-mustard",
     bloqueado: "bg-destructive-dim text-destructive",
   };
 
-  const dotClases: Record<ServicioEstado, string> = {
+  const dotClases: Record<ServiceStatus, string> = {
     al_dia: "bg-current",
     pendiente: "bg-current",
     en_alerta: "bg-current",
@@ -119,7 +134,7 @@ function ServicioChip({
 }
 
 // ── Badge resumen de alertas ────────────────────────────────────────────
-function AlertasBadge({ estado, count }: { estado: ServicioEstado; count: number }) {
+function AlertasBadge({ estado, count }: { estado: ServiceStatus; count: number }) {
   if (estado === "al_dia") {
     return <StatusBadge variant="income">Al día</StatusBadge>;
   }
@@ -140,41 +155,61 @@ function AlertasBadge({ estado, count }: { estado: ServicioEstado; count: number
   );
 }
 
-// ── Componente principal ────────────────────────────────────────────────
-export function ServiciosControlPanel() {
+// ── Main component ────────────────────────────────────────────────
+export function ServicesControlPanel() {
   const router = useRouter();
-  const [periodo, setPeriodo] = useState(periodoActual);
-  const [filtro, setFiltro] = useState<"todos" | ServicioEstado>("todos");
-  const [busqueda, setBusqueda] = useState("");
+  const [period, setPeriod] = useState(currentPeriod);
+  const [filter, setFilter] = useState<"todos" | ServiceStatus>("todos");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const limit = 15;
 
   // KPIs
   const { data: resumen } = useQuery({
-    queryKey: ["servicios-resumen", periodo],
+    queryKey: ["servicios-resumen", period],
     queryFn: async () => {
-      const res = await fetch(`/api/servicios/resumen?periodo=${periodo}`);
+      const res = await fetch(`/api/servicios/resumen?period=${period}`);
       if (!res.ok) throw new Error("Error al cargar resumen");
-      return res.json() as Promise<{ kpis: KPIs; periodo: string }>;
+      return res.json() as Promise<{ kpis: KPIs; period: string }>;
     },
   });
 
   // Lista de servicios agrupados por propiedad
   const { data, isLoading } = useQuery({
-    queryKey: ["servicios", periodo, page, filtro],
+    queryKey: ["servicios", period, page, filter],
     queryFn: async () => {
-      const estadoParam = filtro !== "todos" ? `&estado=${filtro}` : "";
+      const estadoParam = filter !== "todos" ? `&estado=${filter}` : "";
       const res = await fetch(
-        `/api/servicios?periodo=${periodo}&page=${page}&limit=${limit}${estadoParam}`
+        `/api/servicios?period=${period}&page=${page}&limit=${limit}${estadoParam}`
       );
       if (!res.ok) throw new Error("Error al cargar servicios");
       return res.json() as Promise<{
-        items: (ServicioResumen & {
+        items: Array<{
+          id: string;
+          tipo: ServiceType;
+          company: string | null;
+          accountNumber: string | null;
+          holder: string | null;
+          holderType: string;
+          paymentResponsible: string;
+          dueDay: number | null;
+          activaBloqueo: boolean;
+          estado: ServiceStatus;
+          diasSinComprobante: number;
+          periodo: string;
           propertyId: string;
           propertyAddress: string | null;
           inquilinoNombre: string | null;
           inquilinoId: string | null;
-        })[];
+          servicios: Array<{
+            id: string;
+            tipo: ServiceType;
+            estado: ServiceStatus;
+            daysWithoutReceipt: number;
+          }>;
+          peorEstado: ServiceStatus;
+          alertasCount: number;
+        }>;
         pagination: { total: number; page: number; limit: number; totalPages: number };
       }>;
     },
@@ -210,16 +245,16 @@ export function ServiciosControlPanel() {
   }
 
   // Filtrar por búsqueda en cliente
-  const propiedadesFiltradas = busqueda.trim()
+  const propiedadesFiltradas = search.trim()
     ? propiedades.filter((p) =>
-      p.propertyAddress?.toLowerCase().includes(busqueda.toLowerCase())
+      p.propertyAddress?.toLowerCase().includes(search.toLowerCase())
     )
     : propiedades;
 
   const kpis = resumen?.kpis;
   const pagination = data?.pagination;
 
-  const filtros: { key: "todos" | ServicioEstado; label: string }[] = [
+  const filters: { key: "todos" | ServiceStatus; label: string }[] = [
     { key: "todos", label: "Todos" },
     { key: "al_dia", label: "Al día" },
     { key: "pendiente", label: "Pendientes" },
@@ -243,16 +278,16 @@ export function ServiciosControlPanel() {
         {/* Selector de período */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => { setPeriodo(periodoAnterior(periodo)); setPage(1); }}
+            onClick={() => { setPeriod(previousPeriod(period)); setPage(1); }}
             className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-mid text-text-muted transition-colors hover:bg-surface-high hover:text-on-bg"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <div className="min-w-[140px] rounded-xl border border-border bg-surface-mid px-4 py-1.5 text-center text-sm font-semibold capitalize">
-            {periodoLabel(periodo)}
+            {periodLabel(period)}
           </div>
           <button
-            onClick={() => { setPeriodo(periodoSiguiente(periodo)); setPage(1); }}
+            onClick={() => { setPeriod(nextPeriod(period)); setPage(1); }}
             className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-mid text-text-muted transition-colors hover:bg-surface-high hover:text-on-bg"
           >
             <ChevronRight className="h-4 w-4" />
@@ -326,18 +361,18 @@ export function ServiciosControlPanel() {
           <input
             type="text"
             placeholder="Buscar por dirección…"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
         <div className="mx-1 h-5 w-px bg-border" />
         <div className="flex gap-1.5">
-          {filtros.map(({ key, label }) => (
+          {filters.map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => { setFiltro(key); setPage(1); }}
-              className={`rounded-full border px-3 py-1 text-[0.68rem] font-semibold transition-colors ${filtro === key
+              onClick={() => { setFilter(key); setPage(1); }}
+              className={`rounded-full border px-3 py-1 text-[0.68rem] font-semibold transition-colors ${filter === key
                 ? key === "en_alerta"
                   ? "border-mustard/25 bg-mustard-dim text-mustard"
                   : key === "bloqueado"
@@ -430,11 +465,11 @@ export function ServiciosControlPanel() {
                       {prop.servicios.map((s) => (
                         <ServicioChip
                           key={s.id}
-                          tipo={s.tipo as ServicioTipo}
+                          type={s.tipo as ServiceType}
                           estado={s.estado}
-                          diasSinComprobante={s.diasSinComprobante}
+                          daysWithoutReceipt={s.diasSinComprobante}
                           onClick={() => {
-                            router.push(`/propiedades/${prop.propertyId}?tab=servicios&servicioId=${s.id}`);
+                            router.push(`/propiedades/${prop.propertyId}?tab=servicios&serviceId=${s.id}`);
                           }}
                         />
                       ))}

@@ -7,7 +7,7 @@ import { ArrowLeft, Loader2, Pencil, X, Save, ExternalLink, PlusCircle } from "l
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
-import { ServicioTabPropiedad } from "@/components/servicios/servicio-tab-propiedad";
+import { ServiceTabProperty } from "@/components/services/service-tab-property";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
@@ -895,9 +895,9 @@ function PropiedadFichaContent() {
 
           {/* ── TAB: SERVICIOS ── */}
           {activeTab === "servicios" && (
-            <ServicioTabPropiedad
+            <ServiceTabProperty
               propertyId={id}
-              initialServicioId={searchParams.get("servicioId")}
+              initialServiceId={searchParams.get("serviceId")}
             />
           )}
 

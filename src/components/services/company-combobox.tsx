@@ -11,7 +11,7 @@ type Props = {
   inputClassName?: string;
 };
 
-export function EmpresaCombobox({
+export function CompanyCombobox({
   value,
   onChange,
   placeholder = "Ej: EPEC, Ecogas, Aguas Cordobesas…",
@@ -22,18 +22,18 @@ export function EmpresaCombobox({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { data } = useQuery({
-    queryKey: ["empresas-prestadoras"],
+    queryKey: ["companys-prestadoras"],
     queryFn: async () => {
-      const res = await fetch("/api/servicios/empresas");
+      const res = await fetch("/api/servicios/companys");
       if (!res.ok) throw new Error("Error");
-      return res.json() as Promise<{ empresas: string[] }>;
+      return res.json() as Promise<{ companys: string[] }>;
     },
     staleTime: 1000 * 60 * 5,
   });
 
-  const todasEmpresas = data?.empresas ?? [];
+  const allCompanies = data?.companys ?? [];
 
-  const sugerencias = todasEmpresas
+  const suggestions = allCompanies
     .filter((e) =>
       query.length === 0
         ? true
@@ -41,9 +41,9 @@ export function EmpresaCombobox({
     )
     .slice(0, 5);
 
-  const esNueva =
+  const isNew =
     query.length > 0 &&
-    !todasEmpresas.some((e) => e.toLowerCase() === query.toLowerCase());
+    !allCompanies.some((e) => e.toLowerCase() === query.toLowerCase());
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -56,18 +56,18 @@ export function EmpresaCombobox({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function seleccionar(empresa: string) {
-    onChange(empresa);
+  function select(company: string) {
+    onChange(company);
     setQuery("");
     setOpen(false);
   }
 
-  function limpiar() {
+  function clear() {
     onChange("");
     setQuery("");
   }
 
-  const mostrarDropdown = open && !value && (sugerencias.length > 0 || esNueva);
+  const showDropdown = open && !value && (suggestions.length > 0 || isNew);
 
   return (
     <div ref={containerRef} className="relative">
@@ -77,9 +77,9 @@ export function EmpresaCombobox({
             {value}
             <button
               type="button"
-              onClick={limpiar}
+              onClick={clear}
               className="hover:opacity-70 transition-opacity"
-              aria-label="Quitar empresa"
+              aria-label="Remove company"
             >
               <X className="h-3 w-3" />
             </button>
@@ -99,9 +99,9 @@ export function EmpresaCombobox({
               setOpen(false);
               setQuery("");
             }
-            if (e.key === "Enter" && esNueva) {
+            if (e.key === "Enter" && isNew) {
               e.preventDefault();
-              seleccionar(query);
+              select(query);
             }
           }}
           placeholder={placeholder}
@@ -110,18 +110,18 @@ export function EmpresaCombobox({
         />
       )}
 
-      {mostrarDropdown && (
+      {showDropdown && (
         <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
           <p className="px-3 pt-2 pb-1 text-[0.6rem] font-bold uppercase tracking-widest text-muted-foreground">
-            Seleccioná una opción o creá una
+            Select an option or create a new one
           </p>
-          {sugerencias.map((e) => (
+          {suggestions.map((e) => (
             <button
               key={e}
               type="button"
               onMouseDown={(ev) => {
                 ev.preventDefault();
-                seleccionar(e);
+                select(e);
               }}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-surface-mid"
             >
@@ -130,17 +130,17 @@ export function EmpresaCombobox({
               </span>
             </button>
           ))}
-          {esNueva && (
+          {isNew && (
             <button
               type="button"
               onMouseDown={(ev) => {
                 ev.preventDefault();
-                seleccionar(query);
+                select(query);
               }}
               className="flex w-full items-center gap-2.5 border-t border-border px-3 py-2 text-sm text-primary hover:bg-surface-mid"
             >
               <Plus className="h-3.5 w-3.5 shrink-0" />
-              Crear{" "}
+              Create{" "}
               <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-[0.65rem] font-semibold text-primary-foreground">
                 {query}
               </span>

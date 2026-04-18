@@ -10,7 +10,7 @@ import { InquilinoTabCuentaCorriente } from "@/components/inquilinos/inquilino-t
 import { InquilinoTabContrato } from "@/components/inquilinos/inquilino-tab-contrato";
 import { InquilinoTabPropiedad } from "@/components/inquilinos/inquilino-tab-propiedad";
 import { InquilinoTabPropietario } from "@/components/inquilinos/inquilino-tab-propietario";
-import { ServicioTabPropiedad } from "@/components/servicios/servicio-tab-propiedad";
+import { ServiceTabProperty } from "@/components/services/service-tab-property";
 
 type Tab = "cc" | "contrato" | "propiedad" | "propietario" | "servicios" | "tareas" | "documentos" | "notificaciones";
 
@@ -311,7 +311,7 @@ export default function InquilinoFichaPage() {
 
             {activeTab === "servicios" && data?.propiedad?.id && (
               <div className="p-7">
-                <ServicioTabPropiedad propertyId={data.propiedad.id} />
+                <ServiceTabProperty propertyId={data.propiedad.id} />
               </div>
             )}
             {activeTab === "servicios" && !data?.propiedad?.id && (

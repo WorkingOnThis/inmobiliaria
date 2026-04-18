@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { servicio, servicioComprobante, servicioOmision, property } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { calcularEstadoServicio } from "@/lib/servicios/constants";
+import { calculateServiceStatus } from "@/lib/services/constants";
 
 /**
  * GET /api/servicios/resumen?periodo=YYYY-MM
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       id: servicio.id,
       propertyId: servicio.propertyId,
       tipo: servicio.tipo,
-      activaBloqueo: servicio.activaBloqueo,
+      activatesBlock: servicio.activaBloqueo,
       propertyAddress: property.address,
     })
     .from(servicio)
@@ -59,11 +59,11 @@ export async function GET(request: NextRequest) {
         .where(and(eq(servicioOmision.servicioId, s.id), eq(servicioOmision.periodo, periodo)))
         .limit(1);
 
-      const estado = calcularEstadoServicio({
-        tieneComprobante: !!comprobante,
-        diasSinComprobante: comprobante ? 0 : diasTranscurridos,
-        activaBloqueo: s.activaBloqueo,
-        tieneOmision: !!omision,
+      const estado = calculateServiceStatus({
+        hasReceipt: !!comprobante,
+        daysWithoutReceipt: comprobante ? 0 : diasTranscurridos,
+        activatesBlock: s.activatesBlock,
+        hasOmission: !!omision,
       });
 
       return { ...s, estado };

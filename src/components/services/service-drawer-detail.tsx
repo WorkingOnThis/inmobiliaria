@@ -5,52 +5,52 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { X, Upload, CheckCircle2, AlertTriangle, Lock, Clock, Pencil, Save } from "lucide-react";
 import {
-  SERVICIO_TIPOS,
-  SERVICIO_TIPO_LABELS,
-  SERVICIO_TIPO_LABELS_CORTOS,
-  SERVICIO_TIPO_ICONS,
-  CAMPOS_SERVICIO,
-  TITULAR_TIPO_LABELS,
-  RESPONSABLE_PAGO_LABELS,
-  TITULAR_TIPOS,
-  RESPONSABLE_PAGO_TIPOS,
-  type ServicioTipo,
-  type ServicioEstado,
-  type TitularTipo,
-  type ResponsablePagoTipo,
-} from "@/lib/servicios/constants";
+  SERVICE_TYPES,
+  SERVICE_TYPE_LABELS,
+  SERVICE_TYPE_SHORT_LABELS,
+  SERVICE_TYPE_ICONS,
+  SERVICE_FIELDS,
+  HOLDER_TYPE_LABELS,
+  PAYMENT_RESPONSIBLE_LABELS,
+  HOLDER_TYPES,
+  PAYMENT_RESPONSIBLE_TYPES,
+  type ServiceType,
+  type ServiceStatus,
+  type HolderType,
+  type PaymentResponsibleType,
+} from "@/lib/services/constants";
 import {
   Drawer,
   DrawerContent,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { EmpresaCombobox } from "./empresa-combobox";
-import { CamposServicio } from "./campos-servicio";
+import { CompanyCombobox } from "./company-combobox";
+import { ServiceFields } from "./service-fields";
 
 type Props = {
-  servicioId: string | null;
+  serviceId: string | null;
   propertyId: string;
-  periodo: string;
+  period: string;
   open: boolean;
   onClose: () => void;
 };
 
-function periodoLabel(periodo: string): string {
-  const [year, month] = periodo.split("-").map(Number);
+function periodLabel(period: string): string {
+  const [year, month] = period.split("-").map(Number);
   return new Date(year, month - 1, 1).toLocaleDateString("es-AR", {
     month: "long",
     year: "numeric",
   });
 }
 
-function EstadoBox({ estado, diasSinComprobante, periodo }: { estado: ServicioEstado; diasSinComprobante: number; periodo: string }) {
+function StatusBox({ estado, daysWithoutReceipt, period }: { estado: ServiceStatus; daysWithoutReceipt: number; period: string }) {
   if (estado === "al_dia") {
     return (
       <div className="flex items-start gap-3 rounded-xl border border-income/20 bg-income-dim p-3.5 mb-3">
         <CheckCircle2 className="h-5 w-5 shrink-0 text-income mt-0.5" />
         <div>
           <p className="text-sm font-semibold text-income">Al día</p>
-          <p className="mt-0.5 text-[0.67rem] text-muted-foreground">Comprobante cargado para {periodoLabel(periodo)}.</p>
+          <p className="mt-0.5 text-[0.67rem] text-muted-foreground">Comprobante cargado para {periodLabel(period)}.</p>
         </div>
       </div>
     );
@@ -60,7 +60,7 @@ function EstadoBox({ estado, diasSinComprobante, periodo }: { estado: ServicioEs
       <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3.5 mb-3">
         <Clock className="h-5 w-5 shrink-0 text-muted-foreground mt-0.5" />
         <div>
-          <p className="text-sm font-semibold">Pendiente — {diasSinComprobante} días sin comprobante</p>
+          <p className="text-sm font-semibold">Pendiente — {daysWithoutReceipt} días sin comprobante</p>
           <p className="mt-0.5 text-[0.67rem] text-muted-foreground">Todavía no se generó el bloqueo automático.</p>
         </div>
       </div>
@@ -71,7 +71,7 @@ function EstadoBox({ estado, diasSinComprobante, periodo }: { estado: ServicioEs
       <div className="flex items-start gap-3 rounded-xl border border-mustard/20 bg-mustard-dim p-3.5 mb-3">
         <AlertTriangle className="h-5 w-5 shrink-0 text-mustard mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-mustard">En alerta — {diasSinComprobante} días sin comprobante</p>
+          <p className="text-sm font-semibold text-mustard">En alerta — {daysWithoutReceipt} días sin comprobante</p>
           <p className="mt-0.5 text-[0.67rem] text-mustard/70">
             Riesgo inminente de bloqueo de alquiler. Cargá el comprobante o indicá el motivo para omitir el bloqueo.
           </p>
@@ -84,7 +84,7 @@ function EstadoBox({ estado, diasSinComprobante, periodo }: { estado: ServicioEs
       <div className="flex items-start gap-3 rounded-xl border border-error/20 bg-error-dim p-3.5 mb-3">
         <Lock className="h-5 w-5 shrink-0 text-error mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-error">Bloqueado — {diasSinComprobante} días sin comprobante</p>
+          <p className="text-sm font-semibold text-error">Bloqueado — {daysWithoutReceipt} días sin comprobante</p>
           <p className="mt-0.5 text-[0.67rem] text-error/70">
             El cobro del alquiler de esta propiedad está bloqueado hasta regularizar el comprobante o registrar una omisión.
           </p>
@@ -96,14 +96,14 @@ function EstadoBox({ estado, diasSinComprobante, periodo }: { estado: ServicioEs
 }
 
 type EditForm = {
-  tipo: ServicioTipo;
-  empresa: string;
-  metadatos: Record<string, string>;
-  titular: string;
-  titularTipo: TitularTipo;
-  responsablePago: ResponsablePagoTipo;
-  vencimientoDia: string;
-  activaBloqueo: boolean;
+  type: ServiceType;
+  company: string;
+  metadata: Record<string, string>;
+  holder: string;
+  holderType: HolderType;
+  paymentResponsible: PaymentResponsibleType;
+  dueDay: string;
+  activatesBlock: boolean;
 };
 
 // Mapeo tipo de servicio → clave en la tabla property
@@ -116,37 +116,37 @@ const TIPO_TO_PROPERTY_KEY: Record<string, string> = {
   expensas: "serviceExpensas",
 };
 
-export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, onClose }: Props) {
+export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClose }: Props) {
   const queryClient = useQueryClient();
-  const [motivoOmision, setMotivoOmision] = useState("");
-  const [montoComprobante, setMontoComprobante] = useState("");
+  const [omissionReason, setOmissionReason] = useState("");
+  const [receiptAmount, setReceiptAmount] = useState("");
   const [editing, setEditing] = useState(false);
   const [showContractWarning, setShowContractWarning] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
-    tipo: "luz",
-    empresa: "",
-    metadatos: {},
-    titular: "",
-    titularTipo: "propietario",
-    responsablePago: "propietario",
-    vencimientoDia: "",
-    activaBloqueo: true,
+    type: "luz",
+    company: "",
+    metadata: {},
+    holder: "",
+    holderType: "propietario",
+    paymentResponsible: "propietario",
+    dueDay: "",
+    activatesBlock: true,
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["servicio-detalle", servicioId, periodo],
+    queryKey: ["servicio-detalle", serviceId, period],
     queryFn: async () => {
-      const res = await fetch(`/api/servicios/${servicioId}?periodo=${periodo}`);
+      const res = await fetch(`/api/servicios/${serviceId}?period=${period}`);
       if (!res.ok) throw new Error("Error al cargar el servicio");
       return res.json();
     },
-    enabled: !!servicioId && open,
+    enabled: !!serviceId && open,
   });
 
   // Mutation: toggle activaBloqueo
   const toggleBloqueo = useMutation({
     mutationFn: async (activaBloqueo: boolean) => {
-      const res = await fetch(`/api/servicios/${servicioId}`, {
+      const res = await fetch(`/api/servicios/${serviceId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activaBloqueo }),
@@ -155,7 +155,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["servicio-detalle", servicioId] });
+      queryClient.invalidateQueries({ queryKey: ["servicio-detalle", serviceId] });
       queryClient.invalidateQueries({ queryKey: ["servicios", propertyId] });
       toast.success("Configuración actualizada");
     },
@@ -165,22 +165,22 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
   // Mutation: cargar comprobante
   const cargarComprobante = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/servicios/${servicioId}/comprobante`, {
+      const res = await fetch(`/api/servicios/${serviceId}/comprobante`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          periodo,
-          monto: montoComprobante ? parseFloat(montoComprobante) : undefined,
+          period,
+          monto: receiptAmount ? parseFloat(receiptAmount) : undefined,
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Error al cargar comprobante");
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["servicio-detalle", servicioId] });
+      queryClient.invalidateQueries({ queryKey: ["servicio-detalle", serviceId] });
       queryClient.invalidateQueries({ queryKey: ["servicios", propertyId] });
       queryClient.invalidateQueries({ queryKey: ["servicios-resumen"] });
-      setMontoComprobante("");
+      setReceiptAmount("");
       toast.success("Comprobante registrado");
     },
     onError: (err) => toast.error(err.message),
@@ -189,19 +189,19 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
   // Mutation: omitir bloqueo
   const omitirBloqueo = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/servicios/${servicioId}/omitir-bloqueo`, {
+      const res = await fetch(`/api/servicios/${serviceId}/omitir-bloqueo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ periodo, motivo: motivoOmision }),
+        body: JSON.stringify({ period, motivo: omissionReason }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Error al registrar omisión");
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["servicio-detalle", servicioId] });
+      queryClient.invalidateQueries({ queryKey: ["servicio-detalle", serviceId] });
       queryClient.invalidateQueries({ queryKey: ["servicios", propertyId] });
       queryClient.invalidateQueries({ queryKey: ["servicios-resumen"] });
-      setMotivoOmision("");
+      setOmissionReason("");
       toast.success("Omisión de bloqueo registrada");
     },
     onError: (err) => toast.error(err.message),
@@ -210,39 +210,39 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
   // Mutation: guardar edición de datos del servicio
   const guardarEdicion = useMutation({
     mutationFn: async () => {
-      // El primer valor de metadatos se copia a numeroCuenta para mostrarlo en listas
-      const primerValor = Object.values(editForm.metadatos)[0] ?? null;
-      const res = await fetch(`/api/servicios/${servicioId}`, {
+      // El primer valor de metadata se copia a accountNumber para mostrarlo en listas
+      const primerValor = Object.values(editForm.metadata)[0] ?? null;
+      const res = await fetch(`/api/servicios/${serviceId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          empresa: editForm.empresa || null,
-          numeroCuenta: primerValor || null,
-          metadatos: Object.keys(editForm.metadatos).length > 0 ? editForm.metadatos : null,
-          titular: editForm.titular || null,
-          titularTipo: editForm.titularTipo,
-          responsablePago: editForm.responsablePago,
-          vencimientoDia: editForm.vencimientoDia ? parseInt(editForm.vencimientoDia) : null,
-          activaBloqueo: editForm.activaBloqueo,
+          company: editForm.company || null,
+          accountNumber: primerValor || null,
+          metadata: Object.keys(editForm.metadata).length > 0 ? editForm.metadata : null,
+          holder: editForm.holder || null,
+          holderType: editForm.holderType,
+          paymentResponsible: editForm.paymentResponsible,
+          dueDay: editForm.dueDay ? parseInt(editForm.dueDay) : null,
+          activaBloqueo: editForm.activatesBlock,
         }),
       });
       if (!res.ok) throw new Error("Error al guardar");
       return res.json();
     },
     onSuccess: async () => {
-      // Si cambió responsablePago, propagar a property.serviceX y al contrato
-      if (s && editForm.responsablePago !== s.responsablePago) {
+      // Si cambió paymentResponsible, propagar a property.serviceX y al contrato
+      if (s && editForm.paymentResponsible !== s.paymentResponsible) {
         const propertyKey = TIPO_TO_PROPERTY_KEY[s.tipo];
         if (propertyKey) {
           await fetch(`/api/properties/${propertyId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ [propertyKey]: editForm.responsablePago }),
+            body: JSON.stringify({ [propertyKey]: editForm.paymentResponsible }),
           });
           queryClient.invalidateQueries({ queryKey: ["contract"] });
         }
       }
-      queryClient.invalidateQueries({ queryKey: ["servicio-detalle", servicioId] });
+      queryClient.invalidateQueries({ queryKey: ["servicio-detalle", serviceId] });
       queryClient.invalidateQueries({ queryKey: ["servicios", propertyId] });
       setEditing(false);
       toast.success("Datos actualizados");
@@ -253,27 +253,27 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
   function startEditing(item: typeof s) {
     if (!item) return;
     setEditForm({
-      tipo: (item.tipo as ServicioTipo) ?? "luz",
-      empresa: item.empresa ?? "",
-      metadatos: (item.metadatos as Record<string, string> | null) ?? {},
-      titular: item.titular ?? "",
-      titularTipo: (item.titularTipo as TitularTipo) ?? "propietario",
-      responsablePago: (item.responsablePago as ResponsablePagoTipo) ?? "propietario",
-      vencimientoDia: item.vencimientoDia ? String(item.vencimientoDia) : "",
-      activaBloqueo: item.activaBloqueo ?? true,
+      type: (item.tipo as ServiceType) ?? "luz",
+      company: item.company ?? "",
+      metadata: (item.metadata as Record<string, string> | null) ?? {},
+      holder: item.holder ?? "",
+      holderType: (item.holderType as HolderType) ?? "propietario",
+      paymentResponsible: (item.paymentResponsible as PaymentResponsibleType) ?? "propietario",
+      dueDay: item.dueDay ? String(item.dueDay) : "",
+      activatesBlock: item.activaBloqueo ?? true,
     });
     setEditing(true);
   }
 
   const s = data?.item;
-  const estado: ServicioEstado = data?.estado ?? "pendiente";
-  const diasSinComprobante: number = data?.diasSinComprobante ?? 0;
+  const estado: ServiceStatus = data?.estado ?? "pendiente";
+  const daysWithoutReceipt: number = data?.daysWithoutReceipt ?? 0;
   const historial = data?.historial ?? [];
   const tieneOmision = !!data?.omisionPeriodo;
 
-  const tipo = s?.tipo as ServicioTipo | undefined;
-  const icon = tipo ? (SERVICIO_TIPO_ICONS[tipo] ?? "📋") : "📋";
-  const nombre = tipo ? SERVICIO_TIPO_LABELS[tipo] : "Servicio";
+  const tipo = s?.tipo as ServiceType | undefined;
+  const icon = tipo ? (SERVICE_TYPE_ICONS[tipo] ?? "📋") : "📋";
+  const nombre = tipo ? SERVICE_TYPE_LABELS[tipo] : "Servicio";
 
   return (
     <Drawer direction="right" open={open} onOpenChange={(v) => { if (!v) { setEditing(false); onClose(); } }}>
@@ -288,7 +288,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
             <div>
               <p className="font-headline text-base font-bold">{nombre}</p>
               <p className="text-xs text-muted-foreground">
-                {s?.empresa ?? "Sin empresa"} · {periodoLabel(periodo)}
+                {s?.company ?? "Sin company"} · {periodLabel(period)}
               </p>
             </div>
           </div>
@@ -311,9 +311,9 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
               {/* Estado actual */}
               <div className="border-b border-border px-6 py-5">
                 <p className="mb-3 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
-                  Estado del período — {periodoLabel(periodo)}
+                  Estado del período — {periodLabel(period)}
                 </p>
-                <EstadoBox estado={estado} diasSinComprobante={diasSinComprobante} periodo={periodo} />
+                <StatusBox estado={estado} daysWithoutReceipt={daysWithoutReceipt} period={period} />
 
                 {/* Cargar comprobante */}
                 {estado !== "al_dia" && (
@@ -322,8 +322,8 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                       <input
                         type="number"
                         placeholder="Monto (opcional)"
-                        value={montoComprobante}
-                        onChange={(e) => setMontoComprobante(e.target.value)}
+                        value={receiptAmount}
+                        onChange={(e) => setReceiptAmount(e.target.value)}
                         className="w-36 rounded-lg border border-border bg-surface-mid px-3 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
                       />
                     </div>
@@ -333,7 +333,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                       className="btn btn-primary w-full flex items-center justify-center gap-2"
                     >
                       <Upload className="h-4 w-4" />
-                      {cargarComprobante.isPending ? "Registrando…" : `Cargar comprobante de ${periodoLabel(periodo)}`}
+                      {cargarComprobante.isPending ? "Registrando…" : `Cargar comprobante de ${periodLabel(period)}`}
                     </button>
                     <p className="mt-1.5 text-center text-[0.65rem] text-muted-foreground">
                       También puede cargarlo el propietario o el inquilino desde su portal.
@@ -354,11 +354,11 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                       <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
                         Empresa prestadora
                       </p>
-                      <p className="text-sm font-medium">{s.empresa ?? "—"}</p>
+                      <p className="text-sm font-medium">{s.company ?? "—"}</p>
                     </div>
                     {/* Campos específicos del tipo */}
-                    {tipo && (CAMPOS_SERVICIO[tipo] ?? []).map((campo) => {
-                      const valor = (s.metadatos as Record<string, string> | null)?.[campo.key] ?? s.numeroCuenta ?? "—";
+                    {tipo && (SERVICE_FIELDS[tipo] ?? []).map((campo) => {
+                      const valor = (s.metadata as Record<string, string> | null)?.[campo.key] ?? s.accountNumber ?? "—";
                       return (
                         <div key={campo.key}>
                           <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -375,14 +375,14 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                       <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
                         Titular
                       </p>
-                      <p className="text-sm font-medium">{s.titular ?? "—"}</p>
+                      <p className="text-sm font-medium">{s.holder ?? "—"}</p>
                     </div>
                     <div>
                       <p className="mb-0.5 text-[0.62rem] font-semibold uppercase tracking-widest text-muted-foreground">
-                        Tipo de titular
+                        Tipo de holder
                       </p>
                       <p className="text-sm font-medium">
-                        {s.titularTipo ? TITULAR_TIPO_LABELS[s.titularTipo as TitularTipo] : "—"}
+                        {s.holderType ? HOLDER_TYPE_LABELS[s.holderType as HolderType] : "—"}
                       </p>
                     </div>
                     <div>
@@ -390,7 +390,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                         Responsable de pago
                       </p>
                       <p className="text-sm font-medium">
-                        {s.responsablePago ? RESPONSABLE_PAGO_LABELS[s.responsablePago as ResponsablePagoTipo] : "—"}
+                        {s.paymentResponsible ? PAYMENT_RESPONSIBLE_LABELS[s.paymentResponsible as PaymentResponsibleType] : "—"}
                       </p>
                     </div>
                     <div>
@@ -398,7 +398,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                         Vencimiento mensual
                       </p>
                       <p className="text-sm font-medium">
-                        {s.vencimientoDia ? `Día ${s.vencimientoDia} de cada mes` : "—"}
+                        {s.dueDay ? `Día ${s.dueDay} de cada mes` : "—"}
                       </p>
                     </div>
                   </div>
@@ -450,8 +450,8 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                         Tipo de servicio
                       </label>
                       <div className="grid grid-cols-4 gap-1.5">
-                        {SERVICIO_TIPOS.map((t) => {
-                          const esActual = t === editForm.tipo;
+                        {SERVICE_TYPES.map((t) => {
+                          const esActual = t === editForm.type;
                           return (
                             <div
                               key={t}
@@ -461,8 +461,8 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                                   : "border-border bg-card text-muted-foreground opacity-35"
                               }`}
                             >
-                              <span className="text-base">{SERVICIO_TIPO_ICONS[t]}</span>
-                              {SERVICIO_TIPO_LABELS_CORTOS[t]}
+                              <span className="text-base">{SERVICE_TYPE_ICONS[t]}</span>
+                              {SERVICE_TYPE_SHORT_LABELS[t]}
                             </div>
                           );
                         })}
@@ -474,17 +474,17 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                       <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
                         Empresa prestadora
                       </label>
-                      <EmpresaCombobox
-                        value={editForm.empresa}
-                        onChange={(v) => setEditForm((f) => ({ ...f, empresa: v }))}
+                      <CompanyCombobox
+                        value={editForm.company}
+                        onChange={(v) => setEditForm((f) => ({ ...f, company: v }))}
                       />
                     </div>
 
                     {/* Campos específicos por tipo */}
-                    <CamposServicio
-                      tipo={editForm.tipo}
-                      valores={editForm.metadatos}
-                      onChange={(v) => setEditForm((f) => ({ ...f, metadatos: v }))}
+                    <ServiceFields
+                      type={editForm.type}
+                      values={editForm.metadata}
+                      onChange={(v) => setEditForm((f) => ({ ...f, metadata: v }))}
                     />
 
                     {/* Titular + Tipo */}
@@ -495,23 +495,23 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                         </label>
                         <input
                           type="text"
-                          value={editForm.titular}
-                          onChange={(e) => setEditForm((f) => ({ ...f, titular: e.target.value }))}
-                          placeholder="Nombre del titular"
+                          value={editForm.holder}
+                          onChange={(e) => setEditForm((f) => ({ ...f, holder: e.target.value }))}
+                          placeholder="Nombre del holder"
                           className="w-full rounded-lg border border-border bg-surface-mid px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
                         />
                       </div>
                       <div>
                         <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
-                          Tipo de titular
+                          Tipo de holder
                         </label>
                         <select
-                          value={editForm.titularTipo}
-                          onChange={(e) => setEditForm((f) => ({ ...f, titularTipo: e.target.value as TitularTipo }))}
+                          value={editForm.holderType}
+                          onChange={(e) => setEditForm((f) => ({ ...f, holderType: e.target.value as HolderType }))}
                           className="w-full rounded-lg border border-border bg-surface-mid px-3 py-2 text-sm outline-none focus:border-primary/40"
                         >
-                          {TITULAR_TIPOS.map((t) => (
-                            <option key={t} value={t}>{TITULAR_TIPO_LABELS[t]}</option>
+                          {HOLDER_TYPES.map((t) => (
+                            <option key={t} value={t}>{HOLDER_TYPE_LABELS[t]}</option>
                           ))}
                         </select>
                       </div>
@@ -524,12 +524,12 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                           Responsable de pago
                         </label>
                         <select
-                          value={editForm.responsablePago}
-                          onChange={(e) => setEditForm((f) => ({ ...f, responsablePago: e.target.value as ResponsablePagoTipo }))}
+                          value={editForm.paymentResponsible}
+                          onChange={(e) => setEditForm((f) => ({ ...f, paymentResponsible: e.target.value as PaymentResponsibleType }))}
                           className="w-full rounded-lg border border-border bg-surface-mid px-3 py-2 text-sm outline-none focus:border-primary/40"
                         >
-                          {RESPONSABLE_PAGO_TIPOS.map((t) => (
-                            <option key={t} value={t}>{RESPONSABLE_PAGO_LABELS[t]}</option>
+                          {PAYMENT_RESPONSIBLE_TYPES.map((t) => (
+                            <option key={t} value={t}>{PAYMENT_RESPONSIBLE_LABELS[t]}</option>
                           ))}
                         </select>
                       </div>
@@ -541,8 +541,8 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                           type="number"
                           min={1}
                           max={31}
-                          value={editForm.vencimientoDia}
-                          onChange={(e) => setEditForm((f) => ({ ...f, vencimientoDia: e.target.value }))}
+                          value={editForm.dueDay}
+                          onChange={(e) => setEditForm((f) => ({ ...f, dueDay: e.target.value }))}
                           placeholder="Ej: 10"
                           className="w-full rounded-lg border border-border bg-surface-mid px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
                         />
@@ -559,15 +559,15 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <span className="text-[0.68rem] text-muted-foreground min-w-[20px] text-right">
-                          {editForm.activaBloqueo ? "Sí" : "No"}
+                          {editForm.activatesBlock ? "Sí" : "No"}
                         </span>
                         <button
                           type="button"
-                          onClick={() => setEditForm((f) => ({ ...f, activaBloqueo: !f.activaBloqueo }))}
-                          className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${editForm.activaBloqueo ? "bg-primary" : "bg-surface-highest"}`}
+                          onClick={() => setEditForm((f) => ({ ...f, activatesBlock: !f.activatesBlock }))}
+                          className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${editForm.activatesBlock ? "bg-primary" : "bg-surface-highest"}`}
                         >
                           <span
-                            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${editForm.activaBloqueo ? "left-[18px]" : "left-0.5"}`}
+                            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${editForm.activatesBlock ? "left-[18px]" : "left-0.5"}`}
                           />
                         </button>
                       </div>
@@ -585,13 +585,13 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                   <p className="text-sm text-muted-foreground">Sin comprobantes registrados</p>
                 ) : (
                   <div>
-                    {historial.map((comp: { id: string; periodo: string; monto: string | null; cargadoEl: string }) => (
+                    {historial.map((comp: { id: string; period: string; monto: string | null; cargadoEl: string }) => (
                       <div key={comp.id} className="flex items-start gap-3 border-b border-border py-2.5 last:border-0">
                         <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-income" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold capitalize">
                             {(() => {
-                              const [y, m] = comp.periodo.split("-").map(Number);
+                              const [y, m] = comp.period.split("-").map(Number);
                               return new Date(y, m - 1, 1).toLocaleDateString("es-AR", { month: "long", year: "numeric" });
                             })()}
                           </p>
@@ -623,14 +623,14 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                   </p>
                   <div className="rounded-xl border border-error/20 bg-error-dim p-4">
                     <p className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-error">
-                      🔓 Omitir bloqueo de alquiler — {periodoLabel(periodo)}
+                      🔓 Omitir bloqueo de alquiler — {periodLabel(period)}
                     </p>
                     <p className="mb-3 text-[0.68rem] text-muted-foreground leading-relaxed">
                       Permite registrar el cobro del alquiler de este mes aunque el comprobante no esté cargado. Esta acción queda registrada con tu usuario, la fecha y el motivo.
                     </p>
                     <textarea
-                      value={motivoOmision}
-                      onChange={(e) => setMotivoOmision(e.target.value)}
+                      value={omissionReason}
+                      onChange={(e) => setOmissionReason(e.target.value)}
                       placeholder="Motivo de la omisión (ej: el propietario está tramitando la reconexión, comprobante en trámite…)"
                       rows={3}
                       className="w-full resize-y rounded-lg border border-border bg-surface-mid px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-error/30"
@@ -638,7 +638,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
                     <div className="mt-2.5 flex justify-end">
                       <button
                         onClick={() => omitirBloqueo.mutate()}
-                        disabled={omitirBloqueo.isPending || motivoOmision.length < 10}
+                        disabled={omitirBloqueo.isPending || omissionReason.length < 10}
                         className="btn btn-danger btn-sm"
                       >
                         {omitirBloqueo.isPending ? "Registrando…" : "Confirmar omisión"}
@@ -660,7 +660,7 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
           )}
         </div>
 
-        {/* Modal de advertencia: el cambio de responsablePago también afecta al contrato */}
+        {/* Modal de advertencia: el cambio de paymentResponsible también afecta al contrato */}
         {showContractWarning && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 rounded-[inherit]">
             <div className="mx-5 w-full max-w-sm rounded-2xl border border-border bg-surface p-5 shadow-2xl">
@@ -707,8 +707,8 @@ export function ServicioDrawerDetalle({ servicioId, propertyId, periodo, open, o
               </button>
               <button
                 onClick={() => {
-                  // Si cambió el responsablePago, mostrar advertencia antes de guardar
-                  if (s && editForm.responsablePago !== s.responsablePago) {
+                  // Si cambió el paymentResponsible, mostrar advertencia antes de guardar
+                  if (s && editForm.paymentResponsible !== s.paymentResponsible) {
                     setShowContractWarning(true);
                   } else {
                     guardarEdicion.mutate();
