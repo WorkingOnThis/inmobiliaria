@@ -11,14 +11,14 @@ import { calculateServiceStatus } from "@/lib/services/constants";
 const crearServicioSchema = z.object({
   propertyId: z.string().min(1, "La propiedad es requerida"),
   tipo: z.enum(["electricity", "gas", "water", "hoa", "abl", "property_tax", "insurance", "other"]),
-  empresa: z.string().optional(),
-  numeroCuenta: z.string().optional(),
-  metadatos: z.record(z.string()).optional(),
-  titular: z.string().optional(),
-  titularTipo: z.enum(["propietario", "inquilino", "otro"]).default("propietario"),
-  responsablePago: z.enum(["propietario", "inquilino"]).default("propietario"),
-  vencimientoDia: z.number().int().min(1).max(31).optional(),
-  activaBloqueo: z.boolean().default(true),
+  company: z.string().optional(),
+  accountNumber: z.string().optional(),
+  metadata: z.record(z.string()).optional(),
+  holder: z.string().optional(),
+  holderType: z.enum(["propietario", "inquilino", "otro"]).default("propietario"),
+  paymentResponsible: z.enum(["propietario", "inquilino"]).default("propietario"),
+  dueDay: z.number().int().min(1).max(31).optional(),
+  triggersBlock: z.boolean().default(true),
 });
 
 function getPeriodoDias(periodo: string): { inicio: Date; diasTranscurridos: number } {
@@ -37,19 +37,17 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const propertyId = searchParams.get("propertyId");
-  const estado = searchParams.get("estado"); // al_dia | pendiente | en_alerta | bloqueado
+  const estado = searchParams.get("estado");
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(50, parseInt(searchParams.get("limit") ?? "20", 10));
   const offset = (page - 1) * limit;
 
-  // Período actual o el indicado en la query (formato YYYY-MM)
   const hoy = new Date();
-  const periodoParam = searchParams.get("periodo");
+  const periodoParam = searchParams.get("periodo") ?? searchParams.get("period");
   const periodo = periodoParam ?? `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
 
   const { diasTranscurridos } = getPeriodoDias(periodo);
 
-  // Obtener todos los servicios con join a property
   const conditions = propertyId ? [eq(servicio.propertyId, propertyId)] : [];
 
   const servicios = await db
@@ -57,13 +55,13 @@ export async function GET(request: NextRequest) {
       id: servicio.id,
       propertyId: servicio.propertyId,
       tipo: servicio.tipo,
-      empresa: servicio.empresa,
-      numeroCuenta: servicio.numeroCuenta,
-      titular: servicio.titular,
-      titularTipo: servicio.titularTipo,
-      responsablePago: servicio.responsablePago,
-      vencimientoDia: servicio.vencimientoDia,
-      activaBloqueo: servicio.activaBloqueo,
+      company: servicio.company,
+      accountNumber: servicio.accountNumber,
+      holder: servicio.holder,
+      holderType: servicio.holderType,
+      paymentResponsible: servicio.paymentResponsible,
+      dueDay: servicio.dueDay,
+      activaBloqueo: servicio.triggersBlock,   // alias for component compat
       createdAt: servicio.createdAt,
       propertyAddress: property.address,
       propertyType: property.type,
@@ -75,7 +73,6 @@ export async function GET(request: NextRequest) {
     .limit(limit)
     .offset(offset);
 
-  // Batch-fetch inquilino name per property (active/expiring_soon contracts)
   const propertyIds = [...new Set(servicios.map((s) => s.propertyId))];
   const inquilinoMap = new Map<string, { nombre: string; clientId: string }>();
   if (propertyIds.length > 0) {
@@ -108,22 +105,20 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Para cada servicio, obtener el comprobante del período y la omisión si existe
   const serviciosConEstado = await Promise.all(
     servicios.map(async (s) => {
       const [comprobante] = await db
         .select()
         .from(servicioComprobante)
-        .where(and(eq(servicioComprobante.servicioId, s.id), eq(servicioComprobante.periodo, periodo)))
+        .where(and(eq(servicioComprobante.servicioId, s.id), eq(servicioComprobante.period, periodo)))
         .limit(1);
 
       const [omision] = await db
         .select()
         .from(servicioOmision)
-        .where(and(eq(servicioOmision.servicioId, s.id), eq(servicioOmision.periodo, periodo)))
+        .where(and(eq(servicioOmision.servicioId, s.id), eq(servicioOmision.period, periodo)))
         .limit(1);
 
-      // Días sin comprobante: si hay comprobante es 0, sino los días transcurridos del período
       const diasSinComprobante = comprobante ? 0 : diasTranscurridos;
 
       const estadoCalculado = calculateServiceStatus({
@@ -146,12 +141,10 @@ export async function GET(request: NextRequest) {
     })
   );
 
-  // Filtrar por estado si se especificó
   const resultado = estado
     ? serviciosConEstado.filter((s) => s.estado === estado)
     : serviciosConEstado;
 
-  // Total para paginación
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(servicio)
@@ -192,14 +185,14 @@ export async function POST(request: NextRequest) {
       id: crypto.randomUUID(),
       propertyId: data.propertyId,
       tipo: data.tipo,
-      empresa: data.empresa ?? null,
-      numeroCuenta: data.numeroCuenta ?? null,
-      metadatos: data.metadatos ?? null,
-      titular: data.titular ?? null,
-      titularTipo: data.titularTipo,
-      responsablePago: data.responsablePago,
-      vencimientoDia: data.vencimientoDia ?? null,
-      activaBloqueo: data.activaBloqueo,
+      company: data.company ?? null,
+      accountNumber: data.accountNumber ?? null,
+      metadata: data.metadata ?? null,
+      holder: data.holder ?? null,
+      holderType: data.holderType,
+      paymentResponsible: data.paymentResponsible,
+      dueDay: data.dueDay ?? null,
+      triggersBlock: data.triggersBlock,
       createdBy: session.user.id,
     })
     .returning();

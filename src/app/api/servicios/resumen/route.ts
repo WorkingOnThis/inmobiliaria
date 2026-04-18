@@ -3,19 +3,9 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { servicio, servicioComprobante, servicioOmision, property } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { calculateServiceStatus } from "@/lib/services/constants";
 
-/**
- * GET /api/servicios/resumen?periodo=YYYY-MM
- *
- * Devuelve KPIs del módulo de servicios para el período indicado:
- * - Total de propiedades con al menos un servicio
- * - Propiedades al día (todos sus servicios con comprobante)
- * - Propiedades en alerta (al menos 1 en alerta)
- * - Propiedades bloqueadas (al menos 1 bloqueado)
- * - Resumen por propiedad (para la tabla de la vista global)
- */
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
@@ -24,39 +14,36 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const hoy = new Date();
-  const periodoParam = searchParams.get("periodo");
+  const periodoParam = searchParams.get("periodo") ?? searchParams.get("period");
   const periodo = periodoParam ?? `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
 
-  // Calcular días transcurridos desde el inicio del período
   const [year, month] = periodo.split("-").map(Number);
   const inicioPeriodo = new Date(year, month - 1, 1);
   const diasTranscurridos = Math.floor((hoy.getTime() - inicioPeriodo.getTime()) / (1000 * 60 * 60 * 24));
 
-  // Obtener todos los servicios con su propiedad
   const servicios = await db
     .select({
       id: servicio.id,
       propertyId: servicio.propertyId,
       tipo: servicio.tipo,
-      activatesBlock: servicio.activaBloqueo,
+      activatesBlock: servicio.triggersBlock,
       propertyAddress: property.address,
     })
     .from(servicio)
     .leftJoin(property, eq(servicio.propertyId, property.id));
 
-  // Para cada servicio obtener comprobante y omisión del período
   const serviciosConEstado = await Promise.all(
     servicios.map(async (s) => {
       const [comprobante] = await db
         .select({ id: servicioComprobante.id })
         .from(servicioComprobante)
-        .where(and(eq(servicioComprobante.servicioId, s.id), eq(servicioComprobante.periodo, periodo)))
+        .where(and(eq(servicioComprobante.servicioId, s.id), eq(servicioComprobante.period, periodo)))
         .limit(1);
 
       const [omision] = await db
         .select({ id: servicioOmision.id })
         .from(servicioOmision)
-        .where(and(eq(servicioOmision.servicioId, s.id), eq(servicioOmision.periodo, periodo)))
+        .where(and(eq(servicioOmision.servicioId, s.id), eq(servicioOmision.period, periodo)))
         .limit(1);
 
       const estado = calculateServiceStatus({
@@ -70,7 +57,6 @@ export async function GET(request: NextRequest) {
     })
   );
 
-  // Agrupar por propiedad y calcular el "peor estado" de cada una
   const propiedadesMap = new Map<string, { propertyId: string; address: string | null; estados: string[] }>();
 
   for (const s of serviciosConEstado) {

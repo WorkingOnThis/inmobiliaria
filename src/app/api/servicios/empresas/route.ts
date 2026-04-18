@@ -12,12 +12,12 @@ export async function GET() {
   }
 
   const rows = await db
-    .selectDistinct({ empresa: servicio.empresa })
+    .selectDistinct({ company: servicio.company })
     .from(servicio)
-    .where(isNotNull(servicio.empresa))
-    .orderBy(asc(servicio.empresa));
+    .where(isNotNull(servicio.company))
+    .orderBy(asc(servicio.company));
 
-  const empresas = rows.map((r) => r.empresa).filter(Boolean) as string[];
+  const empresas = rows.map((r) => r.company).filter(Boolean) as string[];
 
   return NextResponse.json({ empresas });
 }

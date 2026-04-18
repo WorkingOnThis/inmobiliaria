@@ -8,17 +8,12 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const omitirBloqueoSchema = z.object({
-  periodo: z.string().regex(/^\d{4}-\d{2}$/, "El período debe tener formato YYYY-MM"),
-  motivo: z.string().min(10, "El motivo debe tener al menos 10 caracteres"),
+  periodo: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+  period: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+  motivo: z.string().min(10, "El motivo debe tener al menos 10 caracteres").optional(),
+  reason: z.string().min(10, "El motivo debe tener al menos 10 caracteres").optional(),
 });
 
-/**
- * POST /api/servicios/[id]/omitir-bloqueo
- *
- * Permite al staff omitir el bloqueo de alquiler para un período dado.
- * La omisión es registrada con usuario, timestamp y motivo.
- * Es por período (no permanente).
- */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -44,13 +39,15 @@ export async function POST(
     return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
   }
 
-  const { periodo, motivo } = result.data;
+  const period = result.data.period ?? result.data.periodo;
+  const reason = result.data.reason ?? result.data.motivo;
+  if (!period) return NextResponse.json({ error: "El período es requerido" }, { status: 400 });
+  if (!reason || reason.length < 10) return NextResponse.json({ error: "El motivo debe tener al menos 10 caracteres" }, { status: 400 });
 
-  // Verificar si ya existe una omisión para este período
   const [existente] = await db
     .select()
     .from(servicioOmision)
-    .where(and(eq(servicioOmision.servicioId, id), eq(servicioOmision.periodo, periodo)))
+    .where(and(eq(servicioOmision.servicioId, id), eq(servicioOmision.period, period)))
     .limit(1);
 
   if (existente) {
@@ -62,9 +59,9 @@ export async function POST(
     .values({
       id: crypto.randomUUID(),
       servicioId: id,
-      periodo,
-      motivo,
-      omitidoPor: session.user.id,
+      period,
+      reason,
+      skippedBy: session.user.id,
     })
     .returning();
 

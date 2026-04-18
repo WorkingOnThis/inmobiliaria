@@ -9,13 +9,13 @@ import { z } from "zod";
 import { calculateServiceStatus } from "@/lib/services/constants";
 
 const actualizarServicioSchema = z.object({
-  empresa: z.string().optional().nullable(),
-  numeroCuenta: z.string().optional().nullable(),
-  metadatos: z.record(z.string()).optional().nullable(),
-  titular: z.string().optional().nullable(),
-  titularTipo: z.enum(["propietario", "inquilino", "otro"]).optional(),
-  responsablePago: z.enum(["propietario", "inquilino"]).optional(),
-  vencimientoDia: z.number().int().min(1).max(31).optional().nullable(),
+  company: z.string().optional().nullable(),
+  accountNumber: z.string().optional().nullable(),
+  metadata: z.record(z.string()).optional().nullable(),
+  holder: z.string().optional().nullable(),
+  holderType: z.enum(["propietario", "inquilino", "otro"]).optional(),
+  paymentResponsible: z.enum(["propietario", "inquilino"]).optional(),
+  dueDay: z.number().int().min(1).max(31).optional().nullable(),
   activatesBlock: z.boolean().optional(),
 });
 
@@ -31,7 +31,7 @@ export async function GET(
   const { id } = await params;
   const { searchParams } = new URL(request.url);
   const hoy = new Date();
-  const periodoParam = searchParams.get("periodo");
+  const periodoParam = searchParams.get("periodo") ?? searchParams.get("period");
   const periodo = periodoParam ?? `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
 
   const [s] = await db.select().from(servicio).where(eq(servicio.id, id)).limit(1);
@@ -39,25 +39,23 @@ export async function GET(
     return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 });
   }
 
-  // Historial de comprobantes (últimos 12)
   const historial = await db
     .select()
     .from(servicioComprobante)
     .where(eq(servicioComprobante.servicioId, id))
-    .orderBy(desc(servicioComprobante.periodo))
+    .orderBy(desc(servicioComprobante.period))
     .limit(12);
 
-  // Comprobante y omisión del período actual
   const [comprobantePeriodo] = await db
     .select()
     .from(servicioComprobante)
-    .where(and(eq(servicioComprobante.servicioId, id), eq(servicioComprobante.periodo, periodo)))
+    .where(and(eq(servicioComprobante.servicioId, id), eq(servicioComprobante.period, periodo)))
     .limit(1);
 
   const [omisionPeriodo] = await db
     .select()
     .from(servicioOmision)
-    .where(and(eq(servicioOmision.servicioId, id), eq(servicioOmision.periodo, periodo)))
+    .where(and(eq(servicioOmision.servicioId, id), eq(servicioOmision.period, periodo)))
     .limit(1);
 
   const [year, month] = periodo.split("-").map(Number);
@@ -67,12 +65,13 @@ export async function GET(
   const estado = calculateServiceStatus({
     hasReceipt: !!comprobantePeriodo,
     daysWithoutReceipt: comprobantePeriodo ? 0 : diasTranscurridos,
-    activatesBlock: s.activaBloqueo,
+    activatesBlock: s.triggersBlock,
     hasOmission: !!omisionPeriodo,
   });
 
+  // Return item with activaBloqueo alias for component compat
   return NextResponse.json({
-    item: s,
+    item: { ...s, activaBloqueo: s.triggersBlock },
     periodo,
     estado,
     daysWithoutReceipt: comprobantePeriodo ? 0 : diasTranscurridos,
@@ -101,7 +100,12 @@ export async function PUT(
   }
 
   const body = await request.json();
-  const result = actualizarServicioSchema.safeParse(body);
+  // Accept both activatesBlock (new) and activaBloqueo (legacy from component)
+  const normalizedBody = {
+    ...body,
+    activatesBlock: body.activatesBlock ?? body.activaBloqueo,
+  };
+  const result = actualizarServicioSchema.safeParse(normalizedBody);
   if (!result.success) {
     return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
   }
@@ -110,18 +114,18 @@ export async function PUT(
   const [actualizado] = await db
     .update(servicio)
     .set({
-      ...(data.empresa !== undefined && { empresa: data.empresa }),
-      ...(data.numeroCuenta !== undefined && { numeroCuenta: data.numeroCuenta }),
-      ...(data.metadatos !== undefined && { metadatos: data.metadatos }),
-      ...(data.titular !== undefined && { titular: data.titular }),
-      ...(data.titularTipo !== undefined && { titularTipo: data.titularTipo }),
-      ...(data.responsablePago !== undefined && { responsablePago: data.responsablePago }),
-      ...(data.vencimientoDia !== undefined && { vencimientoDia: data.vencimientoDia }),
-      ...(data.activatesBlock !== undefined && { activatesBlock: data.activatesBlock }),
+      ...(data.company !== undefined && { company: data.company }),
+      ...(data.accountNumber !== undefined && { accountNumber: data.accountNumber }),
+      ...(data.metadata !== undefined && { metadata: data.metadata }),
+      ...(data.holder !== undefined && { holder: data.holder }),
+      ...(data.holderType !== undefined && { holderType: data.holderType }),
+      ...(data.paymentResponsible !== undefined && { paymentResponsible: data.paymentResponsible }),
+      ...(data.dueDay !== undefined && { dueDay: data.dueDay }),
+      ...(data.activatesBlock !== undefined && { triggersBlock: data.activatesBlock }),
       updatedAt: new Date(),
     })
     .where(eq(servicio.id, id))
     .returning();
 
-  return NextResponse.json({ message: "Servicio actualizado", item: actualizado });
+  return NextResponse.json({ message: "Servicio actualizado", item: { ...actualizado, activaBloqueo: actualizado.triggersBlock } });
 }

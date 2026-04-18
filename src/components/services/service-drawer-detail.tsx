@@ -585,7 +585,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
                   <p className="text-sm text-muted-foreground">Sin comprobantes registrados</p>
                 ) : (
                   <div>
-                    {historial.map((comp: { id: string; period: string; monto: string | null; cargadoEl: string }) => (
+                    {historial.map((comp: { id: string; period: string; monto: string | null; uploadedAt: string }) => (
                       <div key={comp.id} className="flex items-start gap-3 border-b border-border py-2.5 last:border-0">
                         <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-income" />
                         <div className="flex-1 min-w-0">
@@ -596,7 +596,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
                             })()}
                           </p>
                           <p className="text-[0.65rem] text-muted-foreground">
-                            Cargado el {new Date(comp.cargadoEl).toLocaleDateString("es-AR")}
+                            Cargado el {new Date(comp.uploadedAt).toLocaleDateString("es-AR")}
                           </p>
                         </div>
                         <p className="text-sm font-semibold shrink-0">

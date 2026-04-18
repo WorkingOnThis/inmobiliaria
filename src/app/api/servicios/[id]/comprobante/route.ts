@@ -7,17 +7,11 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const cargarComprobanteSchema = z.object({
-  periodo: z.string().regex(/^\d{4}-\d{2}$/, "El período debe tener formato YYYY-MM"),
+  periodo: z.string().regex(/^\d{4}-\d{2}$/, "El período debe tener formato YYYY-MM").optional(),
+  period: z.string().regex(/^\d{4}-\d{2}$/, "El período debe tener formato YYYY-MM").optional(),
   monto: z.number().positive().optional(),
-  // archivoUrl se agregaría cuando se implemente el upload real de archivos
 });
 
-/**
- * POST /api/servicios/[id]/comprobante
- *
- * Registra un comprobante para un período dado.
- * Si ya existe un comprobante para ese período, lo reemplaza.
- */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -40,22 +34,25 @@ export async function POST(
     return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
   }
 
-  const { periodo, monto } = result.data;
+  const period = result.data.period ?? result.data.periodo;
+  if (!period) {
+    return NextResponse.json({ error: "El período es requerido" }, { status: 400 });
+  }
+  const { monto } = result.data;
 
-  // Si ya existe comprobante para ese período, eliminarlo primero
   await db
     .delete(servicioComprobante)
-    .where(and(eq(servicioComprobante.servicioId, id), eq(servicioComprobante.periodo, periodo)));
+    .where(and(eq(servicioComprobante.servicioId, id), eq(servicioComprobante.period, period)));
 
   const [nuevoComprobante] = await db
     .insert(servicioComprobante)
     .values({
       id: crypto.randomUUID(),
       servicioId: id,
-      periodo,
+      period,
       monto: monto ? String(monto) : null,
-      cargadoPor: session.user.id,
-      cargadoEl: new Date(),
+      uploadedBy: session.user.id,
+      uploadedAt: new Date(),
     })
     .returning();
 
