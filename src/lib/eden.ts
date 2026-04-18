@@ -1,5 +1,5 @@
 import { treaty } from "@elysiajs/eden";
-import type { AppType } from "@/app/api/[[...slugs]]/route";
+import type { AppType } from "@/app/api/[...slugs]/route";
 
 // Create type-safe API client using Eden Treaty
 // The URL will be automatically determined based on the environment

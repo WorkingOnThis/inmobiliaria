@@ -14,6 +14,7 @@ import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-bad
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ZoneCombobox } from "@/components/ui/zone-combobox";
 import {
   Select,
   SelectContent,
@@ -799,7 +800,17 @@ function PropiedadFichaContent() {
                         <EditInput label="Dirección" value={form.address} onChange={set("address")} placeholder="Av. Corrientes 1234" />
                       </div>
                       <EditInput label="Piso / Unidad" value={form.floorUnit} onChange={set("floorUnit")} placeholder="3B" />
-                      <EditInput label="Barrio / Zona" value={form.zone} onChange={set("zone")} placeholder="Nueva Córdoba" />
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
+                          Barrio / Zona
+                        </Label>
+                        <ZoneCombobox
+                          value={form.zone}
+                          onChange={set("zone")}
+                          variant="field"
+                          placeholder="Nueva Córdoba"
+                        />
+                      </div>
                       <EditSelect
                         label="Tipo"
                         value={form.type}

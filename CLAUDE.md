@@ -107,7 +107,7 @@ app/
 │   ├── tareas/       # Tasks
 │   └── caja/         # Cash management
 └── api/
-    ├── [[...slugs]]  # ElysiaJS catch-all (future)
+    ├── [...slugs]    # ElysiaJS catch-all (future)
     ├── auth/[...all] # Better Auth
     ├── owners/       # REST: owners + cuenta-corriente + movimientos
     ├── tenants/      # REST: tenants + movimientos

@@ -19,6 +19,7 @@ import {
   PROPERTY_TYPE_LABELS,
   type PropertyType
 } from "@/lib/properties/constants";
+import { ZoneCombobox } from "@/components/ui/zone-combobox";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { CreateOwnerPopup } from "@/components/properties/create-owner-popup";
@@ -207,15 +208,13 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
 
             {/* Barrio / Zona */}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="zone" className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+              <Label className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
                 Barrio / Zona
               </Label>
-              <Input
-                id="zone"
+              <ZoneCombobox
                 value={zone}
-                onChange={(e) => setZone(e.target.value)}
-                placeholder="Ej: Nueva Córdoba"
-                className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-text-muted"
+                onChange={setZone}
+                variant="form"
               />
             </div>
           </div>
