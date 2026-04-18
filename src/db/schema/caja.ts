@@ -1,4 +1,4 @@
-import { pgTable, text, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, decimal, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 import { client } from "./client";
 import { contract } from "./contract";
@@ -38,7 +38,19 @@ export const cajaMovimiento = pgTable("caja_movimiento", {
   inquilinoId: text("inquilinoId").references(() => client.id, { onDelete: "set null" }),
   propiedadId: text("propiedadId").references(() => property.id, { onDelete: "set null" }),
 
-  // Adjunto / comprobante (URL o descripción del documento)
+  // Conciliación — verificación contra comprobante externo
+  conciliado: boolean("conciliado").notNull().default(false),
+  conciliadoEn: timestamp("conciliadoEn"),
+
+  // Fecha en que el movimiento entró a una liquidación cerrada (para TTL de 90 días)
+  liquidadoEn: timestamp("liquidadoEn"),
+
+  // Comprobante adjunto (PDF o imagen, almacenado en /public/uploads/movimientos/)
+  comprobanteUrl: text("comprobanteUrl"),
+  comprobanteMime: text("comprobanteMime"),
+  comprobanteTamano: integer("comprobanteTamano"),
+
+  // Campo legacy — texto libre (URL o descripción manual). Mantener para no romper datos existentes.
   comprobante: text("comprobante"),
 
   // Nota interna (solo visible para staff, no aparece en informes al cliente)

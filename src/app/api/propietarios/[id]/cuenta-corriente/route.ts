@@ -55,6 +55,10 @@ export async function GET(
         comprobante: cajaMovimiento.comprobante,
         nota: cajaMovimiento.nota,
         creadoEn: cajaMovimiento.creadoEn,
+        conciliado: cajaMovimiento.conciliado,
+        conciliadoEn: cajaMovimiento.conciliadoEn,
+        comprobanteUrl: cajaMovimiento.comprobanteUrl,
+        comprobanteMime: cajaMovimiento.comprobanteMime,
       })
       .from(cajaMovimiento)
       .where(
