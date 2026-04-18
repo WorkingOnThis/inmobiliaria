@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { servicio, servicioComprobante, servicioOmision, property } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { calculateServiceStatus } from "@/lib/services/constants";
+import { calculateServiceStatus, getPeriodDays } from "@/lib/services/constants";
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -17,9 +17,7 @@ export async function GET(request: NextRequest) {
   const periodoParam = searchParams.get("periodo") ?? searchParams.get("period");
   const periodo = periodoParam ?? `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
 
-  const [year, month] = periodo.split("-").map(Number);
-  const inicioPeriodo = new Date(year, month - 1, 1);
-  const diasTranscurridos = Math.floor((hoy.getTime() - inicioPeriodo.getTime()) / (1000 * 60 * 60 * 24));
+  const { daysElapsed: diasTranscurridos } = getPeriodDays(periodo);
 
   const servicios = await db
     .select({

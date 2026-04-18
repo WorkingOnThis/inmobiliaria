@@ -6,7 +6,7 @@ import { canManageServices } from "@/lib/permissions";
 import { servicio, servicioComprobante, servicioOmision, property, contract, contractTenant, client } from "@/db/schema";
 import { eq, and, desc, sql, inArray, or } from "drizzle-orm";
 import { z } from "zod";
-import { calculateServiceStatus } from "@/lib/services/constants";
+import { calculateServiceStatus, getPeriodDays } from "@/lib/services/constants";
 
 const crearServicioSchema = z.object({
   propertyId: z.string().min(1, "La propiedad es requerida"),
@@ -20,14 +20,6 @@ const crearServicioSchema = z.object({
   dueDay: z.number().int().min(1).max(31).optional(),
   triggersBlock: z.boolean().default(true),
 });
-
-function getPeriodoDias(periodo: string): { inicio: Date; diasTranscurridos: number } {
-  const [year, month] = periodo.split("-").map(Number);
-  const inicio = new Date(year, month - 1, 1);
-  const hoy = new Date();
-  const diasTranscurridos = Math.floor((hoy.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
-  return { inicio, diasTranscurridos };
-}
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -46,7 +38,7 @@ export async function GET(request: NextRequest) {
   const periodoParam = searchParams.get("periodo") ?? searchParams.get("period");
   const periodo = periodoParam ?? `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
 
-  const { diasTranscurridos } = getPeriodoDias(periodo);
+  const { daysElapsed: diasTranscurridos } = getPeriodDays(periodo);
 
   const conditions = propertyId ? [eq(servicio.propertyId, propertyId)] : [];
 

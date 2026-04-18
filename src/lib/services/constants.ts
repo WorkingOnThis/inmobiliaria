@@ -121,6 +121,14 @@ export const PAYMENT_RESPONSIBLE_LABELS: Record<PaymentResponsibleType, string> 
   inquilino: "Inquilino",
 };
 
+export function getPeriodDays(period: string): { start: Date; daysElapsed: number } {
+  const [year, month] = period.split("-").map(Number);
+  const start = new Date(year, month - 1, 1);
+  const today = new Date();
+  const daysElapsed = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return { start, daysElapsed };
+}
+
 /**
  * Calculate the status of a service given:
  * - Days elapsed since the current period expiration
