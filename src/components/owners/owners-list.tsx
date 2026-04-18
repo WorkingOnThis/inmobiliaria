@@ -41,14 +41,14 @@ function getInitials(firstName: string, lastName: string | null) {
 }
 
 function ownerStatusVariant(status: string): StatusBadgeVariant {
-  if (status === "activo") return "active";
-  if (status === "suspendido") return "suspended";
+  if (status === "active") return "active";
+  if (status === "suspended") return "suspended";
   return "baja";
 }
 
 function ownerStatusLabel(status: string): string {
-  if (status === "activo") return "Activo";
-  if (status === "suspendido") return "Suspendido";
+  if (status === "active") return "Activo";
+  if (status === "suspended") return "Suspendido";
   return "Baja";
 }
 
@@ -116,7 +116,7 @@ export function OwnersList() {
 
   const handleFichaClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    router.push(`/owners/${id}`);
+    router.push(`/propietarios/${id}`);
   };
 
   const handleCreated = (owner: Owner) => {
@@ -316,7 +316,7 @@ export function OwnersList() {
                           isNew && "bg-primary/[0.06]"
                         )}
                         style={
-                          p.status === "inactivo" || p.status === "baja"
+                          p.status === "inactive" || p.status === "suspended"
                             ? { opacity: 0.65 }
                             : undefined
                         }

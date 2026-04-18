@@ -98,6 +98,16 @@ Exceptions — keep in Spanish:
 - Argentine legal terms: `dni`, `cuit`, `cbu`, `alias`, `condicionFiscal` and their values (`monotributista`, `responsable inscripto`, etc.)
 - User-facing text: labels, messages, placeholders, UI content
 
+Las URLs de navegación visibles al usuario van en español y coinciden 
+con los nombres de carpeta en `app/(dashboard)/`:
+- /propietarios → no /owners
+- /inquilinos → no /tenants
+- /propiedades → no /properties
+- /contratos → no /contracts
+- /servicios → no /services
+- /tareas → no /tasks
+- /caja → no /cash
+
 ## UI Components — shadcn/ui
 
 This project uses shadcn/ui with Tailwind v4. When working on UI:

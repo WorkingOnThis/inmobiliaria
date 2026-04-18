@@ -11,7 +11,7 @@ export default async function NewOwnerPage() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) {
-    redirect("/login?callbackUrl=/owners/new");
+    redirect("/login?callbackUrl=/propietarios/nuevo");
   }
 
   if (!canManageClients(session.user.role)) {

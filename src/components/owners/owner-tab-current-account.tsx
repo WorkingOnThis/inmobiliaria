@@ -37,7 +37,7 @@ import { es } from "date-fns/locale";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
-interface Movimiento {
+interface Movement {
   id: string;
   fecha: string;
   descripcion: string;
@@ -60,7 +60,7 @@ interface CuentaCorrienteData {
     proximaLiquidacionEstimada: number;
     pendienteConfirmar: number;
   };
-  movimientos: Movimiento[];
+  movimientos: Movement[];
 }
 
 interface OwnerTabCurrentAccountProps {
@@ -73,7 +73,7 @@ type FabAction = "liquidacion" | "movimiento" | null;
 type MovTipo = "income" | "expense" | "porcentaje";
 type PorcentajeBase = "total_transferir" | "subtotal_alquileres" | "subtotal_ingresos" | "monto_manual";
 
-interface MovimientoFormState {
+interface MovementFormState {
   descripcion: string;
   tipo: MovTipo;
   monto: string;
@@ -120,16 +120,16 @@ const inputCls =
 const labelCls =
   "text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5 block";
 
-// ── FilaMovimiento — componente de fila individual ────────────────────────────
+// ── MovementRow — individual row component ────────────────────────────────────
 //
 // Es un componente separado (no inline en el .map) para poder usar hooks
 // dentro de él sin violar las reglas de React.
 
-function FilaMovimiento({
+function MovementRow({
   movimiento,
   onActualizado,
 }: {
-  movimiento: Movimiento;
+  movimiento: Movement;
   onActualizado: () => void;
 }) {
   const [toggling, setToggling] = useState(false);
@@ -242,7 +242,7 @@ function FilaMovimiento({
         </DialogContent>
       </Dialog>
 
-      <td className="w-8 px-2 py-[11px] align-middle text-center">
+      <td className="w-8 px-2 py-[11px] align-middle text-center" onClick={(e) => e.stopPropagation()}>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -329,7 +329,7 @@ function FilaMovimiento({
       </td>
 
       {/* ── Celda 7: acciones de comprobante ── */}
-      <td className="w-16 px-2 py-[11px] align-middle text-center">
+      <td className="w-16 px-2 py-[11px] align-middle text-center" onClick={(e) => e.stopPropagation()}>
         {movimiento.comprobanteUrl ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -391,11 +391,15 @@ export function OwnerTabCurrentAccount({
   const [movFilter, setMovFilter] = useState<MovFilter>("todos");
   const [fabAction, setFabAction] = useState<FabAction>(null);
   const [saving, setSaving] = useState(false);
+  const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ descripcion: "", tipo: "income" as "income" | "expense", monto: "", fecha: "", nota: "", categoria: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
   const [periodoFiltro, setPeriodoFiltro] = useState<string>("");
   // false = todos; true = solo los no conciliados (pendientes de verificar)
   const [filtroPendientesConciliacion, setFiltroPendientesConciliacion] = useState(false);
 
-  const [movForm, setMovForm] = useState<MovimientoFormState>({
+  const [movForm, setMovForm] = useState<MovementFormState>({
     descripcion: "",
     tipo: "income",
     monto: "",
@@ -459,7 +463,7 @@ export function OwnerTabCurrentAccount({
     return pasaFiltroTipo && pasaFiltroConciliacion;
   });
 
-  const grupos = movimientosFiltrados.reduce<Record<string, Movimiento[]>>((acc, m) => {
+  const grupos = movimientosFiltrados.reduce<Record<string, Movement[]>>((acc, m) => {
     const key = m.periodo ?? "sin-periodo";
     if (!acc[key]) acc[key] = [];
     acc[key].push(m);
@@ -507,7 +511,7 @@ export function OwnerTabCurrentAccount({
     return Math.round(base * pct);
   };
 
-  const handleSaveMovimiento = async () => {
+  const handleSaveMovement = async () => {
     if (!movForm.descripcion.trim()) { toast.error("Completá la descripción"); return; }
     if (!movForm.fecha)              { toast.error("Completá la fecha"); return; }
 
@@ -588,7 +592,49 @@ export function OwnerTabCurrentAccount({
     }
   };
 
-  const invalidarMovimientos = () => {
+  const handleOpenDetail = (m: Movement) => {
+    setSelectedMovement(m);
+    setEditing(false);
+    setEditForm({
+      descripcion: m.descripcion,
+      tipo: m.tipo as "income" | "expense",
+      monto: m.monto,
+      fecha: m.fecha,
+      nota: (m as Movement & { nota?: string | null }).nota ?? "",
+      categoria: m.categoria ?? "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedMovement) return;
+    if (!editForm.descripcion.trim()) { toast.error("Completá la descripción"); return; }
+    if (!editForm.monto || isNaN(Number(editForm.monto)) || Number(editForm.monto) <= 0) { toast.error("Monto inválido"); return; }
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/owners/${ownerId}/movimientos/${selectedMovement.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          descripcion: editForm.descripcion.trim(),
+          tipo: editForm.tipo,
+          monto: Number(editForm.monto),
+          fecha: editForm.fecha,
+          nota: editForm.nota || null,
+          categoria: editForm.categoria || null,
+        }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Error al guardar"); }
+      invalidateMovements();
+      toast.success("Movimiento actualizado");
+      setSelectedMovement(null);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const invalidateMovements = () => {
     queryClient.invalidateQueries({ queryKey: ["owner-cc-full", ownerId] });
     queryClient.invalidateQueries({ queryKey: ["owner-cc", ownerId] });
   };
@@ -842,16 +888,17 @@ export function OwnerTabCurrentAccount({
                       {items.map((m) => (
                         <tr
                           key={m.id}
+                          onClick={() => handleOpenDetail(m)}
                           className={cn(
-                            "group transition-colors",
+                            "group transition-colors cursor-pointer",
                             m.categoria === "pendiente_confirmacion"
                               ? "bg-warning-dim/40"
                               : "hover:bg-surface-mid"
                           )}
                         >
-                          <FilaMovimiento
+                          <MovementRow
                             movimiento={m}
-                            onActualizado={invalidarMovimientos}
+                            onActualizado={invalidateMovements}
                           />
                         </tr>
                       ))}
@@ -905,7 +952,7 @@ export function OwnerTabCurrentAccount({
           <Button variant="secondary" size="sm" onClick={() => setFabAction("movimiento")} className="gap-1.5">
             <Plus size={13} /> Agregar movimiento manual
           </Button>
-          <Link href={`/owners/${ownerId}/liquidacion${periodoFiltro ? `?periodo=${periodoFiltro}` : ""}`}>
+          <Link href={`/propietarios/${ownerId}/liquidacion${periodoFiltro ? `?periodo=${periodoFiltro}` : ""}`}>
             <Button variant="outline" size="sm" className="gap-1.5">
               <FileText size={13} /> Vista previa
             </Button>
@@ -1095,7 +1142,7 @@ export function OwnerTabCurrentAccount({
             <Button variant="ghost" size="sm" onClick={() => setFabAction(null)} disabled={saving}>
               Cancelar
             </Button>
-            <Button size="sm" onClick={handleSaveMovimiento} disabled={saving} className="bg-primary text-primary-foreground hover:opacity-90">
+            <Button size="sm" onClick={handleSaveMovement} disabled={saving} className="bg-primary text-primary-foreground hover:opacity-90">
               {saving && <Loader2 size={12} className="animate-spin" />} Guardar movimiento
             </Button>
           </DialogFooter>
@@ -1198,6 +1245,161 @@ export function OwnerTabCurrentAccount({
             <Button size="sm" onClick={handleSaveLiquidacion} disabled={saving} className="bg-primary text-primary-foreground hover:opacity-90">
               {saving && <Loader2 size={12} className="animate-spin" />} Generar y enviar
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* ── Modal: Detalle / Edición de movimiento ── */}
+      <Dialog open={!!selectedMovement} onOpenChange={(v) => !v && setSelectedMovement(null)}>
+        <DialogContent className="max-w-[480px] p-0 rounded-[20px] overflow-hidden">
+          <DialogHeader className="px-6 py-5 border-b border-border">
+            <DialogTitle className="font-bold text-[1rem] tracking-[-0.02em]">
+              {editing ? "Editar movimiento" : "Detalle del movimiento"}
+            </DialogTitle>
+            <DialogDescription className="text-[0.71rem] text-muted-foreground mt-0.5">
+              {selectedMovement?.origen === "manual"
+                ? editing ? "Modificá los campos y guardá los cambios." : "Movimiento manual — podés editarlo."
+                : "Movimiento generado automáticamente — solo lectura."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedMovement && (
+            <div className="px-6 py-5 flex flex-col gap-4">
+              {/* Concepto */}
+              <div className="flex flex-col gap-1">
+                <label className={labelCls}>Concepto</label>
+                {editing ? (
+                  <input
+                    className={inputCls}
+                    value={editForm.descripcion}
+                    onChange={(e) => setEditForm((f) => ({ ...f, descripcion: e.target.value }))}
+                  />
+                ) : (
+                  <div className="text-[0.9rem] font-medium text-on-surface">{selectedMovement.descripcion}</div>
+                )}
+              </div>
+
+              {/* Tipo + Monto */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className={labelCls}>Tipo</label>
+                  {editing ? (
+                    <select
+                      className={inputCls}
+                      value={editForm.tipo}
+                      onChange={(e) => setEditForm((f) => ({ ...f, tipo: e.target.value as "income" | "expense" }))}
+                    >
+                      <option value="income">Ingreso</option>
+                      <option value="expense">Egreso</option>
+                    </select>
+                  ) : (
+                    <div className="text-[0.85rem] text-on-surface">
+                      {selectedMovement.tipo === "income" ? "Ingreso" : "Egreso"}
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className={labelCls}>Monto</label>
+                  {editing ? (
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className={inputCls}
+                      value={editForm.monto}
+                      onChange={(e) => setEditForm((f) => ({ ...f, monto: e.target.value }))}
+                    />
+                  ) : (
+                    <div
+                      className="text-[0.9rem] font-semibold font-mono tabular-nums"
+                      style={{ color: selectedMovement.tipo === "income" ? "var(--success)" : "var(--error)" }}
+                    >
+                      {selectedMovement.tipo === "income" ? "+" : "−"}
+                      {formatMoney(Number(selectedMovement.monto))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Fecha + Categoría */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className={labelCls}>Fecha</label>
+                  {editing ? (
+                    <input
+                      type="date"
+                      className={inputCls}
+                      value={editForm.fecha}
+                      onChange={(e) => setEditForm((f) => ({ ...f, fecha: e.target.value }))}
+                    />
+                  ) : (
+                    <div className="text-[0.85rem] font-mono text-on-surface">
+                      {format(new Date(selectedMovement.fecha), "dd/MM/yyyy", { locale: es })}
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className={labelCls}>Origen</label>
+                  <div className="text-[0.85rem] text-on-surface">
+                    {selectedMovement.origen === "manual" ? "Manual" : "Automático"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Nota */}
+              <div className="flex flex-col gap-1">
+                <label className={labelCls}>Nota interna</label>
+                {editing ? (
+                  <textarea
+                    rows={2}
+                    className={cn(inputCls, "resize-none")}
+                    value={editForm.nota}
+                    onChange={(e) => setEditForm((f) => ({ ...f, nota: e.target.value }))}
+                    placeholder="Opcional"
+                  />
+                ) : (
+                  <div className="text-[0.85rem] text-text-muted italic">
+                    {(selectedMovement as Movement & { nota?: string | null }).nota || "Sin nota"}
+                  </div>
+                )}
+              </div>
+
+              {/* Conciliado */}
+              {!editing && (
+                <div className="flex items-center gap-2 pt-1">
+                  {selectedMovement.conciliado
+                    ? <CheckCircle2 size={14} className="text-success" />
+                    : <Circle size={14} className="text-border" />}
+                  <span className="text-[0.8rem] text-text-secondary">
+                    {selectedMovement.conciliado ? "Conciliado" : "Sin conciliar"}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="px-6 py-4 border-t border-border">
+            {editing ? (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={savingEdit}>
+                  Cancelar
+                </Button>
+                <Button size="sm" onClick={handleSaveEdit} disabled={savingEdit}>
+                  {savingEdit && <Loader2 size={12} className="animate-spin" />}
+                  Guardar cambios
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedMovement(null)}>
+                  Cerrar
+                </Button>
+                {selectedMovement?.origen === "manual" && (
+                  <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+                    Editar
+                  </Button>
+                )}
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

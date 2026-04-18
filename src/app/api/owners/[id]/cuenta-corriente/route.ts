@@ -27,7 +27,7 @@ export async function GET(
     const [propietario] = await db
       .select({ id: client.id, firstName: client.firstName, lastName: client.lastName })
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "propietario")))
+      .where(and(eq(client.id, id), eq(client.type, "owner")))
       .limit(1);
 
     if (!propietario) {

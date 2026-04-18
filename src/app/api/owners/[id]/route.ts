@@ -53,7 +53,7 @@ export async function GET(
     const [propietario] = await db
       .select()
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "propietario")))
+      .where(and(eq(client.id, id), eq(client.type, "owner")))
       .limit(1);
 
     if (!propietario) {
@@ -73,7 +73,7 @@ export async function GET(
       .where(and(eq(contract.ownerId, id), eq(contract.status, "active")));
 
     return NextResponse.json({
-      propietario,
+      owner: propietario,
       propiedades,
       contratosActivos,
     });
@@ -101,7 +101,7 @@ export async function PATCH(
     const [existing] = await db
       .select({ id: client.id })
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "propietario")))
+      .where(and(eq(client.id, id), eq(client.type, "owner")))
       .limit(1);
 
     if (!existing) {

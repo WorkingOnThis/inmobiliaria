@@ -150,7 +150,7 @@ export default function TenantDetailPage() {
             {(error as Error)?.message ?? "Tenant no encontrado"}
           </div>
           <button
-            onClick={() => router.push("/tenants")}
+            onClick={() => router.push("/inquilinos")}
             className="text-[0.72rem] text-primary hover:underline flex items-center gap-1"
           >
             <ArrowLeft size={12} /> Volver a la lista
@@ -161,7 +161,7 @@ export default function TenantDetailPage() {
           {/* Breadcrumb */}
           <div className="h-14 bg-surface border-b border-border flex items-center px-7 gap-2.5 flex-shrink-0">
             <button
-              onClick={() => router.push("/tenants")}
+              onClick={() => router.push("/inquilinos")}
               className="text-[0.8rem] text-text-secondary hover:text-primary transition-colors flex items-center gap-1"
             >
               <ArrowLeft size={13} />

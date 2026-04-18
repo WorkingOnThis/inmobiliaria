@@ -38,13 +38,20 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = (page - 1) * limit;
-    const statusFilter = searchParams.get("status") || "activo"; // activo | inactivo | todos
+    const statusParam = searchParams.get("status") || "activo";
     const q = searchParams.get("q")?.trim() || "";
 
+    const STATUS_MAP: Record<string, string> = {
+      activo: "active",
+      inactivo: "inactive",
+      suspendido: "suspended",
+    };
+    const resolvedStatus = STATUS_MAP[statusParam] ?? statusParam;
+
     // Condición base: solo propietarios
-    const baseCondition = eq(client.type, "propietario");
+    const baseCondition = eq(client.type, "owner");
     const statusCondition =
-      statusFilter !== "todos" ? eq(client.status, statusFilter) : undefined;
+      statusParam !== "todos" ? eq(client.status, resolvedStatus) : undefined;
 
     // --- Búsqueda directa por nombre/DNI/teléfono ---
     let directMatchIds: string[] = [];
@@ -82,7 +89,7 @@ export async function GET(request: NextRequest) {
         .innerJoin(client, eq(property.ownerId, client.id))
         .where(
           and(
-            eq(client.type, "propietario"),
+            eq(client.type, "owner"),
             statusCondition,
             ilike(property.address, likeQ)
           )
@@ -101,7 +108,7 @@ export async function GET(request: NextRequest) {
       const allMatchIds = [...new Set([...directMatchIds, ...Object.keys(propMatchMap)])];
       if (allMatchIds.length === 0) {
         return NextResponse.json({
-          propietarios: [],
+          owners: [],
           pagination: { total: 0, page, limit, totalPages: 0 },
         });
       }
@@ -161,7 +168,7 @@ export async function GET(request: NextRequest) {
       for (const r of contractCounts) contractCountMap[r.ownerId] = Number(r.value);
     }
 
-    const propietarios = propietariosData.map((p) => ({
+    const owners = propietariosData.map((p) => ({
       ...p,
       propiedadesCount: propCountMap[p.id] ?? 0,
       contratosActivosCount: contractCountMap[p.id] ?? 0,
@@ -169,7 +176,7 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({
-      propietarios,
+      owners,
       pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
@@ -202,8 +209,8 @@ export async function POST(request: NextRequest) {
       .insert(client)
       .values({
         id,
-        type: "propietario",
-        status: "activo",
+        type: "owner",
+        status: "active",
         firstName: data.firstName,
         lastName: data.lastName ?? null,
         phone: data.phone ?? null,
@@ -222,7 +229,7 @@ export async function POST(request: NextRequest) {
       .returning();
 
     return NextResponse.json(
-      { message: "Propietario creado exitosamente", propietario: newPropietario },
+      { message: "Propietario creado exitosamente", owner: newPropietario },
       { status: 201 }
     );
   } catch (error) {

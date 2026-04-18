@@ -123,7 +123,7 @@ export default function OwnerDetailPage() {
   const setTab = (tab: Tab) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
-    router.replace(`/owners/${id}?${params.toString()}`, { scroll: false });
+    router.replace(`/propietarios/${id}?${params.toString()}`, { scroll: false });
   };
 
   const { data, isLoading, error } = useQuery<{
@@ -166,7 +166,7 @@ export default function OwnerDetailPage() {
         </div>
       ) : error || !owner ? (
         <div className="flex h-screen flex-col items-center justify-center gap-4 text-text-muted">
-          <div className="text-sm">{(error as Error)?.message ?? "Owner no encontrado"}</div>
+          <div className="text-sm">{(error as Error)?.message ?? "Propietario no encontrado"}</div>
           <Link
             href="/propietarios"
             className="text-[0.72rem] text-primary hover:underline flex items-center gap-1"

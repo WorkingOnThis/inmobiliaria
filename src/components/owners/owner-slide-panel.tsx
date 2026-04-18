@@ -80,7 +80,7 @@ export function OwnerSlidePanel({
   });
 
   const handleVerFicha = () => {
-    if (owner) router.push(`/owners/${owner.id}`);
+    if (owner) router.push(`/propietarios/${owner.id}`);
   };
 
   // Últimas 3 liquidaciones del historial

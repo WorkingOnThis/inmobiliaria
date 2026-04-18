@@ -270,7 +270,7 @@ export function TenantsList() {
             Exportar
           </Button>
           <Button asChild size="sm">
-            <Link href="/tenants/nuevo">
+            <Link href="/inquilinos/nuevo">
               <PlusCircle className="mr-2 size-4" />
               Nuevo Tenant
             </Link>
@@ -435,7 +435,7 @@ export function TenantsList() {
                         key={inq.id}
                         className="cursor-pointer hover:bg-muted/30 transition-colors"
                         onClick={() =>
-                          router.push(`/tenants/${inq.id}`)
+                          router.push(`/inquilinos/${inq.id}`)
                         }
                       >
                         {/* Tenant */}
