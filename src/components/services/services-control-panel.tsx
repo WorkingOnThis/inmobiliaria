@@ -106,17 +106,17 @@ function ServicioChip({
   const diasLabel = daysWithoutReceipt > 0 ? ` ${daysWithoutReceipt}d` : "";
 
   const clases: Record<ServiceStatus, string> = {
-    al_dia: "bg-income-dim text-income",
-    pendiente: "bg-muted text-muted-foreground",
-    en_alerta: "bg-mustard-dim text-mustard",
-    bloqueado: "bg-destructive-dim text-destructive",
+    current: "bg-income-dim text-income",
+    pending: "bg-muted text-muted-foreground",
+    alert: "bg-mustard-dim text-mustard",
+    blocked: "bg-destructive-dim text-destructive",
   };
 
   const dotClases: Record<ServiceStatus, string> = {
-    al_dia: "bg-current",
-    pendiente: "bg-current",
-    en_alerta: "bg-current",
-    bloqueado: "bg-current",
+    current: "bg-current",
+    pending: "bg-current",
+    alert: "bg-current",
+    blocked: "bg-current",
   };
 
   return (
@@ -128,24 +128,24 @@ function ServicioChip({
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClases[estado]}`} />
       {label}
       {diasLabel}
-      {estado === "bloqueado" && " 🔒"}
+      {estado === "blocked" && " 🔒"}
     </span>
   );
 }
 
 // ── Badge resumen de alertas ────────────────────────────────────────────
 function AlertasBadge({ estado, count }: { estado: ServiceStatus; count: number }) {
-  if (estado === "al_dia") {
+  if (estado === "current") {
     return <StatusBadge variant="income">Al día</StatusBadge>;
   }
-  if (estado === "bloqueado") {
+  if (estado === "blocked") {
     return (
       <StatusBadge variant="baja">
         Bloqueado{count > 1 ? ` (${count})` : ""}
       </StatusBadge>
     );
   }
-  if (estado === "en_alerta") {
+  if (estado === "alert") {
     return <StatusBadge variant="suspended">{count} en alerta</StatusBadge>;
   }
   return (
@@ -227,7 +227,7 @@ export function ServicesControlPanel() {
         inquilinoNombre: item.inquilinoNombre ?? undefined,
         inquilinoId: item.inquilinoId ?? undefined,
         servicios: [],
-        peorEstado: "al_dia",
+        peorEstado: "current",
         alertasCount: 0,
       });
       propiedades.push(mapaProps.get(item.propertyId)!);
@@ -235,11 +235,11 @@ export function ServicesControlPanel() {
     const prop = mapaProps.get(item.propertyId)!;
     prop.servicios.push(item);
     // Actualizar peor estado
-    const prioridad = { bloqueado: 4, en_alerta: 3, pendiente: 2, al_dia: 1 };
+    const prioridad = { blocked: 4, alert: 3, pending: 2, current: 1 };
     if ((prioridad[item.estado] ?? 0) > (prioridad[prop.peorEstado] ?? 0)) {
       prop.peorEstado = item.estado;
     }
-    if (item.estado === "en_alerta" || item.estado === "bloqueado") {
+    if (item.estado === "alert" || item.estado === "blocked") {
       prop.alertasCount++;
     }
   }
@@ -256,10 +256,10 @@ export function ServicesControlPanel() {
 
   const filters: { key: "todos" | ServiceStatus; label: string }[] = [
     { key: "todos", label: "Todos" },
-    { key: "al_dia", label: "Al día" },
-    { key: "pendiente", label: "Pendientes" },
-    { key: "en_alerta", label: "En alerta" },
-    { key: "bloqueado", label: "Bloqueados" },
+    { key: "current", label: "Al día" },
+    { key: "pending", label: "Pendientes" },
+    { key: "alert", label: "En alerta" },
+    { key: "blocked", label: "Bloqueados" },
   ];
 
   return (
@@ -373,9 +373,9 @@ export function ServicesControlPanel() {
               key={key}
               onClick={() => { setFilter(key); setPage(1); }}
               className={`rounded-full border px-3 py-1 text-[0.68rem] font-semibold transition-colors ${filter === key
-                ? key === "en_alerta"
+                ? key === "alert"
                   ? "border-mustard/25 bg-mustard-dim text-mustard"
-                  : key === "bloqueado"
+                  : key === "blocked"
                     ? "border-destructive/25 bg-destructive-dim text-destructive"
                     : "border-primary/30 bg-primary/10 text-primary"
                 : "border-border bg-transparent text-text-muted hover:text-text-secondary"
@@ -429,9 +429,9 @@ export function ServicesControlPanel() {
                 <tr
                   key={prop.propertyId}
                   onClick={() => router.push(`/propiedades/${prop.propertyId}`)}
-                  className={`group cursor-pointer transition-colors hover:bg-border/50 ${prop.peorEstado === "bloqueado"
+                  className={`group cursor-pointer transition-colors hover:bg-border/50 ${prop.peorEstado === "blocked"
                     ? "[&>td:first-child]:border-l-2 [&>td:first-child]:border-l-destructive"
-                    : prop.peorEstado === "en_alerta"
+                    : prop.peorEstado === "alert"
                       ? "[&>td:first-child]:border-l-2 [&>td:first-child]:border-l-mustard"
                       : ""
                     }`}
@@ -482,12 +482,12 @@ export function ServicesControlPanel() {
                     <div className="flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
                       <button
                         onClick={(e) => { e.stopPropagation(); router.push(`/propiedades/${prop.propertyId}`); }}
-                        className={`rounded-md border px-2.5 py-1 text-[0.67rem] font-semibold transition-colors ${prop.peorEstado === "bloqueado"
+                        className={`rounded-md border px-2.5 py-1 text-[0.67rem] font-semibold transition-colors ${prop.peorEstado === "blocked"
                           ? "border-destructive/30 text-destructive hover:bg-destructive-dim"
                           : "border-border text-text-muted hover:text-text-secondary"
                           }`}
                       >
-                        {prop.peorEstado === "bloqueado" ? "Resolver" : prop.peorEstado === "en_alerta" ? "Gestionar" : "Ver detalle"}
+                        {prop.peorEstado === "blocked" ? "Resolver" : prop.peorEstado === "alert" ? "Gestionar" : "Ver detalle"}
                       </button>
                     </div>
                   </td>

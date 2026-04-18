@@ -521,12 +521,12 @@ export function ContractDetail({ id }: { id: string }) {
 
   // Mapeo entre clave de propiedad y tipo de servicio en la tabla servicio
   const SERVICE_KEY_TO_TIPO: Record<string, string> = {
-    serviceLuz: "luz",
+    serviceLuz: "electricity",
     serviceGas: "gas",
-    serviceAgua: "agua",
+    serviceAgua: "water",
     serviceMunicipalidad: "abl",
-    serviceRendas: "inmobiliario",
-    serviceExpensas: "expensas",
+    serviceRendas: "property_tax",
+    serviceExpensas: "hoa",
   };
 
   const getServiceValue = (key: string): string => {
@@ -553,14 +553,14 @@ export function ContractDetail({ id }: { id: string }) {
     });
 
   const STATUS_COLOR: Record<string, { bg: string; text: string; dot: string }> = {
-    al_dia:    { bg: "bg-income-dim",      text: "text-income",      dot: "bg-income" },
-    pendiente: { bg: "bg-surface-highest", text: "text-text-muted",  dot: "bg-text-muted" },
-    en_alerta: { bg: "bg-mustard-dim",     text: "text-mustard",     dot: "bg-mustard" },
-    bloqueado: { bg: "bg-error-dim",       text: "text-error",       dot: "bg-error" },
+    current: { bg: "bg-income-dim",      text: "text-income",      dot: "bg-income" },
+    pending: { bg: "bg-surface-highest", text: "text-text-muted",  dot: "bg-text-muted" },
+    alert:   { bg: "bg-mustard-dim",     text: "text-mustard",     dot: "bg-mustard" },
+    blocked: { bg: "bg-error-dim",       text: "text-error",       dot: "bg-error" },
   };
 
   const STATUS_LABEL: Record<string, string> = {
-    al_dia: "Al día", pendiente: "Pendiente", en_alerta: "En alerta", bloqueado: "Bloqueado",
+    current: "Al día", pending: "Pendiente", alert: "En alerta", blocked: "Bloqueado",
   };
 
   /* ── RENDER ── */

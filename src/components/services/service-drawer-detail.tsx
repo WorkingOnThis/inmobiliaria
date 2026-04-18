@@ -44,7 +44,7 @@ function periodLabel(period: string): string {
 }
 
 function StatusBox({ estado, daysWithoutReceipt, period }: { estado: ServiceStatus; daysWithoutReceipt: number; period: string }) {
-  if (estado === "al_dia") {
+  if (estado === "current") {
     return (
       <div className="flex items-start gap-3 rounded-xl border border-income/20 bg-income-dim p-3.5 mb-3">
         <CheckCircle2 className="h-5 w-5 shrink-0 text-income mt-0.5" />
@@ -55,7 +55,7 @@ function StatusBox({ estado, daysWithoutReceipt, period }: { estado: ServiceStat
       </div>
     );
   }
-  if (estado === "pendiente") {
+  if (estado === "pending") {
     return (
       <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3.5 mb-3">
         <Clock className="h-5 w-5 shrink-0 text-muted-foreground mt-0.5" />
@@ -66,7 +66,7 @@ function StatusBox({ estado, daysWithoutReceipt, period }: { estado: ServiceStat
       </div>
     );
   }
-  if (estado === "en_alerta") {
+  if (estado === "alert") {
     return (
       <div className="flex items-start gap-3 rounded-xl border border-mustard/20 bg-mustard-dim p-3.5 mb-3">
         <AlertTriangle className="h-5 w-5 shrink-0 text-mustard mt-0.5" />
@@ -79,7 +79,7 @@ function StatusBox({ estado, daysWithoutReceipt, period }: { estado: ServiceStat
       </div>
     );
   }
-  if (estado === "bloqueado") {
+  if (estado === "blocked") {
     return (
       <div className="flex items-start gap-3 rounded-xl border border-error/20 bg-error-dim p-3.5 mb-3">
         <Lock className="h-5 w-5 shrink-0 text-error mt-0.5" />
@@ -123,7 +123,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
   const [editing, setEditing] = useState(false);
   const [showContractWarning, setShowContractWarning] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
-    type: "luz",
+    type: "electricity",
     company: "",
     metadata: {},
     holder: "",
@@ -253,7 +253,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
   function startEditing(item: typeof s) {
     if (!item) return;
     setEditForm({
-      type: (item.tipo as ServiceType) ?? "luz",
+      type: (item.tipo as ServiceType) ?? "electricity",
       company: item.company ?? "",
       metadata: (item.metadata as Record<string, string> | null) ?? {},
       holder: item.holder ?? "",
@@ -316,7 +316,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
                 <StatusBox estado={estado} daysWithoutReceipt={daysWithoutReceipt} period={period} />
 
                 {/* Cargar comprobante */}
-                {estado !== "al_dia" && (
+                {estado !== "current" && (
                   <div className="mt-3">
                     <div className="mb-2 flex items-center gap-2">
                       <input
@@ -616,7 +616,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
               </div>
 
               {/* Omitir bloqueo — solo si en_alerta o bloqueado */}
-              {(estado === "en_alerta" || estado === "bloqueado") && !tieneOmision && (
+              {(estado === "alert" || estado === "blocked") && !tieneOmision && (
                 <div className="px-6 py-5">
                   <p className="mb-3 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
                     Acciones de emergencia
@@ -739,7 +739,7 @@ export function ServiceDrawerDetail({ serviceId, propertyId, period, open, onClo
                     Editar
                   </button>
                 )}
-                {estado !== "al_dia" && (
+                {estado !== "current" && (
                   <button
                     onClick={() => cargarComprobante.mutate()}
                     disabled={cargarComprobante.isPending}

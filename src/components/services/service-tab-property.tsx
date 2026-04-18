@@ -18,10 +18,10 @@ import { ServiceFormNew } from "./service-form-new";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 
 const STATUS_CONFIG: Record<ServiceStatus, { label: string; variant: StatusBadgeVariant }> = {
-  al_dia:    { label: "Al día",    variant: "income" },
-  pendiente: { label: "Pendiente", variant: "draft" },
-  en_alerta: { label: "En alerta", variant: "suspended" },
-  bloqueado: { label: "Bloqueado", variant: "baja" },
+  current: { label: "Al día",    variant: "income" },
+  pending: { label: "Pendiente", variant: "draft" },
+  alert:   { label: "En alerta", variant: "suspended" },
+  blocked: { label: "Bloqueado", variant: "baja" },
 };
 
 type Props = {
@@ -78,8 +78,8 @@ export function ServiceTabProperty({ propertyId, initialServiceId }: Props) {
   });
 
   const servicios = data?.items ?? [];
-  const hayAlertas = servicios.some((s) => s.estado === "en_alerta" || s.estado === "bloqueado");
-  const serviciosEnAlerta = servicios.filter((s) => s.estado === "en_alerta" || s.estado === "bloqueado");
+  const hayAlertas = servicios.some((s) => s.estado === "alert" || s.estado === "blocked");
+  const serviciosEnAlerta = servicios.filter((s) => s.estado === "alert" || s.estado === "blocked");
 
   // Abrir el drawer automáticamente si se llegó con un serviceId en la URL
   useEffect(() => {
@@ -101,7 +101,7 @@ export function ServiceTabProperty({ propertyId, initialServiceId }: Props) {
                   {SERVICE_TYPE_LABELS[s.tipo as ServiceType] ?? s.tipo}
                 </strong>{" "}
                 lleva {s.diasSinComprobante} días sin comprobante cargado.
-                {s.estado === "bloqueado" && (
+                {s.estado === "blocked" && (
                   <span className="text-error"> El cobro del alquiler está bloqueado.</span>
                 )}
               </p>
@@ -165,9 +165,9 @@ export function ServiceTabProperty({ propertyId, initialServiceId }: Props) {
                 key={s.id}
                 onClick={() => setDrawerServiceId(s.id)}
                 className={`flex cursor-pointer items-center gap-3.5 rounded-xl border bg-card p-3.5 transition-colors hover:border-primary/30 hover:bg-surface-mid ${
-                  s.estado === "bloqueado"
+                  s.estado === "blocked"
                     ? "border-error/30 border-l-4 border-l-error"
-                    : s.estado === "en_alerta"
+                    : s.estado === "alert"
                     ? "border-mustard/20 border-l-4 border-l-mustard"
                     : "border-border"
                 }`}
@@ -203,11 +203,11 @@ export function ServiceTabProperty({ propertyId, initialServiceId }: Props) {
                     {s.activaBloqueo ? "Activa bloqueo" : "No bloquea"}
                   </span>
                   {s.diasSinComprobante > 0 && (
-                    <span className={`text-[0.63rem] ${s.estado === "en_alerta" ? "text-mustard" : "text-muted-foreground"}`}>
+                    <span className={`text-[0.63rem] ${s.estado === "alert" ? "text-mustard" : "text-muted-foreground"}`}>
                       {s.diasSinComprobante} días sin comprobante
                     </span>
                   )}
-                  {s.estado === "al_dia" && s.dueDay && (
+                  {s.estado === "current" && s.dueDay && (
                     <span className="text-[0.63rem] text-muted-foreground">
                       Vence día {s.dueDay}
                     </span>

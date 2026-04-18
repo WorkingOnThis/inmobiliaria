@@ -10,7 +10,7 @@ import { calculateServiceStatus } from "@/lib/services/constants";
 
 const crearServicioSchema = z.object({
   propertyId: z.string().min(1, "La propiedad es requerida"),
-  tipo: z.enum(["luz", "gas", "agua", "expensas", "abl", "inmobiliario", "seguro", "otro"]),
+  tipo: z.enum(["electricity", "gas", "water", "hoa", "abl", "property_tax", "insurance", "other"]),
   empresa: z.string().optional(),
   numeroCuenta: z.string().optional(),
   metadatos: z.record(z.string()).optional(),

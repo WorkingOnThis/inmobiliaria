@@ -24,7 +24,7 @@ type Props = {
 export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    type: "luz" as ServiceType,
+    type: "electricity" as ServiceType,
     company: "",
     metadata: {} as Record<string, string>,
     holder: "",

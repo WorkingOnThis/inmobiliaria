@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     propiedadesMap.get(s.propertyId)!.estados.push(s.estado);
   }
 
-  const prioridad = { bloqueado: 4, en_alerta: 3, pendiente: 2, al_dia: 1 };
+  const prioridad = { blocked: 4, alert: 3, pending: 2, current: 1 };
 
   let totalPropiedades = 0;
   let alDia = 0;
@@ -94,11 +94,11 @@ export async function GET(request: NextRequest) {
       return (prioridad[est as keyof typeof prioridad] ?? 0) > (prioridad[peor as keyof typeof prioridad] ?? 0)
         ? est
         : peor;
-    }, "al_dia");
+    }, "current");
 
-    if (peorEstado === "al_dia") alDia++;
-    else if (peorEstado === "en_alerta") enAlerta++;
-    else if (peorEstado === "bloqueado") bloqueadas++;
+    if (peorEstado === "current") alDia++;
+    else if (peorEstado === "alert") enAlerta++;
+    else if (peorEstado === "blocked") bloqueadas++;
     else pendientes++;
   }
 

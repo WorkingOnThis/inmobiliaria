@@ -1,49 +1,49 @@
 // Available service types
 export const SERVICE_TYPES = [
-  "luz",
+  "electricity",
   "gas",
-  "agua",
-  "expensas",
+  "water",
+  "hoa",
   "abl",
-  "inmobiliario",
-  "seguro",
-  "otro",
+  "property_tax",
+  "insurance",
+  "other",
 ] as const;
 
 export type ServiceType = (typeof SERVICE_TYPES)[number];
 
 export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
-  luz: "Energía eléctrica",
+  electricity: "Energía eléctrica",
   gas: "Gas natural",
-  agua: "Agua",
-  expensas: "Expensas",
+  water: "Agua",
+  hoa: "Expensas",
   abl: "Provincial / Rentas",
-  inmobiliario: "Inmobiliario",
-  seguro: "Seguro del inmueble",
-  otro: "Otro",
+  property_tax: "Inmobiliario",
+  insurance: "Seguro del inmueble",
+  other: "Otro",
 };
 
 // Short label for tiles and cards
 export const SERVICE_TYPE_SHORT_LABELS: Record<ServiceType, string> = {
-  luz: "Luz",
+  electricity: "Luz",
   gas: "Gas",
-  agua: "Agua",
-  expensas: "Expensas",
+  water: "Agua",
+  hoa: "Expensas",
   abl: "Provincial",
-  inmobiliario: "Inmobiliario",
-  seguro: "Seguro",
-  otro: "Otro",
+  property_tax: "Inmobiliario",
+  insurance: "Seguro",
+  other: "Otro",
 };
 
 export const SERVICE_TYPE_ICONS: Record<ServiceType, string> = {
-  luz: "💡",
+  electricity: "💡",
   gas: "🔥",
-  agua: "💧",
-  expensas: "🏢",
+  water: "💧",
+  hoa: "🏢",
   abl: "🏛",
-  inmobiliario: "🏠",
-  seguro: "🛡",
-  otro: "📋",
+  property_tax: "🏠",
+  insurance: "🛡",
+  other: "📋",
 };
 
 // Service-specific fields stored in the metadata column.
@@ -56,7 +56,7 @@ export type ServiceField = {
 };
 
 export const SERVICE_FIELDS: Record<ServiceType, ServiceField[]> = {
-  luz: [
+  electricity: [
     { key: "numeroCuenta", label: "N° de cuenta", placeholder: "Ej: 123456789", mono: true },
     { key: "numeroContrato", label: "N° de contrato", placeholder: "Ej: CTR-0012", mono: true },
   ],
@@ -64,42 +64,42 @@ export const SERVICE_FIELDS: Record<ServiceType, ServiceField[]> = {
     { key: "numeroCuenta", label: "N° de cuenta", placeholder: "Ej: 1234567", mono: true },
     { key: "numeroMedidor", label: "N° de medidor", placeholder: "Ej: G4-0012345", mono: true },
   ],
-  agua: [
+  water: [
     { key: "numeroCuenta", label: "N° de cuenta", placeholder: "Ej: 98765432", mono: true },
   ],
-  expensas: [
+  hoa: [
     { key: "numeroCuenta", label: "N° de unidad / depto", placeholder: "Ej: 3°A" },
     { key: "contactoAdmin", label: "Contacto de la administración", placeholder: "Ej: mail, teléfono, nombre" },
   ],
   abl: [
     { key: "numeroCuenta", label: "N° de cuenta", placeholder: "Ej: 1234-5678-90", mono: true },
   ],
-  inmobiliario: [
+  property_tax: [
     { key: "nomenclaturaCatastral", label: "Nomenclatura catastral", placeholder: "Ej: 01-01-01-001-0000-000", mono: true },
   ],
-  seguro: [
+  insurance: [
     { key: "numeroPoliza", label: "N° de póliza", placeholder: "Ej: POL-20251234", mono: true },
   ],
-  otro: [
+  other: [
     { key: "referencia", label: "N° de referencia", placeholder: "Ej: 12345", mono: true },
   ],
 };
 
 // Possible states of a service in a given period
 export const SERVICE_STATUSES = [
-  "al_dia",
-  "pendiente",
-  "en_alerta",
-  "bloqueado",
+  "current",
+  "pending",
+  "alert",
+  "blocked",
 ] as const;
 
 export type ServiceStatus = (typeof SERVICE_STATUSES)[number];
 
 export const SERVICE_STATUS_LABELS: Record<ServiceStatus, string> = {
-  al_dia: "Al día",
-  pendiente: "Pendiente",
-  en_alerta: "En alerta",
-  bloqueado: "Bloqueado",
+  current: "Al día",
+  pending: "Pendiente",
+  alert: "En alerta",
+  blocked: "Bloqueado",
 };
 
 // Who is the service holder
@@ -129,11 +129,11 @@ export const PAYMENT_RESPONSIBLE_LABELS: Record<PaymentResponsibleType, string> 
  * - If there is a block omission for this period
  *
  * Rules:
- *  - With receipt → "al_dia"
- *  - Without receipt, < 30 days → "pendiente"
- *  - Without receipt, 30+ days, with omission → "pendiente" (block was omitted)
- *  - Without receipt, 30+ days, without omission → "en_alerta"
- *  - Without receipt, 30+ days, activates block, without omission → "bloqueado"
+ *  - With receipt → "current"
+ *  - Without receipt, < 30 days → "pending"
+ *  - Without receipt, 30+ days, with omission → "pending" (block was omitted)
+ *  - Without receipt, 30+ days, without omission → "alert"
+ *  - Without receipt, 30+ days, activates block, without omission → "blocked"
  */
 export function calculateServiceStatus({
   hasReceipt,
@@ -146,9 +146,9 @@ export function calculateServiceStatus({
   activatesBlock: boolean;
   hasOmission: boolean;
 }): ServiceStatus {
-  if (hasReceipt) return "al_dia";
-  if (daysWithoutReceipt < 30) return "pendiente";
-  if (hasOmission) return "pendiente";
-  if (activatesBlock) return "bloqueado";
-  return "en_alerta";
+  if (hasReceipt) return "current";
+  if (daysWithoutReceipt < 30) return "pending";
+  if (hasOmission) return "pending";
+  if (activatesBlock) return "blocked";
+  return "alert";
 }

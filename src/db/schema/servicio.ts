@@ -13,7 +13,7 @@ export const servicio = pgTable("servicio", {
   propertyId: text("propertyId")
     .notNull()
     .references(() => property.id, { onDelete: "cascade" }),
-  tipo: text("tipo").notNull(), // "luz" | "gas" | "agua" | "expensas" | "abl" | "inmobiliario" | "seguro" | "otro"
+  tipo: text("tipo").notNull(), // "electricity" | "gas" | "water" | "hoa" | "abl" | "property_tax" | "insurance" | "other"
   empresa: text("empresa"), // Nombre de la empresa prestadora
   numeroCuenta: text("numeroCuenta"), // Primer identificador (N° cuenta / póliza / catastral). Se mantiene en sincronía con el primer campo de metadatos para mostrarlo en listas.
   metadatos: jsonb("metadatos").$type<Record<string, string>>(), // Campos específicos por tipo de servicio (ej: {numeroCuenta, numeroContrato})
