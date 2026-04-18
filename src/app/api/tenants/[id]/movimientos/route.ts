@@ -39,7 +39,7 @@ export async function POST(
     const [inquilino] = await db
       .select({ id: client.id })
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "tenant")))
+      .where(and(eq(client.id, id), eq(client.type, "inquilino")))
       .limit(1);
 
     if (!inquilino) {
