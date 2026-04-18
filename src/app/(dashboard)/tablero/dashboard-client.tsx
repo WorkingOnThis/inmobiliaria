@@ -149,8 +149,8 @@ export default function DashboardClient() {
   });
 
   const { data: mora } = useQuery<MoraData>({
-    queryKey: ["mora-activa"],
-    queryFn: () => fetch("/api/mora/activa").then((r) => r.json()),
+    queryKey: ["arrears-active"],
+    queryFn: () => fetch("/api/arrears/active").then((r) => r.json()),
   });
 
   const firstName = (session?.user?.name ?? "—").split(" ")[0];

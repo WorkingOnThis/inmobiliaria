@@ -86,7 +86,7 @@ export async function GET(
 
     return NextResponse.json({ movimiento, inquilino, propiedad, contrato });
   } catch (error) {
-    console.error("Error GET /api/recibos/:id:", error);
+    console.error("Error GET /api/receipts/:id:", error);
     return NextResponse.json({ error: "Error al obtener el recibo" }, { status: 500 });
   }
 }

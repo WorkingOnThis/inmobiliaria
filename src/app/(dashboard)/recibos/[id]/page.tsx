@@ -86,9 +86,9 @@ export default function ReciboPage() {
       contractNumber: string;
     } | null;
   }>({
-    queryKey: ["recibo", id],
+    queryKey: ["receipt", id],
     queryFn: async () => {
-      const res = await fetch(`/api/recibos/${id}`);
+      const res = await fetch(`/api/receipts/${id}`);
       if (!res.ok) {
         const d = await res.json();
         throw new Error(d.error || "Error al cargar el recibo");
