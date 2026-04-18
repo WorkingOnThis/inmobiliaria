@@ -9,7 +9,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { SignaturePad } from "@/components/agencia/signature-pad";
+import { SignaturePad } from "@/components/agency/signature-pad";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
   useSensor, useSensors, DragEndEvent,
@@ -478,9 +478,9 @@ export default function AdministracionPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery<{ agency: AgencyData | null }>({
-    queryKey: ["agencia"],
+    queryKey: ["agency"],
     queryFn: async () => {
-      const res = await fetch("/api/agencia");
+      const res = await fetch("/api/agency");
       if (!res.ok) throw new Error("Error al cargar datos");
       return res.json();
     },
@@ -545,7 +545,7 @@ export default function AdministracionPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch("/api/agencia", {
+      const res = await fetch("/api/agency", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -560,7 +560,7 @@ export default function AdministracionPage() {
       setSavedForm(fs);
       const cl = parseClausulas(updated.agency?.clausulas);
       setSavedClausulas(cl);
-      queryClient.invalidateQueries({ queryKey: ["agencia"] });
+      queryClient.invalidateQueries({ queryKey: ["agency"] });
       toast.success("Datos de la administración guardados");
     } catch {
       toast.error("Error al guardar. Intentá de nuevo.");

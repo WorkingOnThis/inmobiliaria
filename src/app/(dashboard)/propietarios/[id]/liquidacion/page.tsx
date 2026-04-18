@@ -174,16 +174,16 @@ export default function LiquidacionPreviewPage() {
   const [isEmitido, setIsEmitido] = useState(false);
   const [zoom, setZoom] = useState(1);
 
-  const { data: agenciaData } = useQuery<{ agency: AgencyData | null }>({
-    queryKey: ["agencia"],
+  const { data: agencyData } = useQuery<{ agency: AgencyData | null }>({
+    queryKey: ["agency"],
     queryFn: async () => {
-      const res = await fetch("/api/agencia");
+      const res = await fetch("/api/agency");
       if (!res.ok) return { agency: null };
       return res.json();
     },
   });
 
-  const agencia = agenciaData?.agency;
+  const agency = agencyData?.agency;
 
   const { data: propData, isLoading: loadingProp } = useQuery<{
     propietario: Propietario;
@@ -228,7 +228,7 @@ export default function LiquidacionPreviewPage() {
     setShowWatermark(false);
     // Auto-increment the receipt number
     try {
-      await fetch("/api/agencia", {
+      await fetch("/api/agency", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ incrementarNumero: true }),
@@ -375,50 +375,50 @@ export default function LiquidacionPreviewPage() {
                   <div style={{
                     width: "60px", height: "60px", borderRadius: "10px", flexShrink: 0,
                     display: "grid", placeItems: "center", overflow: "hidden",
-                    ...(agencia?.logoUrl
+                    ...(agency?.logoUrl
                       ? {}
                       : { background: "linear-gradient(135deg, #e85a3c, #c03c1f)", color: "#fff", fontWeight: 700, fontSize: "26px" }),
                   }}>
-                    {agencia?.logoUrl
-                      ? <img src={agencia.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                      : (agencia?.razonSocial?.[0] ?? "A")
+                    {agency?.logoUrl
+                      ? <img src={agency.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      : (agency?.razonSocial?.[0] ?? "A")
                     }
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "18px", fontWeight: 700, letterSpacing: "-.01em" }}>
-                      {agencia?.razonSocial ?? "Arce Administración"}
+                      {agency?.razonSocial ?? "Arce Administración"}
                     </div>
-                    {(agencia?.cuit || agencia?.condicionIVA) && (
+                    {(agency?.cuit || agency?.condicionIVA) && (
                       <div style={{ fontSize: "11px", color: P.muted, marginTop: "2px", fontFamily: P.mono }}>
-                        {agencia.cuit ? `CUIT ${agencia.cuit}` : ""}
-                        {agencia.cuit && agencia.condicionIVA ? " · " : ""}
-                        {agencia.condicionIVA ?? ""}
+                        {agency.cuit ? `CUIT ${agency.cuit}` : ""}
+                        {agency.cuit && agency.condicionIVA ? " · " : ""}
+                        {agency.condicionIVA ?? ""}
                       </div>
                     )}
-                    {agencia?.domicilioFiscal && (
+                    {agency?.domicilioFiscal && (
                       <div style={{ fontSize: "11px", color: P.muted }}>
-                        {agencia.domicilioFiscal}{agencia.localidad ? ` · ${agencia.localidad}` : ""}
+                        {agency.domicilioFiscal}{agency.localidad ? ` · ${agency.localidad}` : ""}
                       </div>
                     )}
-                    {(agencia?.telefono || agencia?.emailContacto) && (
+                    {(agency?.telefono || agency?.emailContacto) && (
                       <div style={{ fontSize: "11px", color: P.muted }}>
-                        {agencia.telefono ? `Tel. ${agencia.telefono}` : ""}
-                        {agencia.telefono && agencia.emailContacto ? " · " : ""}
-                        {agencia.emailContacto ?? ""}
+                        {agency.telefono ? `Tel. ${agency.telefono}` : ""}
+                        {agency.telefono && agency.emailContacto ? " · " : ""}
+                        {agency.emailContacto ?? ""}
                       </div>
                     )}
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ display: "inline-block", padding: "2px 10px", border: `1.5px solid ${P.text}`, borderRadius: "4px", fontSize: "10px", fontWeight: 700, letterSpacing: ".1em", marginBottom: "6px" }}>
-                      {agencia?.tipoComprobante?.toUpperCase() ?? "RECIBO C"}
+                      {agency?.tipoComprobante?.toUpperCase() ?? "RECIBO C"}
                     </div>
                     <div style={{ fontFamily: P.mono, fontSize: "15px", fontWeight: 700 }}>
-                      {agencia?.puntoVenta ?? "0001"} - {agencia?.proximoNumero ?? periodo.replace("-", "")}
+                      {agency?.puntoVenta ?? "0001"} - {agency?.proximoNumero ?? periodo.replace("-", "")}
                     </div>
-                    {agencia?.matricula && (
+                    {agency?.matricula && (
                       <>
                         <div style={{ ...P.label, marginTop: "6px" }}>Mat. Profesional</div>
-                        <div style={{ fontFamily: P.mono, fontSize: "11px", fontWeight: 500 }}>{agencia.matricula}</div>
+                        <div style={{ fontFamily: P.mono, fontSize: "11px", fontWeight: 500 }}>{agency.matricula}</div>
                       </>
                     )}
                     <div style={{ ...P.label, marginTop: "6px" }}>Fecha emisión</div>
@@ -559,15 +559,15 @@ export default function LiquidacionPreviewPage() {
                     )}
                   </div>
                   <div style={{ width: "200px", textAlign: "center" }}>
-                    {agencia?.firmaUrl ? (
-                      <img src={agencia.firmaUrl} alt="Firma" style={{ height: "50px", objectFit: "contain", margin: "0 auto 4px", display: "block" }} />
+                    {agency?.firmaUrl ? (
+                      <img src={agency.firmaUrl} alt="Firma" style={{ height: "50px", objectFit: "contain", margin: "0 auto 4px", display: "block" }} />
                     ) : (
                       <div style={{ fontFamily: '"Brush Script MT", cursive', fontSize: "28px", transform: "rotate(-3deg)", marginBottom: "2px", color: P.text }}>
-                        {agencia?.firmante ?? "Administrador"}
+                        {agency?.firmante ?? "Administrador"}
                       </div>
                     )}
                     <div style={{ borderTop: `1px solid ${P.text}`, paddingTop: "6px", fontSize: "9.5px", color: P.muted, textTransform: "uppercase", letterSpacing: ".08em" }}>
-                      {agencia?.firmante ?? "Administrador"} · {agencia?.firmanteCargo ?? "Administrador"}
+                      {agency?.firmante ?? "Administrador"} · {agency?.firmanteCargo ?? "Administrador"}
                     </div>
                   </div>
                 </div>
@@ -576,8 +576,8 @@ export default function LiquidacionPreviewPage() {
                 <div style={{ marginTop: "40px", paddingTop: "18px", borderTop: `1px solid ${P.border}`, display: "grid", gridTemplateColumns: showQR ? "1fr 180px" : "1fr", gap: "24px" }}>
                   <div style={{ fontSize: "9.5px", color: P.muted, lineHeight: 1.55 }}>
                     {(() => {
-                      const parsed: { id: string; texto: string }[] = agencia?.clausulas
-                        ? (() => { try { return JSON.parse(agencia.clausulas); } catch { return []; } })()
+                      const parsed: { id: string; texto: string }[] = agency?.clausulas
+                        ? (() => { try { return JSON.parse(agency.clausulas); } catch { return []; } })()
                         : [];
                       const clausulasToShow = parsed.length > 0 ? parsed : [
                         { id: "1", texto: "El presente recibo no constituye factura. Válido como constancia de liquidación de alquileres según contrato vigente." },

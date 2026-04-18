@@ -8,7 +8,7 @@ import { randomUUID } from "crypto";
 
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [data] = await db
     .select()
@@ -21,7 +21,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
 
@@ -33,7 +33,7 @@ export async function PATCH(request: NextRequest) {
       .where(eq(agency.ownerId, session.user.id))
       .limit(1);
 
-    if (!existing) return NextResponse.json({ error: "Agencia no encontrada" }, { status: 404 });
+    if (!existing) return NextResponse.json({ error: "Agency not found" }, { status: 404 });
 
     const current = parseInt(existing.proximoNumero ?? "0", 10) + 1;
     const next = String(current).padStart(8, "0");
