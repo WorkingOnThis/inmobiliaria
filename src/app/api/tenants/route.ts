@@ -9,6 +9,7 @@ import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { calculateStatus } from "@/lib/tenants/status";
 
 // Qué porcentaje del contrato ya pasó (0–100)
 function calcularCompletitud(startDate: string, endDate: string): number {
@@ -18,44 +19,6 @@ function calcularCompletitud(startDate: string, endDate: string): number {
   if (now <= start) return 0;
   if (now >= end) return 100;
   return Math.round(((now - start) / (end - start)) * 100);
-}
-
-// Estado del inquilino en función del contrato y último pago
-function calcularEstado(
-  activeContract: { endDate: string; paymentDay: number } | null,
-  lastPaymentDate: string | null
-): { estado: string; diasMora: number } {
-  if (!activeContract) return { estado: "sin_contrato", diasMora: 0 };
-
-  const today = new Date();
-  const endDate = new Date(activeContract.endDate);
-  const daysUntilEnd = Math.ceil(
-    (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  // Contrato vencido → tratamos como sin contrato activo
-  if (daysUntilEnd < 0) return { estado: "sin_contrato", diasMora: 0 };
-
-  // Por vencer: quedan 90 días o menos
-  if (daysUntilEnd <= 90) return { estado: "por_vencer", diasMora: 0 };
-
-  // Mora: el día de pago de este mes ya pasó y no hay registro de pago posterior
-  const todayDay = today.getDate();
-  if (todayDay > activeContract.paymentDay) {
-    const dueDate = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      activeContract.paymentDay
-    );
-    if (!lastPaymentDate || new Date(lastPaymentDate) < dueDate) {
-      const diasMora = Math.ceil(
-        (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      return { estado: "en_mora", diasMora };
-    }
-  }
-
-  return { estado: "activo", diasMora: 0 };
 }
 
 export async function GET(request: NextRequest) {
@@ -174,7 +137,7 @@ export async function GET(request: NextRequest) {
     const enriched = allInquilinos.map((inq) => {
       const activeContract = contractByClient.get(inq.id) ?? null;
       const lastPayment = lastPaymentByClient.get(inq.id) ?? null;
-      const { estado, diasMora } = calcularEstado(
+      const { estado, diasMora } = calculateStatus(
         activeContract
           ? {
               endDate: activeContract.endDate,

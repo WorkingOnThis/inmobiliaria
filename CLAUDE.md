@@ -89,6 +89,15 @@ app/
 ├── propiedades/     # Property management
 └── tablero/         # Dashboard
 ```
+
+## Code Language
+
+All internal code must be in English: function names, variables, TypeScript types, DB columns, tables, API routes, and folder names.
+
+Exceptions — keep in Spanish:
+- Argentine legal terms: `dni`, `cuit`, `cbu`, `alias`, `condicionFiscal` and their values (`monotributista`, `responsable inscripto`, etc.)
+- User-facing text: labels, messages, placeholders, UI content
+
 ## UI Components — shadcn/ui
 
 This project uses shadcn/ui with Tailwind v4. When working on UI:
