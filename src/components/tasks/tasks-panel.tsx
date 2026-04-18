@@ -15,14 +15,14 @@ import { cn } from "@/lib/utils";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
-type Prioridad = "urgente" | "alta" | "media" | "baja";
-type Estado = "pendiente" | "en_curso" | "resuelta";
-type Tipo = "auto" | "manual";
-type FiltroKey = "todas" | "auto" | "manual" | "alquiler" | "servicios" | "contratos";
+type Priority = "urgente" | "alta" | "media" | "baja";
+type TaskStatus = "pendiente" | "en_curso" | "resuelta";
+type TaskType = "auto" | "manual";
+type FilterKey = "todas" | "auto" | "manual" | "alquiler" | "servicios" | "contratos";
 
-type TareaPatch = {
-  prioridad?: Prioridad;
-  estado?: Estado;
+type TaskPatch = {
+  prioridad?: Priority;
+  estado?: TaskStatus;
   titulo?: string;
   descripcion?: string | null;
   fechaVencimiento?: string | null;
@@ -30,13 +30,13 @@ type TareaPatch = {
   propertyId?: string | null;
 };
 
-type TareaResumen = {
+type TaskSummary = {
   id: string;
   titulo: string;
   descripcion: string | null;
-  prioridad: Prioridad;
-  estado: Estado;
-  tipo: Tipo;
+  prioridad: Priority;
+  estado: TaskStatus;
+  tipo: TaskType;
   categoria: string | null;
   fechaVencimiento: string | null;
   propertyId: string | null;
@@ -51,7 +51,7 @@ type TareaResumen = {
   updatedAt: string;
 };
 
-type TareaDetalle = TareaResumen & {
+type TaskDetail = TaskSummary & {
   ownerId: string | null;
   ownerNombre: string | null;
   clienteId: string | null;
@@ -80,10 +80,10 @@ type TareaDetalle = TareaResumen & {
   }[];
 };
 
-type ListaResponse = {
+type ListResponse = {
   total: number;
   saludPortfolio: number;
-  items: TareaResumen[];
+  items: TaskSummary[];
 };
 
 type ClienteSimple = {
@@ -115,7 +115,7 @@ function getInitials(nombre: string | null): string {
   return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
-function formatFecha(fecha: string | null): { label: string; colorClass: string } {
+function formatDate(fecha: string | null): { label: string; colorClass: string } {
   if (!fecha) return { label: "sin fecha", colorClass: "text-text-muted opacity-60" };
   const now = new Date();
   const d = new Date(fecha);
@@ -133,20 +133,20 @@ function formatBytes(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const PRIO: Record<Prioridad, { label: string; pill: string; border: string }> = {
+const PRIORITY_CONFIG: Record<Priority, { label: string; pill: string; border: string }> = {
   urgente: { label: "Urgente", pill: "bg-error-dim text-destructive",         border: "var(--error)" },
   alta:    { label: "Alta",    pill: "bg-mustard-dim text-mustard",            border: "var(--mustard)" },
   media:   { label: "Media",   pill: "bg-neutral-dim text-neutral",            border: "var(--neutral)" },
   baja:    { label: "Baja",    pill: "bg-surface-highest text-text-muted",     border: "transparent" },
 };
 
-const EST: Record<Estado, { label: string; badge: string }> = {
+const STATUS_CONFIG: Record<TaskStatus, { label: string; badge: string }> = {
   pendiente: { label: "Pendiente", badge: "bg-muted text-muted-foreground" },
   en_curso:  { label: "En curso",  badge: "bg-neutral-dim text-neutral" },
   resuelta:  { label: "Resuelta",  badge: "bg-income-dim text-income" },
 };
 
-const TIPO_TAG: Record<Tipo, { label: string; cls: string }> = {
+const TYPE_TAG: Record<TaskType, { label: string; cls: string }> = {
   auto:   { label: "Auto",   cls: "bg-neutral-dim text-neutral" },
   manual: { label: "Manual", cls: "bg-primary-dim text-primary" },
 };
@@ -167,7 +167,7 @@ function searchFilter(options: ComboOption[], query: string): ComboOption[] {
     .map(({ option }) => option);
 }
 
-const TIPO_CLIENTE: Record<string, string> = {
+const CLIENT_TYPE_LABELS: Record<string, string> = {
   propietario: "Propietario",
   inquilino:   "Inquilino",
   garante:     "Garante",
@@ -176,8 +176,8 @@ const TIPO_CLIENTE: Record<string, string> = {
 
 // ── Sub-componentes ────────────────────────────────────────────────────────
 
-function TagBadge({ tipo }: { tipo: Tipo }) {
-  const { label, cls } = TIPO_TAG[tipo];
+function TagBadge({ type }: { type: TaskType }) {
+  const { label, cls } = TYPE_TAG[type];
   return (
     <Badge className={cn(cls, "px-[7px] py-[1px] text-[0.58rem] border-transparent")}>
       {label}
@@ -185,8 +185,8 @@ function TagBadge({ tipo }: { tipo: Tipo }) {
   );
 }
 
-function EstadoBadge({ estado }: { estado: Estado }) {
-  const { label, badge } = EST[estado];
+function TaskStatusBadge({ status }: { status: TaskStatus }) {
+  const { label, badge } = STATUS_CONFIG[status];
   return (
     <Badge className={cn(badge, "border-transparent")}>
       {label}
@@ -194,8 +194,8 @@ function EstadoBadge({ estado }: { estado: Estado }) {
   );
 }
 
-function PrioridadPill({ prioridad }: { prioridad: Prioridad }) {
-  const { label, pill } = PRIO[prioridad];
+function PriorityPill({ priority }: { priority: Priority }) {
+  const { label, pill } = PRIORITY_CONFIG[priority];
   return (
     <Badge className={cn(pill, "px-[10px] py-[3px] font-extrabold border-transparent")}>
       {label}
@@ -310,19 +310,19 @@ function HealthWidget({ pct }: { pct: number }) {
 
 // ── Fila de tarea ──────────────────────────────────────────────────────────
 
-function TareaRow({
+function TaskRow({
   t,
   selected,
   onClick,
   onComplete,
 }: {
-  t: TareaResumen;
+  t: TaskSummary;
   selected: boolean;
   onClick: () => void;
   onComplete: (id: string) => void;
 }) {
-  const pCfg = PRIO[t.prioridad];
-  const fecha = formatFecha(t.fechaVencimiento);
+  const pCfg = PRIORITY_CONFIG[t.prioridad];
+  const fecha = formatDate(t.fechaVencimiento);
 
   return (
     <div
@@ -342,7 +342,7 @@ function TareaRow({
       <div className="flex-1 min-w-0">
         <div className="text-[0.82rem] font-semibold text-on-surface truncate">{t.titulo}</div>
         <div className="flex items-center gap-[6px] mt-[2px] flex-wrap">
-          <TagBadge tipo={t.tipo} />
+          <TagBadge type={t.tipo} />
           {t.categoria && (
             <>
               <span className="text-border text-[0.7rem]">·</span>
@@ -358,7 +358,7 @@ function TareaRow({
         </div>
       </div>
 
-      <EstadoBadge estado={t.estado} />
+      <TaskStatusBadge status={t.estado} />
       <span className={`text-[0.65rem] font-semibold shrink-0 whitespace-nowrap ${fecha.colorClass}`}>
         {fecha.label}
       </span>
@@ -369,7 +369,7 @@ function TareaRow({
 
 // ── Fila tarea finalizada ──────────────────────────────────────────────────
 
-function TareaFinalizadaRow({ t, onClick }: { t: TareaResumen; onClick: () => void }) {
+function CompletedTaskRow({ t, onClick }: { t: TaskSummary; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
@@ -395,7 +395,7 @@ function TareaFinalizadaRow({ t, onClick }: { t: TareaResumen; onClick: () => vo
 
 // ── Grupo de prioridad ─────────────────────────────────────────────────────
 
-function GrupoPrioridad({
+function PriorityGroup({
   prioridad,
   items,
   selectedId,
@@ -404,8 +404,8 @@ function GrupoPrioridad({
   collapsed,
   onToggle,
 }: {
-  prioridad: Prioridad;
-  items: TareaResumen[];
+  prioridad: Priority;
+  items: TaskSummary[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onComplete: (id: string) => void;
@@ -421,7 +421,7 @@ function GrupoPrioridad({
           ? <ChevronRight className="w-[10px] h-[10px] text-text-muted shrink-0" />
           : <ChevronDown  className="w-[10px] h-[10px] text-text-muted shrink-0" />
         }
-        <PrioridadPill prioridad={prioridad} />
+        <PriorityPill priority={prioridad} />
         <span className="text-[0.65rem] text-text-muted">
           {items.length} {items.length === 1 ? "tarea" : "tareas"}
         </span>
@@ -429,7 +429,7 @@ function GrupoPrioridad({
 
       <CollapsibleContent className="pl-1">
         {items.map(t => (
-          <TareaRow
+          <TaskRow
             key={t.id}
             t={t}
             selected={selectedId === t.id}
@@ -444,8 +444,8 @@ function GrupoPrioridad({
 
 // ── Vista Kanban ───────────────────────────────────────────────────────────
 
-function KanbanView({ items }: { items: TareaResumen[] }) {
-  const cols: { estado: Estado; label: string; labelColor: string }[] = [
+function KanbanView({ items }: { items: TaskSummary[] }) {
+  const cols: { estado: TaskStatus; label: string; labelColor: string }[] = [
     { estado: "pendiente", label: "Pendiente", labelColor: "text-text-secondary" },
     { estado: "en_curso",  label: "En curso",  labelColor: "text-neutral" },
     { estado: "resuelta",  label: "Resuelta",  labelColor: "text-green" },
@@ -473,8 +473,8 @@ function KanbanView({ items }: { items: TareaResumen[] }) {
                 </div>
               )}
               {colItems.map(t => {
-                const pCfg = PRIO[t.prioridad];
-                const fecha = formatFecha(t.fechaVencimiento);
+                const pCfg = PRIORITY_CONFIG[t.prioridad];
+                const fecha = formatDate(t.fechaVencimiento);
                 return (
                   <div
                     key={t.id}
@@ -505,7 +505,7 @@ function KanbanView({ items }: { items: TareaResumen[] }) {
 
 // ── Panel lateral ──────────────────────────────────────────────────────────
 
-function PanelLateral({
+function SidePanel({
   open,
   onClose,
   selectedId,
@@ -514,7 +514,7 @@ function PanelLateral({
   open: boolean;
   onClose: () => void;
   selectedId: string | null;
-  onUpdate: (id: string, patch: TareaPatch) => void;
+  onUpdate: (id: string, patch: TaskPatch) => void;
 }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -530,7 +530,7 @@ function PanelLateral({
     queryFn: async () => {
       const res = await fetch(`/api/tareas/${selectedId}`);
       if (!res.ok) throw new Error("Error al cargar tarea");
-      return res.json() as Promise<TareaDetalle>;
+      return res.json() as Promise<TaskDetail>;
     },
     enabled: !!selectedId && open,
   });
@@ -561,7 +561,7 @@ function PanelLateral({
   const clienteOptions: ComboOption[] = clientes.map(c => ({
     id: c.id,
     label: [c.firstName, c.lastName].filter(Boolean).join(" "),
-    sublabel: TIPO_CLIENTE[c.type] ?? c.type,
+    sublabel: CLIENT_TYPE_LABELS[c.type] ?? c.type,
   }));
 
   const propiedadOptions: ComboOption[] = propiedades.map(p => ({
@@ -650,7 +650,7 @@ function PanelLateral({
             {/* Header — título editable */}
             <div className="p-[16px_20px] pr-12 border-b border-border shrink-0">
               <div className="flex items-center gap-2 mb-2">
-                <TagBadge tipo={t.tipo} />
+                <TagBadge type={t.tipo} />
                 {t.categoria && (
                   <span className="text-[0.6rem] text-text-muted uppercase font-bold tracking-wide">
                     {t.categoria}
@@ -701,8 +701,8 @@ function PanelLateral({
                   className="w-full text-[0.78rem] bg-surface-high border border-border rounded-lg px-3 py-[7px] text-on-surface outline-none focus:border-primary transition-colors"
                 />
                 {t.fechaVencimiento && (
-                  <p className={`text-[0.65rem] mt-[5px] font-semibold ${formatFecha(t.fechaVencimiento).colorClass}`}>
-                    {formatFecha(t.fechaVencimiento).label}
+                  <p className={`text-[0.65rem] mt-[5px] font-semibold ${formatDate(t.fechaVencimiento).colorClass}`}>
+                    {formatDate(t.fechaVencimiento).label}
                   </p>
                 )}
               </div>
@@ -711,17 +711,17 @@ function PanelLateral({
               <div className="p-[14px_20px] border-b border-border">
                 <SectionTitle>Prioridad</SectionTitle>
                 <div className="flex gap-1">
-                  {(["urgente", "alta", "media", "baja"] as Prioridad[]).map(p => (
+                  {(["urgente", "alta", "media", "baja"] as Priority[]).map(p => (
                     <button
                       key={p}
                       onClick={() => onUpdate(t.id, { prioridad: p })}
                       className={`px-[10px] py-[3px] text-[0.6rem] font-bold rounded-full border transition-all ${
                         t.prioridad === p
-                          ? PRIO[p].pill + " border-current/30"
+                          ? PRIORITY_CONFIG[p].pill + " border-current/30"
                           : "bg-surface-high border-border text-text-muted hover:text-on-surface"
                       }`}
                     >
-                      {PRIO[p].label}
+                      {PRIORITY_CONFIG[p].label}
                     </button>
                   ))}
                 </div>
@@ -729,17 +729,17 @@ function PanelLateral({
                 <div className="h-3" />
                 <SectionTitle>Estado</SectionTitle>
                 <div className="flex gap-1">
-                  {(["pendiente", "en_curso", "resuelta"] as Estado[]).map(e => (
+                  {(["pendiente", "en_curso", "resuelta"] as TaskStatus[]).map(e => (
                     <button
                       key={e}
                       onClick={() => onUpdate(t.id, { estado: e })}
                       className={`px-[10px] py-[3px] text-[0.6rem] font-bold rounded-full border transition-all ${
                         t.estado === e
-                          ? EST[e].badge + " border-current/30"
+                          ? STATUS_CONFIG[e].badge + " border-current/30"
                           : "bg-surface-high border-border text-text-muted hover:text-on-surface"
                       }`}
                     >
-                      {EST[e].label}
+                      {STATUS_CONFIG[e].label}
                     </button>
                   ))}
                 </div>
@@ -753,7 +753,7 @@ function PanelLateral({
                   selectedId={t.clienteId ?? null}
                   selectedLabel={
                     t.clienteNombre
-                      ? `${t.clienteNombre}${t.clienteTipo ? ` · ${TIPO_CLIENTE[t.clienteTipo] ?? t.clienteTipo}` : ""}`
+                      ? `${t.clienteNombre}${t.clienteTipo ? ` · ${CLIENT_TYPE_LABELS[t.clienteTipo] ?? t.clienteTipo}` : ""}`
                       : null
                   }
                   placeholder="Buscar persona…"
@@ -962,7 +962,7 @@ function PanelLateral({
 
 // ── Modal Nueva Tarea ──────────────────────────────────────────────────────
 
-function ModalNuevaTarea({
+function NewTaskModal({
   open,
   onClose,
   onCreated,
@@ -974,7 +974,7 @@ function ModalNuevaTarea({
   const [form, setForm] = useState({
     titulo: "",
     descripcion: "",
-    prioridad: "media" as Prioridad,
+    prioridad: "media" as Priority,
     categoria: "",
     fechaVencimiento: "",
   });
@@ -1062,7 +1062,7 @@ function ModalNuevaTarea({
               </label>
               <Select
                 value={form.prioridad}
-                onValueChange={v => setForm(f => ({ ...f, prioridad: v as Prioridad }))}
+                onValueChange={v => setForm(f => ({ ...f, prioridad: v as Priority }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -1129,15 +1129,15 @@ function ModalNuevaTarea({
 
 // ── Componente principal ───────────────────────────────────────────────────
 
-export function TareasPanel() {
+export function TasksPanel() {
   const [vista, setVista] = useState<"lista" | "kanban">("lista");
   const [scope, setScope] = useState<"mine" | "all">("mine");
-  const [filtro, setFiltro] = useState<FiltroKey>("todas");
+  const [filtro, setFiltro] = useState<FilterKey>("todas");
   const [verFinalizadas, setVerFinalizadas] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [grupoCerrado, setGrupoCerrado] = useState<Record<Prioridad, boolean>>({
+  const [grupoCerrado, setGrupoCerrado] = useState<Record<Priority, boolean>>({
     urgente: false,
     alta: false,
     media: false,
@@ -1160,7 +1160,7 @@ export function TareasPanel() {
       }
       const res = await fetch(`/api/tareas?${p}`);
       if (!res.ok) throw new Error("Error al cargar tareas");
-      return res.json() as Promise<ListaResponse>;
+      return res.json() as Promise<ListResponse>;
     },
   });
 
@@ -1170,7 +1170,7 @@ export function TareasPanel() {
       patch,
     }: {
       id: string;
-      patch: TareaPatch;
+      patch: TaskPatch;
     }) => {
       const res = await fetch(`/api/tareas/${id}`, {
         method: "PATCH",
@@ -1223,7 +1223,7 @@ export function TareasPanel() {
     baja:    items.filter(t => t.prioridad === "baja"),
   };
 
-  const FILTROS: { key: FiltroKey; label: string; dotColor?: string }[] = [
+  const FILTROS: { key: FilterKey; label: string; dotColor?: string }[] = [
     { key: "todas",     label: "Todas" },
     { key: "auto",      label: "Automáticas", dotColor: "var(--neutral)" },
     { key: "manual",    label: "Manuales",    dotColor: "var(--primary)" },
@@ -1341,7 +1341,7 @@ export function TareasPanel() {
             ) : verFinalizadas ? (
               <div className="flex flex-col">
                 {items.map(t => (
-                  <TareaFinalizadaRow
+                  <CompletedTaskRow
                     key={t.id}
                     t={t}
                     onClick={() => selectTask(t.id)}
@@ -1349,8 +1349,8 @@ export function TareasPanel() {
                 ))}
               </div>
             ) : (
-              (["urgente", "alta", "media", "baja"] as Prioridad[]).map(prioridad => (
-                <GrupoPrioridad
+              (["urgente", "alta", "media", "baja"] as Priority[]).map(prioridad => (
+                <PriorityGroup
                   key={prioridad}
                   prioridad={prioridad}
                   items={grouped[prioridad]}
@@ -1374,7 +1374,7 @@ export function TareasPanel() {
         {!isLoading && vista === "kanban" && <KanbanView items={items} />}
 
         {/* Panel lateral */}
-        <PanelLateral
+        <SidePanel
           open={panelOpen}
           onClose={closePanel}
           selectedId={selectedId}
@@ -1383,7 +1383,7 @@ export function TareasPanel() {
       </div>
 
       {/* Modal nueva tarea */}
-      <ModalNuevaTarea
+      <NewTaskModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onCreated={() => queryClient.invalidateQueries({ queryKey: ["tareas"] })}

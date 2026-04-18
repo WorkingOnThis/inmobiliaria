@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import { TareasPanel } from "@/components/tareas/tareas-panel";
+import { TasksPanel } from "@/components/tasks/tasks-panel";
 
 export default function TareasPage() {
   return (
@@ -14,7 +14,7 @@ export default function TareasPage() {
           </div>
         }
       >
-        <TareasPanel />
+        <TasksPanel />
       </Suspense>
     </div>
   );
