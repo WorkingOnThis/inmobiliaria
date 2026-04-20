@@ -136,8 +136,7 @@ export function RegisterForm({ callbackUrl }: RegisterFormProps) {
         return;
       }
 
-      // Registro exitoso - redirigir a página de verificación de email
-      router.push("/verify-email?email=" + encodeURIComponent(email));
+      router.push("/login");
       router.refresh();
     } catch (err) {
       console.error("Registration error:", err);
