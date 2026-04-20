@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Building2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface PropertyData {
   id: string;
@@ -98,13 +99,11 @@ export function OwnerTabProperties({
           <p className="text-[0.9rem] font-semibold text-text-secondary mb-1">Sin propiedades cargadas</p>
           <p className="text-[0.78rem] text-muted-foreground">Este propietario no tiene propiedades asociadas todavía.</p>
         </div>
-        <Link
-          href={`/propiedades/nueva?ownerId=${ownerId}`}
-          className="inline-flex items-center gap-2 px-4 py-2 text-[0.78rem] font-semibold rounded-[6px] transition-all hover:opacity-90"
-          style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
-        >
-          <Plus size={14} /> Agregar propiedad
-        </Link>
+        <Button asChild size="sm">
+          <Link href={`/propiedades/nueva?ownerId=${ownerId}`}>
+            <Plus size={14} /> Agregar propiedad
+          </Link>
+        </Button>
       </div>
     );
   }
@@ -116,13 +115,11 @@ export function OwnerTabProperties({
         <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-muted-foreground">
           {propiedades.length} {propiedades.length === 1 ? "propiedad" : "propiedades"}
         </span>
-        <Link
-          href={`/propiedades/nueva?ownerId=${ownerId}`}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[0.72rem] font-semibold rounded-[6px] transition-all hover:opacity-90"
-          style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
-        >
-          <Plus size={13} /> Agregar propiedad
-        </Link>
+        <Button asChild size="sm">
+          <Link href={`/propiedades/nueva?ownerId=${ownerId}`}>
+            <Plus size={13} /> Agregar propiedad
+          </Link>
+        </Button>
       </div>
 
       {/* Grid: xl:3 md:2 sm:1 */}

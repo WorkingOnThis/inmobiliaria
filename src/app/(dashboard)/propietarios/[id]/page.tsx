@@ -237,7 +237,7 @@ export default function OwnerDetailPage() {
             {/* Compact completitud chip — only on cuenta-corriente */}
             {(() => {
               const { pct, missingCount } = computeCompletitud(owner);
-              return activeTab === "cuenta-corriente" && missingCount > 0 ? (
+              return activeTab !== "datos" && missingCount > 0 ? (
                 <button
                   onClick={() => { setTab("datos"); setPendingFocus(null); }}
                   className="mb-4 inline-flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] border border-border bg-surface-mid text-left hover:border-primary transition-colors"

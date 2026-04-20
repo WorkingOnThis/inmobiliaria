@@ -38,9 +38,10 @@ interface QuickPropertyFormProps {
   onSuccess?: (propertyId: string) => void;
   onCancel?: () => void;
   inline?: boolean;
+  defaultOwnerId?: string;
 }
 
-export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: QuickPropertyFormProps) {
+export function QuickPropertyForm({ onSuccess, onCancel, inline = false, defaultOwnerId }: QuickPropertyFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -58,6 +59,18 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false }: Quick
   const [selectedOwner, setSelectedOwner] = useState<Client | null>(null);
   const [isPropertySaving, setIsPropertySaving] = useState(false);
   const [showCreateOwnerPopup, setShowCreateOwnerPopup] = useState(false);
+
+  // Pre-cargar propietario si viene defaultOwnerId desde la URL
+  useEffect(() => {
+    if (!defaultOwnerId) return;
+    fetch(`/api/clients/${defaultOwnerId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.client) handleSelectOwner(data.client);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultOwnerId]);
 
   // Search owners — máximo 3 resultados
   useEffect(() => {

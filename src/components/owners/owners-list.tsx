@@ -109,14 +109,14 @@ export function OwnersList() {
     },
   });
 
-  const handleRowClick = (p: Owner) => {
-    setSelectedProp(p);
-    setPanelOpen(true);
+  const handleRowClick = (id: string) => {
+    router.push(`/propietarios/${id}`);
   };
 
-  const handleFichaClick = (e: React.MouseEvent, id: string) => {
+  const handleSlideClick = (e: React.MouseEvent, p: Owner) => {
     e.stopPropagation();
-    router.push(`/propietarios/${id}`);
+    setSelectedProp(p);
+    setPanelOpen(true);
   };
 
   const handleCreated = (owner: Owner) => {
@@ -186,7 +186,7 @@ export function OwnersList() {
                   className="flex items-center gap-2.5 px-3.5 py-2.5 cursor-pointer border-b border-border last:border-0 hover:bg-primary-dim transition-all"
                   onClick={() => {
                     setShowDropdown(false);
-                    handleRowClick(p);
+                    handleRowClick(p.id);
                   }}
                 >
                   <EntityAvatar
@@ -308,7 +308,7 @@ export function OwnersList() {
                     return (
                       <tr
                         key={p.id}
-                        onClick={() => handleRowClick(p)}
+                        onClick={() => handleRowClick(p.id)}
                         className={cn(
                           "cursor-pointer transition-all hover:bg-primary-dim",
                           i % 2 === 1 && "bg-foreground/[0.02]",
@@ -385,12 +385,9 @@ export function OwnersList() {
                           </StatusBadge>
                         </td>
                         <td className="px-3.5 py-3 align-middle">
-                          <div
-                            className="flex gap-1 justify-end"
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                          <div className="flex gap-1 justify-end">
                             <button
-                              onClick={(e) => handleFichaClick(e, p.id)}
+                              onClick={(e) => handleSlideClick(e, p)}
                               title="Ver ficha completa"
                               className="size-7 bg-transparent border border-border rounded-[6px] flex items-center justify-center text-muted-foreground text-[11px] hover:bg-primary-dim hover:text-primary hover:border-border-accent transition-all"
                             >

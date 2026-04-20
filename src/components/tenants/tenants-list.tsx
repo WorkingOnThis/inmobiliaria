@@ -254,7 +254,7 @@ export function TenantsList() {
       {/* Encabezado */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tenants</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Inquilinos</h1>
           <p className="text-sm text-muted-foreground">
             Todas las personas con contrato activo o historial en el sistema.
           </p>
@@ -272,7 +272,7 @@ export function TenantsList() {
           <Button asChild size="sm">
             <Link href="/inquilinos/nuevo">
               <PlusCircle className="mr-2 size-4" />
-              Nuevo Tenant
+              Nuevo inquilino
             </Link>
           </Button>
         </div>
@@ -286,7 +286,7 @@ export function TenantsList() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Total Tenants
+                  Total Inquilinos
                 </p>
                 <p className="mt-1 text-3xl font-bold">
                   {isLoading ? "—" : (stats?.total ?? 0)}

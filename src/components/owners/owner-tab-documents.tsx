@@ -114,7 +114,7 @@ export function OwnerTabDocuments({
             {documentos.length === 0 ? "Sin documentos cargados" : `${documentos.length} archivos`}
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowModal(true)} className="gap-1.5 bg-primary text-primary-foreground hover:opacity-90">
+        <Button size="sm" onClick={() => setShowModal(true)}>
           <Plus size={13} /> Subir documento
         </Button>
       </div>

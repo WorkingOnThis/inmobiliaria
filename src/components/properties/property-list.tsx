@@ -507,8 +507,6 @@ function PropertyListContent() {
           <Button
             onClick={() => setDialogOpen(true)}
             size="lg"
-            className="gap-2.5 rounded-xl shadow-lg"
-            style={{ boxShadow: "0 4px 14px rgba(255,180,162,0.25)" }}
           >
             <Plus size={18} />
             Nueva propiedad

@@ -14,22 +14,24 @@ export const revalidate = 0;
  * Página para registrar nuevas propiedades en el sistema.
  * Verifica permisos antes de mostrar el formulario.
  */
-export default async function CreatePropertyPage() {
-  // Obtener sesión del usuario
+export default async function CreatePropertyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ownerId?: string }>;
+}) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  // Verificar que el usuario esté autenticado
   if (!session?.user) {
     redirect("/login?callbackUrl=/propiedades/nueva");
   }
 
-  // Verificar permisos
   if (!canManageProperties(session.user.role)) {
-    // Redirigir al tablero si no tiene permisos
     redirect("/tablero");
   }
+
+  const { ownerId } = await searchParams;
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -41,7 +43,7 @@ export default async function CreatePropertyPage() {
       </div>
       <div className="flex flex-col items-center">
         <div className="w-full max-w-lg bg-[#1a1d1e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-          <QuickPropertyForm inline />
+          <QuickPropertyForm inline defaultOwnerId={ownerId} />
         </div>
       </div>
     </div>

@@ -15,48 +15,48 @@
   --font-headline: var(--font-space-grotesk);
   --font-brand: var(--font-montserrat);
   /* --- Tokens Arce: superficies y texto (wireframe) --- */
-  --color-bg:                    var(--bg);
-  --color-surface:               var(--surface);
-  --color-surface-mid:           var(--surface-mid);
-  --color-surface-high:          var(--surface-high);
-  --color-surface-highest:       var(--surface-highest);
-  --color-on-bg:                 var(--on-bg);
-  --color-on-surface:            var(--on-surface);
-  --color-text-secondary:        var(--text-secondary);
-  --color-text-muted:            var(--muted-foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-mid: var(--surface-mid);
+  --color-surface-high: var(--surface-high);
+  --color-surface-highest: var(--surface-highest);
+  --color-on-bg: var(--on-bg);
+  --color-on-surface: var(--on-surface);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--muted-foreground);
   /* --- Tokens Arce: primario extendido --- */
-  --color-primary-dark:          var(--primary-dark);
-  --color-primary-dim:           var(--primary-dim);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-dim: var(--primary-dim);
   /* --- Tokens Arce: errores (alias semántico de destructive) --- */
-  --color-error:                 var(--error);
-  --color-error-dim:             var(--error-dim);
+  --color-error: var(--error);
+  --color-error-dim: var(--error-dim);
   /* --- Tokens Arce: semánticos de estado --- */
-  --color-avatar-a:              var(--avatar-a);
-  --color-avatar-b:              var(--avatar-b);
-  --color-green:                 var(--green);
-  --color-green-dim:             var(--green-dim);
-  --color-mustard:               var(--mustard);
-  --color-mustard-dim:           var(--mustard-dim);
-  --color-income:                var(--income);
-  --color-income-dim:            var(--income-dim);
-  --color-neutral:               var(--neutral);
-  --color-neutral-dim:           var(--neutral-dim);
-  --color-border-accent:         var(--border-accent);
-  --color-destructive-dim:       var(--destructive-dim);
-  --color-text-dim:              var(--text-dim);
-  --color-status-available:      var(--status-available);
-  --color-status-available-dim:  var(--status-available-dim);
-  --color-status-rented:         var(--status-rented);
-  --color-status-rented-dim:     var(--status-rented-dim);
-  --color-status-maintenance:    var(--status-maintenance);
+  --color-avatar-a: var(--avatar-a);
+  --color-avatar-b: var(--avatar-b);
+  --color-green: var(--green);
+  --color-green-dim: var(--green-dim);
+  --color-mustard: var(--mustard);
+  --color-mustard-dim: var(--mustard-dim);
+  --color-income: var(--income);
+  --color-income-dim: var(--income-dim);
+  --color-neutral: var(--neutral);
+  --color-neutral-dim: var(--neutral-dim);
+  --color-border-accent: var(--border-accent);
+  --color-destructive-dim: var(--destructive-dim);
+  --color-text-dim: var(--text-dim);
+  --color-status-available: var(--status-available);
+  --color-status-available-dim: var(--status-available-dim);
+  --color-status-rented: var(--status-rented);
+  --color-status-rented-dim: var(--status-rented-dim);
+  --color-status-maintenance: var(--status-maintenance);
   --color-status-maintenance-dim: var(--status-maintenance-dim);
-  --color-status-reserved:       var(--status-reserved);
-  --color-status-reserved-dim:   var(--status-reserved-dim);
+  --color-status-reserved: var(--status-reserved);
+  --color-status-reserved-dim: var(--status-reserved-dim);
   /* --- Tokens Arce: origen de movimiento --- */
-  --color-origin-auto:           var(--origin-auto);
-  --color-origin-auto-dim:       var(--origin-auto-dim);
+  --color-origin-auto: var(--origin-auto);
+  --color-origin-auto-dim: var(--origin-auto-dim);
   /* --- Tokens Arce: sparkline --- */
-  --color-spark-neutral:         var(--spark-neutral);
+  --color-spark-neutral: var(--spark-neutral);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -87,12 +87,12 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   /* --- Radios: valores fijos del wireframe (no calculados) --- */
-  --radius-xs:   4px;
-  --radius-sm:   6px;
-  --radius-md:   10px;
-  --radius-lg:   18px;
-  --radius-xl:   24px;
-  --radius-2xl:  32px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
   --radius-pill: 9999px;
 }
 
@@ -106,35 +106,35 @@
   --radius: 12px;
 
   /* --- Superficies (modo claro) --- */
-  --background:          #f8f9fb;
-  --foreground:          #191c1e;
+  --background: #f8f9fb;
+  --foreground: #191c1e;
 
-  --card:                #ffffff;
-  --card-foreground:     #191c1e;
+  --card: #ffffff;
+  --card-foreground: #191c1e;
 
-  --popover:             #ffffff;
-  --popover-foreground:  #191c1e;
+  --popover: #ffffff;
+  --popover-foreground: #191c1e;
 
-  --muted:               #f3f4f6;
-  --muted-foreground:    #5d5e62;
+  --muted: #f3f4f6;
+  --muted-foreground: #5d5e62;
 
-  --accent:              #edeef0;
-  --accent-foreground:   #191c1e;
+  --accent: #edeef0;
+  --accent-foreground: #191c1e;
 
-  --secondary:           #dfdfe3;
-  --secondary-foreground:#191c1e;
+  --secondary: #dfdfe3;
+  --secondary-foreground: #191c1e;
 
   /* --- Primario: Terracota --- */
-  --primary:             #6b1702;
-  --primary-foreground:  #ffffff;
+  --primary: #6b1702;
+  --primary-foreground: #ffffff;
 
   /* --- Errores --- */
-  --destructive:         #ba1a1a;
+  --destructive: #ba1a1a;
 
   /* --- Bordes ghost (sin opacidad sólida) --- */
-  --border:              rgba(221, 192, 185, 0.2);
-  --input:               rgba(138, 114, 108, 0.3);
-  --ring:                #6b1702;
+  --border: rgba(221, 192, 185, 0.2);
+  --input: rgba(138, 114, 108, 0.3);
+  --ring: #6b1702;
 
   /* --- Charts (paleta cálida en lugar del arcoíris genérico) --- */
   --chart-1: #6b1702;
@@ -144,110 +144,110 @@
   --chart-5: #f9bc42;
 
   /* --- Sidebar (modo claro) --- */
-  --sidebar:                    #f3f4f6;
-  --sidebar-foreground:         #191c1e;
-  --sidebar-primary:            #6b1702;
+  --sidebar: #f3f4f6;
+  --sidebar-foreground: #191c1e;
+  --sidebar-primary: #6b1702;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent:             #ffdad2;
-  --sidebar-accent-foreground:  #6b1702;
-  --sidebar-border:             rgba(139, 46, 22, 0.12);
-  --sidebar-ring:               #6b1702;
+  --sidebar-accent: #ffdad2;
+  --sidebar-accent-foreground: #6b1702;
+  --sidebar-border: rgba(139, 46, 22, 0.12);
+  --sidebar-ring: #6b1702;
 
   /* --- Tokens Arce: superficies semánticas (modo claro) --- */
-  --bg:                     #f8f9fb;
-  --surface:                #ffffff;
-  --surface-mid:            #f0f1f3;
-  --surface-high:           #f3f4f6;
-  --surface-highest:        #e8e9eb;
+  --bg: #f8f9fb;
+  --surface: #ffffff;
+  --surface-mid: #f0f1f3;
+  --surface-high: #f3f4f6;
+  --surface-highest: #e8e9eb;
 
   /* --- Tokens Arce: texto semántico (modo claro) --- */
-  --on-bg:                  #191c1e;
-  --on-surface:             #191c1e;
-  --text-secondary:         #5d5e62;
-  --text-muted:             #8a8b8e;
+  --on-bg: #191c1e;
+  --on-surface: #191c1e;
+  --text-secondary: #5d5e62;
+  --text-muted: #8a8b8e;
 
   /* --- Tokens Arce: primario extendido --- */
-  --primary-dark:           #6b1702;
-  --primary-dim:            rgba(107,23,2,0.08);
+  --primary-dark: #6b1702;
+  --primary-dim: rgba(107, 23, 2, 0.08);
 
   /* --- Tokens Arce: errores semánticos (modo claro) --- */
-  --error:                  #ba1a1a;
-  --error-dim:              rgba(186,26,26,0.10);
+  --error: #ba1a1a;
+  --error-dim: rgba(186, 26, 26, 0.10);
 
   /* --- Tokens Arce: semánticos de estado --- */
-  --avatar-a:               #2d3f4e;
-  --avatar-b:               #2e4038;
-  --green:                  #7fd3a0;
-  --green-dim:              rgba(127,211,160,0.12);
-  --mustard:                #ffdea8;
-  --mustard-dim:            rgba(253,222,168,0.15);
-  --income:                 #6ee7a0;
-  --income-dim:             rgba(110,231,160,0.12);
-  --expense:                var(--destructive);
-  --neutral:                #8899ee;
-  --neutral-dim:            rgba(100,130,220,0.12);
-  --border-accent:          rgba(107,23,2,0.25);
-  --destructive-dim:        rgba(186,26,26,0.10);
-  --text-dim:               rgba(100,100,104,0.4);
-  --status-available:       #ffdea8;
-  --status-available-dim:   rgba(253,222,168,0.15);
-  --status-rented:          #8dcf95;
-  --status-rented-dim:      rgba(141,207,149,0.12);
-  --status-maintenance:     #fdba74;
-  --status-maintenance-dim: rgba(253,186,116,0.12);
-  --status-reserved:        #93c5fd;
-  --status-reserved-dim:    rgba(147,197,253,0.12);
-  --border-subtle:          rgba(0,0,0,0.04);
-  --primary-subtle:         rgba(107,23,2,0.04);
-  --gradient-property:      linear-gradient(135deg, #1a2a1a, #2a4a2a);
-  --gradient-owner:         linear-gradient(145deg, oklch(0.56 0.14 30), oklch(0.42 0.12 25));
-  --inset-highlight:        rgba(255, 255, 255, 0.08);
+  --avatar-a: #2d3f4e;
+  --avatar-b: #2e4038;
+  --green: #7fd3a0;
+  --green-dim: rgba(127, 211, 160, 0.12);
+  --mustard: #ffdea8;
+  --mustard-dim: rgba(253, 222, 168, 0.15);
+  --income: #6ee7a0;
+  --income-dim: rgba(110, 231, 160, 0.12);
+  --expense: var(--destructive);
+  --neutral: #8899ee;
+  --neutral-dim: rgba(100, 130, 220, 0.12);
+  --border-accent: rgba(107, 23, 2, 0.25);
+  --destructive-dim: rgba(186, 26, 26, 0.10);
+  --text-dim: rgba(100, 100, 104, 0.4);
+  --status-available: #ffdea8;
+  --status-available-dim: rgba(253, 222, 168, 0.15);
+  --status-rented: #8dcf95;
+  --status-rented-dim: rgba(141, 207, 149, 0.12);
+  --status-maintenance: #fdba74;
+  --status-maintenance-dim: rgba(253, 186, 116, 0.12);
+  --status-reserved: #93c5fd;
+  --status-reserved-dim: rgba(147, 197, 253, 0.12);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --primary-subtle: rgba(107, 23, 2, 0.04);
+  --gradient-property: linear-gradient(135deg, #1a2a1a, #2a4a2a);
+  --gradient-owner: linear-gradient(145deg, oklch(0.56 0.14 30), oklch(0.42 0.12 25));
+  --inset-highlight: rgba(255, 255, 255, 0.08);
   /* --- Tokens Arce: origen de movimiento --- */
-  --origin-auto:            oklch(0.48 0.09 210);
-  --origin-auto-dim:        oklch(0.48 0.09 210 / 0.08);
+  --origin-auto: oklch(0.48 0.09 210);
+  --origin-auto-dim: oklch(0.48 0.09 210 / 0.08);
   /* --- Tokens Arce: sparkline --- */
-  --spark-neutral:          rgba(140, 140, 144, 0.45);
+  --spark-neutral: rgba(140, 140, 144, 0.45);
   /* --- Tokens Arce: info (azul informativo) --- */
-  --info:                   #8ab4f8;
-  --info-dim:               rgba(138,180,248,0.12);
+  --info: #8ab4f8;
+  --info-dim: rgba(138, 180, 248, 0.12);
   /* --- Tokens Arce: warning (ámbar) y success (alias de green) --- */
-  --warning:                #f5c97a;
-  --warning-dim:            rgba(245,201,122,0.12);
-  --success:                var(--green);
-  --success-dim:            var(--green-dim);
+  --warning: #f5c97a;
+  --warning-dim: rgba(245, 201, 122, 0.12);
+  --success: var(--green);
+  --success-dim: var(--green-dim);
 }
 
 .dark {
   /* --- Shadcn base tokens --- */
-  --background:          oklch(0.165 0.006 40);
-  --foreground:          oklch(0.972 0.004 60);
+  --background: oklch(0.165 0.006 40);
+  --foreground: oklch(0.972 0.004 60);
 
-  --card:                oklch(0.215 0.008 40);
-  --card-foreground:     oklch(0.972 0.004 60);
+  --card: oklch(0.215 0.008 40);
+  --card-foreground: oklch(0.972 0.004 60);
 
-  --popover:             oklch(0.215 0.008 40);
-  --popover-foreground:  oklch(0.972 0.004 60);
+  --popover: oklch(0.215 0.008 40);
+  --popover-foreground: oklch(0.972 0.004 60);
 
-  --muted:               oklch(0.235 0.008 40);
-  --muted-foreground:    oklch(0.72 0.012 50);
+  --muted: oklch(0.235 0.008 40);
+  --muted-foreground: oklch(0.72 0.012 50);
 
-  --accent:              oklch(0.235 0.008 40);
-  --accent-foreground:   oklch(0.972 0.004 60);
+  --accent: oklch(0.235 0.008 40);
+  --accent-foreground: oklch(0.972 0.004 60);
 
-  --secondary:           oklch(0.235 0.008 40);
+  --secondary: oklch(0.235 0.008 40);
   --secondary-foreground: oklch(0.972 0.004 60);
 
   /* --- Primario: Terracota oklch --- */
-  --primary:             oklch(0.585 0.135 32);
-  --primary-foreground:  oklch(0.97 0.02 34);
+  --primary: oklch(0.585 0.135 32);
+  --primary-foreground: oklch(0.97 0.02 34);
 
   /* --- Errores --- */
-  --destructive:         oklch(0.68 0.18 25);
+  --destructive: oklch(0.68 0.18 25);
 
   /* --- Bordes ghost oscuros --- */
-  --border:              oklch(0.285 0.010 40);
-  --input:               oklch(0.195 0.007 40);
-  --ring:                oklch(0.585 0.135 32);
+  --border: oklch(0.285 0.010 40);
+  --input: oklch(0.195 0.007 40);
+  --ring: oklch(0.585 0.135 32);
 
   /* --- Charts (oscuro, sin cambio) --- */
   --chart-1: #ffb4a2;
@@ -257,90 +257,97 @@
   --chart-5: #a0847e;
 
   /* --- Sidebar (modo oscuro) --- */
-  --sidebar:                    oklch(0.165 0.006 40);
-  --sidebar-foreground:         oklch(0.72 0.012 50);
-  --sidebar-primary:            oklch(0.585 0.135 32);
+  --sidebar: oklch(0.165 0.006 40);
+  --sidebar-foreground: oklch(0.72 0.012 50);
+  --sidebar-primary: oklch(0.585 0.135 32);
   --sidebar-primary-foreground: oklch(0.97 0.02 34);
-  --sidebar-accent:             oklch(0.28 0.005 40);
-  --sidebar-accent-foreground:  oklch(0.972 0.004 60);
-  --sidebar-border:             oklch(0.285 0.010 40);
-  --sidebar-ring:               #ffb4a2;
+  --sidebar-accent: oklch(0.28 0.005 40);
+  --sidebar-accent-foreground: oklch(0.972 0.004 60);
+  --sidebar-border: oklch(0.285 0.010 40);
+  --sidebar-ring: #ffb4a2;
 
   /* --- Tokens Arce: superficies semánticas (oscuro) --- */
-  --bg:                     oklch(0.165 0.006 40);
-  --surface:                oklch(0.215 0.008 40);
-  --surface-mid:            oklch(0.195 0.007 40);
-  --surface-high:           oklch(0.235 0.008 40);
-  --surface-highest:        oklch(0.255 0.010 40);
+  --bg: oklch(0.165 0.006 40);
+  --surface: oklch(0.215 0.008 40);
+  --surface-mid: oklch(0.195 0.007 40);
+  --surface-high: oklch(0.235 0.008 40);
+  --surface-highest: oklch(0.255 0.010 40);
 
   /* --- Tokens Arce: texto semántico (oscuro) --- */
-  --on-bg:                  oklch(0.972 0.004 60);
-  --on-surface:             oklch(0.972 0.004 60);
-  --text-secondary:         oklch(0.72 0.012 50);
-  --text-muted:             oklch(0.72 0.012 50);
-  --text-dim:               oklch(0.54 0.012 40 / 0.6);
+  --on-bg: oklch(0.972 0.004 60);
+  --on-surface: oklch(0.972 0.004 60);
+  --text-secondary: oklch(0.72 0.012 50);
+  --text-muted: oklch(0.72 0.012 50);
+  --text-dim: oklch(0.54 0.012 40 / 0.6);
 
   /* --- Tokens Arce: primario extendido --- */
-  --primary-dark:           oklch(0.585 0.135 32);
-  --primary-dim:            oklch(0.585 0.135 32 / 0.16);
+  --primary-dark: oklch(0.585 0.135 32);
+  --primary-dim: oklch(0.585 0.135 32 / 0.16);
 
   /* --- Tokens Arce: errores semánticos (oscuro) --- */
-  --error:                  oklch(0.68 0.18 25);
-  --error-dim:              oklch(0.68 0.18 25 / 0.14);
-  --destructive-dim:        oklch(0.68 0.18 25 / 0.14);
+  --error: oklch(0.68 0.18 25);
+  --error-dim: oklch(0.68 0.18 25 / 0.14);
+  --destructive-dim: oklch(0.68 0.18 25 / 0.14);
 
   /* --- Tokens Arce: semafóricos --- */
-  --success:                oklch(0.74 0.14 155);
-  --success-dim:            oklch(0.74 0.14 155 / 0.14);
-  --warning:                oklch(0.80 0.13 85);
-  --warning-dim:            oklch(0.80 0.13 85 / 0.14);
-  --income:                 oklch(0.74 0.14 155);
-  --income-dim:             oklch(0.74 0.14 155 / 0.12);
-  --border-accent:          oklch(0.585 0.135 32 / 0.25);
+  --success: oklch(0.74 0.14 155);
+  --success-dim: oklch(0.74 0.14 155 / 0.14);
+  --warning: oklch(0.80 0.13 85);
+  --warning-dim: oklch(0.80 0.13 85 / 0.14);
+  --income: oklch(0.74 0.14 155);
+  --income-dim: oklch(0.74 0.14 155 / 0.12);
+  --border-accent: oklch(0.585 0.135 32 / 0.25);
 
   /* --- Tokens Arce: estado y semántica visual (sin cambio) --- */
-  --avatar-a:               #2d3f4e;
-  --avatar-b:               #2e4038;
-  --green:                  #7fd3a0;
-  --green-dim:              rgba(127,211,160,0.12);
-  --mustard:                #ffdea8;
-  --mustard-dim:            rgba(253,222,168,0.15);
-  --expense:                var(--destructive);
-  --neutral:                #8899ee;
-  --neutral-dim:            rgba(100,130,220,0.12);
-  --border-subtle:          rgba(255,255,255,0.02);
-  --primary-subtle:         rgba(255,180,162,0.05);
-  --gradient-property:      linear-gradient(135deg, #1a2a1a, #2a4a2a);
-  --gradient-owner:         linear-gradient(145deg, oklch(0.56 0.14 30), oklch(0.42 0.12 25));
-  --inset-highlight:        rgba(255, 255, 255, 0.08);
+  --avatar-a: #2d3f4e;
+  --avatar-b: #2e4038;
+  --green: #7fd3a0;
+  --green-dim: rgba(127, 211, 160, 0.12);
+  --mustard: #ffdea8;
+  --mustard-dim: rgba(253, 222, 168, 0.15);
+  --expense: var(--destructive);
+  --neutral: #8899ee;
+  --neutral-dim: rgba(100, 130, 220, 0.12);
+  --border-subtle: rgba(255, 255, 255, 0.02);
+  --primary-subtle: rgba(255, 180, 162, 0.05);
+  --gradient-property: linear-gradient(135deg, #1a2a1a, #2a4a2a);
+  --gradient-owner: linear-gradient(145deg, oklch(0.56 0.14 30), oklch(0.42 0.12 25));
+  --inset-highlight: rgba(255, 255, 255, 0.08);
   /* --- Tokens Arce: origen de movimiento --- */
-  --origin-auto:            oklch(0.75 0.1 210);
-  --origin-auto-dim:        oklch(0.75 0.1 210 / 0.08);
+  --origin-auto: oklch(0.75 0.1 210);
+  --origin-auto-dim: oklch(0.75 0.1 210 / 0.08);
   /* --- Tokens Arce: sparkline --- */
-  --spark-neutral:          oklch(0.5 0.01 40);
-  --status-available:       #ffdea8;
-  --status-available-dim:   rgba(253,222,168,0.15);
-  --status-rented:          #8dcf95;
-  --status-rented-dim:      rgba(141,207,149,0.12);
-  --status-maintenance:     #fdba74;
-  --status-maintenance-dim: rgba(253,186,116,0.12);
-  --status-reserved:        #93c5fd;
-  --status-reserved-dim:    rgba(147,197,253,0.12);
+  --spark-neutral: oklch(0.5 0.01 40);
+  --status-available: #ffdea8;
+  --status-available-dim: rgba(253, 222, 168, 0.15);
+  --status-rented: #8dcf95;
+  --status-rented-dim: rgba(141, 207, 149, 0.12);
+  --status-maintenance: #fdba74;
+  --status-maintenance-dim: rgba(253, 186, 116, 0.12);
+  --status-reserved: #93c5fd;
+  --status-reserved-dim: rgba(147, 197, 253, 0.12);
   /* --- Tokens Arce: info (azul informativo) --- */
-  --info:                   #8ab4f8;
-  --info-dim:               rgba(138,180,248,0.12);
+  --info: #8ab4f8;
+  --info-dim: rgba(138, 180, 248, 0.12);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-size: 0.8125rem;
     line-height: 1.6;
   }
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-headline, var(--font-sans));
     letter-spacing: -0.02em;
     line-height: 1.15;
@@ -369,45 +376,73 @@
     cursor: pointer;
     transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
   }
-  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 
   .btn-primary {
     background-color: var(--primary);
     color: var(--primary-foreground);
     border-color: var(--primary);
   }
-  .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+
+  .btn-primary:hover:not(:disabled) {
+    opacity: 0.88;
+  }
 
   .btn-secondary {
     background-color: var(--surface-mid);
     color: var(--on-surface);
     border-color: var(--border);
   }
-  .btn-secondary:hover:not(:disabled) { background-color: var(--surface-high); }
+
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--surface-high);
+  }
 
   .btn-ghost {
     background-color: transparent;
     color: var(--text-secondary);
     border-color: transparent;
   }
-  .btn-ghost:hover:not(:disabled) { background-color: var(--surface-mid); color: var(--on-surface); }
+
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--surface-mid);
+    color: var(--on-surface);
+  }
 
   .btn-danger {
     background-color: var(--error-dim);
     color: var(--error);
     border-color: var(--error);
   }
-  .btn-danger:hover:not(:disabled) { background-color: var(--error); color: var(--primary-foreground); }
+
+  .btn-danger:hover:not(:disabled) {
+    background-color: var(--error);
+    color: var(--primary-foreground);
+  }
 
   .btn-green {
     background-color: var(--green-dim);
     color: var(--green);
     border-color: rgba(127, 211, 160, 0.2);
   }
-  .btn-green:hover:not(:disabled) { filter: brightness(1.08); }
 
-  .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
-  .btn-xs { padding: 0.25rem 0.5rem;  font-size: 0.75rem; }
+  .btn-green:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  .btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
 
   /* --- Status pills --- */
   .status-pill {
@@ -446,16 +481,19 @@
     color: var(--status-rented);
     border-color: color-mix(in srgb, var(--status-rented) 20%, transparent);
   }
+
   .status-available {
     background-color: var(--status-available-dim);
     color: var(--status-available);
     border-color: color-mix(in srgb, var(--status-available) 20%, transparent);
   }
+
   .status-reserved {
     background-color: var(--status-reserved-dim);
     color: var(--status-reserved);
     border-color: color-mix(in srgb, var(--status-reserved) 20%, transparent);
   }
+
   .status-maintenance {
     background-color: var(--status-maintenance-dim);
     color: var(--status-maintenance);
@@ -468,6 +506,7 @@
     color: var(--status-reserved);
     border-color: color-mix(in srgb, var(--status-reserved) 20%, transparent);
   }
+
   .status-draft {
     background-color: var(--muted);
     color: var(--muted-foreground);
@@ -492,10 +531,12 @@
     color: var(--muted-foreground);
     font-style: italic;
   }
+
   /* Usado junto a .field-value.empty para reemplazar el contenido con texto genérico */
   .field-value.empty::before {
     content: "Sin cargar";
   }
+
   /* Si el campo tiene contenido pero igual necesita el estilo vacío, usá el texto directamente */
 
   .field-value.alert {
@@ -511,9 +552,11 @@
   .field-input-wrap {
     display: none;
   }
+
   .edit-mode .field-value {
     display: none;
   }
+
   .edit-mode .field-input-wrap {
     display: flex;
     flex-direction: column;
@@ -531,6 +574,7 @@
     outline: none;
     transition: border-color 0.15s;
   }
+
   .field-input:focus {
     border-color: var(--primary);
   }
@@ -541,6 +585,7 @@
     align-items: flex-end;
     justify-content: space-between;
   }
+
   .page-title {
     font-family: var(--font-headline);
     font-size: 1.5rem;
@@ -548,18 +593,23 @@
     letter-spacing: -0.02em;
     color: var(--on-bg);
   }
+
   .page-subtitle {
     font-size: 0.8rem;
     color: var(--muted-foreground);
     margin-top: 3px;
   }
+
   .page-meta {
     font-size: 0.72rem;
     color: var(--muted-foreground);
     text-align: right;
     line-height: 1.6;
   }
-  .page-meta strong { color: var(--text-secondary); }
+
+  .page-meta strong {
+    color: var(--text-secondary);
+  }
 
   /* ── DASHBOARD — KPI Grid ── */
   .kpi-grid {
@@ -567,6 +617,7 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
   }
+
   .kpi-card {
     background: var(--surface);
     border-radius: var(--radius-lg);
@@ -577,17 +628,32 @@
     position: relative;
     overflow: hidden;
   }
+
   .kpi-card::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; right: 0;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 2px;
     background: var(--border);
   }
-  .kpi-card.mustard::before { background: var(--mustard); }
-  .kpi-card.error::before   { background: var(--error); }
-  .kpi-card.primary::before { background: var(--primary); }
-  .kpi-card.neutral::before { background: var(--muted-foreground); }
+
+  .kpi-card.mustard::before {
+    background: var(--mustard);
+  }
+
+  .kpi-card.error::before {
+    background: var(--error);
+  }
+
+  .kpi-card.primary::before {
+    background: var(--primary);
+  }
+
+  .kpi-card.neutral::before {
+    background: var(--muted-foreground);
+  }
 
   .kpi-label {
     font-size: 0.68rem;
@@ -596,6 +662,7 @@
     letter-spacing: 0.1em;
     color: var(--muted-foreground);
   }
+
   .kpi-value {
     font-family: var(--font-headline);
     font-size: 2rem;
@@ -603,24 +670,46 @@
     letter-spacing: -0.03em;
     line-height: 1;
   }
-  .kpi-card.mustard .kpi-value { color: var(--mustard); }
-  .kpi-card.error   .kpi-value { color: var(--error); }
-  .kpi-card.primary .kpi-value { color: var(--primary); }
-  .kpi-card.neutral .kpi-value { color: var(--on-surface); }
+
+  .kpi-card.mustard .kpi-value {
+    color: var(--mustard);
+  }
+
+  .kpi-card.error .kpi-value {
+    color: var(--error);
+  }
+
+  .kpi-card.primary .kpi-value {
+    color: var(--primary);
+  }
+
+  .kpi-card.neutral .kpi-value {
+    color: var(--on-surface);
+  }
 
   .kpi-sub {
     font-size: 0.72rem;
     color: var(--text-secondary);
     margin-top: 2px;
   }
+
   .kpi-trend {
     font-size: 0.68rem;
     font-weight: 600;
     margin-top: 4px;
   }
-  .kpi-trend.up      { color: var(--success); }
-  .kpi-trend.down    { color: var(--error); }
-  .kpi-trend.neutral { color: var(--muted-foreground); }
+
+  .kpi-trend.up {
+    color: var(--success);
+  }
+
+  .kpi-trend.down {
+    color: var(--error);
+  }
+
+  .kpi-trend.neutral {
+    color: var(--muted-foreground);
+  }
 
   /* ── DASHBOARD — Two-column layout ── */
   .dashboard-cols {
@@ -629,6 +718,7 @@
     gap: 20px;
     align-items: start;
   }
+
   .right-col {
     display: flex;
     flex-direction: column;
@@ -642,6 +732,7 @@
     border: 1px solid var(--border);
     overflow: hidden;
   }
+
   .panel-header {
     padding: 18px 20px 14px;
     display: flex;
@@ -649,40 +740,49 @@
     justify-content: space-between;
     border-bottom: 1px solid var(--border);
   }
+
   .panel-title {
     font-family: var(--font-headline);
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--on-surface);
   }
+
   .panel-subtitle {
     font-size: 0.7rem;
     color: var(--muted-foreground);
     margin-top: 1px;
   }
+
   .panel-actions {
     display: flex;
     gap: 8px;
     align-items: center;
   }
+
   .panel-footer {
     padding: 12px 20px;
     border-top: 1px solid var(--border);
     text-align: center;
   }
+
   .panel-footer a {
     font-size: 0.75rem;
     color: var(--primary);
     text-decoration: none;
     font-weight: 600;
   }
-  .panel-footer a:hover { opacity: 0.8; }
+
+  .panel-footer a:hover {
+    opacity: 0.8;
+  }
 
   /* ── DASHBOARD — Data table ── */
   .data-table {
     width: 100%;
     border-collapse: collapse;
   }
+
   .data-table th {
     padding: 8px 16px;
     font-size: 0.65rem;
@@ -694,34 +794,68 @@
     background: var(--surface-mid);
     white-space: nowrap;
   }
+
   .data-table td {
     padding: 11px 16px;
     font-size: 0.8rem;
     color: var(--text-secondary);
     vertical-align: middle;
   }
-  .data-table tr:nth-child(even) td { background: var(--surface-mid); }
-  .data-table tr:hover td { background: var(--surface-high); cursor: pointer; }
-  .data-table td:first-child { color: var(--on-surface); font-weight: 500; }
+
+  .data-table tr:nth-child(even) td {
+    background: var(--surface-mid);
+  }
+
+  .data-table tr:hover td {
+    background: var(--surface-high);
+    cursor: pointer;
+  }
+
+  .data-table td:first-child {
+    color: var(--on-surface);
+    font-weight: 500;
+  }
 
   .prop-status {
     display: flex;
     align-items: center;
     gap: 8px;
   }
+
   .status-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
   }
-  .status-dot.green  { background: var(--success); }
-  .status-dot.yellow { background: var(--warning); }
-  .status-dot.red    { background: var(--error); }
-  .status-dot.gray   { background: var(--muted-foreground); }
 
-  .prop-name    { font-weight: 600; color: var(--on-surface); font-size: 0.82rem; }
-  .prop-address { font-size: 0.7rem; color: var(--muted-foreground); margin-top: 1px; }
+  .status-dot.green {
+    background: var(--success);
+  }
+
+  .status-dot.yellow {
+    background: var(--warning);
+  }
+
+  .status-dot.red {
+    background: var(--error);
+  }
+
+  .status-dot.gray {
+    background: var(--muted-foreground);
+  }
+
+  .prop-name {
+    font-weight: 600;
+    color: var(--on-surface);
+    font-size: 0.82rem;
+  }
+
+  .prop-address {
+    font-size: 0.7rem;
+    color: var(--muted-foreground);
+    margin-top: 1px;
+  }
 
   /* Alert tags en tabla */
   .alert-tag {
@@ -736,17 +870,43 @@
     letter-spacing: 0.06em;
     white-space: nowrap;
   }
-  .alert-tag.mora     { background: var(--error-dim);   color: var(--error); }
-  .alert-tag.vence    { background: var(--primary-dim); color: var(--primary); }
-  .alert-tag.servicio { background: var(--warning-dim); color: var(--warning); }
-  .alert-tag.icl      { background: var(--surface-high); color: var(--text-secondary); }
-  .alert-tag.ok       { background: var(--success-dim); color: var(--success); }
+
+  .alert-tag.mora {
+    background: var(--error-dim);
+    color: var(--error);
+  }
+
+  .alert-tag.vence {
+    background: var(--primary-dim);
+    color: var(--primary);
+  }
+
+  .alert-tag.servicio {
+    background: var(--warning-dim);
+    color: var(--warning);
+  }
+
+  .alert-tag.icl {
+    background: var(--surface-high);
+    color: var(--text-secondary);
+  }
+
+  .alert-tag.ok {
+    background: var(--success-dim);
+    color: var(--success);
+  }
 
   /* Celda de vto. contrato cuando vence pronto */
-  .cell-expiring { color: var(--primary) !important; font-weight: 600; }
+  .cell-expiring {
+    color: var(--primary) !important;
+    font-weight: 600;
+  }
 
   /* ── DASHBOARD — Tareas panel ── */
-  .tarea-list { padding: 4px 0; }
+  .tarea-list {
+    padding: 4px 0;
+  }
+
   .tarea-item {
     display: flex;
     align-items: flex-start;
@@ -756,8 +916,14 @@
     cursor: pointer;
     transition: background-color 0.15s;
   }
-  .tarea-item:last-child { border-bottom: none; }
-  .tarea-item:hover { background: var(--surface-high); }
+
+  .tarea-item:last-child {
+    border-bottom: none;
+  }
+
+  .tarea-item:hover {
+    background: var(--surface-high);
+  }
 
   .tarea-origin-dot {
     width: 6px;
@@ -766,11 +932,24 @@
     flex-shrink: 0;
     margin-top: 6px;
   }
-  .tarea-origin-dot.auto       { background: var(--info); }
-  .tarea-origin-dot.manual     { background: var(--primary); }
-  .tarea-origin-dot.onboarding { background: var(--success); }
 
-  .tarea-body   { flex: 1; min-width: 0; }
+  .tarea-origin-dot.auto {
+    background: var(--info);
+  }
+
+  .tarea-origin-dot.manual {
+    background: var(--primary);
+  }
+
+  .tarea-origin-dot.onboarding {
+    background: var(--success);
+  }
+
+  .tarea-body {
+    flex: 1;
+    min-width: 0;
+  }
+
   .tarea-titulo {
     font-size: 0.8rem;
     font-weight: 600;
@@ -779,12 +958,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
   .tarea-meta {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-top: 3px;
   }
+
   .tarea-propiedad {
     font-size: 0.68rem;
     color: var(--muted-foreground);
@@ -792,12 +973,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
   .tarea-fecha {
     font-size: 0.65rem;
     color: var(--muted-foreground);
     white-space: nowrap;
     flex-shrink: 0;
   }
+
   .tarea-prioridad {
     padding: 1px 6px;
     border-radius: var(--radius-pill);
@@ -808,12 +991,27 @@
     flex-shrink: 0;
     align-self: center;
   }
-  .tarea-prioridad.urgente { background: var(--error-dim);   color: var(--error); }
-  .tarea-prioridad.alta    { background: var(--primary-dim); color: var(--primary); }
-  .tarea-prioridad.media   { background: var(--warning-dim); color: var(--warning); }
+
+  .tarea-prioridad.urgente {
+    background: var(--error-dim);
+    color: var(--error);
+  }
+
+  .tarea-prioridad.alta {
+    background: var(--primary-dim);
+    color: var(--primary);
+  }
+
+  .tarea-prioridad.media {
+    background: var(--warning-dim);
+    color: var(--warning);
+  }
 
   /* ── DASHBOARD — Mora panel ── */
-  .mora-list { padding: 4px 0; }
+  .mora-list {
+    padding: 4px 0;
+  }
+
   .mora-item {
     display: flex;
     align-items: center;
@@ -823,8 +1021,14 @@
     cursor: pointer;
     transition: background-color 0.15s;
   }
-  .mora-item:last-child { border-bottom: none; }
-  .mora-item:hover { background: var(--surface-high); }
+
+  .mora-item:last-child {
+    border-bottom: none;
+  }
+
+  .mora-item:hover {
+    background: var(--surface-high);
+  }
 
   .mora-avatar {
     width: 28px;
@@ -840,7 +1044,12 @@
     font-family: var(--font-brand);
     flex-shrink: 0;
   }
-  .mora-info  { flex: 1; min-width: 0; }
+
+  .mora-info {
+    flex: 1;
+    min-width: 0;
+  }
+
   .mora-nombre {
     font-size: 0.8rem;
     font-weight: 600;
@@ -849,6 +1058,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
   .mora-prop {
     font-size: 0.68rem;
     color: var(--muted-foreground);
@@ -856,7 +1066,21 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .mora-right  { text-align: right; flex-shrink: 0; }
-  .mora-monto  { font-size: 0.82rem; font-weight: 700; color: var(--error); }
-  .mora-dias   { font-size: 0.65rem; color: var(--muted-foreground); margin-top: 1px; }
+
+  .mora-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .mora-monto {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--error);
+  }
+
+  .mora-dias {
+    font-size: 0.65rem;
+    color: var(--muted-foreground);
+    margin-top: 1px;
+  }
 }

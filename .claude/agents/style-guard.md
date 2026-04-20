@@ -137,17 +137,28 @@ clases de botón nuevas ni se replican estilos con Tailwind inline.
 
 | Intención | Variante shadcn | Cuándo usarla |
 |---|---|---|
-| Acción principal | `default` | Guardar, Confirmar, Enviar |
+| Acción principal | `default` | Guardar, Confirmar, Enviar, acciones CTA de página |
 | Acción destructiva | `destructive` | Eliminar, Dar de baja, Cancelar contrato |
 | Acción secundaria | `secondary` | Acciones alternativas, Suspender |
 | Acción terciaria | `outline` | Acciones contextuales, Agregar, Filtrar |
 | Acción fantasma | `ghost` | Cancelar, cerrar, navegación sutil |
 | Link de navegación | `link` | Ir a ficha, Ver detalle |
 
-Tamaños: `size="sm"` en toolbars y modales, `size="default"` como estándar.
+Tamaños:
+- `size="sm"` — toolbars, fichas, modales
+- `size="default"` — estándar general
+- `size="lg"` — CTAs prominentes en headers de página (ej: "Nueva propiedad")
 
-**Regla**: si hay un botón con `className` que replica colores o padding de alguna
-de estas variantes, es una violación.
+**Botones que navegan**: usar `<Button asChild size="..."><Link href="...">texto</Link></Button>`.
+Nunca un `<Link>` o `<a>` con clases de Tailwind que repliquen el estilo de un `Button`.
+
+**Reglas**:
+- Ningún botón puede tener `className` con colores (`bg-primary`, `text-primary-foreground`),
+  padding manual (`px-4 py-2`) ni border-radius (`rounded-[6px]`, `rounded-xl`) — esos
+  valores ya están definidos en el componente.
+- Ningún botón puede tener `style` inline con `background`, `color` ni `boxShadow`.
+- No usar las clases legacy `.btn`, `.btn-primary`, `.btn-secondary` del globals.css —
+  esas son residuos de una versión anterior y están deprecadas.
 
 ---
 
