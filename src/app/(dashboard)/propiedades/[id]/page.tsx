@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Pencil, X, Save, ExternalLink, PlusCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, X, Save, ExternalLink, PlusCircle, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
@@ -23,8 +23,55 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+interface CoOwner {
+  id: string;
+  propertyId: string;
+  clientId: string;
+  vinculo: string | null;
+  sharePercent: string | null;
+  notes: string | null;
+  createdAt: string;
+  clientFirstName: string | null;
+  clientLastName: string | null;
+  clientPhone: string | null;
+  clientEmail: string | null;
+  clientDni: string | null;
+}
+
+interface ClientOption {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  dni: string | null;
+}
 
 interface PropertyDetail {
   id: string;
@@ -340,6 +387,292 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+// ── Co-owners section ─────────────────────────────────────────────────────────
+
+const VINCULO_OPTIONS = ["hijo", "hija", "cónyuge", "hermano", "hermana", "socio", "otro"];
+
+function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string; existingOwnerIds: string[] }) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const [showAdd, setShowAdd] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [selectedClient, setSelectedClient] = useState<ClientOption | null>(null);
+  const [vinculo, setVinculo] = useState("");
+  const [sharePercent, setSharePercent] = useState("");
+
+  const { data, isLoading } = useQuery<{ coOwners: CoOwner[] }>({
+    queryKey: ["co-owners", propertyId],
+    queryFn: async () => {
+      const res = await fetch(`/api/properties/${propertyId}/co-owners`);
+      if (!res.ok) throw new Error("Error al cargar co-propietarios");
+      return res.json();
+    },
+  });
+
+  const { data: clientsData } = useQuery<{ clients: ClientOption[] }>({
+    queryKey: ["clients-owner-search", search],
+    queryFn: async () => {
+      const params = new URLSearchParams({ type: "owner", limit: "30" });
+      if (search) params.set("search", search);
+      const res = await fetch(`/api/clients?${params}`);
+      if (!res.ok) return { clients: [] };
+      return res.json();
+    },
+    enabled: showAdd,
+  });
+
+  const coOwners = data?.coOwners ?? [];
+  const alreadyAdded = new Set([...existingOwnerIds, ...coOwners.map((c) => c.clientId)]);
+  const availableClients = (clientsData?.clients ?? []).filter((c) => !alreadyAdded.has(c.id));
+
+  const resetModal = () => {
+    setSelectedClient(null);
+    setVinculo("");
+    setSharePercent("");
+    setSearch("");
+    setSaveError(null);
+  };
+
+  const handleAdd = async () => {
+    if (!selectedClient) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/properties/${propertyId}/co-owners`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: selectedClient.id,
+          vinculo: vinculo || null,
+          sharePercent: sharePercent ? Number(sharePercent) : null,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "Error al agregar");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["co-owners", propertyId] });
+      setShowAdd(false);
+      resetModal();
+    } catch (e) {
+      setSaveError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await fetch(`/api/properties/${propertyId}/co-owners/${id}`, { method: "DELETE" });
+      await queryClient.invalidateQueries({ queryKey: ["co-owners", propertyId] });
+    } catch {
+      // ignore
+    } finally {
+      setDeleteId(null);
+    }
+  };
+
+  return (
+    <>
+      <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 mt-5 flex items-center justify-between">
+        <span>Propietarios reales</span>
+        <button
+          onClick={() => { resetModal(); setShowAdd(true); }}
+          className="flex items-center gap-1 text-primary hover:opacity-80 transition-opacity"
+        >
+          <Plus size={11} />
+          <span className="text-[0.6rem] font-bold uppercase tracking-[0.1em]">Agregar</span>
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-4">
+          <Loader2 size={16} className="animate-spin text-muted-foreground" />
+        </div>
+      ) : coOwners.length === 0 ? (
+        <div className="flex items-center gap-3 px-4 py-4 rounded-[12px] text-center justify-center bg-card border border-dashed border-border">
+          <span className="text-[0.78rem] text-muted-foreground">Sin propietarios reales registrados</span>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {coOwners.map((co) => {
+            const name = [co.clientLastName, co.clientFirstName].filter(Boolean).join(", ") || "Sin nombre";
+            const initials = ((co.clientFirstName?.[0] ?? "") + (co.clientLastName?.[0] ?? "")).toUpperCase() || "?";
+            return (
+              <div
+                key={co.id}
+                className="flex items-center gap-4 px-4 py-4 rounded-[12px] bg-card border border-border hover:border-[var(--border-accent)] transition-colors cursor-pointer"
+                onClick={() => router.push(`/propietarios/${co.clientId}`)}
+              >
+                <div
+                  className="size-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0 font-brand"
+                  style={{
+                    background: "var(--gradient-owner)",
+                    border: "1.5px solid var(--status-reserved-dim)",
+                    color: "var(--primary)",
+                  }}
+                >
+                  {initials}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[0.82rem] font-semibold text-foreground mb-0.5">{name}</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {co.vinculo && (
+                      <span className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">{co.vinculo}</span>
+                    )}
+                    {co.sharePercent && (
+                      <span className="text-[0.62rem] text-muted-foreground">{parseFloat(co.sharePercent)}%</span>
+                    )}
+                    {co.clientDni && (
+                      <span className="text-[0.62rem] text-muted-foreground">DNI {co.clientDni}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/propietarios/${co.clientId}`); }}>
+                    Ver ficha <ExternalLink size={10} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); setDeleteId(co.id); }}
+                  >
+                    <Trash2 size={13} />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add modal */}
+      <Dialog open={showAdd} onOpenChange={(o) => { if (!o) { setShowAdd(false); resetModal(); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar propietario real</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 py-2">
+            <div>
+              <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground mb-2 block">
+                Propietario
+              </Label>
+              {selectedClient ? (
+                <div className="flex items-center justify-between px-3 py-2 rounded-[8px] border border-primary bg-primary/5">
+                  <span className="text-[0.82rem] font-semibold">
+                    {[selectedClient.lastName, selectedClient.firstName].filter(Boolean).join(", ")}
+                  </span>
+                  <button onClick={() => setSelectedClient(null)} className="text-muted-foreground hover:text-foreground">
+                    <X size={13} />
+                  </button>
+                </div>
+              ) : (
+                <Command className="border border-border rounded-[8px]">
+                  <CommandInput
+                    placeholder="Buscar propietario..."
+                    value={search}
+                    onValueChange={setSearch}
+                  />
+                  <CommandList>
+                    <CommandEmpty className="text-[0.78rem] text-muted-foreground py-3 text-center">
+                      Sin resultados
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {availableClients.map((c) => (
+                        <CommandItem
+                          key={c.id}
+                          onSelect={() => setSelectedClient(c)}
+                          className="cursor-pointer"
+                        >
+                          <span>{[c.lastName, c.firstName].filter(Boolean).join(", ")}</span>
+                          {c.dni && <span className="ml-2 text-muted-foreground text-[0.72rem]">DNI {c.dni}</span>}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground mb-1.5 block">
+                  Vínculo
+                </Label>
+                <Select value={vinculo} onValueChange={setVinculo}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccionar..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {VINCULO_OPTIONS.map((v) => (
+                        <SelectItem key={v} value={v}>{v.charAt(0).toUpperCase() + v.slice(1)}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground mb-1.5 block">
+                  Participación %
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  placeholder="Ej: 50"
+                  value={sharePercent}
+                  onChange={(e) => setSharePercent(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {saveError && (
+              <div className="text-[0.75rem] text-destructive px-3 py-2 rounded-[6px] bg-destructive/10">
+                {saveError}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowAdd(false); resetModal(); }}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAdd} disabled={!selectedClient || saving}>
+              {saving ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+              Agregar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Quitar co-propietario?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta persona dejará de figurar como propietario real de la propiedad. Esta acción no elimina su ficha de cliente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteId && handleDelete(deleteId)} className="bg-destructive text-white hover:bg-destructive/90">
+              Quitar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -702,6 +1035,9 @@ function PropiedadFichaContent() {
                   Ver ficha <ExternalLink size={10} />
                 </Button>
               </div>
+
+              {/* Co-propietarios */}
+              <CoOwnersSection propertyId={prop.id} existingOwnerIds={[prop.ownerId]} />
 
               {/* Inquilino */}
               <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 mt-5">

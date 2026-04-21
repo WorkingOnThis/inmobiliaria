@@ -37,11 +37,12 @@ import { cn } from "@/lib/utils";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-type EstadoInquilino = "activo" | "en_mora" | "por_vencer" | "sin_contrato";
+type EstadoInquilino = "activo" | "en_mora" | "por_vencer" | "sin_contrato" | "pendiente_firma" | "historico";
 
 interface ContratoInfo {
   id: string;
   numero: string;
+  status: string;
   endDate: string;
   completitud: number | null;
 }
@@ -67,6 +68,8 @@ interface Stats {
   enMora: number;
   porVencer: number;
   sinContrato: number;
+  pendienteFirma: number;
+  historico: number;
 }
 
 interface TenantsResponse {
@@ -74,6 +77,7 @@ interface TenantsResponse {
   pagination: { total: number; page: number; limit: number; totalPages: number };
   stats: Stats;
 }
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -118,6 +122,12 @@ function EstadoBadge({
   if (estado === "por_vencer") {
     return <StatusBadge variant="expiring">Por vencer</StatusBadge>;
   }
+  if (estado === "pendiente_firma") {
+    return <StatusBadge variant="reserved">Por firmar</StatusBadge>;
+  }
+  if (estado === "historico") {
+    return <StatusBadge variant="draft">Histórico</StatusBadge>;
+  }
   return <StatusBadge variant="draft">Sin contrato</StatusBadge>;
 }
 
@@ -145,7 +155,8 @@ const FILTROS = [
   { key: "activo", label: "Activos" },
   { key: "en_mora", label: "En mora" },
   { key: "por_vencer", label: "Por vencer" },
-  { key: "sin_contrato", label: "Sin contrato" },
+  { key: "pendiente_firma", label: "Por firmar" },
+  { key: "historico", label: "Histórico" },
 ] as const;
 
 // ─── Export CSV ───────────────────────────────────────────────────────────────
@@ -167,6 +178,8 @@ function exportarCSV(inquilinos: TenantRow[]) {
     en_mora: "En mora",
     por_vencer: "Por vencer",
     sin_contrato: "Sin contrato",
+    pendiente_firma: "Por firmar",
+    historico: "Histórico",
   };
   const filas = inquilinos.map((i) => [
     `${i.firstName} ${i.lastName ?? ""}`.trim(),

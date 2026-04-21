@@ -11,7 +11,6 @@ import { canManageClients } from "@/lib/permissions";
 import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { calculateStatus } from "@/lib/tenants/status";
 
-// Qué porcentaje del contrato ya pasó (0–100)
 function calcularCompletitud(startDate: string, endDate: string): number {
   const start = new Date(startDate).getTime();
   const end = new Date(endDate).getTime();
@@ -20,6 +19,16 @@ function calcularCompletitud(startDate: string, endDate: string): number {
   if (now >= end) return 100;
   return Math.round(((now - start) / (end - start)) * 100);
 }
+
+// Lower number = higher priority (most relevant contract to show)
+const CONTRACT_STATUS_PRIORITY: Record<string, number> = {
+  active: 0,
+  expiring_soon: 1,
+  pending_signature: 2,
+  draft: 3,
+  expired: 4,
+  terminated: 5,
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,10 +44,21 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const estadoFilter = searchParams.get("estado") || "todos";
 
-    // Condición de búsqueda (nombre, apellido, DNI o teléfono)
-    const baseCondition = search
+    // Clients that appear as tenants: those with type="tenant" OR linked in contract_tenant
+    const tenantLinks = await db
+      .selectDistinct({ clientId: contractTenant.clientId })
+      .from(contractTenant);
+
+    const linkedIds = tenantLinks.map((r) => r.clientId);
+
+    // Combine: type="tenant" OR in contract_tenant (avoid duplicates via OR in SQL)
+    const tenantCondition = linkedIds.length > 0
+      ? or(eq(client.type, "tenant"), inArray(client.id, linkedIds))!
+      : eq(client.type, "tenant");
+
+    const searchCondition = search
       ? and(
-          eq(client.type, "inquilino"),
+          tenantCondition,
           or(
             ilike(client.firstName, `%${search}%`),
             ilike(client.lastName, `%${search}%`),
@@ -46,10 +66,9 @@ export async function GET(request: NextRequest) {
             ilike(client.phone, `%${search}%`)
           )
         )
-      : eq(client.type, "inquilino");
+      : tenantCondition;
 
-    // Todos los inquilinos que coinciden con la búsqueda (sin paginar aún)
-    const allInquilinos = await db
+    const allTenants = await db
       .select({
         id: client.id,
         firstName: client.firstName,
@@ -60,31 +79,26 @@ export async function GET(request: NextRequest) {
         createdAt: client.createdAt,
       })
       .from(client)
-      .where(baseCondition)
+      .where(searchCondition)
       .orderBy(desc(client.createdAt));
 
-    if (allInquilinos.length === 0) {
+    if (allTenants.length === 0) {
       return NextResponse.json({
-        inquilinos: [],
+        tenants: [],
         pagination: { total: 0, page, limit, totalPages: 0 },
-        stats: {
-          total: 0,
-          conContratoActivo: 0,
-          enMora: 0,
-          porVencer: 0,
-          sinContrato: 0,
-        },
+        stats: { total: 0, conContratoActivo: 0, enMora: 0, porVencer: 0, sinContrato: 0, pendienteFirma: 0, historico: 0 },
       });
     }
 
-    const ids = allInquilinos.map((i) => i.id);
+    const ids = allTenants.map((t) => t.id);
 
-    // Contratos activos de esos inquilinos (con datos de propiedad)
+    // All contracts for these tenants (any status)
     const contracts = await db
       .select({
         clientId: contractTenant.clientId,
         contractId: contract.id,
         contractNumber: contract.contractNumber,
+        contractStatus: contract.status,
         startDate: contract.startDate,
         endDate: contract.endDate,
         paymentDay: contract.paymentDay,
@@ -94,14 +108,9 @@ export async function GET(request: NextRequest) {
       .from(contractTenant)
       .innerJoin(contract, eq(contract.id, contractTenant.contractId))
       .leftJoin(property, eq(property.id, contract.propertyId))
-      .where(
-        and(
-          inArray(contractTenant.clientId, ids),
-          eq(contract.status, "active")
-        )
-      );
+      .where(inArray(contractTenant.clientId, ids));
 
-    // Último ingreso registrado por inquilino (para detectar mora)
+    // Last income payment per tenant
     const payments = await db
       .select({
         inquilinoId: cajaMovimiento.inquilinoId,
@@ -116,13 +125,14 @@ export async function GET(request: NextRequest) {
       )
       .orderBy(desc(cajaMovimiento.date));
 
-    // Mapas de consulta rápida
-    const contractByClient = new Map<string, (typeof contracts)[0]>();
+    // Best contract per client (by status priority)
+    const bestContractByClient = new Map<string, (typeof contracts)[0]>();
     for (const c of contracts) {
-      // Un inquilino puede tener más de un contrato activo (raro, pero posible)
-      // Tomamos el primero que encontramos
-      if (!contractByClient.has(c.clientId)) {
-        contractByClient.set(c.clientId, c);
+      const current = bestContractByClient.get(c.clientId);
+      const currentPriority = current ? (CONTRACT_STATUS_PRIORITY[current.contractStatus] ?? 99) : 99;
+      const newPriority = CONTRACT_STATUS_PRIORITY[c.contractStatus] ?? 99;
+      if (newPriority < currentPriority) {
+        bestContractByClient.set(c.clientId, c);
       }
     }
 
@@ -133,84 +143,75 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Enriquecer cada inquilino con datos del contrato y estado calculado
-    const enriched = allInquilinos.map((inq) => {
-      const activeContract = contractByClient.get(inq.id) ?? null;
-      const lastPayment = lastPaymentByClient.get(inq.id) ?? null;
+    const enriched = allTenants.map((tenant) => {
+      const bestContract = bestContractByClient.get(tenant.id) ?? null;
+      const lastPayment = lastPaymentByClient.get(tenant.id) ?? null;
       const { estado, diasMora } = calculateStatus(
-        activeContract
+        bestContract
           ? {
-              endDate: activeContract.endDate,
-              paymentDay: activeContract.paymentDay,
+              endDate: bestContract.endDate,
+              paymentDay: bestContract.paymentDay,
+              contractStatus: bestContract.contractStatus,
             }
           : null,
         lastPayment
       );
-      const completitud = activeContract
-        ? calcularCompletitud(activeContract.startDate, activeContract.endDate)
-        : null;
+      const completitud =
+        bestContract && ["active", "expiring_soon"].includes(bestContract.contractStatus)
+          ? calcularCompletitud(bestContract.startDate, bestContract.endDate)
+          : null;
 
-      // Armar dirección de propiedad
-      let propiedad: string | null = null;
-      if (activeContract?.propertyAddress) {
-        propiedad = activeContract.propertyAddress;
-        if (activeContract.propertyFloorUnit)
-          propiedad += `, ${activeContract.propertyFloorUnit}`;
+      let propertyDisplay: string | null = null;
+      if (bestContract?.propertyAddress) {
+        propertyDisplay = bestContract.propertyAddress;
+        if (bestContract.propertyFloorUnit)
+          propertyDisplay += `, ${bestContract.propertyFloorUnit}`;
       }
 
       return {
-        ...inq,
-        contrato: activeContract
+        ...tenant,
+        contrato: bestContract
           ? {
-              id: activeContract.contractId,
-              numero: activeContract.contractNumber,
-              endDate: activeContract.endDate,
+              id: bestContract.contractId,
+              numero: bestContract.contractNumber,
+              status: bestContract.contractStatus,
+              endDate: bestContract.endDate,
               completitud,
             }
           : null,
-        propiedad,
+        property: propertyDisplay,
         ultimoPago: lastPayment,
         estado,
         diasMora,
       };
     });
 
-    // Estadísticas globales (sobre todos los inquilinos, sin filtro de estado)
     const stats = {
       total: enriched.length,
-      conContratoActivo: enriched.filter((i) => i.estado !== "sin_contrato")
-        .length,
-      enMora: enriched.filter((i) => i.estado === "en_mora").length,
-      porVencer: enriched.filter((i) => i.estado === "por_vencer").length,
-      sinContrato: enriched.filter((i) => i.estado === "sin_contrato").length,
+      conContratoActivo: enriched.filter((t) => ["activo", "por_vencer", "en_mora"].includes(t.estado)).length,
+      enMora: enriched.filter((t) => t.estado === "en_mora").length,
+      porVencer: enriched.filter((t) => t.estado === "por_vencer").length,
+      sinContrato: enriched.filter((t) => t.estado === "sin_contrato").length,
+      pendienteFirma: enriched.filter((t) => t.estado === "pendiente_firma").length,
+      historico: enriched.filter((t) => t.estado === "historico").length,
     };
 
-    // Filtrar por estado si se pide
     const filtered =
       estadoFilter === "todos"
         ? enriched
-        : enriched.filter((i) => i.estado === estadoFilter);
+        : enriched.filter((t) => t.estado === estadoFilter);
 
-    // Paginar en memoria (dataset pequeño en MVP)
     const total = filtered.length;
     const offset = (page - 1) * limit;
     const paginated = filtered.slice(offset, offset + limit);
 
     return NextResponse.json({
-      inquilinos: paginated,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      tenants: paginated,
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
       stats,
     });
   } catch (error) {
-    console.error("Error fetching inquilinos:", error);
-    return NextResponse.json(
-      { error: "Error al obtener los inquilinos" },
-      { status: 500 }
-    );
+    console.error("Error fetching tenants:", error);
+    return NextResponse.json({ error: "Error al obtener los inquilinos" }, { status: 500 });
   }
 }

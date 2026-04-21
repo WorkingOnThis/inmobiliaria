@@ -49,9 +49,10 @@ function freqShort(freq: number): string {
 type ValidityDays = { text: string; variant: "normal" | "alerta" | "vencida" };
 
 function validityDays(startDate: string, endDate: string, status: string): ValidityDays {
+  const parseDate = (s: string) => new Date(s.length === 10 ? s + "T00:00:00" : s);
   const today = new Date();
-  const end = new Date(endDate);
-  const start = new Date(startDate);
+  const end = parseDate(endDate);
+  const start = parseDate(startDate);
 
   if (status === "terminated") {
     return { text: "Rescindido", variant: "normal" };
@@ -462,8 +463,8 @@ export function ContractsList() {
                               <span className="text-[0.75rem] text-muted-foreground">A definir</span>
                             ) : (
                               <span className="text-[0.75rem] text-on-surface whitespace-nowrap">
-                                {format(new Date(c.startDate), "dd/MM/yyyy")} →{" "}
-                                {format(new Date(c.endDate), "dd/MM/yyyy")}
+                                {format(new Date(c.startDate + "T00:00:00"), "dd/MM/yyyy")} →{" "}
+                                {format(new Date(c.endDate + "T00:00:00"), "dd/MM/yyyy")}
                               </span>
                             )}
                             <span

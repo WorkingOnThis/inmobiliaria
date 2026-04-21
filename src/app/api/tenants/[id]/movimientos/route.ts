@@ -5,7 +5,7 @@ import { client } from "@/db/schema/client";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
-import { and, eq, like, max } from "drizzle-orm";
+import { eq, like, max } from "drizzle-orm";
 
 async function nextReciboNumero(): Promise<string> {
   const [row] = await db
@@ -39,7 +39,7 @@ export async function POST(
     const [inquilino] = await db
       .select({ id: client.id })
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "inquilino")))
+      .where(eq(client.id, id))
       .limit(1);
 
     if (!inquilino) {

@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ContractTabParties } from "./contract-tab-parties";
+import { ContractTabDocuments } from "./contract-tab-documents";
+import { ContractTabDocumentData } from "./contract-tab-document-data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,7 +33,7 @@ import {
   Pencil,
   ChevronRight,
 } from "lucide-react";
-import { format, differenceInMonths } from "date-fns";
+import { format, differenceInCalendarMonths } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import {
@@ -59,6 +63,52 @@ interface PropertyServices {
   serviceHoa: string;
 }
 
+export interface ContractParticipant {
+  id: string;
+  role: string;
+  client: {
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    email: string | null;
+    phone: string | null;
+    dni: string | null;
+    cuit: string | null;
+    address: string | null;
+    type: string;
+  };
+}
+
+export interface ContractGuarantee {
+  id: string;
+  type: string;
+  clientId: string | null;
+  propertyId: string | null;
+  externalAddress: string | null;
+  externalCadastralRef: string | null;
+  externalOwnerName: string | null;
+  externalOwnerDni: string | null;
+  createdAt: string | null;
+  guarantor: {
+    firstName: string | null;
+    lastName: string | null;
+    dni: string | null;
+    cuit: string | null;
+    address: string | null;
+    phone: string | null;
+    email: string | null;
+  } | null;
+}
+
+export interface ContractDocument {
+  id: string;
+  name: string;
+  url: string;
+  uploadedBy: string | null;
+  uploaderName: string | null;
+  createdAt: string | null;
+}
+
 interface ContractDetail extends PropertyServices {
   id: string;
   contractNumber: string;
@@ -76,13 +126,19 @@ interface ContractDetail extends PropertyServices {
   createdAt: string;
   propertyAddress: string | null;
   propertyType: string | null;
+  propertyFloorUnit: string | null;
+  propertyZone: string | null;
   propertyId: string;
+  ownerId: string;
   owner: {
     id: string;
     name: string;
     email: string | null;
     phone: string | null;
     dni: string | null;
+    cuit: string | null;
+    address: string | null;
+    type: string;
   } | null;
   tenants: {
     id: string;
@@ -92,6 +148,9 @@ interface ContractDetail extends PropertyServices {
     phone: string | null;
     dni: string | null;
   }[];
+  participants: ContractParticipant[];
+  guarantees: ContractGuarantee[];
+  documents: ContractDocument[];
 }
 
 interface EditableConditions {
@@ -202,9 +261,19 @@ function getStepStates(status: string): Array<"done" | "active" | "pending"> {
    COMPONENT
    ────────────────────────────────────────────────────────── */
 
+type ContractTab = "partes" | "operativo" | "documentos" | "datos";
+
 export function ContractDetail({ id }: { id: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+
+  const activeTab = (searchParams.get("tab") as ContractTab) ?? "partes";
+  const setTab = (tab: ContractTab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`/contratos/${id}?${params.toString()}`, { scroll: false });
+  };
   const [isEditing, setIsEditing] = useState(false);
   const [editValues, setEditValues] = useState<EditableConditions | null>(null);
   const [isEditingPartes, setIsEditingPartes] = useState(false);
@@ -259,18 +328,18 @@ export function ContractDetail({ id }: { id: string }) {
   });
 
   const { data: tenantsData } = useQuery({
-    queryKey: ["clients", "inquilino", "select"],
+    queryKey: ["clients", "tenant", "select"],
     queryFn: async () => {
-      const res = await fetch("/api/clients?type=inquilino&limit=200");
+      const res = await fetch("/api/clients?type=inquilino,tenant&limit=200");
       if (!res.ok) return { clients: [] };
       return res.json();
     },
     enabled: isEditingPartes,
   });
   const { data: ownersData } = useQuery({
-    queryKey: ["clients", "propietario", "select"],
+    queryKey: ["clients", "owner", "select"],
     queryFn: async () => {
-      const res = await fetch("/api/clients?type=propietario&limit=200");
+      const res = await fetch("/api/clients?type=propietario,owner&limit=200");
       if (!res.ok) return { clients: [] };
       return res.json();
     },
@@ -474,7 +543,9 @@ export function ContractDetail({ id }: { id: string }) {
   }
 
   /* ── derived data ── */
-  const durationMonths = differenceInMonths(new Date(data.endDate), new Date(data.startDate));
+  // Parse "YYYY-MM-DD" strings as local time (appending T00:00:00 prevents UTC→local shift)
+  const parseDate = (s: string) => new Date(s.length === 10 ? s + "T00:00:00" : s);
+  const durationMonths = differenceInCalendarMonths(parseDate(data.endDate), parseDate(data.startDate)) + 1;
   const statusLabel = CONTRACT_STATUS_LABELS[data.status as ContractStatus] || data.status;
   const contractTypeLabel = CONTRACT_TYPE_LABELS[data.contractType as ContractType] || data.contractType;
 
@@ -588,7 +659,7 @@ export function ContractDetail({ id }: { id: string }) {
             )}
             {data.owner && ` · Propietario: ${data.owner.name}`}
             {" · "}
-            {format(new Date(data.startDate), "dd/MM/yyyy", { locale: es })} → {format(new Date(data.endDate), "dd/MM/yyyy", { locale: es })}
+            {format(parseDate(data.startDate), "dd/MM/yyyy", { locale: es })} → {format(parseDate(data.endDate), "dd/MM/yyyy", { locale: es })}
           </p>
         </div>
 
@@ -722,7 +793,7 @@ export function ContractDetail({ id }: { id: string }) {
               {durationMonths} meses
             </p>
             <p className="text-[0.68rem] text-muted-foreground mt-1.5">
-              {format(new Date(data.startDate), "dd/MM/yyyy")} → {format(new Date(data.endDate), "dd/MM/yyyy")}
+              {format(parseDate(data.startDate), "dd/MM/yyyy")} → {format(parseDate(data.endDate), "dd/MM/yyyy")}
             </p>
           </div>
 
@@ -737,7 +808,46 @@ export function ContractDetail({ id }: { id: string }) {
           </div>
         </div>
 
-        {/* ── Condiciones + Partes ─────────────────────────── */}
+        {/* ── Tab bar ─────────────────────────────────────── */}
+        <Tabs value={activeTab} onValueChange={(v) => setTab(v as ContractTab)}>
+          <TabsList
+            variant="line"
+            className="w-full justify-start h-auto rounded-none bg-transparent p-0 gap-0 border-b border-border -mb-5"
+          >
+            {(["partes", "operativo", "documentos", "datos"] as const).map((tab) => (
+              <TabsTrigger
+                key={tab}
+                value={tab}
+                className="px-4 py-3 text-[0.8rem] gap-2 rounded-none flex-none after:bg-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              >
+                {tab === "partes" ? "Partes" : tab === "operativo" ? "Operativo" : tab === "documentos" ? "Documentos" : "Datos para documentos"}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        {/* ── Tab: Partes ─────────────────────────────────── */}
+        {activeTab === "partes" && (
+          <ContractTabParties
+            contractId={id}
+            owner={data.owner}
+            participants={data.participants}
+            guarantees={data.guarantees}
+          />
+        )}
+
+        {/* ── Tab: Documentos ─────────────────────────────── */}
+        {activeTab === "documentos" && (
+          <ContractTabDocuments contractId={id} documents={data.documents} />
+        )}
+
+        {/* ── Tab: Datos para documentos ─────────────────── */}
+        {activeTab === "datos" && (
+          <ContractTabDocumentData data={data} />
+        )}
+
+        {/* ── Tab: Operativo ─────────────────────────────── */}
+        {activeTab === "operativo" && (<>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           {/* Condiciones */}
@@ -869,7 +979,7 @@ export function ContractDetail({ id }: { id: string }) {
                 {[
                   { label: "Propiedad", value: data.propertyAddress || "—" },
                   { label: "Tipo", value: contractTypeLabel },
-                  { label: "Período", value: `${format(new Date(data.startDate), "dd/MM/yyyy", { locale: es })} → ${format(new Date(data.endDate), "dd/MM/yyyy", { locale: es })}` },
+                  { label: "Período", value: `${format(parseDate(data.startDate), "dd/MM/yyyy", { locale: es })} → ${format(parseDate(data.endDate), "dd/MM/yyyy", { locale: es })}` },
                   { label: "Canon", value: formatMoney(data.monthlyAmount) },
                   { label: "Índice", value: adjustmentLabel },
                   { label: "Frecuencia", value: frequencyLabel },
@@ -1136,7 +1246,7 @@ export function ContractDetail({ id }: { id: string }) {
                 {
                   state: "done" as const,
                   label: "Contrato creado",
-                  meta: format(new Date(data.createdAt), "dd/MM/yyyy", { locale: es }),
+                  meta: format(parseDate(data.createdAt), "dd/MM/yyyy", { locale: es }),
                 },
                 ...(data.status !== "draft" ? [{
                   state: "done" as const,
@@ -1151,12 +1261,12 @@ export function ContractDetail({ id }: { id: string }) {
                 ...(data.status === "active" || data.status === "expiring_soon" ? [{
                   state: "done" as const,
                   label: "Contrato vigente",
-                  meta: `Desde ${format(new Date(data.startDate), "dd/MM/yyyy", { locale: es })}`,
+                  meta: `Desde ${format(parseDate(data.startDate), "dd/MM/yyyy", { locale: es })}`,
                 }] : []),
                 ...(data.status === "expired" ? [{
                   state: "active" as const,
                   label: "Contrato vencido",
-                  meta: `Venció el ${format(new Date(data.endDate), "dd/MM/yyyy", { locale: es })}`,
+                  meta: `Venció el ${format(parseDate(data.endDate), "dd/MM/yyyy", { locale: es })}`,
                 }] : []),
                 ...(data.status === "terminated" ? [{
                   state: "active" as const,
@@ -1271,6 +1381,8 @@ export function ContractDetail({ id }: { id: string }) {
             </div>
           )}
         </div>
+
+        </>)} {/* end activeTab === "operativo" */}
 
         {/* ── Actions footer ───────────────────────────────── */}
         <div className="flex items-center justify-between px-5 py-4 bg-surface border border-border rounded-[18px]">

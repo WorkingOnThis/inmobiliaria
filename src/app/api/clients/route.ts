@@ -6,7 +6,7 @@ import { user } from "@/db/schema/better-auth";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { z } from "zod";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, inArray, ilike, or } from "drizzle-orm";
 
 const createClientSchema = z.object({
   firstName: z.string().min(1, "El nombre es requerido"),
@@ -47,8 +47,27 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const offset = (page - 1) * limit;
     const typeFilter = searchParams.get("type");
+    const searchFilter = searchParams.get("search");
 
-    const whereCondition = typeFilter ? eq(client.type, typeFilter) : undefined;
+    // type accepts comma-separated values: type=owner,propietario
+    const typeValues = typeFilter ? typeFilter.split(",").map((t) => t.trim()).filter(Boolean) : null;
+    const typeCondition = typeValues?.length
+      ? typeValues.length === 1
+        ? eq(client.type, typeValues[0])
+        : inArray(client.type, typeValues)
+      : undefined;
+
+    const searchCondition = searchFilter
+      ? or(
+          ilike(client.firstName, `%${searchFilter}%`),
+          ilike(client.lastName, `%${searchFilter}%`)
+        )
+      : undefined;
+
+    const whereCondition =
+      typeCondition && searchCondition
+        ? and(typeCondition, searchCondition)
+        : typeCondition ?? searchCondition;
 
     const [totalCountResult] = await db
       .select({ value: count() })

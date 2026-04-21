@@ -11,6 +11,7 @@ import { TenantTabContract } from "@/components/tenants/tenant-tab-contract";
 import { TenantTabProperty } from "@/components/tenants/tenant-tab-property";
 import { TenantTabOwner } from "@/components/tenants/tenant-tab-owner";
 import { ServiceTabProperty } from "@/components/services/service-tab-property";
+import { ClientRolesBadges } from "@/components/clients/client-roles-badges";
 
 type Tab = "cc" | "contrato" | "property" | "propietario" | "servicios" | "tareas" | "documentos" | "notificaciones";
 
@@ -29,10 +30,12 @@ function formatMonto(val: string | number | null) {
 }
 
 const estadoBadge: Record<string, { label: string; variant: StatusBadgeVariant }> = {
-  activo:       { label: "Tenant activo", variant: "active" },
-  en_mora:      { label: "En mora",          variant: "baja" },
-  por_vencer:   { label: "Por vencer",       variant: "expiring" },
-  sin_contrato: { label: "Sin contrato",     variant: "draft" },
+  activo:          { label: "Tenant activo",  variant: "active" },
+  en_mora:         { label: "En mora",         variant: "baja" },
+  por_vencer:      { label: "Por vencer",      variant: "expiring" },
+  sin_contrato:    { label: "Sin contrato",    variant: "draft" },
+  pendiente_firma: { label: "Por firmar",      variant: "reserved" },
+  historico:       { label: "Histórico",       variant: "draft" },
 };
 
 export default function TenantDetailPage() {
@@ -45,7 +48,7 @@ export default function TenantDetailPage() {
   const setTab = (tab: Tab) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
-    router.replace(`/tenants/${id}?${params.toString()}`, { scroll: false });
+    router.replace(`/inquilinos/${id}?${params.toString()}`, { scroll: false });
   };
 
   const { data, isLoading, error } = useQuery<{
@@ -112,7 +115,7 @@ export default function TenantDetailPage() {
       note: string | null;
       contratoId: string | null;
     }[];
-  }>({
+  } | null>({
     queryKey: ["tenant", id],
     queryFn: async () => {
       const res = await fetch(`/api/tenants/${id}`);
@@ -204,7 +207,7 @@ export default function TenantDetailPage() {
                       ⚠ {data.tenant.diasMora} días en mora
                     </Badge>
                   ) : null}
-                  {data?.contrato && (
+                  {data?.contrato && ["active", "expiring_soon"].includes(data.contrato.status) && (
                     <Badge variant="reserved">
                       Contrato vigente
                     </Badge>
@@ -214,6 +217,7 @@ export default function TenantDetailPage() {
                       Índice {data.contrato.adjustmentIndex}
                     </Badge>
                   )}
+                  <ClientRolesBadges clientId={tenant.id} currentRole="tenant" />
                 </div>
               </div>
 

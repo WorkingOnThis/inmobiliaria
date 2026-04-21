@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { toast } from "sonner";
-import { X, Users, Search, Plus, Loader2 as Spin } from "lucide-react";
+import { X, Users, Search, Plus, Loader2 as Spin, Shield } from "lucide-react";
 import {
   CONTRACT_TYPES,
   CONTRACT_TYPE_LABELS,
@@ -26,6 +26,7 @@ import {
   type ContractType,
   type AdjustmentIndex,
 } from "@/lib/clients/constants";
+import { CreateOwnerPopup } from "@/components/properties/create-owner-popup";
 
 // Tipos mínimos para los selects
 interface SelectOption {
@@ -61,6 +62,12 @@ export function ContractForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [tenantSearchOpen, setTenantSearchOpen] = useState(false);
   const [tenantSearch, setTenantSearch] = useState("");
+  const [guarantorSearchOpen, setGuarantorSearchOpen] = useState(false);
+  const [guarantorSearch, setGuarantorSearch] = useState("");
+  const [guarantors, setGuarantors] = useState<Array<{ id: string; firstName: string; lastName: string | null }>>([]);
+  const [showGuarantorPopup, setShowGuarantorPopup] = useState(false);
+  const [showTenantPopup, setShowTenantPopup] = useState(false);
+  const [durationMonths, setDurationMonths] = useState("");
 
   const [step1, setStep1] = useState<Step1Data>({
     propertyId: "",
@@ -95,25 +102,53 @@ export function ContractForm() {
     },
   });
 
-  // Cargar inquilinos
+  // Cargar inquilinos (ambos valores de type: español heredado e inglés nuevo)
   const { data: tenantsData } = useQuery({
-    queryKey: ["clients", "inquilino", "select"],
+    queryKey: ["clients", "tenant", "select"],
     queryFn: async () => {
-      const res = await fetch("/api/clients?type=inquilino&limit=100");
+      const res = await fetch("/api/clients?type=inquilino,tenant&limit=100");
       if (!res.ok) throw new Error("Error cargando inquilinos");
       return res.json();
     },
   });
 
-  // Cargar propietarios
+  // Cargar propietarios (ambos valores de type)
   const { data: ownersData } = useQuery({
-    queryKey: ["clients", "propietario", "select"],
+    queryKey: ["clients", "owner", "select"],
     queryFn: async () => {
-      const res = await fetch("/api/clients?type=propietario&limit=100");
+      const res = await fetch("/api/clients?type=propietario,owner&limit=100");
       if (!res.ok) throw new Error("Error cargando propietarios");
       return res.json();
     },
   });
+
+  // Buscar garantes (cualquier cliente)
+  const { data: guarantorResults } = useQuery({
+    queryKey: ["clients", "search", guarantorSearch],
+    queryFn: async () => {
+      if (!guarantorSearch.trim()) return { clients: [] };
+      const res = await fetch(
+        `/api/clients?search=${encodeURIComponent(guarantorSearch)}&limit=20`
+      );
+      if (!res.ok) throw new Error("Error buscando clientes");
+      return res.json();
+    },
+    enabled: guarantorSearchOpen,
+  });
+  const guarantorOptions: Array<{ id: string; firstName: string; lastName: string | null }> =
+    guarantorResults?.clients ?? [];
+
+  const addGuarantor = (g: { id: string; firstName: string; lastName: string | null }) => {
+    if (!guarantors.find((x) => x.id === g.id)) {
+      setGuarantors((prev) => [...prev, g]);
+    }
+    setGuarantorSearch("");
+    setGuarantorSearchOpen(false);
+  };
+
+  const removeGuarantor = (id: string) => {
+    setGuarantors((prev) => prev.filter((g) => g.id !== id));
+  };
 
   // Cargar índices custom
   const { data: customIndexesData, refetch: refetchIndexes } = useQuery({
@@ -213,6 +248,7 @@ export function ContractForm() {
         body: JSON.stringify({
           propertyId: step1.propertyId,
           tenantIds: step1.tenantIds,
+          guarantorIds: guarantors.map((g) => g.id),
           ownerId: step1.ownerId,
           contractType: step1.contractType,
           startDate: step2.startDate,
@@ -288,6 +324,35 @@ export function ContractForm() {
   const selectedOwner = owners.find((o) => o.id === step1.ownerId);
 
   return (
+    <>
+    <CreateOwnerPopup
+      isOpen={showTenantPopup}
+      onClose={() => setShowTenantPopup(false)}
+      defaultType="tenant"
+      onCreated={(created) => {
+        // Agregar al cache para que el chip muestre el nombre de inmediato
+        queryClient.setQueryData(
+          ["clients", "tenant", "select"],
+          (old: { clients: { id: string; firstName: string; lastName: string | null }[] } | undefined) => ({
+            clients: [
+              ...(old?.clients ?? []),
+              { id: created.id, firstName: created.firstName, lastName: created.lastName ?? null },
+            ],
+          })
+        );
+        toggleTenant(created.id);
+        setShowTenantPopup(false);
+      }}
+    />
+    <CreateOwnerPopup
+      isOpen={showGuarantorPopup}
+      onClose={() => setShowGuarantorPopup(false)}
+      defaultType="guarantor"
+      onCreated={(created) => {
+        addGuarantor({ id: created.id, firstName: created.firstName, lastName: created.lastName ?? null });
+        setShowGuarantorPopup(false);
+      }}
+    />
     <div className="w-full max-w-2xl space-y-8">
       {/* Indicador de pasos */}
       <div className="flex items-center gap-2">
@@ -440,6 +505,14 @@ export function ContractForm() {
                           </label>
                         ))
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setShowTenantPopup(true)}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-primary hover:bg-accent transition-colors"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Crear nueva persona
+                    </button>
                   </div>
                 </div>
               )}
@@ -450,6 +523,99 @@ export function ContractForm() {
               <p className="text-xs text-muted-foreground">
                 El primero seleccionado será el inquilino principal.
               </p>
+            </div>
+
+            {/* Garantes */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                Garantes
+              </Label>
+
+              {guarantors.length > 0 && (
+                <div className="flex flex-wrap gap-2 pb-1">
+                  {guarantors.map((g) => (
+                    <Badge key={g.id} variant="secondary" className="gap-1 pr-1">
+                      <span>{`${g.firstName} ${g.lastName || ""}`.trim()}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeGuarantor(g.id)}
+                        className="ml-1 rounded-sm hover:bg-destructive/20 p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setGuarantorSearchOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-3 py-2 border rounded-md text-sm text-muted-foreground hover:bg-accent transition-colors"
+              >
+                <span>
+                  {guarantorSearchOpen ? "Cerrar búsqueda" : "+ Agregar garante"}
+                </span>
+                <span className="text-xs">{guarantorSearchOpen ? "▲" : "▼"}</span>
+              </button>
+
+              {guarantorSearchOpen && (
+                <div className="border rounded-md overflow-hidden">
+                  <div className="p-2 border-b flex items-center gap-2">
+                    <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    <input
+                      autoFocus
+                      type="text"
+                      value={guarantorSearch}
+                      onChange={(e) => setGuarantorSearch(e.target.value)}
+                      placeholder="Buscar persona..."
+                      className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+                    />
+                    {guarantorSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setGuarantorSearch("")}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="divide-y max-h-48 overflow-y-auto">
+                    {guarantorSearch.length < 2 ? (
+                      <p className="p-3 text-sm text-muted-foreground text-center">
+                        Escribí al menos 2 caracteres para buscar
+                      </p>
+                    ) : guarantorOptions.length === 0 ? (
+                      <p className="p-3 text-sm text-muted-foreground text-center">
+                        Sin resultados
+                      </p>
+                    ) : (
+                      guarantorOptions
+                        .filter((g) => !guarantors.find((x) => x.id === g.id))
+                        .map((g) => (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => addGuarantor(g)}
+                            className="w-full flex items-start px-3 py-2.5 text-sm hover:bg-accent transition-colors text-left"
+                          >
+                            {`${g.firstName} ${g.lastName || ""}`.trim()}
+                          </button>
+                        ))
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowGuarantorPopup(true)}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-primary hover:bg-accent transition-colors"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Crear nueva persona
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -528,13 +694,41 @@ export function ContractForm() {
               <Input
                 type="date"
                 value={step2.startDate}
-                onChange={(e) =>
-                  setStep2((s) => ({ ...s, startDate: e.target.value }))
-                }
+                onChange={(e) => {
+                  const newStart = e.target.value;
+                  const months = parseInt(durationMonths);
+                  if (newStart && months >= 1) {
+                    const d = new Date(newStart);
+                    d.setMonth(d.getMonth() + months);
+                    const newEnd = d.toISOString().slice(0, 10);
+                    setStep2((s) => ({ ...s, startDate: newStart, endDate: newEnd }));
+                  } else {
+                    setStep2((s) => ({ ...s, startDate: newStart }));
+                  }
+                }}
               />
               {fieldErrors.startDate && (
                 <p className="text-sm text-destructive">{fieldErrors.startDate}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Duración (meses)</Label>
+              <Input
+                type="number"
+                min="1"
+                value={durationMonths}
+                placeholder="Ej: 24"
+                onChange={(e) => {
+                  const months = parseInt(e.target.value);
+                  setDurationMonths(e.target.value);
+                  if (step2.startDate && months >= 1) {
+                    const d = new Date(step2.startDate);
+                    d.setMonth(d.getMonth() + months);
+                    setStep2((s) => ({ ...s, endDate: d.toISOString().slice(0, 10) }));
+                  }
+                }}
+              />
             </div>
 
             <div className="space-y-2">
@@ -544,9 +738,18 @@ export function ContractForm() {
               <Input
                 type="date"
                 value={step2.endDate}
-                onChange={(e) =>
-                  setStep2((s) => ({ ...s, endDate: e.target.value }))
-                }
+                onChange={(e) => {
+                  const newEnd = e.target.value;
+                  setStep2((s) => ({ ...s, endDate: newEnd }));
+                  if (step2.startDate && newEnd) {
+                    const start = new Date(step2.startDate);
+                    const end = new Date(newEnd);
+                    const months =
+                      (end.getFullYear() - start.getFullYear()) * 12 +
+                      (end.getMonth() - start.getMonth());
+                    if (months >= 1) setDurationMonths(String(months));
+                  }
+                }}
               />
               {fieldErrors.endDate && (
                 <p className="text-sm text-destructive">{fieldErrors.endDate}</p>
@@ -811,6 +1014,20 @@ export function ContractForm() {
                 ))}
               </div>
             </div>
+            {guarantors.length > 0 && (
+              <div className="grid grid-cols-2 gap-2 p-4">
+                <span className="text-muted-foreground">
+                  {guarantors.length > 1 ? "Garantes" : "Garante"}
+                </span>
+                <div className="flex flex-col gap-1">
+                  {guarantors.map((g) => (
+                    <span key={g.id} className="font-medium">
+                      {`${g.firstName} ${g.lastName || ""}`.trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2 p-4">
               <span className="text-muted-foreground">Propietario</span>
               <span className="font-medium">{selectedOwner?.label ?? "-"}</span>
@@ -903,5 +1120,6 @@ export function ContractForm() {
         </div>
       )}
     </div>
+    </>
   );
 }

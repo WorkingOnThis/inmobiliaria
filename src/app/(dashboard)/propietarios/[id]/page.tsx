@@ -14,6 +14,7 @@ import { OwnerTabData } from "@/components/owners/owner-tab-data";
 import { OwnerTabCurrentAccount } from "@/components/owners/owner-tab-current-account";
 import { OwnerTabProperties } from "@/components/owners/owner-tab-properties";
 import { OwnerTabDocuments } from "@/components/owners/owner-tab-documents";
+import { ClientRolesBadges } from "@/components/clients/client-roles-badges";
 
 interface Owner {
   id: string;
@@ -201,7 +202,7 @@ export default function OwnerDetailPage() {
                       ? `${owner.firstName} ${owner.lastName}`
                       : owner.firstName}
                   </h1>
-                  <div className="flex items-center gap-2.5 mt-1">
+                  <div className="flex items-center flex-wrap gap-2.5 mt-1">
                     <Badge
                       variant={statusVariantMap[owner.status]?.variant ?? "draft"}
                       className="normal-case font-medium text-[0.75rem] tracking-normal gap-1.5"
@@ -219,6 +220,7 @@ export default function OwnerDetailPage() {
                         DNI {owner.dni}
                       </span>
                     )}
+                    <ClientRolesBadges clientId={owner.id} currentRole="owner" />
                   </div>
                 </div>
               </div>

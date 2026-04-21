@@ -2,17 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
+import { contractGuarantee } from "@/db/schema/contract-guarantee";
+import { contractDocument } from "@/db/schema/contract-document";
 import { client } from "@/db/schema/client";
 import { property } from "@/db/schema/property";
+import { user } from "@/db/schema/better-auth";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and, ne } from "drizzle-orm";
 import { z } from "zod";
 import { ADJUSTMENT_INDEXES } from "@/lib/clients/constants";
 
 const patchContractSchema = z.object({
-  // Condiciones
   startDate: z.string().min(1).optional(),
   endDate: z.string().min(1).optional(),
   monthlyAmount: z.coerce.number().positive().optional(),
@@ -25,9 +27,7 @@ const patchContractSchema = z.object({
   status: z
     .enum(["draft", "pending_signature", "active", "expiring_soon", "expired", "terminated"])
     .optional(),
-  // Partes
   ownerId: z.string().min(1).optional(),
-  tenantIds: z.array(z.string().min(1)).min(1).optional(),
 });
 
 export async function GET(
@@ -65,7 +65,8 @@ export async function GET(
         propertyId: contract.propertyId,
         propertyAddress: property.address,
         propertyType: property.type,
-        // Servicios de la propiedad
+        propertyFloorUnit: property.floorUnit,
+        propertyZone: property.zone,
         serviceElectricity: property.serviceElectricity,
         serviceGas: property.serviceGas,
         serviceWater: property.serviceWater,
@@ -82,59 +83,160 @@ export async function GET(
       return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
     }
 
-    const [ownerData, tenantsData] = await Promise.all([
-      db
-        .select({
-          id: client.id,
-          firstName: client.firstName,
-          lastName: client.lastName,
-          email: client.email,
-          phone: client.phone,
-          whatsapp: client.whatsapp,
-          dni: client.dni,
-        })
-        .from(client)
-        .where(eq(client.id, row.ownerId))
-        .limit(1),
-      db
-        .select({
-          clientId: contractTenant.clientId,
-          role: contractTenant.role,
-          firstName: client.firstName,
-          lastName: client.lastName,
-          email: client.email,
-          phone: client.phone,
-          whatsapp: client.whatsapp,
-          dni: client.dni,
-        })
-        .from(contractTenant)
-        .innerJoin(client, eq(contractTenant.clientId, client.id))
-        .where(eq(contractTenant.contractId, id)),
-    ]);
+    const [ownerData, participantsData, guaranteesData, documentsData] =
+      await Promise.all([
+        db
+          .select({
+            id: client.id,
+            firstName: client.firstName,
+            lastName: client.lastName,
+            email: client.email,
+            phone: client.phone,
+            whatsapp: client.whatsapp,
+            dni: client.dni,
+            cuit: client.cuit,
+            address: client.address,
+            type: client.type,
+          })
+          .from(client)
+          .where(eq(client.id, row.ownerId))
+          .limit(1),
+        db
+          .select({
+            id: contractParticipant.id,
+            role: contractParticipant.role,
+            clientId: client.id,
+            firstName: client.firstName,
+            lastName: client.lastName,
+            email: client.email,
+            phone: client.phone,
+            whatsapp: client.whatsapp,
+            dni: client.dni,
+            cuit: client.cuit,
+            address: client.address,
+            type: client.type,
+          })
+          .from(contractParticipant)
+          .innerJoin(client, eq(contractParticipant.clientId, client.id))
+          .where(eq(contractParticipant.contractId, id)),
+        db
+          .select({
+            id: contractGuarantee.id,
+            type: contractGuarantee.type,
+            clientId: contractGuarantee.clientId,
+            propertyId: contractGuarantee.propertyId,
+            externalAddress: contractGuarantee.externalAddress,
+            externalCadastralRef: contractGuarantee.externalCadastralRef,
+            externalOwnerName: contractGuarantee.externalOwnerName,
+            externalOwnerDni: contractGuarantee.externalOwnerDni,
+            createdAt: contractGuarantee.createdAt,
+            guarantorFirstName: client.firstName,
+            guarantorLastName: client.lastName,
+            guarantorDni: client.dni,
+            guarantorCuit: client.cuit,
+            guarantorAddress: client.address,
+            guarantorPhone: client.phone,
+            guarantorEmail: client.email,
+          })
+          .from(contractGuarantee)
+          .leftJoin(client, eq(contractGuarantee.clientId, client.id))
+          .where(eq(contractGuarantee.contractId, id)),
+        db
+          .select({
+            id: contractDocument.id,
+            name: contractDocument.name,
+            url: contractDocument.url,
+            uploadedBy: contractDocument.uploadedBy,
+            createdAt: contractDocument.createdAt,
+            uploaderName: user.name,
+          })
+          .from(contractDocument)
+          .leftJoin(user, eq(contractDocument.uploadedBy, user.id))
+          .where(eq(contractDocument.contractId, id))
+          .orderBy(contractDocument.createdAt),
+      ]);
 
-    const owner = ownerData[0]
+    const ownerRow = ownerData[0];
+    const owner = ownerRow
       ? {
-          id: ownerData[0].id,
-          name: `${ownerData[0].firstName} ${ownerData[0].lastName || ""}`.trim(),
-          email: ownerData[0].email,
-          phone: ownerData[0].phone || ownerData[0].whatsapp,
-          dni: ownerData[0].dni,
+          id: ownerRow.id,
+          name: `${ownerRow.firstName} ${ownerRow.lastName || ""}`.trim(),
+          email: ownerRow.email,
+          phone: ownerRow.phone || ownerRow.whatsapp,
+          dni: ownerRow.dni,
+          cuit: ownerRow.cuit,
+          address: ownerRow.address,
+          type: ownerRow.type,
         }
       : null;
 
-    const tenants = tenantsData.map((t) => ({
-      id: t.clientId,
-      name: `${t.firstName} ${t.lastName || ""}`.trim(),
-      role: t.role,
-      email: t.email,
-      phone: t.phone || t.whatsapp,
-      dni: t.dni,
+    // Legacy compat: expose tenants array from participants
+    const tenants = participantsData
+      .filter((p) => p.role === "tenant")
+      .map((p) => ({
+        id: p.clientId,
+        name: `${p.firstName} ${p.lastName || ""}`.trim(),
+        role: p.role,
+        email: p.email,
+        phone: p.phone || p.whatsapp,
+        dni: p.dni,
+      }));
+
+    const participants = participantsData.map((p) => ({
+      id: p.id,
+      role: p.role,
+      client: {
+        id: p.clientId,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        email: p.email,
+        phone: p.phone || p.whatsapp,
+        dni: p.dni,
+        cuit: p.cuit,
+        address: p.address,
+        type: p.type,
+      },
+    }));
+
+    const guarantees = guaranteesData.map((g) => ({
+      id: g.id,
+      type: g.type,
+      clientId: g.clientId,
+      propertyId: g.propertyId,
+      externalAddress: g.externalAddress,
+      externalCadastralRef: g.externalCadastralRef,
+      externalOwnerName: g.externalOwnerName,
+      externalOwnerDni: g.externalOwnerDni,
+      createdAt: g.createdAt,
+      guarantor: g.clientId
+        ? {
+            firstName: g.guarantorFirstName,
+            lastName: g.guarantorLastName,
+            dni: g.guarantorDni,
+            cuit: g.guarantorCuit,
+            address: g.guarantorAddress,
+            phone: g.guarantorPhone,
+            email: g.guarantorEmail,
+          }
+        : null,
+    }));
+
+    const documents = documentsData.map((d) => ({
+      id: d.id,
+      name: d.name,
+      url: d.url,
+      uploadedBy: d.uploadedBy,
+      uploaderName: d.uploaderName,
+      createdAt: d.createdAt,
     }));
 
     return NextResponse.json({
       ...row,
       owner,
       tenants,
+      participants,
+      guarantees,
+      documents,
     });
   } catch (error) {
     console.error("Error fetching contract:", error);
@@ -160,9 +262,8 @@ export async function PATCH(
 
     const { id } = await params;
 
-    // Verificar que existe
     const [existing] = await db
-      .select({ id: contract.id })
+      .select({ id: contract.id, status: contract.status })
       .from(contract)
       .where(eq(contract.id, id))
       .limit(1);
@@ -181,8 +282,6 @@ export async function PATCH(
     }
 
     const data = result.data;
-
-    // Construir solo los campos que vienen en el body
     const updates: Record<string, unknown> = { updatedAt: new Date() };
 
     if (data.startDate !== undefined) updates.startDate = data.startDate;
@@ -197,13 +296,11 @@ export async function PATCH(
     if (data.paymentModality !== undefined)
       updates.paymentModality = data.paymentModality;
     if (data.adjustmentIndex !== undefined) {
-      // Verificar que el índice es válido (estándar o custom)
       const isStandard = (ADJUSTMENT_INDEXES as readonly string[]).includes(
         data.adjustmentIndex
       );
       if (!isStandard) {
-        // Lo aceptamos igual — los custom índices son strings libres validados al crearlos
-        // El formulario solo muestra opciones válidas
+        // custom indexes accepted as-is
       }
       updates.adjustmentIndex = data.adjustmentIndex;
     }
@@ -211,7 +308,6 @@ export async function PATCH(
       updates.adjustmentFrequency = data.adjustmentFrequency;
     if (data.status !== undefined) updates.status = data.status;
     if (data.ownerId !== undefined) {
-      // Verificar que el propietario existe
       const [existingOwner] = await db
         .select({ id: client.id })
         .from(client)
@@ -226,42 +322,33 @@ export async function PATCH(
       updates.ownerId = data.ownerId;
     }
 
-    if (data.tenantIds !== undefined) {
-      // Verificar que todos los inquilinos existen
-      const existingTenants = await db
-        .select({ id: client.id })
-        .from(client)
-        .where(inArray(client.id, data.tenantIds));
-      if (existingTenants.length !== data.tenantIds.length) {
-        return NextResponse.json(
-          { error: "Uno o más inquilinos no existen" },
-          { status: 400 }
-        );
-      }
+    const activating =
+      data.status === "active" && existing.status !== "active";
 
-      // Actualizar contrato e inquilinos en una transacción
-      await db.transaction(async (tx) => {
-        if (Object.keys(updates).length > 1) {
-          // > 1 porque siempre tiene updatedAt
-          await tx.update(contract).set(updates).where(eq(contract.id, id));
+    await db.transaction(async (tx) => {
+      await tx.update(contract).set(updates).where(eq(contract.id, id));
+
+      if (activating) {
+        const tenantParticipants = await tx
+          .select({ clientId: contractParticipant.clientId })
+          .from(contractParticipant)
+          .where(
+            and(
+              eq(contractParticipant.contractId, id),
+              eq(contractParticipant.role, "tenant")
+            )
+          );
+
+        for (const p of tenantParticipants) {
+          await tx
+            .update(client)
+            .set({ type: "tenant" })
+            .where(
+              and(eq(client.id, p.clientId), ne(client.type, "tenant"))
+            );
         }
-        // Borrar inquilinos anteriores y reinsertar los nuevos
-        await tx
-          .delete(contractTenant)
-          .where(eq(contractTenant.contractId, id));
-        await tx.insert(contractTenant).values(
-          data.tenantIds!.map((clientId, index) => ({
-            contractId: id,
-            clientId,
-            role: index === 0 ? "primary" : "co-tenant",
-          }))
-        );
-      });
-
-      return NextResponse.json({ message: "Contrato actualizado" });
-    }
-
-    await db.update(contract).set(updates).where(eq(contract.id, id));
+      }
+    });
 
     return NextResponse.json({ message: "Contrato actualizado" });
   } catch (error) {

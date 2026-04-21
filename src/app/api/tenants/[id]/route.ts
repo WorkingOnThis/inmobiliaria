@@ -8,8 +8,17 @@ import { property } from "@/db/schema/property";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { calculateStatus } from "@/lib/tenants/status";
+
+const CONTRACT_STATUS_PRIORITY: Record<string, number> = {
+  active: 0,
+  expiring_soon: 1,
+  pending_signature: 2,
+  draft: 3,
+  expired: 4,
+  terminated: 5,
+};
 
 export async function GET(
   _request: NextRequest,
@@ -26,19 +35,19 @@ export async function GET(
 
     const { id } = await params;
 
-    // Inquilino
-    const [inquilino] = await db
+    // Look up the client by ID (role is derived from contract_tenant, not client.type)
+    const [tenant] = await db
       .select()
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "inquilino")))
+      .where(eq(client.id, id))
       .limit(1);
 
-    if (!inquilino) {
+    if (!tenant) {
       return NextResponse.json({ error: "Inquilino no encontrado" }, { status: 404 });
     }
 
-    // Contrato activo (vía tabla intermedia contract_tenant)
-    const [contratoRow] = await db
+    // All contracts where this client is a tenant (any status)
+    const tenantContracts = await db
       .select({
         id: contract.id,
         contractNumber: contract.contractNumber,
@@ -58,37 +67,38 @@ export async function GET(
       })
       .from(contractTenant)
       .innerJoin(contract, eq(contract.id, contractTenant.contractId))
-      .where(
-        and(
-          eq(contractTenant.clientId, id),
-          eq(contract.status, "active")
-        )
-      )
-      .limit(1);
+      .where(eq(contractTenant.clientId, id));
 
-    // Propiedad (si hay contrato)
+    // Pick the most relevant contract
+    const bestContract = tenantContracts.sort(
+      (a, b) =>
+        (CONTRACT_STATUS_PRIORITY[a.status] ?? 99) -
+        (CONTRACT_STATUS_PRIORITY[b.status] ?? 99)
+    )[0] ?? null;
+
+    // Property (from best contract)
     let propiedad = null;
-    if (contratoRow) {
+    if (bestContract) {
       const [prop] = await db
         .select()
         .from(property)
-        .where(eq(property.id, contratoRow.propertyId))
+        .where(eq(property.id, bestContract.propertyId))
         .limit(1);
       propiedad = prop ?? null;
     }
 
-    // Propietario (si hay contrato)
+    // Owner (from best contract)
     let propietario = null;
-    if (contratoRow) {
+    if (bestContract) {
       const [owner] = await db
         .select()
         .from(client)
-        .where(eq(client.id, contratoRow.ownerId))
+        .where(eq(client.id, bestContract.ownerId))
         .limit(1);
       propietario = owner ?? null;
     }
 
-    // Movimientos de caja vinculados al inquilino (últimos 24)
+    // Movements for this tenant (last 24)
     const movimientos = await db
       .select()
       .from(cajaMovimiento)
@@ -96,22 +106,24 @@ export async function GET(
       .orderBy(desc(cajaMovimiento.date))
       .limit(24);
 
-    // Último pago registrado
     const lastPayment = movimientos.find((m) => m.tipo === "income");
 
-    // Estado calculado
     const { estado, diasMora } = calculateStatus(
-      contratoRow
-        ? { endDate: contratoRow.endDate, paymentDay: contratoRow.paymentDay }
+      bestContract
+        ? {
+            endDate: bestContract.endDate,
+            paymentDay: bestContract.paymentDay,
+            contractStatus: bestContract.status,
+          }
         : null,
       lastPayment?.date ?? null
     );
 
     return NextResponse.json({
-      inquilino: { ...inquilino, estado, diasMora },
-      contrato: contratoRow ?? null,
-      propiedad,
-      propietario,
+      tenant: { ...tenant, estado, diasMora },
+      contrato: bestContract ?? null,
+      property: propiedad,
+      owner: propietario,
       movimientos,
     });
   } catch (error) {

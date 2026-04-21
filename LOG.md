@@ -4,6 +4,115 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## Sesión 2026-04-21 — Modelo multi-rol de clientes y tenants sin contrato vigente
+
+### Qué hice
+
+Resolvimos dos problemas conectados: (1) un bug que hacía que Matías Konstantinides no apareciera en `/inquilinos` y (2) el diseño de cómo manejar clientes con múltiples roles simultáneos (alguien que cobra un alquiler como propietario y paga otro como inquilino).
+
+**Bug fix:** el API de tenants filtraba por `client.type = "inquilino"` (español), pero el schema siempre usó inglés (`"tenant"`). Se normalizó a inglés en todos los routes. Se creó un script de migración de DB.
+
+**Modelo multi-rol:** un cliente es una persona única con roles derivados de sus relaciones:
+- `tenant` si tiene `type = "tenant"` o está en `contract_tenant`
+- `owner` si tiene propiedades o contratos como propietario
+- `guarantor` si está en `contract_guarantee`
+
+**Tenants sin contrato activo:** ahora `/inquilinos` muestra tenants con contratos en cualquier estado. Nuevos estados: `pendiente_firma` (badge amarillo), `historico` (badge gris). No se calcula mora para esos estados.
+
+**Selector de roles:** nuevo componente `ClientRolesBadges` que aparece en la ficha del inquilino y del propietario. Si la persona también tiene otro rol, muestra un chip clickeable que lleva a la otra vista.
+
+**Archivos modificados:**
+- `src/lib/tenants/status.ts` — nuevos estados `pendiente_firma` e `historico`
+- `src/app/api/tenants/route.ts` — filtro por relación + tipo, inglés
+- `src/app/api/tenants/[id]/route.ts` — sin filtro de tipo, contratos de cualquier status
+- `src/app/api/tenants/[id]/movimientos/route.ts` — normalización de tipo
+- `src/components/tenants/tenants-list.tsx` — nuevos badges y filtros
+- `src/app/(dashboard)/inquilinos/[id]/page.tsx` — nuevos estados, bug fix de URL, integración de roles
+- `src/app/(dashboard)/propietarios/[id]/page.tsx` — integración de roles
+
+**Archivos nuevos:**
+- `src/app/api/clients/[id]/roles/route.ts` — endpoint que devuelve roles derivados
+- `src/components/clients/client-roles-badges.tsx` — badges cross-link entre roles
+- `scripts/migrate-client-type-to-english.ts` — migración one-shot ya ejecutada
+
+### Por qué lo hice así y no de otra forma
+
+**No duplicamos clientes.** La alternativa era crear dos registros distintos para la misma persona (uno como propietario, otro como inquilino). Eso rompe la integridad: si cambia el teléfono, tenés que actualizar dos lugares y podés tener info desactualizada. En cambio, un cliente = una persona, y los roles se calculan desde las relaciones que ya existen (contratos, propiedades).
+
+**Roles derivados, no almacenados.** La alternativa era guardar los roles en una tabla `client_role` o en un array en `client`. No lo hicimos porque agregar una tabla nueva requiere migración, y los roles ya están implícitos en las tablas de contratos y propiedades. Derivar evita sincronización manual.
+
+**OR entre type y contract_tenant.** Matías tiene `type = "tenant"` pero todavía no está asignado a ningún contrato. La query pura por relación no lo hubiera mostrado. El OR entre tipo Y relación cubre ambos casos: clientes creados como tenants que todavía no tienen contrato, y clientes de otro tipo que son inquilinos por relación.
+
+### Conceptos que aparecieron
+
+- **Modelo polimórfico:** una sola tabla `client` representa personas con distintos roles. Los roles no se guardan en un campo fijo sino que se calculan desde las relaciones. Es más flexible pero requiere más queries.
+- **Estado derivado vs. almacenado:** el estado de un inquilino (`activo`, `en_mora`, etc.) no se guarda en la base de datos — se calcula cada vez que se pide. Si se guardara, podría quedar desactualizado. Calcular es más trabajo pero siempre correcto.
+- **Prioridad de contratos:** cuando un cliente tiene múltiples contratos (activo + uno histórico), ¿cuál mostramos? Asignamos un número de prioridad a cada status y elegimos el más relevante. Es una regla de negocio arbitraria pero explícita.
+- **OR condition en Drizzle:** `or(eq(campo, valor1), inArray(campo, lista))` combina dos condiciones de filtro con OR. SQL equivalente: `WHERE type = 'tenant' OR id IN (...)`.
+
+### Preguntas para reflexionar
+
+1. ¿Qué pasa cuando alguien fue inquilino, se terminó su contrato, y dos años después es inquilino en otro lugar con la misma agencia? ¿Cómo distinguís el historial del primer contrato del segundo?
+2. Si un cliente tiene rol `tenant` por `type` pero nunca se le asigna un contrato, ¿debería aparecer en la lista para siempre o hay un momento donde "caduca" ese rol?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: Modelo polimórfico — una tabla, múltiples roles derivados de relaciones
+- [ ] Decisión técnica: Roles derivados vs. almacenados — por qué no usamos tabla `client_role`
+- [ ] Patrón: OR condition para "tipo declarado" + "relación existente" en queries de listado
+- [ ] Bug: `client.type = "inquilino"` (español) vs. `"tenant"` (inglés) — cómo detectar este tipo de inconsistencia en el futuro
+
+---
+
+## Sesión 2026-04-20 — Ficha de contrato con tabs y schema de participantes
+
+### Qué hice
+
+Construí tres capas: schema, API y UI.
+
+**Schema** — Tres tablas nuevas en PostgreSQL aplicadas con `db:push`:
+- `contract_participant` — vincula un contrato con un cliente en un rol (owner/tenant/guarantor). Reemplaza a `contract_tenant`.
+- `contract_guarantee` — registra garantías personales (cliente) o reales (propiedad interna o externa con campos libres).
+- `contract_document` — almacena archivos adjuntos al contrato (PDF, JPG, PNG guardados en `/public/uploads/contracts/[id]/`).
+
+**API** — Ocho endpoints nuevos (`POST/DELETE` para participants, guarantees y documents). Se extendió el `GET /api/contracts/[id]` para devolver los tres arrays nuevos, y el `PATCH` para ejecutar la lógica de activación: cuando el status cambia a "active", busca los participantes con role="tenant" y setea `client.type = 'tenant'` en la DB.
+
+El `POST /api/contracts` (crear contrato) ahora escribe en `contractParticipant` en vez de `contract_tenant`. El `GET /api/contracts` (lista) también lee de la tabla nueva.
+
+**UI** — Cuatro tabs en la ficha `/contratos/[id]`: Partes, Operativo, Documentos, Datos para documentos. El contenido previo (condiciones, cláusulas, acta, actividad, servicios) quedó en el tab Operativo sin tocar. Los tres tabs nuevos son componentes propios.
+
+También se extendió el formulario de creación de contrato con una sección de garantes (combobox con búsqueda + popup "Crear nueva persona").
+
+### Por qué lo hice así y no de otra forma
+
+- **No reescribí el contrato-detail.tsx de cero**: tiene 1310 líneas con lógica compleja de edición inline. Envolverlo en tabs con un fragmento condicional fue mucho más seguro que extraerlo todo.
+- **`contractParticipant` reemplaza `contract_tenant`** en código nuevo, pero deja la tabla vieja declarada en el schema sin eliminarla — así no rompemos nada hasta confirmar que ninguna consulta depende de ella.
+- **Enums en inglés en código nuevo** (`owner/tenant/guarantor`), sin migrar los datos existentes en español. Es una deuda técnica documentada.
+- **Archivos en `/public/uploads/`**: suficiente para MVP. Para producción real habría que usar S3 o similar.
+
+### Conceptos que aparecieron
+
+- **discriminated union en TypeScript**: el schema de Zod para garantías usa `z.discriminatedUnion("type", [...])` — el tipo depende del valor de un campo específico (`"personal"` o `"real"`). Drizzle ORM no lo acepta directo en el `insert`, tuvimos que construir el objeto de forma condicional.
+- **Fragment de React (`<>...</>`)**: cuando un componente necesita devolver múltiples elementos sin un div contenedor. Lo usamos para envolver todo el contenido del tab Operativo en un solo bloque condicional.
+- **`useSearchParams` + `router.replace`**: patrón para guardar el tab activo en la URL (`?tab=partes`). Permite compartir el link y que el botón atrás del navegador funcione.
+- **`$defaultFn(() => crypto.randomUUID())`**: forma de decirle a Drizzle que genere el ID automáticamente al insertar, sin pasarlo desde el código.
+- **shadcn `AlertDialog`**: componente de confirmación modal antes de ejecutar una acción destructiva (ej: eliminar documento). Diferente al `alert()` nativo del browser: es accesible y estilizable.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué conviene guardar el tab activo en la URL (`?tab=`) en vez de en estado local del componente (`useState`)?
+2. Si `contract_tenant` y `contractParticipant` tienen datos distintos (datos viejos en la vieja, datos nuevos en la nueva), ¿qué pasa cuando alguien abre un contrato viejo en la ficha nueva?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Concepto**: `useSearchParams` + `router.replace` como forma de sincronizar UI state con la URL
+- [ ] **Patrón**: wrapping condicional de tabs con fragment (`<>`) en componentes grandes sin refactorizar
+- [ ] **Decisión técnica**: reemplazar tabla legacy (`contract_tenant`) gradualmente en código nuevo, sin migración de datos ni borrado de la tabla vieja
+- [ ] **Bug**: discriminated union de Zod no es compatible directamente con Drizzle `insert` — hay que construir el objeto condicionalmente
+- [ ] **Concepto**: `$defaultFn` en Drizzle vs. generar el UUID en el handler de la API
+
+---
+
 ## Sesión 2026-04-17 — Migración shadcn/ui: lista e inquilinos
 
 ### Qué hice

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { client } from "@/db/schema/client";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
@@ -16,6 +16,7 @@ const createContractSchema = z.object({
   tenantIds: z
     .array(z.string().min(1))
     .min(1, "Al menos un inquilino es requerido"),
+  guarantorIds: z.array(z.string().min(1)).optional().default([]),
   ownerId: z.string().min(1, "El propietario es requerido"),
   contractType: z.enum(CONTRACT_TYPES, {
     errorMap: () => ({ message: "Tipo de contrato inválido" }),
@@ -30,10 +31,6 @@ const createContractSchema = z.object({
   adjustmentIndex: z.string().min(1).default("none"),
   adjustmentFrequency: z.coerce.number().int().min(1).max(12).default(12),
 });
-
-function generateId(): string {
-  return crypto.randomUUID();
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -105,10 +102,8 @@ export async function GET(request: NextRequest) {
         .groupBy(contract.status),
     ]);
 
-    // Para cada contrato: resolver propietario e inquilinos
     const enriched = await Promise.all(
       contractsData.map(async (c) => {
-        // Buscar propietario e inquilinos en paralelo
         const [ownerData, tenantsData] = await Promise.all([
           db
             .select({ firstName: client.firstName, lastName: client.lastName })
@@ -117,14 +112,19 @@ export async function GET(request: NextRequest) {
             .limit(1),
           db
             .select({
-              clientId: contractTenant.clientId,
-              role: contractTenant.role,
+              clientId: contractParticipant.clientId,
+              role: contractParticipant.role,
               firstName: client.firstName,
               lastName: client.lastName,
             })
-            .from(contractTenant)
-            .innerJoin(client, eq(contractTenant.clientId, client.id))
-            .where(eq(contractTenant.contractId, c.id)),
+            .from(contractParticipant)
+            .innerJoin(client, eq(contractParticipant.clientId, client.id))
+            .where(
+              and(
+                eq(contractParticipant.contractId, c.id),
+                eq(contractParticipant.role, "tenant")
+              )
+            ),
         ]);
 
         const tenantNames = tenantsData.map((t) =>
@@ -192,7 +192,6 @@ export async function POST(request: NextRequest) {
 
     const data = result.data;
 
-    // Verificar que existen los registros referenciados
     const [existingProperty] = await db
       .select()
       .from(property)
@@ -202,14 +201,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "La propiedad no existe" }, { status: 400 });
     }
 
-    // Verificar todos los inquilinos
-    const existingTenants = await db
+    const allClientIds = [...data.tenantIds, ...data.guarantorIds];
+    const existingClients = await db
       .select({ id: client.id })
       .from(client)
-      .where(inArray(client.id, data.tenantIds));
-    if (existingTenants.length !== data.tenantIds.length) {
+      .where(inArray(client.id, allClientIds));
+    if (existingClients.length !== allClientIds.length) {
       return NextResponse.json(
-        { error: "Uno o más inquilinos no existen" },
+        { error: "Uno o más participantes no existen" },
         { status: 400 }
       );
     }
@@ -223,7 +222,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "El propietario no existe" }, { status: 400 });
     }
 
-    // Generar número de contrato (CON-0001, CON-0002, ...)
     const [last] = await db
       .select({ contractNumber: contract.contractNumber })
       .from(contract)
@@ -235,10 +233,9 @@ export async function POST(request: NextRequest) {
       : 1;
     const contractNumber = `CON-${String(nextNum).padStart(4, "0")}`;
 
-    const contractId = generateId();
+    const contractId = crypto.randomUUID();
     const now = new Date();
 
-    // Insertar contrato e inquilinos en una transacción
     const [newContract] = await db.transaction(async (tx) => {
       const inserted = await tx
         .insert(contract)
@@ -264,14 +261,21 @@ export async function POST(request: NextRequest) {
         })
         .returning();
 
-      // Insertar un registro en contract_tenant por cada inquilino
-      await tx.insert(contractTenant).values(
-        data.tenantIds.map((clientId, index) => ({
+      const participantRows = [
+        { contractId, clientId: data.ownerId, role: "owner" as const },
+        ...data.tenantIds.map((clientId) => ({
           contractId,
           clientId,
-          role: index === 0 ? "primary" : "co-tenant",
-        }))
-      );
+          role: "tenant" as const,
+        })),
+        ...data.guarantorIds.map((clientId) => ({
+          contractId,
+          clientId,
+          role: "guarantor" as const,
+        })),
+      ];
+
+      await tx.insert(contractParticipant).values(participantRows);
 
       return inserted;
     });

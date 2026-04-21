@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Building2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 
 interface PropertyData {
   id: string;
@@ -86,12 +87,39 @@ function PropertyInitial({ address }: { address: string }) {
   );
 }
 
+interface CoOwnerProperty {
+  id: string;
+  propertyId: string;
+  vinculo: string | null;
+  sharePercent: string | null;
+  property?: {
+    id: string;
+    address: string;
+    type: string;
+    status: string;
+    zone: string | null;
+    rooms: number | null;
+    surface: string | null;
+  };
+}
+
 export function OwnerTabProperties({
   ownerId,
   propiedades,
   contratosActivos,
 }: OwnerTabPropertiesProps) {
-  if (propiedades.length === 0) {
+  const { data: coOwnerData } = useQuery<{ coOwnerProperties: CoOwnerProperty[] }>({
+    queryKey: ["co-owner-properties", ownerId],
+    queryFn: async () => {
+      const res = await fetch(`/api/owners/${ownerId}/co-owner-properties`);
+      if (!res.ok) return { coOwnerProperties: [] };
+      return res.json();
+    },
+  });
+
+  const coOwnerProperties = coOwnerData?.coOwnerProperties ?? [];
+
+  if (propiedades.length === 0 && coOwnerProperties.length === 0) {
     return (
       <div className="p-7 flex flex-col items-center justify-center py-20 gap-4">
         <Building2 size={40} className="text-muted-foreground" />
@@ -123,7 +151,7 @@ export function OwnerTabProperties({
       </div>
 
       {/* Grid: xl:3 md:2 sm:1 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[14px]">
+      {propiedades.length > 0 && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[14px]">
         {propiedades.map((prop) => {
           const { cls: statusCls, label: statusLabel } = getStatusPill(prop.status);
           const contratos = contratosActivos.filter((c) => c.propertyId === prop.id);
@@ -177,7 +205,55 @@ export function OwnerTabProperties({
             </Link>
           );
         })}
-      </div>
+      </div>}
+
+      {/* Co-owner properties */}
+      {coOwnerProperties.length > 0 && (
+        <>
+          <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-muted-foreground mt-2">
+            Co-propietario en
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[14px]">
+            {coOwnerProperties.map((co) => {
+              if (!co.property) return null;
+              const p = co.property;
+              const { cls: statusCls, label: statusLabel } = getStatusPill(p.status);
+              const subtitle = [
+                p.zone,
+                p.rooms ? `${p.rooms} amb.` : null,
+                p.surface ? `${p.surface} m²` : null,
+              ].filter(Boolean).join(" · ");
+
+              return (
+                <Link
+                  key={co.id}
+                  href={`/propiedades/${p.id}`}
+                  className="block bg-surface border border-border rounded-[10px] overflow-hidden hover:border-primary/30 hover:shadow-sm transition-all group"
+                >
+                  <PropertyInitial address={p.address} />
+                  <div className="p-3 flex flex-col gap-2">
+                    <h4 className="text-[14px] font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
+                      {p.address}
+                    </h4>
+                    {subtitle && <p className="text-[12px] text-text-secondary">{subtitle}</p>}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={cn(statusCls)}>{statusLabel}</span>
+                      {co.vinculo && (
+                        <span className="text-[11px] text-muted-foreground capitalize">{co.vinculo}</span>
+                      )}
+                    </div>
+                    {co.sharePercent && (
+                      <div className="text-[12px] text-muted-foreground border-t border-border pt-2 mt-0.5">
+                        {parseFloat(co.sharePercent)}% de participación
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

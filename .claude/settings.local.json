@@ -37,7 +37,12 @@
       "Skill(update-config)",
       "Skill(update-config:*)",
       "Bash(xargs grep *)",
-      "Bash(grep -l \"DashboardLayout\" f:/Documentos/Proyectos/inmobiliaria/src/app/**/*.tsx f:/Documentos/Proyectos/inmobiliaria/src/app/**/**/*.tsx)"
+      "Bash(grep -l \"DashboardLayout\" f:/Documentos/Proyectos/inmobiliaria/src/app/**/*.tsx f:/Documentos/Proyectos/inmobiliaria/src/app/**/**/*.tsx)",
+      "Bash(npx shadcn@latest add alert-dialog --yes)",
+      "Bash(bunx shadcn@latest add alert-dialog --yes)",
+      "Bash(bunx shadcn@latest add alert-dialog)",
+      "Bash(bun scripts/migrate-client-type-to-english.ts)",
+      "Bash(bun -e ' *)"
     ]
   }
 }

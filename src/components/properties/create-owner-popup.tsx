@@ -19,6 +19,8 @@ interface CreateOwnerPopupProps {
   onCreated: (owner: CreatedOwner) => void;
   /** Pre-rellena el nombre desde lo que escribió en el buscador */
   initialName?: string;
+  /** Tipo a crear en el POST — default "owner" */
+  defaultType?: "owner" | "tenant" | "guarantor" | "contact";
 }
 
 /**
@@ -28,7 +30,7 @@ interface CreateOwnerPopupProps {
  * Sólo pide nombre (obligatorio), DNI y WhatsApp (opcionales).
  * Al guardar, hace POST /api/clients y llama onCreated con el nuevo propietario.
  */
-export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" }: CreateOwnerPopupProps) {
+export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "", defaultType = "owner" }: CreateOwnerPopupProps) {
   const [nombre, setNombre] = useState(initialName);
   const [dni, setDni] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -52,7 +54,7 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
           firstName: nombre.trim(),
           dni: dni.trim() || null,
           whatsapp: whatsapp.trim() || null,
-          type: "propietario",
+          type: defaultType,
           createAsUser: false,
         }),
       });
@@ -84,7 +86,7 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
           <div className="flex items-center gap-2">
             <UserPlus size={16} className="text-primary" />
             <span className="text-[13px] font-bold text-on-surface uppercase tracking-wider">
-              Nuevo propietario
+              {defaultType === "guarantor" ? "Nuevo garante" : defaultType === "tenant" ? "Nuevo inquilino" : "Nuevo propietario"}
             </span>
           </div>
           <Button
@@ -102,7 +104,7 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
         <form onSubmit={handleSubmit} className="px-6 py-5 flex flex-col gap-4">
           <p className="text-[11px] text-muted-foreground -mt-1">
             Los campos con <span className="text-primary">*</span> son obligatorios.
-            El resto se completa en la ficha del propietario.
+            El resto se completa en la ficha del cliente.
           </p>
 
           {/* Nombre */}
@@ -151,7 +153,15 @@ export function CreateOwnerPopup({ isOpen, onClose, onCreated, initialName = "" 
               Cancelar
             </Button>
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 size={14} className="animate-spin" /> : "Crear propietario"}
+              {isSaving ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : defaultType === "guarantor" ? (
+                "Crear garante"
+              ) : defaultType === "tenant" ? (
+                "Crear inquilino"
+              ) : (
+                "Crear propietario"
+              )}
             </Button>
           </div>
         </form>
