@@ -63,7 +63,7 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error creating service");
-      toast.success("Service added");
+      toast.success("Servicio agregado");
       onSuccess();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unexpected error");
@@ -77,7 +77,7 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
       {/* Type */}
       <div>
         <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
-          Service type *
+          Tipo de servicio *
         </label>
         <div className="grid grid-cols-4 gap-1.5">
           {SERVICE_TYPES.map((t) => (
@@ -101,7 +101,7 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
       {/* Company */}
       <div>
         <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
-          Service provider
+          Proveedor
         </label>
         <CompanyCombobox
           value={form.company}
@@ -120,19 +120,19 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
-            Holder
+            Titular
           </label>
           <input
             type="text"
             value={form.holder}
             onChange={(e) => set("holder", e.target.value)}
-            placeholder="Holder name"
+            placeholder="Nombre del titular"
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
           />
         </div>
         <div>
           <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
-            Holder type
+            Tipo de titular
           </label>
           <select
             value={form.holderType}
@@ -150,7 +150,7 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
-            Payment responsible
+            Responsable de pago
           </label>
           <select
             value={form.paymentResponsible}
@@ -164,7 +164,7 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
         </div>
         <div>
           <label className="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
-            Due day
+            Día de vencimiento
           </label>
           <input
             type="number"
@@ -172,7 +172,7 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
             max={31}
             value={form.dueDay}
             onChange={(e) => set("dueDay", e.target.value)}
-            placeholder="Eg: 10"
+            placeholder="Ej: 10"
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/40"
           />
         </div>
@@ -181,9 +181,9 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
       {/* Activate block toggle */}
       <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-3.5">
         <div>
-          <p className="text-sm font-semibold">Activates rent block</p>
+          <p className="text-sm font-semibold">Activa bloqueo de alquiler</p>
           <p className="mt-0.5 max-w-xs text-[0.67rem] text-muted-foreground">
-            If active and the receipt hasn't been loaded for more than 30 days, the system blocks rent payment registration.
+            Si está activo y el comprobante no se cargó en más de 30 días, el sistema bloquea el registro del cobro del alquiler.
           </p>
         </div>
         <button
@@ -204,14 +204,14 @@ export function ServiceFormNew({ propertyId, onSuccess, onCancel }: Props) {
           onClick={onCancel}
           className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-white/5"
         >
-          Cancel
+          Cancelar
         </button>
         <button
           type="submit"
           disabled={loading}
           className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-[#561100] transition-opacity hover:brightness-110 disabled:opacity-60"
         >
-          {loading ? "Saving…" : "Add service"}
+          {loading ? "Guardando…" : "Agregar servicio"}
         </button>
       </div>
     </form>

@@ -21,8 +21,13 @@ export const ENTITY_PROPERTIES = {
   },
   property: {
     direccion: "Dirección",
-    ambientes: "Ambientes",
+    ambientes: "Cantidad de ambientes",
+    ambientes_texto: "Ambientes con descripción",
     superficie: "Superficie",
+  },
+  room: {
+    nombre: "Nombre del ambiente",
+    descripcion: "Descripción del ambiente",
   },
 } as const;
 
@@ -84,14 +89,16 @@ export function getPropertyLabel(
 /**
  * Obtiene todas las entidades disponibles como objeto con labels
  */
-export function getAvailableEntitiesWithLabels(): Record<
-  AvailableEntity,
-  string
-> {
-  return {
-    owners: "Owners",
-    tenants: "Tenants",
-  };
+const ENTITY_LABELS: Record<AvailableEntity, string> = {
+  owners: "Propietarios",
+  tenants: "Inquilinos",
+  rooms: "Ambientes",
+};
+
+export function getAvailableEntitiesWithLabels(): Record<AvailableEntity, string> {
+  return Object.fromEntries(
+    AVAILABLE_ENTITIES.map((e) => [e, ENTITY_LABELS[e]])
+  ) as Record<AvailableEntity, string>;
 }
 
 

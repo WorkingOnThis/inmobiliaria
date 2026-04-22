@@ -32,7 +32,7 @@ export const MAX_CONTENT_LENGTH = 50000;
 /**
  * Entidades disponibles para uso en cláusulas estructuradas
  */
-export const AVAILABLE_ENTITIES = ["owners", "tenants"] as const;
+export const AVAILABLE_ENTITIES = ["owners", "tenants", "rooms"] as const;
 
 /**
  * Tipo para las entidades disponibles

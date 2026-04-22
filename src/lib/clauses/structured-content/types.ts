@@ -29,7 +29,7 @@ export interface VariablePart {
  */
 export interface IterationPart {
   type: "iteration";
-  entity: "owners" | "tenants";
+  entity: "owners" | "tenants" | "rooms";
   template: string; // Template que se aplicará a cada item (puede contener {{property}})
   separator: string; // Separador entre items (default: ", ")
   lastSeparator: string; // Separador antes del último item (default: " y ")

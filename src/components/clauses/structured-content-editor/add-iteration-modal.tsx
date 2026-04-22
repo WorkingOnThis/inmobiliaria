@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PropertyAutocomplete } from "./property-autocomplete";
 import type { IterationPart } from "@/lib/clauses/structured-content/types";
-import { AVAILABLE_ENTITIES } from "@/lib/clauses/constants";
+import { AVAILABLE_ENTITIES, type AvailableEntity } from "@/lib/clauses/constants";
 import { getAvailableEntitiesWithLabels } from "@/lib/clauses/entity-definitions";
 
 interface AddIterationModalProps {
@@ -45,7 +45,7 @@ export function AddIterationModal({
   onCreate,
   initialData,
 }: AddIterationModalProps) {
-  const [entity, setEntity] = useState<"owners" | "tenants">(
+  const [entity, setEntity] = useState<AvailableEntity>(
     initialData?.entity || "owners"
   );
   const [template, setTemplate] = useState(initialData?.template || "");
@@ -141,7 +141,7 @@ export function AddIterationModal({
             <Select
               value={entity}
               onValueChange={(value) => {
-                setEntity(value as "owners" | "tenants");
+                setEntity(value as AvailableEntity);
                 if (errors.entity) {
                   setErrors({ ...errors, entity: "" });
                 }

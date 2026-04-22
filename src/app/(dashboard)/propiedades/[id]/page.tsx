@@ -3,16 +3,19 @@
 import { useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Pencil, X, Save, ExternalLink, PlusCircle, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, X, Save, ExternalLink, PlusCircle, Plus, Trash2, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
+import { toast } from "sonner";
 import { ServiceTabProperty } from "@/components/services/service-tab-property";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ZoneCombobox } from "@/components/ui/zone-combobox";
 import {
@@ -50,6 +53,16 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+interface PropertyRoom {
+  id: string;
+  propertyId: string;
+  name: string;
+  description: string;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface CoOwner {
   id: string;
@@ -676,6 +689,80 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
   );
 }
 
+// ── Room card ─────────────────────────────────────────────────────────────────
+
+function RoomCard({
+  room,
+  saving,
+  onSave,
+  onDelete,
+}: {
+  room: PropertyRoom;
+  saving: boolean;
+  onSave: (name: string, description: string) => void;
+  onDelete: () => void;
+}) {
+  const [name, setName] = useState(room.name);
+  const [description, setDescription] = useState(room.description);
+
+  const isDirty = name !== room.name || description !== room.description;
+
+  const handleDiscard = () => {
+    setName(room.name);
+    setDescription(room.description);
+  };
+
+  return (
+    <div className="rounded-[12px] border border-border bg-card p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Ej: Living, Cocina, Dormitorio 1…"
+          className="text-[0.82rem] font-semibold flex-1"
+        />
+        <button
+          type="button"
+          onClick={onDelete}
+          className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          title="Eliminar ambiente"
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
+      <Textarea
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Descripción del ambiente…"
+        className="text-[0.8rem] resize-none min-h-[72px] [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.12)_transparent]"
+      />
+      {isDirty && (
+        <div className="flex justify-end gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={saving}
+            onClick={handleDiscard}
+            className="h-7 gap-1.5 text-[0.72rem] text-muted-foreground"
+          >
+            <X size={11} />
+            Descartar
+          </Button>
+          <Button
+            size="sm"
+            disabled={saving}
+            onClick={() => onSave(name, description)}
+            className="h-7 gap-1.5 text-[0.72rem]"
+          >
+            {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+            Guardar
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 function PropiedadFichaContent() {
@@ -702,6 +789,16 @@ function PropiedadFichaContent() {
       }
       return res.json();
     },
+  });
+
+  const { data: roomsData } = useQuery<{ rooms: PropertyRoom[] }>({
+    queryKey: ["property-rooms", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/properties/${id}/rooms`);
+      if (!res.ok) throw new Error("Error al cargar ambientes");
+      return res.json();
+    },
+    enabled: !!id,
   });
 
   const { data: activeContractData } = useQuery({
@@ -800,6 +897,72 @@ function PropiedadFichaContent() {
 
   const set = (field: keyof typeof form) => (v: string) =>
     setForm((prev) => ({ ...prev, [field]: v }));
+
+  // ── Rooms (ambientes) state ──────────────────────────────────────────────────
+  const [roomsOpen, setRoomsOpen] = useState(false);
+  const [addingRoom, setAddingRoom] = useState(false);
+  const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
+  const [savingRoomId, setSavingRoomId] = useState<string | null>(null);
+
+  const rooms = roomsData?.rooms ?? [];
+
+  const handleAddRoom = async () => {
+    setAddingRoom(true);
+    try {
+      const res = await fetch(`/api/properties/${id}/rooms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "", description: "" }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d.error ?? "Error al agregar ambiente");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["property-rooms", id] });
+    } catch {
+      toast.error("Error de conexión al agregar ambiente");
+    } finally {
+      setAddingRoom(false);
+    }
+  };
+
+  const handleSaveRoom = async (roomId: string, name: string, description: string) => {
+    setSavingRoomId(roomId);
+    try {
+      const res = await fetch(`/api/properties/${id}/rooms/${roomId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, description }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d.error ?? "Error al guardar ambiente");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["property-rooms", id] });
+    } catch {
+      toast.error("Error de conexión al guardar ambiente");
+    } finally {
+      setSavingRoomId(null);
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    try {
+      const res = await fetch(`/api/properties/${id}/rooms/${roomId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d.error ?? "Error al eliminar ambiente");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["property-rooms", id] });
+    } catch {
+      toast.error("Error de conexión al eliminar ambiente");
+    } finally {
+      setDeletingRoomId(null);
+    }
+  };
 
   // ── Loading / error states ───────────────────────────────────────────────────
 
@@ -1232,8 +1395,84 @@ function PropiedadFichaContent() {
                   </div>
                 </div>
               )}
+
+              {/* ── Ambientes ── */}
+              <Collapsible open={roomsOpen} onOpenChange={setRoomsOpen} className="mt-6">
+                <CollapsibleTrigger className="flex w-full items-center gap-2 cursor-pointer select-none hover:opacity-80 transition-opacity">
+                  <ChevronDown
+                    size={12}
+                    className={cn(
+                      "text-muted-foreground transition-transform duration-200 shrink-0",
+                      roomsOpen && "rotate-180"
+                    )}
+                  />
+                  <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                    Ambientes
+                  </div>
+                  {rooms.length > 0 && (
+                    <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[0.6rem] font-bold bg-card text-muted-foreground border border-border">
+                      {rooms.length}
+                    </span>
+                  )}
+                </CollapsibleTrigger>
+
+                <CollapsibleContent className="flex flex-col gap-3 mt-3">
+                  {rooms.map((room) => (
+                    <RoomCard
+                      key={room.id}
+                      room={room}
+                      saving={savingRoomId === room.id}
+                      onSave={(name, description) => handleSaveRoom(room.id, name, description)}
+                      onDelete={() => setDeletingRoomId(room.id)}
+                    />
+                  ))}
+
+                  {rooms.length === 0 && (
+                    <div className="flex items-center justify-center rounded-[12px] border border-dashed border-border bg-card px-4 py-6 text-center">
+                      <span className="text-[0.78rem] text-muted-foreground">
+                        Sin ambientes cargados. Usá el botón para agregar.
+                      </span>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleAddRoom}
+                    disabled={addingRoom}
+                    className="flex items-center gap-2 rounded-[10px] border border-dashed border-border bg-card px-4 py-3 text-[0.78rem] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-60"
+                  >
+                    {addingRoom ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Plus size={13} />
+                    )}
+                    Agregar ambiente
+                  </button>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           )}
+
+          {/* Delete room confirmation */}
+          <AlertDialog open={!!deletingRoomId} onOpenChange={(o) => { if (!o) setDeletingRoomId(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Eliminar ambiente?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Se eliminará este ambiente y se actualizará el contador de ambientes de la propiedad.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deletingRoomId && handleDeleteRoom(deletingRoomId)}
+                  className="bg-destructive text-white hover:bg-destructive/90"
+                >
+                  Eliminar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* ── TAB: CONTRATOS ── */}
           {activeTab === "contratos" && (
