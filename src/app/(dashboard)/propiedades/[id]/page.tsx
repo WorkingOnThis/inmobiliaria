@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ZoneCombobox } from "@/components/ui/zone-combobox";
+import { FeatureCombobox } from "@/components/ui/feature-combobox";
 import {
   Select,
   SelectContent,
@@ -96,8 +97,14 @@ interface PropertyDetail {
   zone: string | null;
   floorUnit: string | null;
   rooms: number | null;
+  bedrooms: number | null;
   bathrooms: number | null;
   surface: string | null;
+  surfaceBuilt: string | null;
+  surfaceLand: string | null;
+  yearBuilt: number | null;
+  condition: string | null;
+  keys: string | null;
   serviceElectricity: string;
   serviceGas: string;
   serviceWater: string;
@@ -152,6 +159,22 @@ const SERVICIO_LABEL: Record<string, string> = {
   inquilino:   "Inquilino",
   propietario: "Propietario",
   na:          "N/A",
+};
+
+const CONDITION_LABEL: Record<string, string> = {
+  a_reciclar:    "A reciclar",
+  a_refaccionar: "A refaccionar",
+  bueno:         "Bueno",
+  muy_bueno:     "Muy bueno",
+  excelente:     "Excelente",
+  a_estrenar:    "A estrenar",
+};
+
+const KEYS_LABEL: Record<string, string> = {
+  no_se_sabe:            "No se sabe",
+  coordinar_dueno:       "Coordinar con dueño",
+  coordinar_inquilino:   "Coordinar con inquilino",
+  tenemos:               "Tenemos",
 };
 
 function getOwnerInitials(firstName: string | null, lastName: string | null) {
@@ -241,28 +264,38 @@ function EditInput({
 
 // ── Edit select ───────────────────────────────────────────────────────────────
 
+const NONE_SENTINEL = "__none__";
+
 function EditSelect({
   label,
   value,
   onChange,
   options,
+  placeholder = "Sin especificar",
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
+  placeholder?: string;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
         {label}
       </Label>
-      <Select value={value} onValueChange={onChange}>
+      <Select
+        value={value || NONE_SENTINEL}
+        onValueChange={(v) => onChange(v === NONE_SENTINEL ? "" : v)}
+      >
         <SelectTrigger className="w-full">
-          <SelectValue />
+          <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
+            <SelectItem value={NONE_SENTINEL}>
+              <span className="text-muted-foreground">{placeholder}</span>
+            </SelectItem>
             {options.map((o) => (
               <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
             ))}
@@ -801,6 +834,16 @@ function PropiedadFichaContent() {
     enabled: !!id,
   });
 
+  const { data: featuresData } = useQuery<{ features: { id: string; name: string }[] }>({
+    queryKey: ["property-features", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/properties/${id}/features`);
+      if (!res.ok) throw new Error("Error al cargar características");
+      return res.json();
+    },
+    enabled: !!id,
+  });
+
   const { data: activeContractData } = useQuery({
     queryKey: ["contracts", "property", id, "active"],
     queryFn: async () => {
@@ -838,8 +881,14 @@ function PropiedadFichaContent() {
     zone: "",
     floorUnit: "",
     rooms: "",
+    bedrooms: "",
     bathrooms: "",
     surface: "",
+    surfaceBuilt: "",
+    surfaceLand: "",
+    yearBuilt: "",
+    condition: "",
+    keys: "",
   });
 
   const startEdit = () => {
@@ -851,8 +900,14 @@ function PropiedadFichaContent() {
       zone: prop.zone ?? "",
       floorUnit: prop.floorUnit ?? "",
       rooms: prop.rooms != null ? String(prop.rooms) : "",
+      bedrooms: prop.bedrooms != null ? String(prop.bedrooms) : "",
       bathrooms: prop.bathrooms != null ? String(prop.bathrooms) : "",
       surface: prop.surface != null ? String(parseFloat(prop.surface)) : "",
+      surfaceBuilt: prop.surfaceBuilt != null ? String(parseFloat(prop.surfaceBuilt)) : "",
+      surfaceLand: prop.surfaceLand != null ? String(parseFloat(prop.surfaceLand)) : "",
+      yearBuilt: prop.yearBuilt != null ? String(prop.yearBuilt) : "",
+      condition: prop.condition ?? "",
+      keys: prop.keys ?? "",
     });
     setEditError(null);
     setEditing(true);
@@ -877,8 +932,14 @@ function PropiedadFichaContent() {
           zone: form.zone || null,
           floorUnit: form.floorUnit || null,
           rooms: form.rooms ? Number(form.rooms) : null,
+          bedrooms: form.bedrooms ? Number(form.bedrooms) : null,
           bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
           surface: form.surface ? Number(form.surface) : null,
+          surfaceBuilt: form.surfaceBuilt ? Number(form.surfaceBuilt) : null,
+          surfaceLand: form.surfaceLand ? Number(form.surfaceLand) : null,
+          yearBuilt: form.yearBuilt ? Number(form.yearBuilt) : null,
+          condition: form.condition || null,
+          keys: form.keys || null,
         }),
       });
       if (!res.ok) {
@@ -1306,7 +1367,6 @@ function PropiedadFichaContent() {
                         <ZoneCombobox
                           value={form.zone}
                           onChange={set("zone")}
-                          variant="field"
                           placeholder="Nueva Córdoba"
                         />
                       </div>
@@ -1344,10 +1404,47 @@ function PropiedadFichaContent() {
                       Características físicas
                     </div>
                     <div className="grid grid-cols-3 gap-3">
-                      <EditInput label="Superficie (m²)" value={form.surface} onChange={set("surface")} type="number" placeholder="52" />
+                      <EditInput label="Superficie total (m²)" value={form.surface} onChange={set("surface")} type="number" placeholder="52" />
+                      <EditInput label="M² construidos" value={form.surfaceBuilt} onChange={set("surfaceBuilt")} type="number" placeholder="45" />
+                      <EditInput label="M² terreno" value={form.surfaceLand} onChange={set("surfaceLand")} type="number" placeholder="120" />
                       <EditInput label="Ambientes" value={form.rooms} onChange={set("rooms")} type="number" placeholder="2" />
+                      <EditInput label="Dormitorios" value={form.bedrooms} onChange={set("bedrooms")} type="number" placeholder="1" />
                       <EditInput label="Baños" value={form.bathrooms} onChange={set("bathrooms")} type="number" placeholder="1" />
+                      <EditInput label="Año de construcción" value={form.yearBuilt} onChange={set("yearBuilt")} type="number" placeholder="1995" />
+                      <EditSelect
+                        label="Condición"
+                        value={form.condition}
+                        onChange={set("condition")}
+                        placeholder="Sin especificar"
+                        options={[
+                          { value: "a_reciclar", label: "A reciclar" },
+                          { value: "a_refaccionar", label: "A refaccionar" },
+                          { value: "bueno", label: "Bueno" },
+                          { value: "muy_bueno", label: "Muy bueno" },
+                          { value: "excelente", label: "Excelente" },
+                          { value: "a_estrenar", label: "A estrenar" },
+                        ]}
+                      />
+                      <EditSelect
+                        label="Llaves"
+                        value={form.keys}
+                        onChange={set("keys")}
+                        placeholder="Sin especificar"
+                        options={[
+                          { value: "no_se_sabe", label: "No se sabe" },
+                          { value: "coordinar_dueno", label: "Coordinar con dueño" },
+                          { value: "coordinar_inquilino", label: "Coordinar con inquilino" },
+                          { value: "tenemos", label: "Tenemos" },
+                        ]}
+                      />
                     </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+                      Características
+                    </div>
+                    <FeatureCombobox propertyId={id} />
                   </div>
                 </div>
               ) : (
@@ -1375,10 +1472,34 @@ function PropiedadFichaContent() {
                     </div>
                     <div className="grid grid-cols-3 gap-2.5">
                       <DatoItem label="Superficie total" value={formatSurface(prop.surface)} />
+                      <DatoItem label="M² construidos" value={formatSurface(prop.surfaceBuilt)} />
+                      <DatoItem label="M² terreno" value={formatSurface(prop.surfaceLand)} />
                       <DatoItem label="Ambientes" value={prop.rooms} />
+                      <DatoItem label="Dormitorios" value={prop.bedrooms} />
                       <DatoItem label="Baños" value={prop.bathrooms} />
+                      <DatoItem label="Año construcción" value={prop.yearBuilt} />
+                      <DatoItem label="Condición" value={prop.condition ? CONDITION_LABEL[prop.condition] : null} />
+                      <DatoItem label="Llaves" value={prop.keys ? KEYS_LABEL[prop.keys] : null} />
                     </div>
                   </div>
+
+                  {(featuresData?.features ?? []).length > 0 && (
+                    <div>
+                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+                        Características
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(featuresData?.features ?? []).map((f) => (
+                          <span
+                            key={f.id}
+                            className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground"
+                          >
+                            {f.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">

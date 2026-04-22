@@ -43,7 +43,8 @@
       "Bash(bunx shadcn@latest add alert-dialog)",
       "Bash(bun scripts/migrate-client-type-to-english.ts)",
       "Bash(bun -e ' *)",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "Bash(git diff *)"
     ]
   }
 }

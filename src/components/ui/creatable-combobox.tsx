@@ -10,6 +10,7 @@ interface CreatableComboboxProps {
   options: string[];
   onSearch?: (query: string, options: string[]) => string[];
   onCreate?: (value: string) => Promise<string> | string;
+  onQueryChange?: (query: string) => void;
   placeholder?: string;
   className?: string;
 }
@@ -20,6 +21,7 @@ export function CreatableCombobox({
   options,
   onSearch,
   onCreate,
+  onQueryChange,
   placeholder = "Seleccioná o escribí...",
   className,
 }: CreatableComboboxProps) {
@@ -77,6 +79,7 @@ export function CreatableCombobox({
   function clear() {
     onChange("");
     setQuery("");
+    onQueryChange?.("");
   }
 
   const showDropdown = open && !value && (suggestions.length > 0 || isNew);
@@ -104,8 +107,12 @@ export function CreatableCombobox({
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(true);
+            onQueryChange?.(e.target.value);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            setOpen(true);
+            onQueryChange?.("");
+          }}
           onKeyDown={(e) => {
             if (e.key === "Escape") {
               setOpen(false);

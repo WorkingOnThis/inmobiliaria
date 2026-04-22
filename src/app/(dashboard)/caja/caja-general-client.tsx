@@ -826,7 +826,7 @@ function ModalMovimiento({
                   className="flex-1 py-2 text-[12px] font-semibold capitalize transition-colors"
                   style={tipo === t
                     ? t === "income"
-                      ? { background: "var(--primary-dim)", color: "var(--primary)" }
+                      ? { background: "var(--income-dim)", color: "var(--income)" }
                       : { background: "var(--destructive-dim)", color: "var(--destructive)" }
                     : { background: "var(--muted)", color: "var(--muted-foreground)" }
                   }

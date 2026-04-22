@@ -227,7 +227,6 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false, default
               <ZoneCombobox
                 value={zone}
                 onChange={setZone}
-                variant="form"
               />
             </div>
           </div>

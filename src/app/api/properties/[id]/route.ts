@@ -16,8 +16,14 @@ const updatePropertySchema = z.object({
   zone: z.string().optional().nullable(),
   floorUnit: z.string().optional().nullable(),
   rooms: z.coerce.number().int().min(0).optional().nullable(),
+  bedrooms: z.coerce.number().int().min(0).optional().nullable(),
   bathrooms: z.coerce.number().int().min(0).optional().nullable(),
   surface: z.coerce.number().optional().nullable(),
+  surfaceBuilt: z.coerce.number().optional().nullable(),
+  surfaceLand: z.coerce.number().optional().nullable(),
+  yearBuilt: z.coerce.number().int().min(1800).max(2100).optional().nullable(),
+  condition: z.enum(["a_reciclar", "a_refaccionar", "bueno", "muy_bueno", "excelente", "a_estrenar"]).optional().nullable(),
+  keys: z.enum(["no_se_sabe", "coordinar_dueno", "coordinar_inquilino", "tenemos"]).optional().nullable(),
   price: z.coerce.number().optional().nullable(),
   serviceElectricity: z.enum(["inquilino", "propietario", "na"]).optional(),
   serviceGas: z.enum(["inquilino", "propietario", "na"]).optional(),
@@ -50,8 +56,14 @@ export async function GET(
         zone: property.zone,
         floorUnit: property.floorUnit,
         rooms: property.rooms,
+        bedrooms: property.bedrooms,
         bathrooms: property.bathrooms,
         surface: property.surface,
+        surfaceBuilt: property.surfaceBuilt,
+        surfaceLand: property.surfaceLand,
+        yearBuilt: property.yearBuilt,
+        condition: property.condition,
+        keys: property.keys,
         serviceElectricity: property.serviceElectricity,
         serviceGas: property.serviceGas,
         serviceWater: property.serviceWater,
@@ -116,8 +128,14 @@ export async function PATCH(
     if (data.zone !== undefined) updateData.zone = data.zone;
     if (data.floorUnit !== undefined) updateData.floorUnit = data.floorUnit;
     if (data.rooms !== undefined) updateData.rooms = data.rooms;
+    if (data.bedrooms !== undefined) updateData.bedrooms = data.bedrooms;
     if (data.bathrooms !== undefined) updateData.bathrooms = data.bathrooms;
     if (data.surface !== undefined) updateData.surface = data.surface != null ? String(data.surface) : null;
+    if (data.surfaceBuilt !== undefined) updateData.surfaceBuilt = data.surfaceBuilt != null ? String(data.surfaceBuilt) : null;
+    if (data.surfaceLand !== undefined) updateData.surfaceLand = data.surfaceLand != null ? String(data.surfaceLand) : null;
+    if (data.yearBuilt !== undefined) updateData.yearBuilt = data.yearBuilt;
+    if (data.condition !== undefined) updateData.condition = data.condition;
+    if (data.keys !== undefined) updateData.keys = data.keys;
     if (data.price !== undefined) updateData.price = data.price != null ? String(data.price) : null;
     if (data.serviceElectricity !== undefined) updateData.serviceElectricity = data.serviceElectricity;
     if (data.serviceGas !== undefined) updateData.serviceGas = data.serviceGas;

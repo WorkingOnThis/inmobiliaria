@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, decimal, smallint } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 import { client } from "./client";
 
@@ -17,8 +17,14 @@ export const property = pgTable("property", {
   zone: text("zone"), // Barrio / Zona
   floorUnit: text("floorUnit"), // Piso / Unidad
   rooms: integer("rooms"),
+  bedrooms: integer("bedrooms"),
   bathrooms: integer("bathrooms"),
   surface: decimal("surface", { precision: 10, scale: 2 }),
+  surfaceBuilt: decimal("surfaceBuilt", { precision: 10, scale: 2 }),
+  surfaceLand: decimal("surfaceLand", { precision: 10, scale: 2 }),
+  yearBuilt: smallint("yearBuilt"),
+  condition: text("condition"),
+  keys: text("keys"),
   // Responsabilidad de servicios e impuestos: "inquilino" | "propietario" | "na"
   serviceElectricity: text("serviceElectricity").notNull().default("inquilino"),
   serviceGas: text("serviceGas").notNull().default("inquilino"),
