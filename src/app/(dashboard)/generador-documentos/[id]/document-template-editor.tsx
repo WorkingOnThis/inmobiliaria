@@ -33,13 +33,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -59,13 +52,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   GripVertical,
   Plus,
-  Pencil,
   Trash2,
   Copy,
   Check,
   Printer,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { VARIABLES_CATALOG } from "@/lib/document-templates/variables-catalog";
@@ -137,17 +131,224 @@ function renderPreviewSegments(
   return parts;
 }
 
-// ─── Sortable clause card ────────────────────────────────────────────────────
+// ─── Inline clause editor (expanded card) ───────────────────────────────────
+
+function InlineClauseEditor({
+  clause,
+  templateId,
+  onCollapse,
+  onSaved,
+}: {
+  clause: Clause;
+  templateId: string;
+  onCollapse: () => void;
+  onSaved: (updated: Clause) => void;
+}) {
+  const [title, setTitle] = useState(clause.title);
+  const [body, setBody] = useState(clause.body);
+  const [category, setCategory] = useState(clause.category);
+  const [isOptional, setIsOptional] = useState(clause.isOptional);
+  const [notes, setNotes] = useState(clause.notes);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [varListOpen, setVarListOpen] = useState(false);
+  const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  async function persist(fields: Partial<{
+    title: string; body: string; category: string;
+    isOptional: boolean; notes: string;
+  }>) {
+    setSaveStatus("saving");
+    try {
+      const res = await fetch(
+        `/api/document-templates/${templateId}/clauses/${clause.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(fields),
+        }
+      );
+      const data = await res.json();
+      if (res.ok) {
+        onSaved(data.clause);
+        setSaveStatus("saved");
+      } else {
+        setSaveStatus("idle");
+        toast.error(data.error ?? "Error al guardar");
+      }
+    } catch {
+      setSaveStatus("idle");
+      toast.error("Error al guardar");
+    }
+  }
+
+  function scheduleAutosave(fields: Parameters<typeof persist>[0]) {
+    setSaveStatus("saving");
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => persist(fields), 800);
+  }
+
+  async function copyPath(path: string) {
+    await navigator.clipboard.writeText(`[[${path}]]`);
+    setCopiedPath(path);
+    setTimeout(() => setCopiedPath(null), 1500);
+  }
+
+  return (
+    <div className="rounded-lg border border-primary/40 bg-card p-4 flex flex-col gap-3">
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground h-4">
+          {saveStatus === "saving" && "Guardando..."}
+          {saveStatus === "saved" && "Guardado"}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={onCollapse}
+          title="Cerrar editor"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Title */}
+      <div className="flex flex-col gap-1">
+        <Label className="text-xs">Título</Label>
+        <Input
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            scheduleAutosave({ title: e.target.value, body, category, isOptional, notes });
+          }}
+          placeholder="Ej: PRIMERA: OBJETO DEL CONTRATO"
+          maxLength={300}
+          autoFocus
+        />
+      </div>
+
+      {/* Category + optional */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">Categoría</Label>
+          <Input
+            value={category}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              scheduleAutosave({ title, body, category: e.target.value, isOptional, notes });
+            }}
+            placeholder="Ej: Pago, Servicios..."
+            maxLength={100}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs">¿Es opcional?</Label>
+          <Select
+            value={isOptional ? "si" : "no"}
+            onValueChange={(v) => {
+              const val = v === "si";
+              setIsOptional(val);
+              scheduleAutosave({ title, body, category, isOptional: val, notes });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="no">No</SelectItem>
+              <SelectItem value="si">Sí</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Body + variables side by side */}
+      <div className="flex gap-3">
+        <div className="flex-1 flex flex-col gap-1">
+          <Label className="text-xs">Contenido</Label>
+          <Textarea
+            value={body}
+            onChange={(e) => {
+              setBody(e.target.value);
+              scheduleAutosave({ title, body: e.target.value, category, isOptional, notes });
+            }}
+            placeholder="Texto de la cláusula. Usá [[variable.path]] para datos del contrato."
+            className="min-h-[240px] resize-y font-mono text-sm"
+          />
+        </div>
+
+        {/* Variables */}
+        <div className="w-48 shrink-0">
+          <Collapsible open={varListOpen} onOpenChange={setVarListOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1 px-1 h-7 w-full justify-start text-xs mb-1">
+                {varListOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                Variables ({VARIABLES_CATALOG.length})
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="rounded-md border divide-y max-h-[260px] overflow-y-auto">
+                {VARIABLES_CATALOG.map((v) => (
+                  <button
+                    key={v.path}
+                    type="button"
+                    onClick={() => copyPath(v.path)}
+                    className="flex items-center justify-between w-full px-2 py-1.5 hover:bg-muted/50 text-left gap-1"
+                  >
+                    <div className="min-w-0">
+                      <code className="text-primary text-[10px] block truncate">[[{v.path}]]</code>
+                      <p className="text-muted-foreground text-[10px] truncate">{v.label}</p>
+                    </div>
+                    {copiedPath === v.path ? (
+                      <Check className="h-3 w-3 text-green-500 shrink-0" />
+                    ) : (
+                      <Copy className="h-3 w-3 text-muted-foreground shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div className="flex flex-col gap-1">
+        <Label className="text-xs text-muted-foreground">Notas internas (no se imprimen)</Label>
+        <Textarea
+          value={notes}
+          onChange={(e) => {
+            setNotes(e.target.value);
+            scheduleAutosave({ title, body, category, isOptional, notes: e.target.value });
+          }}
+          placeholder="Notas para el equipo..."
+          className="min-h-[56px] resize-y text-sm"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Collapsed clause card ───────────────────────────────────────────────────
 
 function SortableClauseCard({
   clause,
-  onEdit,
+  isExpanded,
+  templateId,
+  onExpand,
+  onCollapse,
+  onSaved,
   onDuplicate,
   onDelete,
   onToggleActive,
 }: {
   clause: Clause;
-  onEdit: (c: Clause) => void;
+  isExpanded: boolean;
+  templateId: string;
+  onExpand: () => void;
+  onCollapse: () => void;
+  onSaved: (updated: Clause) => void;
   onDuplicate: (c: Clause) => void;
   onDelete: (id: string) => void;
   onToggleActive: (id: string, active: boolean) => void;
@@ -161,84 +362,96 @@ function SortableClauseCard({
     opacity: isDragging ? 0.4 : 1,
   };
 
+  if (isExpanded) {
+    return (
+      <div ref={setNodeRef} style={style}>
+        <InlineClauseEditor
+          clause={clause}
+          templateId={templateId}
+          onCollapse={onCollapse}
+          onSaved={onSaved}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-lg border bg-card p-3 flex gap-3 ${
-        !clause.isActive ? "opacity-50" : ""
+      className={`rounded-lg border bg-card transition-opacity ${
+        !clause.isActive ? "opacity-40" : ""
       }`}
     >
-      {/* Drag handle */}
+      {/* Clickable header area */}
       <button
-        {...attributes}
-        {...listeners}
-        className="flex items-center text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing shrink-0 mt-0.5"
-        aria-label="Arrastrar para reordenar"
+        className="w-full text-left px-3 pt-3 pb-2"
+        onClick={onExpand}
       >
-        <GripVertical className="h-4 w-4" />
-      </button>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start gap-2 mb-1">
-          <p className="font-semibold text-sm leading-tight flex-1 truncate">
-            {clause.title || <span className="text-muted-foreground italic">Sin título</span>}
-          </p>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {clause.category && (
-              <Badge variant="secondary" className="text-xs capitalize">
-                {clause.category}
-              </Badge>
-            )}
-            {clause.isOptional && (
-              <Badge variant="outline" className="text-xs">
-                Opcional
-              </Badge>
+        <div className="flex items-start gap-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="flex items-center text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing shrink-0 mt-0.5"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Arrastrar para reordenar"
+          >
+            <GripVertical className="h-4 w-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <p className="font-semibold text-sm leading-tight flex-1 truncate">
+                {clause.title || (
+                  <span className="text-muted-foreground italic font-normal">Sin título</span>
+                )}
+              </p>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {clause.category && (
+                  <Badge variant="secondary" className="text-xs capitalize">
+                    {clause.category}
+                  </Badge>
+                )}
+                {clause.isOptional && (
+                  <Badge variant="outline" className="text-xs">Opcional</Badge>
+                )}
+              </div>
+            </div>
+            {clause.body && (
+              <p className="text-xs text-muted-foreground truncate">
+                {clause.body.slice(0, 120)}{clause.body.length > 120 ? "…" : ""}
+              </p>
             )}
           </div>
+          <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
         </div>
+      </button>
 
-        {clause.body && (
-          <p className="text-xs text-muted-foreground truncate">
-            {clause.body.slice(0, 120)}
-            {clause.body.length > 120 ? "…" : ""}
-          </p>
-        )}
-
-        <div className="flex items-center gap-1 mt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={() => onEdit(clause)}
-          >
-            <Pencil className="h-3 w-3 mr-1" />
-            Editar
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={() => onDuplicate(clause)}
-          >
-            <Copy className="h-3 w-3 mr-1" />
-            Duplicar
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-7 px-2 text-xs ${clause.isActive ? "" : "text-muted-foreground"}`}
-            onClick={() => onToggleActive(clause.id, !clause.isActive)}
-          >
-            {clause.isActive ? "Activa" : "Inactiva"}
-          </Button>
+      {/* Actions bar */}
+      <div className="flex items-center gap-1 px-3 pb-2 border-t pt-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={() => onToggleActive(clause.id, !clause.isActive)}
+        >
+          {clause.isActive ? "Activa" : "Inactiva"}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={() => onDuplicate(clause)}
+        >
+          <Copy className="h-3 w-3 mr-1" />
+          Duplicar
+        </Button>
+        <div className="ml-auto">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs text-destructive hover:text-destructive ml-auto"
+                className="h-7 px-2 text-xs text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
@@ -247,9 +460,8 @@ function SortableClauseCard({
               <AlertDialogHeader>
                 <AlertDialogTitle>¿Eliminar cláusula?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Se eliminará la cláusula{" "}
-                  <strong>{clause.title || "sin título"}</strong>. Esta acción
-                  no se puede deshacer.
+                  Se eliminará{" "}
+                  <strong>{clause.title || "esta cláusula"}</strong>. No se puede deshacer.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -269,177 +481,6 @@ function SortableClauseCard({
   );
 }
 
-// ─── Clause editor dialog ────────────────────────────────────────────────────
-
-function ClauseEditorDialog({
-  clause,
-  templateId,
-  onClose,
-  onSaved,
-}: {
-  clause: Clause;
-  templateId: string;
-  onClose: () => void;
-  onSaved: (updated: Clause) => void;
-}) {
-  const [title, setTitle] = useState(clause.title);
-  const [body, setBody] = useState(clause.body);
-  const [category, setCategory] = useState(clause.category);
-  const [isOptional, setIsOptional] = useState(clause.isOptional);
-  const [notes, setNotes] = useState(clause.notes);
-  const [varListOpen, setVarListOpen] = useState(false);
-  const [copiedPath, setCopiedPath] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  async function handleSave() {
-    setIsSaving(true);
-    try {
-      const res = await fetch(
-        `/api/document-templates/${templateId}/clauses/${clause.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, body, category, isOptional, notes }),
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Error al guardar");
-        return;
-      }
-      onSaved(data.clause);
-      onClose();
-    } catch {
-      toast.error("Error al guardar");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function copyPath(path: string) {
-    await navigator.clipboard.writeText(`[[${path}]]`);
-    setCopiedPath(path);
-    setTimeout(() => setCopiedPath(null), 1500);
-  }
-
-  return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Editar cláusula</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-4">
-          {/* Left: fields */}
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label>Título</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ej: PRIMERA: OBJETO DEL CONTRATO"
-                maxLength={300}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <Label>Categoría</Label>
-                <Input
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  placeholder="Ej: Pago, Servicios..."
-                  maxLength={100}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>¿Es opcional?</Label>
-                <Select
-                  value={isOptional ? "si" : "no"}
-                  onValueChange={(v) => setIsOptional(v === "si")}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no">No</SelectItem>
-                    <SelectItem value="si">Sí</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label>Contenido</Label>
-              <Textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Texto de la cláusula. Usá [[variable.path]] para datos del contrato."
-                className="min-h-[200px] resize-y font-mono text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-muted-foreground text-xs">
-                Notas internas (no se imprimen)
-              </Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Notas para el equipo..."
-                className="min-h-[60px] resize-y text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Right: variables */}
-          <div className="flex flex-col gap-2">
-            <Collapsible open={varListOpen} onOpenChange={setVarListOpen}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-1 px-2 -ml-2 w-full justify-start">
-                  {varListOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                  Variables ({VARIABLES_CATALOG.length})
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="rounded-md border divide-y text-xs mt-1">
-                  {VARIABLES_CATALOG.map((v) => (
-                    <button
-                      key={v.path}
-                      type="button"
-                      onClick={() => copyPath(v.path)}
-                      className="flex items-center justify-between w-full px-2 py-1.5 hover:bg-muted/50 text-left gap-2"
-                    >
-                      <div>
-                        <code className="text-primary text-[10px]">[[{v.path}]]</code>
-                        <p className="text-muted-foreground text-[10px] mt-0.5">{v.label}</p>
-                      </div>
-                      {copiedPath === v.path ? (
-                        <Check className="h-3 w-3 text-green-500 shrink-0" />
-                      ) : (
-                        <Copy className="h-3 w-3 text-muted-foreground shrink-0" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Guardando..." : "Guardar"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ─── Main editor ─────────────────────────────────────────────────────────────
 
 export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
@@ -447,7 +488,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
   const [localNameEdit, setLocalNameEdit] = useState<string | undefined>(undefined);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
   const [localClauses, setLocalClauses] = useState<Clause[] | null>(null);
-  const [editingClause, setEditingClause] = useState<Clause | null>(null);
+  const [expandedClauseId, setExpandedClauseId] = useState<string | null>(null);
   const [selectedContractId, setSelectedContractId] = useState("");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -465,7 +506,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     staleTime: 30_000,
   });
 
-  // Initialize local clauses from server on first load
   if (data && localClauses === null) {
     setLocalClauses([...data.clauses]);
   }
@@ -483,7 +523,12 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
         const json = await r.json();
         return {
           contracts: (json.contracts ?? []).map(
-            (c: { id: string; contractNumber: string; propertyAddress?: string; tenants?: { name: string }[] }) => ({
+            (c: {
+              id: string;
+              contractNumber: string;
+              propertyAddress?: string;
+              tenants?: { name: string }[];
+            }) => ({
               id: c.id,
               contractNumber: c.contractNumber,
               propertyAddress: c.propertyAddress ?? "",
@@ -496,10 +541,14 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
 
   // ── Fetch resolved variables ─────────────────────────────────────────────
 
-  const { data: resolvedData } = useQuery<{ resolved: Record<string, string | null> }>({
+  const { data: resolvedData } = useQuery<{
+    resolved: Record<string, string | null>;
+  }>({
     queryKey: ["document-template-resolve", selectedContractId],
     queryFn: () =>
-      fetch(`/api/document-templates/resolve?contractId=${selectedContractId}`).then((r) => r.json()),
+      fetch(
+        `/api/document-templates/resolve?contractId=${selectedContractId}`
+      ).then((r) => r.json()),
     enabled: !!selectedContractId,
   });
 
@@ -545,7 +594,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     onSuccess: (data) => {
       if (data.clause) {
         setLocalClauses((prev) => [...(prev ?? []), data.clause]);
-        setEditingClause(data.clause);
+        setExpandedClauseId(data.clause.id);
       }
     },
     onError: () => toast.error("Error al agregar cláusula"),
@@ -565,11 +614,11 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
       });
     } catch {
       queryClient.invalidateQueries({ queryKey: ["document-template", templateId] });
-      toast.error("Error al actualizar cláusula");
+      toast.error("Error al actualizar");
     }
   }
 
-  // ── Duplicate clause ─────────────────────────────────────────────────────
+  // ── Duplicate ────────────────────────────────────────────────────────────
 
   async function handleDuplicate(clause: Clause) {
     try {
@@ -594,9 +643,10 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     }
   }
 
-  // ── Delete clause ────────────────────────────────────────────────────────
+  // ── Delete ───────────────────────────────────────────────────────────────
 
   async function handleDelete(clauseId: string) {
+    if (expandedClauseId === clauseId) setExpandedClauseId(null);
     setLocalClauses((prev) => (prev ?? []).filter((c) => c.id !== clauseId));
     try {
       await fetch(`/api/document-templates/${templateId}/clauses/${clauseId}`, {
@@ -621,7 +671,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
       const newIndex = prev.findIndex((c) => c.id === over.id);
       const reordered = arrayMove(prev, oldIndex, newIndex);
 
-      // Persist to server
       fetch(`/api/document-templates/${templateId}/clauses/reorder`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -635,7 +684,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     });
   }
 
-  // ── On clause saved ──────────────────────────────────────────────────────
+  // ── Clause saved callback ────────────────────────────────────────────────
 
   function handleClauseSaved(updated: Clause) {
     setLocalClauses((prev) =>
@@ -643,13 +692,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     );
   }
 
-  // ── Print ────────────────────────────────────────────────────────────────
-
-  function handlePrint() {
-    window.print();
-  }
-
-  // ── Render ───────────────────────────────────────────────────────────────
+  // ── Loading ──────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -657,7 +700,9 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-3">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full" />
+            ))}
           </div>
           <Skeleton className="h-96 w-full" />
         </div>
@@ -665,7 +710,9 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     );
   }
 
-  const activeClauses = clauses.filter((c) => c.isActive).sort((a, b) => a.order - b.order);
+  const activeClauses = clauses
+    .filter((c) => c.isActive)
+    .sort((a, b) => a.order - b.order);
 
   return (
     <>
@@ -678,7 +725,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-        {/* ── Columna izquierda — cláusulas ─────────────────────────── */}
+        {/* ── Columna izquierda ─────────────────────────────────────── */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="template-name">Nombre de la plantilla</Label>
@@ -726,7 +773,11 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
                     <SortableClauseCard
                       key={clause.id}
                       clause={clause}
-                      onEdit={setEditingClause}
+                      isExpanded={expandedClauseId === clause.id}
+                      templateId={templateId}
+                      onExpand={() => setExpandedClauseId(clause.id)}
+                      onCollapse={() => setExpandedClauseId(null)}
+                      onSaved={handleClauseSaved}
                       onDuplicate={handleDuplicate}
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}
@@ -743,7 +794,10 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
           <div className="flex items-end gap-3">
             <div className="flex-1">
               <Label className="mb-1.5 block">Previsualizar con contrato</Label>
-              <Select value={selectedContractId} onValueChange={setSelectedContractId}>
+              <Select
+                value={selectedContractId}
+                onValueChange={setSelectedContractId}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccioná un contrato..." />
                 </SelectTrigger>
@@ -765,7 +819,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
             <Button
               variant="outline"
               size="sm"
-              onClick={handlePrint}
+              onClick={() => window.print()}
               disabled={!selectedContractId || activeClauses.length === 0}
               className="shrink-0"
             >
@@ -776,7 +830,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
 
           <Separator />
 
-          {/* Preview */}
           <div
             id="print-preview"
             className="rounded-md border bg-card p-6 min-h-[400px] text-sm leading-relaxed preview-content"
@@ -787,7 +840,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
               </p>
             ) : activeClauses.length === 0 ? (
               <p className="text-muted-foreground text-center py-12 text-sm">
-                No hay cláusulas activas para previsualizar
+                No hay cláusulas activas
               </p>
             ) : (
               <div className="preview-body">
@@ -810,21 +863,11 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
             <p className="text-xs text-muted-foreground">
               Variables en{" "}
               <span className="text-destructive font-bold">rojo</span> no tienen
-              datos en el contrato seleccionado. Solo se muestran cláusulas activas.
+              datos en el contrato seleccionado.
             </p>
           )}
         </div>
       </div>
-
-      {/* Clause editor dialog */}
-      {editingClause && (
-        <ClauseEditorDialog
-          clause={editingClause}
-          templateId={templateId}
-          onClose={() => setEditingClause(null)}
-          onSaved={handleClauseSaved}
-        />
-      )}
     </>
   );
 }
