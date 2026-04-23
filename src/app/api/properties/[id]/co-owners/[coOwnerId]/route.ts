@@ -8,6 +8,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 const updateCoOwnerSchema = z.object({
+  role: z.enum(["ambos", "real", "legal"]).optional(),
   vinculo: z.string().optional().nullable(),
   sharePercent: z.coerce.number().min(0).max(100).optional().nullable(),
   notes: z.string().optional().nullable(),
@@ -36,6 +37,7 @@ export async function PATCH(
 
     const data = result.data;
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    if (data.role !== undefined) updateData.role = data.role;
     if (data.vinculo !== undefined) updateData.vinculo = data.vinculo;
     if (data.sharePercent !== undefined) {
       updateData.sharePercent = data.sharePercent != null ? String(data.sharePercent) : null;

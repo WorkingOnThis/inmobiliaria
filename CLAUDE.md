@@ -59,14 +59,21 @@ All schemas re-exported from `src/db/schema/index.ts`. DB instance at `src/db/in
 | `better-auth.ts` | user, session, account, verification, rateLimit |
 | `agency.ts` | agency (1:1 with user) — legal info, banking, email prefs |
 | `client.ts` | client — type: owner\|tenant\|guarantor\|contact |
-| `property.ts` | property — belongs to owner (client) |
+| `property.ts` | property — belongs to owner (client); `ownerRole`: "ambos"\|"real"\|"legal" |
+| `property-co-owner.ts` | property_co_owner — additional owners; `role`: "ambos"\|"real"\|"legal" |
+| `property-feature.ts` | property_feature — global feature catalog (e.g. "Pileta", "Garage") |
+| `property-to-feature.ts` | property_to_feature — many-to-many join (propertyId, featureId) |
+| `property-room.ts` | property_room — rooms per property (name, description, position) |
 | `contract.ts` | contract, contract_tenant (many-to-many with role primary\|co-tenant) |
 | `cash.ts` | cash_movement — tipo: income\|expense, source: manual\|contract\|settlement |
 | `service.ts` | service, service_receipt, service_skip |
 | `task.ts` | task, task_history, task_comment, task_file |
 | `clause.ts` | clauseTemplate with `{{variable_name}}` placeholders |
+| `zone.ts` | zone — barrio/zona catalog per agency |
 
 **Key relationships**: `client` is the polymorphic contact model — owners, tenants and guarantors are all `client` rows differentiated by `type`. A `contract` links a `property` (→ owner) to one or more `client` rows (tenants) via `contract_tenant`.
+
+**Property ownership model**: `property.ownerId` is the primary owner (used for contracts). `property.ownerRole` and `property_co_owner.role` both use "ambos" | "real" | "legal". The UI (`OwnersSection` in the property detail page) shows a single "Propietario" section when no co-owners exist; splits into "Propietario Real" / "Propietario Legal" sections when co-owners are added.
 
 **Monetary amounts**: stored as `numeric(15,2)` in ARS. Dates as ISO `"YYYY-MM-DD"` strings. Periods as `"YYYY-MM"`.
 
@@ -84,9 +91,21 @@ All schemas re-exported from `src/db/schema/index.ts`. DB instance at `src/db/in
 - Parallel route `@modal` under `clientes/` handles modal-intercept navigation pattern
 - Tenant/owner status is computed by `calculateStatus()` in `src/lib/tenants/status.ts` — never recalculate inline
 
+### Reusable UI Patterns
+
+**`CreatableCombobox`** (`src/components/ui/creatable-combobox.tsx`): generic combobox with inline creation. Props: `value`, `onChange`, `options: string[]`, `onSearch?`, `onCreate?`, `onQueryChange?`, `placeholder?`. Wrappers that need server-side search pass `onSearch={(_, opts) => opts}` (skip client filtering) and drive API calls via `onQueryChange` with debounce. For multi-select, always pass `value=""` and show selections as removable badges above the input.
+
+**`ZoneCombobox`** (`src/components/ui/zone-combobox.tsx`): thin wrapper around `CreatableCombobox`. Fetches from `GET /api/zones`, creates via `POST /api/zones`.
+
+**`FeatureCombobox`** (`src/components/ui/feature-combobox.tsx`): multi-select wrapper. Fetches current selections from `GET /api/properties/[id]/features`; searches global catalog at `GET /api/property-features?search=`.
+
+**`EditSelect` with unset support**: use a `NONE_SENTINEL = "__none__"` value to allow shadcn `<Select>` to show a "Sin especificar" option that maps to `""` / `null` — shadcn Select doesn't support `value=""`.
+
 ### Structured Clause Content
 
 `src/lib/clauses/structured-content/` contains parser, serializer, validator, and types for the `{{variable_name}}` template system used in contract clauses.
+
+Available iteration entities: `AVAILABLE_ENTITIES = ["owners", "tenants", "rooms"]` in `src/lib/clauses/constants.ts`. The `IterationPart.entity` type is derived from this constant via `AvailableEntity`. To add a new iterable entity, extend `AVAILABLE_ENTITIES` and add its label to `ENTITY_LABELS` in `src/lib/clauses/entity-definitions.ts`.
 
 ### Path Aliases
 
@@ -111,7 +130,9 @@ app/
     ├── auth/[...all] # Better Auth
     ├── owners/       # REST: owners + cuenta-corriente + movimientos
     ├── tenants/      # REST: tenants + movimientos
-    ├── properties/   # REST
+    ├── properties/   # REST + [id]/co-owners, [id]/features, [id]/rooms
+    ├── property-features/  # Global feature catalog (search + create)
+    ├── zones/        # Zone catalog (search + create)
     ├── contracts/    # REST
     ├── cash/         # REST: cash/movimientos
     ├── services/     # REST + summary + companies

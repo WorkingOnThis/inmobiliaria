@@ -69,6 +69,7 @@ interface CoOwner {
   id: string;
   propertyId: string;
   clientId: string;
+  role: string;
   vinculo: string | null;
   sharePercent: string | null;
   notes: string | null;
@@ -105,6 +106,7 @@ interface PropertyDetail {
   yearBuilt: number | null;
   condition: string | null;
   keys: string | null;
+  ownerRole: string;
   serviceElectricity: string;
   serviceGas: string;
   serviceWater: string;
@@ -175,6 +177,12 @@ const KEYS_LABEL: Record<string, string> = {
   coordinar_dueno:       "Coordinar con dueño",
   coordinar_inquilino:   "Coordinar con inquilino",
   tenemos:               "Tenemos",
+};
+
+const OWNER_ROLE_LABEL: Record<string, string> = {
+  ambos:  "Propietario Real y Legal",
+  real:   "Propietario Real",
+  legal:  "Propietario Legal",
 };
 
 function getOwnerInitials(firstName: string | null, lastName: string | null) {
@@ -436,11 +444,106 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
   );
 }
 
-// ── Co-owners section ─────────────────────────────────────────────────────────
+// ── Owners section ────────────────────────────────────────────────────────────
+
+interface MainOwnerInfo {
+  id: string;
+  ownerId: string;
+  ownerRole: string;
+  ownerFirstName: string | null;
+  ownerLastName: string | null;
+  ownerPhone: string | null;
+  ownerEmail: string | null;
+  ownerCuit: string | null;
+  ownerDni: string | null;
+}
 
 const VINCULO_OPTIONS = ["hijo", "hija", "cónyuge", "hermano", "hermana", "socio", "otro"];
 
-function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string; existingOwnerIds: string[] }) {
+function OwnerCard({
+  name,
+  initials,
+  subtitle,
+  phone,
+  email,
+  cuit,
+  dni,
+  role,
+  onRoleChange,
+  onView,
+  onRemove,
+}: {
+  name: string;
+  initials: string;
+  subtitle?: string;
+  phone?: string | null;
+  email?: string | null;
+  cuit?: string | null;
+  dni?: string | null;
+  role: string;
+  onRoleChange: (r: string) => void;
+  onView: () => void;
+  onRemove?: () => void;
+}) {
+  return (
+    <div
+      className="flex items-center gap-4 px-4 py-4 rounded-[12px] bg-card border border-border hover:border-[var(--border-accent)] transition-colors cursor-pointer"
+      onClick={onView}
+    >
+      <div
+        className="size-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0 font-brand"
+        style={{ background: "var(--gradient-owner)", border: "1.5px solid var(--status-reserved-dim)", color: "var(--primary)" }}
+      >
+        {initials}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[0.82rem] font-semibold text-foreground mb-0.5">{name}</div>
+        {subtitle && (
+          <div className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-0.5">{subtitle}</div>
+        )}
+        <div className="flex items-center gap-3 flex-wrap text-[0.72rem] text-muted-foreground">
+          {phone && <span>📱 {phone}</span>}
+          {email && <span>{email}</span>}
+          {cuit && <span>CUIT {cuit}</span>}
+          {dni && !cuit && <span>DNI {dni}</span>}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <Select value={role} onValueChange={onRoleChange}>
+          <SelectTrigger className="h-8 text-[0.72rem] w-[11rem]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ambos">Real y Legal</SelectItem>
+            <SelectItem value="real">Solo Real</SelectItem>
+            <SelectItem value="legal">Solo Legal</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="sm" onClick={onView}>
+          Ver ficha <ExternalLink size={10} />
+        </Button>
+        {onRemove && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-muted-foreground hover:text-destructive"
+            onClick={onRemove}
+          >
+            <Trash2 size={13} />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function OwnersSection({
+  main,
+  onMainRoleChange,
+}: {
+  main: MainOwnerInfo;
+  onMainRoleChange: (role: string) => void;
+}) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const [showAdd, setShowAdd] = useState(false);
@@ -449,13 +552,14 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
   const [saveError, setSaveError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<ClientOption | null>(null);
+  const [newRole, setNewRole] = useState<string>("ambos");
   const [vinculo, setVinculo] = useState("");
   const [sharePercent, setSharePercent] = useState("");
 
   const { data, isLoading } = useQuery<{ coOwners: CoOwner[] }>({
-    queryKey: ["co-owners", propertyId],
+    queryKey: ["co-owners", main.id],
     queryFn: async () => {
-      const res = await fetch(`/api/properties/${propertyId}/co-owners`);
+      const res = await fetch(`/api/properties/${main.id}/co-owners`);
       if (!res.ok) throw new Error("Error al cargar co-propietarios");
       return res.json();
     },
@@ -474,11 +578,12 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
   });
 
   const coOwners = data?.coOwners ?? [];
-  const alreadyAdded = new Set([...existingOwnerIds, ...coOwners.map((c) => c.clientId)]);
+  const alreadyAdded = new Set([main.ownerId, ...coOwners.map((c) => c.clientId)]);
   const availableClients = (clientsData?.clients ?? []).filter((c) => !alreadyAdded.has(c.id));
 
   const resetModal = () => {
     setSelectedClient(null);
+    setNewRole("ambos");
     setVinculo("");
     setSharePercent("");
     setSearch("");
@@ -490,11 +595,12 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
     setSaving(true);
     setSaveError(null);
     try {
-      const res = await fetch(`/api/properties/${propertyId}/co-owners`, {
+      const res = await fetch(`/api/properties/${main.id}/co-owners`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           clientId: selectedClient.id,
+          role: newRole,
           vinculo: vinculo || null,
           sharePercent: sharePercent ? Number(sharePercent) : null,
         }),
@@ -503,7 +609,7 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
         const d = await res.json().catch(() => ({}));
         throw new Error(d.error || "Error al agregar");
       }
-      await queryClient.invalidateQueries({ queryKey: ["co-owners", propertyId] });
+      await queryClient.invalidateQueries({ queryKey: ["co-owners", main.id] });
       setShowAdd(false);
       resetModal();
     } catch (e) {
@@ -513,10 +619,25 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
     }
   };
 
+  const handleCoOwnerRoleChange = async (coOwnerId: string, role: string) => {
+    try {
+      const res = await fetch(`/api/properties/${main.id}/co-owners/${coOwnerId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      if (res.ok) {
+        await queryClient.invalidateQueries({ queryKey: ["co-owners", main.id] });
+      }
+    } catch {
+      toast.error("Error al actualizar el rol");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`/api/properties/${propertyId}/co-owners/${id}`, { method: "DELETE" });
-      await queryClient.invalidateQueries({ queryKey: ["co-owners", propertyId] });
+      await fetch(`/api/properties/${main.id}/co-owners/${id}`, { method: "DELETE" });
+      await queryClient.invalidateQueries({ queryKey: ["co-owners", main.id] });
     } catch {
       // ignore
     } finally {
@@ -524,92 +645,161 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
     }
   };
 
+  const mainName = [main.ownerLastName, main.ownerFirstName].filter(Boolean).join(", ") || "—";
+  const mainInitials = getOwnerInitials(main.ownerFirstName, main.ownerLastName);
+  const hasCoOwners = coOwners.length > 0;
+
+  // In split mode, each section has: does the main owner appear? + which co-owners appear?
+  const mainInReal = hasCoOwners && (main.ownerRole === "ambos" || main.ownerRole === "real");
+  const mainInLegal = hasCoOwners && (main.ownerRole === "ambos" || main.ownerRole === "legal");
+  const realCoOwners = hasCoOwners ? coOwners.filter((c) => c.role === "ambos" || c.role === "real") : [];
+  const legalCoOwners = hasCoOwners ? coOwners.filter((c) => c.role === "ambos" || c.role === "legal") : [];
+
+  if (isLoading) {
+    return <div className="flex justify-center py-8"><Loader2 size={16} className="animate-spin text-muted-foreground" /></div>;
+  }
+
   return (
     <>
-      <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 mt-5 flex items-center justify-between">
-        <span>Propietarios reales</span>
-        <button
-          onClick={() => { resetModal(); setShowAdd(true); }}
-          className="flex items-center gap-1 text-primary hover:opacity-80 transition-opacity"
-        >
-          <Plus size={11} />
-          <span className="text-[0.6rem] font-bold uppercase tracking-[0.1em]">Agregar</span>
-        </button>
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-4">
-          <Loader2 size={16} className="animate-spin text-muted-foreground" />
-        </div>
-      ) : coOwners.length === 0 ? (
-        <div className="flex items-center gap-3 px-4 py-4 rounded-[12px] text-center justify-center bg-card border border-dashed border-border">
-          <span className="text-[0.78rem] text-muted-foreground">Sin propietarios reales registrados</span>
-        </div>
+      {!hasCoOwners ? (
+        /* ── Simple mode: one section ── */
+        <>
+          <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 flex items-center justify-between">
+            <span>Propietario</span>
+            <button
+              onClick={() => { resetModal(); setShowAdd(true); }}
+              className="flex items-center gap-1 text-primary hover:opacity-80 transition-opacity"
+            >
+              <Plus size={11} />
+              <span className="text-[0.6rem] font-bold uppercase tracking-[0.1em]">Agregar co-propietario</span>
+            </button>
+          </div>
+          <OwnerCard
+            name={mainName}
+            initials={mainInitials}
+            phone={main.ownerPhone}
+            email={main.ownerEmail}
+            cuit={main.ownerCuit}
+            dni={main.ownerDni}
+            role={main.ownerRole}
+            onRoleChange={onMainRoleChange}
+            onView={() => router.push(`/propietarios/${main.ownerId}`)}
+          />
+        </>
       ) : (
-        <div className="flex flex-col gap-2">
-          {coOwners.map((co) => {
-            const name = [co.clientLastName, co.clientFirstName].filter(Boolean).join(", ") || "Sin nombre";
-            const initials = ((co.clientFirstName?.[0] ?? "") + (co.clientLastName?.[0] ?? "")).toUpperCase() || "?";
-            return (
-              <div
-                key={co.id}
-                className="flex items-center gap-4 px-4 py-4 rounded-[12px] bg-card border border-border hover:border-[var(--border-accent)] transition-colors cursor-pointer"
-                onClick={() => router.push(`/propietarios/${co.clientId}`)}
-              >
-                <div
-                  className="size-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0 font-brand"
-                  style={{
-                    background: "var(--gradient-owner)",
-                    border: "1.5px solid var(--status-reserved-dim)",
-                    color: "var(--primary)",
-                  }}
-                >
-                  {initials}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[0.82rem] font-semibold text-foreground mb-0.5">{name}</div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {co.vinculo && (
-                      <span className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">{co.vinculo}</span>
-                    )}
-                    {co.sharePercent && (
-                      <span className="text-[0.62rem] text-muted-foreground">{parseFloat(co.sharePercent)}%</span>
-                    )}
-                    {co.clientDni && (
-                      <span className="text-[0.62rem] text-muted-foreground">DNI {co.clientDni}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/propietarios/${co.clientId}`); }}>
-                    Ver ficha <ExternalLink size={10} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-muted-foreground hover:text-destructive"
-                    onClick={(e) => { e.stopPropagation(); setDeleteId(co.id); }}
-                  >
-                    <Trash2 size={13} />
-                  </Button>
-                </div>
+        /* ── Split mode: real and legal sections ── */
+        <>
+          <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+            Propietario Real
+          </div>
+          <div className="flex flex-col gap-2 mb-5">
+            {!mainInReal && realCoOwners.length === 0 ? (
+              <div className="flex items-center justify-center px-4 py-4 rounded-[12px] bg-card border border-dashed border-border">
+                <span className="text-[0.78rem] text-muted-foreground">Sin propietario real asignado</span>
               </div>
-            );
-          })}
-        </div>
+            ) : (
+              <>
+                {mainInReal && (
+                  <OwnerCard
+                    key="main-real"
+                    name={mainName}
+                    initials={mainInitials}
+                    phone={main.ownerPhone}
+                    email={main.ownerEmail}
+                    cuit={main.ownerCuit}
+                    dni={main.ownerDni}
+                    role={main.ownerRole}
+                    onRoleChange={onMainRoleChange}
+                    onView={() => router.push(`/propietarios/${main.ownerId}`)}
+                  />
+                )}
+                {realCoOwners.map((co) => {
+                  const coName = [co.clientLastName, co.clientFirstName].filter(Boolean).join(", ") || "Sin nombre";
+                  const coInitials = ((co.clientFirstName?.[0] ?? "") + (co.clientLastName?.[0] ?? "")).toUpperCase() || "?";
+                  return (
+                    <OwnerCard
+                      key={co.id + "-real"}
+                      name={coName}
+                      initials={coInitials}
+                      subtitle={co.vinculo ?? undefined}
+                      dni={co.clientDni}
+                      role={co.role}
+                      onRoleChange={(r) => handleCoOwnerRoleChange(co.id, r)}
+                      onView={() => router.push(`/propietarios/${co.clientId}`)}
+                      onRemove={() => setDeleteId(co.id)}
+                    />
+                  );
+                })}
+              </>
+            )}
+          </div>
+
+          <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+            Propietario Legal
+          </div>
+          <div className="flex flex-col gap-2 mb-5">
+            {!mainInLegal && legalCoOwners.length === 0 ? (
+              <div className="flex items-center justify-center px-4 py-4 rounded-[12px] bg-card border border-dashed border-border">
+                <span className="text-[0.78rem] text-muted-foreground">Sin propietario legal asignado</span>
+              </div>
+            ) : (
+              <>
+                {mainInLegal && (
+                  <OwnerCard
+                    key="main-legal"
+                    name={mainName}
+                    initials={mainInitials}
+                    phone={main.ownerPhone}
+                    email={main.ownerEmail}
+                    cuit={main.ownerCuit}
+                    dni={main.ownerDni}
+                    role={main.ownerRole}
+                    onRoleChange={onMainRoleChange}
+                    onView={() => router.push(`/propietarios/${main.ownerId}`)}
+                  />
+                )}
+                {legalCoOwners.map((co) => {
+                  const coName = [co.clientLastName, co.clientFirstName].filter(Boolean).join(", ") || "Sin nombre";
+                  const coInitials = ((co.clientFirstName?.[0] ?? "") + (co.clientLastName?.[0] ?? "")).toUpperCase() || "?";
+                  return (
+                    <OwnerCard
+                      key={co.id + "-legal"}
+                      name={coName}
+                      initials={coInitials}
+                      subtitle={co.vinculo ?? undefined}
+                      dni={co.clientDni}
+                      role={co.role}
+                      onRoleChange={(r) => handleCoOwnerRoleChange(co.id, r)}
+                      onView={() => router.push(`/propietarios/${co.clientId}`)}
+                      onRemove={() => setDeleteId(co.id)}
+                    />
+                  );
+                })}
+              </>
+            )}
+          </div>
+
+          <button
+            onClick={() => { resetModal(); setShowAdd(true); }}
+            className="flex items-center gap-1 text-primary hover:opacity-80 transition-opacity mb-2"
+          >
+            <Plus size={11} />
+            <span className="text-[0.6rem] font-bold uppercase tracking-[0.1em]">Agregar propietario</span>
+          </button>
+        </>
       )}
 
       {/* Add modal */}
       <Dialog open={showAdd} onOpenChange={(o) => { if (!o) { setShowAdd(false); resetModal(); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Agregar propietario real</DialogTitle>
+            <DialogTitle>Agregar propietario</DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
             <div>
               <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground mb-2 block">
-                Propietario
+                Persona
               </Label>
               {selectedClient ? (
                 <div className="flex items-center justify-between px-3 py-2 rounded-[8px] border border-primary bg-primary/5">
@@ -622,22 +812,12 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
                 </div>
               ) : (
                 <Command className="border border-border rounded-[8px]">
-                  <CommandInput
-                    placeholder="Buscar propietario..."
-                    value={search}
-                    onValueChange={setSearch}
-                  />
+                  <CommandInput placeholder="Buscar propietario..." value={search} onValueChange={setSearch} />
                   <CommandList>
-                    <CommandEmpty className="text-[0.78rem] text-muted-foreground py-3 text-center">
-                      Sin resultados
-                    </CommandEmpty>
+                    <CommandEmpty className="text-[0.78rem] text-muted-foreground py-3 text-center">Sin resultados</CommandEmpty>
                     <CommandGroup>
                       {availableClients.map((c) => (
-                        <CommandItem
-                          key={c.id}
-                          onSelect={() => setSelectedClient(c)}
-                          className="cursor-pointer"
-                        >
+                        <CommandItem key={c.id} onSelect={() => setSelectedClient(c)} className="cursor-pointer">
                           <span>{[c.lastName, c.firstName].filter(Boolean).join(", ")}</span>
                           {c.dni && <span className="ml-2 text-muted-foreground text-[0.72rem]">DNI {c.dni}</span>}
                         </CommandItem>
@@ -649,6 +829,21 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
             </div>
 
             <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground mb-1.5 block">
+                  Rol
+                </Label>
+                <Select value={newRole} onValueChange={setNewRole}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ambos">Real y Legal</SelectItem>
+                    <SelectItem value="real">Solo Real</SelectItem>
+                    <SelectItem value="legal">Solo Legal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground mb-1.5 block">
                   Vínculo
@@ -666,33 +861,30 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground mb-1.5 block">
-                  Participación %
-                </Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  placeholder="Ej: 50"
-                  value={sharePercent}
-                  onChange={(e) => setSharePercent(e.target.value)}
-                />
-              </div>
+            </div>
+
+            <div>
+              <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground mb-1.5 block">
+                Participación %
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="Ej: 50"
+                value={sharePercent}
+                onChange={(e) => setSharePercent(e.target.value)}
+              />
             </div>
 
             {saveError && (
-              <div className="text-[0.75rem] text-destructive px-3 py-2 rounded-[6px] bg-destructive/10">
-                {saveError}
-              </div>
+              <div className="text-[0.75rem] text-destructive px-3 py-2 rounded-[6px] bg-destructive/10">{saveError}</div>
             )}
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowAdd(false); resetModal(); }}>
-              Cancelar
-            </Button>
+            <Button variant="outline" onClick={() => { setShowAdd(false); resetModal(); }}>Cancelar</Button>
             <Button onClick={handleAdd} disabled={!selectedClient || saving}>
               {saving ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
               Agregar
@@ -705,9 +897,9 @@ function CoOwnersSection({ propertyId, existingOwnerIds }: { propertyId: string;
       <AlertDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Quitar co-propietario?</AlertDialogTitle>
+            <AlertDialogTitle>¿Quitar propietario?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta persona dejará de figurar como propietario real de la propiedad. Esta acción no elimina su ficha de cliente.
+              Esta persona dejará de figurar como propietario de la propiedad. Esta acción no elimina su ficha de cliente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -959,6 +1151,24 @@ function PropiedadFichaContent() {
   const set = (field: keyof typeof form) => (v: string) =>
     setForm((prev) => ({ ...prev, [field]: v }));
 
+  const handleOwnerRoleChange = async (role: string) => {
+    try {
+      const res = await fetch(`/api/properties/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ownerRole: role }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d.error ?? "Error al actualizar el rol");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["property", id] });
+    } catch {
+      toast.error("Error de conexión");
+    }
+  };
+
   // ── Rooms (ambientes) state ──────────────────────────────────────────────────
   const [roomsOpen, setRoomsOpen] = useState(false);
   const [addingRoom, setAddingRoom] = useState(false);
@@ -1141,7 +1351,7 @@ function PropiedadFichaContent() {
               onClick={() => router.push(`/propietarios/${prop.ownerId}`)}
               className="flex-1 px-5 py-3 text-left transition-colors group border-r border-border hover:bg-muted"
             >
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Propietario</div>
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">{OWNER_ROLE_LABEL[prop.ownerRole] ?? "Propietario"}</div>
               <div className="text-[0.88rem] font-bold text-muted-foreground leading-tight">{ownerName}</div>
               <div className="text-[0.62rem] text-primary mt-0.5">Ver ficha →</div>
             </button>
@@ -1217,51 +1427,21 @@ function PropiedadFichaContent() {
           {activeTab === "personas" && (
             <div className="px-7 py-6">
 
-              {/* Propietario */}
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
-                Propietario
-              </div>
-              <div
-                className="flex items-center gap-4 px-4 py-4 rounded-[12px] mb-2 transition-colors cursor-pointer bg-card border border-border hover:border-[var(--border-accent)]"
-                onClick={() => router.push(`/propietarios/${prop.ownerId}`)}
-              >
-                {/* Avatar */}
-                <div
-                  className="size-10 rounded-[8px] flex items-center justify-center text-[0.82rem] font-extrabold flex-shrink-0 font-brand"
-                  style={{
-                    background: "var(--gradient-owner)",
-                    border: "1.5px solid var(--status-reserved-dim)",
-                    color: "var(--primary)",
-                  }}
-                >
-                  {getOwnerInitials(prop.ownerFirstName, prop.ownerLastName)}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-[0.82rem] font-semibold text-foreground mb-0.5">{ownerName}</div>
-                  <div className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-1">Propietario</div>
-                  <div className="flex items-center gap-3 flex-wrap text-[0.72rem] text-muted-foreground">
-                    {prop.ownerPhone && <span>📱 {prop.ownerPhone}</span>}
-                    {prop.ownerEmail && <span>{prop.ownerEmail}</span>}
-                    {prop.ownerCuit && <span>CUIT {prop.ownerCuit}</span>}
-                    {prop.ownerDni && !prop.ownerCuit && <span>DNI {prop.ownerDni}</span>}
-                  </div>
-                </div>
-
-                {/* Action */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-shrink-0"
-                  onClick={(e) => { e.stopPropagation(); router.push(`/propietarios/${prop.ownerId}`); }}
-                >
-                  Ver ficha <ExternalLink size={10} />
-                </Button>
-              </div>
-
-              {/* Co-propietarios */}
-              <CoOwnersSection propertyId={prop.id} existingOwnerIds={[prop.ownerId]} />
+              {/* Propietarios */}
+              <OwnersSection
+                main={{
+                  id: prop.id,
+                  ownerId: prop.ownerId,
+                  ownerRole: prop.ownerRole,
+                  ownerFirstName: prop.ownerFirstName,
+                  ownerLastName: prop.ownerLastName,
+                  ownerPhone: prop.ownerPhone,
+                  ownerEmail: prop.ownerEmail,
+                  ownerCuit: prop.ownerCuit,
+                  ownerDni: prop.ownerDni,
+                }}
+                onMainRoleChange={handleOwnerRoleChange}
+              />
 
               {/* Inquilino */}
               <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 mt-5">

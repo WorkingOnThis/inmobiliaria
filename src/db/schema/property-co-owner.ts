@@ -14,6 +14,7 @@ export const propertyCoOwner = pgTable(
     clientId: text("clientId")
       .notNull()
       .references(() => client.id, { onDelete: "restrict" }),
+    role: text("role").notNull().default("ambos"),
     vinculo: text("vinculo"),
     sharePercent: decimal("sharePercent", { precision: 5, scale: 2 }),
     notes: text("notes"),

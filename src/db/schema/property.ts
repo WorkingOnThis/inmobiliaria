@@ -26,6 +26,7 @@ export const property = pgTable("property", {
   condition: text("condition"),
   keys: text("keys"),
   // Responsabilidad de servicios e impuestos: "inquilino" | "propietario" | "na"
+  ownerRole: text("ownerRole").notNull().default("ambos"),
   serviceElectricity: text("serviceElectricity").notNull().default("inquilino"),
   serviceGas: text("serviceGas").notNull().default("inquilino"),
   serviceWater: text("serviceWater").notNull().default("inquilino"),

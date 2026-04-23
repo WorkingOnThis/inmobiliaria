@@ -11,6 +11,7 @@ import { z } from "zod";
 
 const addCoOwnerSchema = z.object({
   clientId: z.string().min(1, "El cliente es requerido"),
+  role: z.enum(["ambos", "real", "legal"]).default("ambos"),
   vinculo: z.string().optional().nullable(),
   sharePercent: z.coerce.number().min(0).max(100).optional().nullable(),
   notes: z.string().optional().nullable(),
@@ -33,6 +34,7 @@ export async function GET(
         id: propertyCoOwner.id,
         propertyId: propertyCoOwner.propertyId,
         clientId: propertyCoOwner.clientId,
+        role: propertyCoOwner.role,
         vinculo: propertyCoOwner.vinculo,
         sharePercent: propertyCoOwner.sharePercent,
         notes: propertyCoOwner.notes,
@@ -84,7 +86,7 @@ export async function POST(
       return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
     }
 
-    const { clientId, vinculo, sharePercent, notes } = result.data;
+    const { clientId, role, vinculo, sharePercent, notes } = result.data;
 
     const [existingClient] = await db
       .select({ id: client.id })
@@ -100,6 +102,7 @@ export async function POST(
       .values({
         propertyId: id,
         clientId,
+        role,
         vinculo: vinculo ?? null,
         sharePercent: sharePercent != null ? String(sharePercent) : null,
         notes: notes ?? null,

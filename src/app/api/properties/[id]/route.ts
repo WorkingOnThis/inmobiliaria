@@ -24,6 +24,7 @@ const updatePropertySchema = z.object({
   yearBuilt: z.coerce.number().int().min(1800).max(2100).optional().nullable(),
   condition: z.enum(["a_reciclar", "a_refaccionar", "bueno", "muy_bueno", "excelente", "a_estrenar"]).optional().nullable(),
   keys: z.enum(["no_se_sabe", "coordinar_dueno", "coordinar_inquilino", "tenemos"]).optional().nullable(),
+  ownerRole: z.enum(["ambos", "real", "legal"]).optional(),
   price: z.coerce.number().optional().nullable(),
   serviceElectricity: z.enum(["inquilino", "propietario", "na"]).optional(),
   serviceGas: z.enum(["inquilino", "propietario", "na"]).optional(),
@@ -64,6 +65,7 @@ export async function GET(
         yearBuilt: property.yearBuilt,
         condition: property.condition,
         keys: property.keys,
+        ownerRole: property.ownerRole,
         serviceElectricity: property.serviceElectricity,
         serviceGas: property.serviceGas,
         serviceWater: property.serviceWater,
@@ -136,6 +138,7 @@ export async function PATCH(
     if (data.yearBuilt !== undefined) updateData.yearBuilt = data.yearBuilt;
     if (data.condition !== undefined) updateData.condition = data.condition;
     if (data.keys !== undefined) updateData.keys = data.keys;
+    if (data.ownerRole !== undefined) updateData.ownerRole = data.ownerRole;
     if (data.price !== undefined) updateData.price = data.price != null ? String(data.price) : null;
     if (data.serviceElectricity !== undefined) updateData.serviceElectricity = data.serviceElectricity;
     if (data.serviceGas !== undefined) updateData.serviceGas = data.serviceGas;
