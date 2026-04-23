@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +35,6 @@ type DocumentTemplate = {
 };
 
 export function DocumentTemplatesList() {
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery<{ templates: DocumentTemplate[] }>({

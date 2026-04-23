@@ -280,6 +280,43 @@ function LogoUpload({ value, onChange }: { value: string | null | undefined; onC
   );
 }
 
+// ── Scaled Preview wrapper ────────────────────────────────────────────────────
+
+const DESIGN_WIDTH = 480;
+
+function ScaledPreview({ form, clausulas }: { form: FormState; clausulas: Clausula[] }) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [scaledHeight, setScaledHeight] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
+
+    const update = () => {
+      const newScale = outer.offsetWidth / DESIGN_WIDTH;
+      setScale(newScale);
+      setScaledHeight(inner.offsetHeight * newScale);
+    };
+
+    const ro = new ResizeObserver(update);
+    ro.observe(outer);
+    ro.observe(inner);
+    update();
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={outerRef} style={{ width: "100%", height: scaledHeight, position: "relative", overflow: "hidden" }}>
+      <div ref={innerRef} style={{ width: `${DESIGN_WIDTH}px`, transform: `scale(${scale})`, transformOrigin: "top left", position: "absolute" }}>
+        <LivePreview form={form} clausulas={clausulas} />
+      </div>
+    </div>
+  );
+}
+
 // ── Live Preview ──────────────────────────────────────────────────────────────
 
 function LivePreview({ form, clausulas }: { form: FormState; clausulas: Clausula[] }) {
@@ -296,19 +333,19 @@ function LivePreview({ form, clausulas }: { form: FormState; clausulas: Clausula
       style={{
         background: P.bg, color: P.text,
         fontFamily: "Inter, -apple-system, sans-serif",
-        padding: "22px 20px", borderRadius: "6px",
-        fontSize: "11px", lineHeight: 1.45,
+        padding: "30px 28px", borderRadius: "8px",
+        fontSize: "13px", lineHeight: 1.5,
         boxShadow: "0 8px 24px rgba(0,0,0,.3)",
       }}
     >
       {/* Header */}
-      <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", paddingBottom: "12px", borderBottom: `1.5px solid ${P.text}` }}>
+      <div style={{ display: "flex", gap: "16px", alignItems: "flex-start", paddingBottom: "16px", borderBottom: `1.5px solid ${P.text}` }}>
         <div style={{
-          width: "44px", height: "44px", borderRadius: "8px", flexShrink: 0,
+          width: "56px", height: "56px", borderRadius: "10px", flexShrink: 0,
           display: "grid", placeItems: "center", overflow: "hidden",
           ...(form.logoUrl
             ? {}
-            : { background: "linear-gradient(135deg, #e85a3c, #c03c1f)", color: "#fff", fontWeight: 700, fontSize: "18px" }),
+            : { background: "linear-gradient(135deg, #e85a3c, #c03c1f)", color: "#fff", fontWeight: 700, fontSize: "22px" }),
         }}>
           {form.logoUrl
             ? <img src={form.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
@@ -316,49 +353,49 @@ function LivePreview({ form, clausulas }: { form: FormState; clausulas: Clausula
           }
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: "14px", fontWeight: 700, letterSpacing: "-.01em" }}>
+          <div style={{ fontSize: "17px", fontWeight: 700, letterSpacing: "-.01em" }}>
             {form.legalName || "Razón Social"}
           </div>
-          <div style={{ fontSize: "10px", color: P.muted }}>
+          <div style={{ fontSize: "12px", color: P.muted }}>
             CUIT {form.cuit || "00-00000000-0"} · {form.vatStatus || "Monotributo"}
           </div>
-          <div style={{ fontSize: "10px", color: P.muted }}>
+          <div style={{ fontSize: "12px", color: P.muted }}>
             {form.fiscalAddress || "Domicilio"}
             {form.city ? `, ${form.city}` : ""}
           </div>
-          <div style={{ fontSize: "10px", color: P.muted }}>
+          <div style={{ fontSize: "12px", color: P.muted }}>
             {form.phone ? `Tel. ${form.phone}` : ""}
             {form.phone && form.contactEmail ? " · " : ""}
             {form.contactEmail || ""}
           </div>
         </div>
         <div style={{ textAlign: "right", fontFamily: P.mono }}>
-          <div style={{ fontSize: "9px", color: P.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{tipo}</div>
-          <div style={{ fontSize: "12px", fontWeight: 600 }}>{pv}-{num}</div>
+          <div style={{ fontSize: "11px", color: P.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{tipo}</div>
+          <div style={{ fontSize: "14px", fontWeight: 600 }}>{pv}-{num}</div>
           {form.licenseNumber && (
-            <div style={{ fontSize: "9px", color: P.muted, marginTop: "4px" }}>Mat. {form.licenseNumber}</div>
+            <div style={{ fontSize: "11px", color: P.muted, marginTop: "4px" }}>Mat. {form.licenseNumber}</div>
           )}
         </div>
       </div>
 
       {/* Body */}
-      <div style={{ marginTop: "14px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+      <div style={{ marginTop: "18px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
           <div>
-            <div style={{ fontSize: "9px", textTransform: "uppercase", letterSpacing: ".08em", color: P.muted, marginBottom: "2px" }}>Recibí de</div>
-            <div style={{ fontSize: "11.5px", fontWeight: 500 }}>Propietario Ejemplo</div>
+            <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: ".08em", color: P.muted, marginBottom: "3px" }}>Recibí de</div>
+            <div style={{ fontSize: "14px", fontWeight: 500 }}>Propietario Ejemplo</div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "9px", textTransform: "uppercase", letterSpacing: ".08em", color: P.muted, marginBottom: "2px" }}>Período</div>
-            <div style={{ fontSize: "11.5px", fontWeight: 500 }}>Abril 2026</div>
+            <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: ".08em", color: P.muted, marginBottom: "3px" }}>Período</div>
+            <div style={{ fontSize: "14px", fontWeight: 500 }}>Abril 2026</div>
           </div>
         </div>
 
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", padding: "6px 4px", borderBottom: `1px solid ${P.text}`, fontSize: "9px", textTransform: "uppercase", letterSpacing: ".05em", color: P.muted }}>Concepto</th>
-              <th style={{ textAlign: "right", padding: "6px 4px", borderBottom: `1px solid ${P.text}`, fontSize: "9px", textTransform: "uppercase", letterSpacing: ".05em", color: P.muted }}>Importe</th>
+              <th style={{ textAlign: "left", padding: "8px 6px", borderBottom: `1px solid ${P.text}`, fontSize: "11px", textTransform: "uppercase", letterSpacing: ".05em", color: P.muted }}>Concepto</th>
+              <th style={{ textAlign: "right", padding: "8px 6px", borderBottom: `1px solid ${P.text}`, fontSize: "11px", textTransform: "uppercase", letterSpacing: ".05em", color: P.muted }}>Importe</th>
             </tr>
           </thead>
           <tbody>
@@ -368,25 +405,25 @@ function LivePreview({ form, clausulas }: { form: FormState; clausulas: Clausula
               ["Honorarios (7%)", "−$ 8.223"],
             ].map(([c, v]) => (
               <tr key={c}>
-                <td style={{ padding: "5px 4px", borderBottom: `1px dashed ${P.border}`, fontFamily: P.mono }}>{c}</td>
-                <td style={{ padding: "5px 4px", borderBottom: `1px dashed ${P.border}`, textAlign: "right", fontFamily: P.mono }}>{v}</td>
+                <td style={{ padding: "7px 6px", borderBottom: `1px dashed ${P.border}`, fontFamily: P.mono }}>{c}</td>
+                <td style={{ padding: "7px 6px", borderBottom: `1px dashed ${P.border}`, textAlign: "right", fontFamily: P.mono }}>{v}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        <div style={{ marginTop: "12px", textAlign: "right", fontSize: "12px", fontWeight: 700, paddingTop: "8px", borderTop: `1.5px solid ${P.text}`, fontFamily: P.mono }}>
+        <div style={{ marginTop: "14px", textAlign: "right", fontSize: "14px", fontWeight: 700, paddingTop: "10px", borderTop: `1.5px solid ${P.text}`, fontFamily: P.mono }}>
           Total transferido: $ 109.377,00
         </div>
 
         {clausulas.length > 0 && (
-          <div style={{ marginTop: "18px", fontSize: "9.5px", color: P.muted, borderTop: `1px solid ${P.border}`, paddingTop: "10px" }}>
+          <div style={{ marginTop: "20px", fontSize: "11px", color: P.muted, borderTop: `1px solid ${P.border}`, paddingTop: "12px" }}>
             {clausulas[0].texto}
           </div>
         )}
 
         {(form.bancoCBU || form.bancoAlias) && (
-          <div style={{ marginTop: "8px", fontSize: "9.5px", color: P.muted }}>
+          <div style={{ marginTop: "10px", fontSize: "11px", color: P.muted }}>
             {form.bancoCBU && <>CBU: <span style={{ fontFamily: P.mono }}>{form.bancoCBU}</span></>}
             {form.bancoCBU && form.bancoAlias && " · "}
             {form.bancoAlias && <>Alias: <span style={{ fontFamily: P.mono }}>{form.bancoAlias}</span></>}
@@ -394,16 +431,16 @@ function LivePreview({ form, clausulas }: { form: FormState; clausulas: Clausula
         )}
 
         {(form.signatory || form.signatureUrl) && (
-          <div style={{ marginTop: "30px", display: "flex", justifyContent: "flex-end" }}>
-            <div style={{ width: "160px", textAlign: "center" }}>
+          <div style={{ marginTop: "36px", display: "flex", justifyContent: "flex-end" }}>
+            <div style={{ width: "200px", textAlign: "center" }}>
               {form.signatureUrl ? (
-                <img src={form.signatureUrl} alt="Firma" style={{ height: "40px", objectFit: "contain", margin: "0 auto 4px" }} />
+                <img src={form.signatureUrl} alt="Firma" style={{ height: "50px", objectFit: "contain", margin: "0 auto 6px" }} />
               ) : (
-                <div style={{ fontFamily: '"Brush Script MT", cursive', fontSize: "18px", transform: "rotate(-3deg)", marginBottom: "4px" }}>
+                <div style={{ fontFamily: '"Brush Script MT", cursive', fontSize: "22px", transform: "rotate(-3deg)", marginBottom: "6px" }}>
                   {form.signatory}
                 </div>
               )}
-              <div style={{ borderTop: `1px solid ${P.text}`, paddingTop: "4px", fontSize: "9px", color: P.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>
+              <div style={{ borderTop: `1px solid ${P.text}`, paddingTop: "5px", fontSize: "11px", color: P.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>
                 {form.signatory} · {form.signatoryTitle || "Administrador"}
               </div>
             </div>
@@ -609,7 +646,7 @@ export default function AdministracionPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto bg-bg">
-        <div className="px-6 py-5 max-w-[1200px]">
+        <div className="px-6 py-5 max-w-[1600px] w-full">
           {/* Page header */}
           <div className="flex items-start gap-4 mb-6">
             <div className="flex-1">
@@ -626,7 +663,7 @@ export default function AdministracionPage() {
           </div>
 
           {/* Two column layout */}
-          <div className="grid grid-cols-[1fr_360px] gap-5 items-start">
+          <div className="grid grid-cols-[3fr_2fr] gap-5 items-start">
             {/* LEFT: form sections */}
             <div>
               {/* 1. Identidad */}
@@ -838,7 +875,7 @@ export default function AdministracionPage() {
                   <span className="size-1.5 rounded-full bg-success animate-pulse" />
                   Vista previa en vivo
                 </div>
-                <LivePreview form={form} clausulas={clausulas} />
+                <ScaledPreview form={form} clausulas={clausulas} />
               </div>
             </div>
           </div>

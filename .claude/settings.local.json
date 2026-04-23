@@ -44,7 +44,10 @@
       "Bash(bun scripts/migrate-client-type-to-english.ts)",
       "Bash(bun -e ' *)",
       "Bash(xargs cat *)",
-      "Bash(git diff *)"
+      "Bash(git diff *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }

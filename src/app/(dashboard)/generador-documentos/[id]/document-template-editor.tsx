@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,8 +99,11 @@ export function DocumentTemplateEditor({
 }: {
   templateId: string;
 }) {
-  const [name, setName] = useState("");
-  const [body, setBody] = useState("");
+  // localEdits stores only what the user has changed; falls back to server data
+  const [localEdits, setLocalEdits] = useState<{
+    name?: string;
+    body?: string;
+  }>({});
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">(
     "idle"
   );
@@ -108,7 +111,6 @@ export function DocumentTemplateEditor({
   const [varListOpen, setVarListOpen] = useState(false);
   const [copiedPath, setCopiedPath] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialLoad = useRef(true);
 
   // ── Fetch template ────────────────────────────────────────────────────────
 
@@ -120,13 +122,9 @@ export function DocumentTemplateEditor({
       fetch(`/api/document-templates/${templateId}`).then((r) => r.json()),
   });
 
-  useEffect(() => {
-    if (templateData?.template) {
-      setName(templateData.template.name);
-      setBody(templateData.template.body);
-      initialLoad.current = false;
-    }
-  }, [templateData]);
+  // Derive display values: local edits take precedence over server data
+  const name = localEdits.name ?? templateData?.template.name ?? "";
+  const body = localEdits.body ?? templateData?.template.body ?? "";
 
   // ── Fetch contracts list ──────────────────────────────────────────────────
 
@@ -190,7 +188,6 @@ export function DocumentTemplateEditor({
   );
 
   function scheduleSave(newName: string, newBody: string) {
-    if (initialLoad.current) return;
     setSaveStatus("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => save(newName, newBody), 1000);
@@ -198,13 +195,13 @@ export function DocumentTemplateEditor({
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
-    setName(val);
+    setLocalEdits((prev) => ({ ...prev, name: val }));
     scheduleSave(val, body);
   }
 
   function handleBodyChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const val = e.target.value;
-    setBody(val);
+    setLocalEdits((prev) => ({ ...prev, body: val }));
     scheduleSave(name, val);
   }
 
