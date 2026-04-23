@@ -473,6 +473,7 @@ function OwnerCard({
   cuit,
   dni,
   role,
+  isLocadora,
   onRoleChange,
   onView,
   onRemove,
@@ -485,6 +486,7 @@ function OwnerCard({
   cuit?: string | null;
   dni?: string | null;
   role: string;
+  isLocadora?: boolean;
   onRoleChange: (r: string) => void;
   onView: () => void;
   onRemove?: () => void;
@@ -501,7 +503,14 @@ function OwnerCard({
         {initials}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[0.82rem] font-semibold text-foreground mb-0.5">{name}</div>
+        <div className="text-[0.82rem] font-semibold text-foreground mb-0.5 flex items-center gap-1.5 flex-wrap">
+          {name}
+          {isLocadora && (
+            <span className="text-[0.58rem] font-bold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/20">
+              Parte Locadora
+            </span>
+          )}
+        </div>
         {subtitle && (
           <div className="text-[0.62rem] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-0.5">{subtitle}</div>
         )}
@@ -652,12 +661,13 @@ function OwnersSection({
     }
   };
 
-  const renderCoOwnerCard = (co: CoOwner, keySuffix: string) => (
+  const renderCoOwnerCard = (co: CoOwner, keySuffix: string, isLocadora?: boolean) => (
     <OwnerCard
       key={co.id + keySuffix}
       name={formatName(co.clientLastName, co.clientFirstName)}
       initials={getOwnerInitials(co.clientFirstName, co.clientLastName)}
       subtitle={co.vinculo ?? undefined}
+      isLocadora={isLocadora}
       dni={co.clientDni}
       role={co.role}
       onRoleChange={(r) => handleCoOwnerRoleChange(co.id, r)}
@@ -673,6 +683,7 @@ function OwnersSection({
 
   const inReal = (role: string) => role === "ambos" || role === "real";
   const inLegal = (role: string) => role === "ambos" || role === "legal";
+  const isLegalRole = inLegal;
 
   const mainInReal = hasCoOwners && inReal(main.ownerRole);
   const mainInLegal = hasCoOwners && inLegal(main.ownerRole);
@@ -706,6 +717,7 @@ function OwnersSection({
             cuit={main.ownerCuit}
             dni={main.ownerDni}
             role={main.ownerRole}
+            isLocadora={isLegalRole(main.ownerRole)}
             onRoleChange={onMainRoleChange}
             onView={() => router.push(`/propietarios/${main.ownerId}`)}
           />
@@ -762,11 +774,12 @@ function OwnersSection({
                     cuit={main.ownerCuit}
                     dni={main.ownerDni}
                     role={main.ownerRole}
+                    isLocadora
                     onRoleChange={onMainRoleChange}
                     onView={() => router.push(`/propietarios/${main.ownerId}`)}
                   />
                 )}
-                {legalCoOwners.map((co) => renderCoOwnerCard(co, "-legal"))}
+                {legalCoOwners.map((co) => renderCoOwnerCard(co, "-legal", true))}
               </>
             )}
           </div>
