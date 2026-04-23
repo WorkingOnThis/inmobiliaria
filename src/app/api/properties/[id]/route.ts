@@ -8,6 +8,7 @@ import { contract } from "@/db/schema/contract";
 import { contractTenant } from "@/db/schema/contract-tenant";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
+import { RENTAL_STATUSES, SALE_STATUSES, PRICE_CURRENCIES } from "@/lib/properties/constants";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -15,12 +16,12 @@ const updatePropertySchema = z.object({
   title: z.string().optional().nullable(),
   address: z.string().min(1).optional(),
   type: z.string().optional(),
-  rentalStatus: z.enum(["available", "rented", "reserved", "maintenance"]).optional(),
-  saleStatus: z.enum(["for_sale", "sold"]).optional().nullable(),
+  rentalStatus: z.enum(RENTAL_STATUSES).optional(),
+  saleStatus: z.enum(SALE_STATUSES).optional().nullable(),
   rentalPrice: z.coerce.number().optional().nullable(),
-  rentalPriceCurrency: z.enum(["ARS", "USD"]).optional(),
+  rentalPriceCurrency: z.enum(PRICE_CURRENCIES).optional(),
   salePrice: z.coerce.number().optional().nullable(),
-  salePriceCurrency: z.enum(["ARS", "USD"]).optional(),
+  salePriceCurrency: z.enum(PRICE_CURRENCIES).optional(),
   zone: z.string().optional().nullable(),
   floorUnit: z.string().optional().nullable(),
   rooms: z.coerce.number().int().min(0).optional().nullable(),
@@ -53,76 +54,74 @@ export async function GET(
 
     const { id } = await params;
 
-    const [row] = await db
-      .select({
-        id: property.id,
-        title: property.title,
-        address: property.address,
-        rentalPrice: property.rentalPrice,
-        rentalPriceCurrency: property.rentalPriceCurrency,
-        salePrice: property.salePrice,
-        salePriceCurrency: property.salePriceCurrency,
-        type: property.type,
-        rentalStatus: property.rentalStatus,
-        saleStatus: property.saleStatus,
-        zone: property.zone,
-        floorUnit: property.floorUnit,
-        rooms: property.rooms,
-        bedrooms: property.bedrooms,
-        bathrooms: property.bathrooms,
-        surface: property.surface,
-        surfaceBuilt: property.surfaceBuilt,
-        surfaceLand: property.surfaceLand,
-        yearBuilt: property.yearBuilt,
-        condition: property.condition,
-        keys: property.keys,
-        ownerRole: property.ownerRole,
-        isManaged: property.isManaged,
-        serviceElectricity: property.serviceElectricity,
-        serviceGas: property.serviceGas,
-        serviceWater: property.serviceWater,
-        serviceCouncil: property.serviceCouncil,
-        serviceStateTax: property.serviceStateTax,
-        serviceHoa: property.serviceHoa,
-        createdAt: property.createdAt,
-        updatedAt: property.updatedAt,
-        ownerId: property.ownerId,
-        ownerFirstName: client.firstName,
-        ownerLastName: client.lastName,
-        ownerPhone: client.phone,
-        ownerEmail: client.email,
-        ownerDni: client.dni,
-        ownerCuit: client.cuit,
-        ownerStatus: client.status,
-      })
-      .from(property)
-      .leftJoin(client, eq(property.ownerId, client.id))
-      .where(eq(property.id, id))
-      .limit(1);
+    const [[row], guaranteeRows] = await Promise.all([
+      db
+        .select({
+          id: property.id,
+          title: property.title,
+          address: property.address,
+          rentalPrice: property.rentalPrice,
+          rentalPriceCurrency: property.rentalPriceCurrency,
+          salePrice: property.salePrice,
+          salePriceCurrency: property.salePriceCurrency,
+          type: property.type,
+          rentalStatus: property.rentalStatus,
+          saleStatus: property.saleStatus,
+          zone: property.zone,
+          floorUnit: property.floorUnit,
+          rooms: property.rooms,
+          bedrooms: property.bedrooms,
+          bathrooms: property.bathrooms,
+          surface: property.surface,
+          surfaceBuilt: property.surfaceBuilt,
+          surfaceLand: property.surfaceLand,
+          yearBuilt: property.yearBuilt,
+          condition: property.condition,
+          keys: property.keys,
+          ownerRole: property.ownerRole,
+          isManaged: property.isManaged,
+          serviceElectricity: property.serviceElectricity,
+          serviceGas: property.serviceGas,
+          serviceWater: property.serviceWater,
+          serviceCouncil: property.serviceCouncil,
+          serviceStateTax: property.serviceStateTax,
+          serviceHoa: property.serviceHoa,
+          createdAt: property.createdAt,
+          updatedAt: property.updatedAt,
+          ownerId: property.ownerId,
+          ownerFirstName: client.firstName,
+          ownerLastName: client.lastName,
+          ownerPhone: client.phone,
+          ownerEmail: client.email,
+          ownerDni: client.dni,
+          ownerCuit: client.cuit,
+          ownerStatus: client.status,
+        })
+        .from(property)
+        .leftJoin(client, eq(property.ownerId, client.id))
+        .where(eq(property.id, id))
+        .limit(1),
+      db
+        .select({
+          guaranteeId: guarantee.id,
+          contractId: guarantee.contractId,
+          contractNumber: contract.contractNumber,
+          tenantFirstName: client.firstName,
+          tenantLastName: client.lastName,
+        })
+        .from(guarantee)
+        .innerJoin(contract, eq(contract.id, guarantee.contractId))
+        .innerJoin(contractTenant, eq(contractTenant.contractId, guarantee.contractId))
+        .innerJoin(client, eq(client.id, contractTenant.clientId))
+        .where(eq(guarantee.propertyId, id)),
+    ]);
 
     if (!row) {
       return NextResponse.json({ error: "Propiedad no encontrada" }, { status: 404 });
     }
 
-    // Contracts where this property is used as a guarantee
-    const usedAsGuaranteeRows = await db
-      .select({
-        guaranteeId: guarantee.id,
-        contractId: guarantee.contractId,
-        tenantClientId: guarantee.tenantClientId,
-        contractNumber: contract.contractNumber,
-        tenantFirstName: client.firstName,
-        tenantLastName: client.lastName,
-      })
-      .from(guarantee)
-      .innerJoin(contract, eq(contract.id, guarantee.contractId))
-      .innerJoin(contractTenant, eq(contractTenant.contractId, guarantee.contractId))
-      .innerJoin(client, eq(client.id, contractTenant.clientId))
-      .where(eq(guarantee.propertyId, id));
-
-    // Deduplicate by contractId (multiple tenants per contract)
     const seenContracts = new Set<string>();
-    const usedAsGuaranteeIn = usedAsGuaranteeRows
+    const usedAsGuaranteeIn = guaranteeRows
       .filter((r) => {
         if (seenContracts.has(r.contractId)) return false;
         seenContracts.add(r.contractId);

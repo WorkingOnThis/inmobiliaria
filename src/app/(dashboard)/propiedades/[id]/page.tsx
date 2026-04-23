@@ -10,6 +10,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ServiceTabProperty } from "@/components/services/service-tab-property";
 import { SectionLabel } from "@/components/ui/section-label";
+import { RENTAL_STATUS_LABELS, SALE_STATUS_LABELS } from "@/lib/properties/constants";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -154,17 +155,6 @@ const TYPE_LABEL: Record<string, string> = {
   otro: "Otro",
 };
 
-const RENTAL_STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; dot: string }> = {
-  available:    { label: "Disponible",        bg: "var(--status-available-dim)",   color: "var(--status-available)",   dot: "var(--status-available)" },
-  rented:       { label: "Alquilada",         bg: "var(--status-rented-dim)",      color: "var(--status-rented)",      dot: "var(--status-rented)" },
-  maintenance:  { label: "En mantenimiento",  bg: "var(--status-maintenance-dim)", color: "var(--status-maintenance)", dot: "var(--status-maintenance)" },
-  reserved:     { label: "Reservada",         bg: "var(--status-reserved-dim)",    color: "var(--status-reserved)",    dot: "var(--status-reserved)" },
-};
-
-const SALE_STATUS_LABEL: Record<string, string> = {
-  for_sale: "En venta",
-  sold:     "Vendida",
-};
 
 const SERVICIO_LABEL: Record<string, string> = {
   inquilino:   "Inquilino",
@@ -1354,11 +1344,11 @@ function PropiedadFichaContent() {
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[0.75rem] text-muted-foreground">{buildSubtitle(prop)}</span>
                 <StatusBadge variant={RENTAL_STATUS_VARIANT[prop.rentalStatus] ?? "available"}>
-                  {RENTAL_STATUS_CONFIG[prop.rentalStatus]?.label ?? prop.rentalStatus}
+                  {RENTAL_STATUS_LABELS[prop.rentalStatus as keyof typeof RENTAL_STATUS_LABELS] ?? prop.rentalStatus}
                 </StatusBadge>
                 {prop.saleStatus && (
                   <StatusBadge variant={SALE_STATUS_VARIANT[prop.saleStatus] ?? "reserved"}>
-                    {SALE_STATUS_LABEL[prop.saleStatus] ?? prop.saleStatus}
+                    {SALE_STATUS_LABELS[prop.saleStatus as keyof typeof SALE_STATUS_LABELS] ?? prop.saleStatus}
                   </StatusBadge>
                 )}
               </div>
@@ -1757,8 +1747,8 @@ function PropiedadFichaContent() {
                       <DatoItem label="Piso / Unidad" value={prop.floorUnit} />
                       <DatoItem label="Barrio / Zona" value={prop.zone} />
                       <DatoItem label="Tipo" value={TYPE_LABEL[prop.type] ?? prop.type} />
-                      <DatoItem label="Estado alquiler" value={RENTAL_STATUS_CONFIG[prop.rentalStatus]?.label ?? prop.rentalStatus} />
-                      <DatoItem label="Estado venta" value={prop.saleStatus ? (SALE_STATUS_LABEL[prop.saleStatus] ?? prop.saleStatus) : null} />
+                      <DatoItem label="Estado alquiler" value={RENTAL_STATUS_LABELS[prop.rentalStatus as keyof typeof RENTAL_STATUS_LABELS] ?? prop.rentalStatus} />
+                      <DatoItem label="Estado venta" value={prop.saleStatus ? (SALE_STATUS_LABELS[prop.saleStatus as keyof typeof SALE_STATUS_LABELS] ?? prop.saleStatus) : null} />
                       <DatoItem
                         label="Precio alquiler"
                         value={prop.rentalPrice ? `${prop.rentalPriceCurrency === "USD" ? "US$ " : "$ "}${Number(prop.rentalPrice).toLocaleString("es-AR")}` : null}
