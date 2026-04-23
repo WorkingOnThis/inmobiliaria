@@ -189,6 +189,10 @@ function getOwnerInitials(firstName: string | null, lastName: string | null) {
   return ((firstName?.[0] ?? "") + (lastName?.[0] ?? "")).toUpperCase() || "?";
 }
 
+function formatName(last: string | null | undefined, first: string | null | undefined, fallback = "Sin nombre") {
+  return [last, first].filter(Boolean).join(", ") || fallback;
+}
+
 function formatSurface(surface: string | null) {
   if (!surface) return null;
   const n = parseFloat(surface);
@@ -626,9 +630,12 @@ function OwnersSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role }),
       });
-      if (res.ok) {
-        await queryClient.invalidateQueries({ queryKey: ["co-owners", main.id] });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d.error ?? "Error al actualizar el rol");
+        return;
       }
+      await queryClient.invalidateQueries({ queryKey: ["co-owners", main.id] });
     } catch {
       toast.error("Error al actualizar el rol");
     }
@@ -645,15 +652,32 @@ function OwnersSection({
     }
   };
 
-  const mainName = [main.ownerLastName, main.ownerFirstName].filter(Boolean).join(", ") || "—";
+  const renderCoOwnerCard = (co: CoOwner, keySuffix: string) => (
+    <OwnerCard
+      key={co.id + keySuffix}
+      name={formatName(co.clientLastName, co.clientFirstName)}
+      initials={getOwnerInitials(co.clientFirstName, co.clientLastName)}
+      subtitle={co.vinculo ?? undefined}
+      dni={co.clientDni}
+      role={co.role}
+      onRoleChange={(r) => handleCoOwnerRoleChange(co.id, r)}
+      onView={() => router.push(`/propietarios/${co.clientId}`)}
+      onRemove={() => setDeleteId(co.id)}
+    />
+  );
+
+  const mainName = formatName(main.ownerLastName, main.ownerFirstName, "—");
+
   const mainInitials = getOwnerInitials(main.ownerFirstName, main.ownerLastName);
   const hasCoOwners = coOwners.length > 0;
 
-  // In split mode, each section has: does the main owner appear? + which co-owners appear?
-  const mainInReal = hasCoOwners && (main.ownerRole === "ambos" || main.ownerRole === "real");
-  const mainInLegal = hasCoOwners && (main.ownerRole === "ambos" || main.ownerRole === "legal");
-  const realCoOwners = hasCoOwners ? coOwners.filter((c) => c.role === "ambos" || c.role === "real") : [];
-  const legalCoOwners = hasCoOwners ? coOwners.filter((c) => c.role === "ambos" || c.role === "legal") : [];
+  const inReal = (role: string) => role === "ambos" || role === "real";
+  const inLegal = (role: string) => role === "ambos" || role === "legal";
+
+  const mainInReal = hasCoOwners && inReal(main.ownerRole);
+  const mainInLegal = hasCoOwners && inLegal(main.ownerRole);
+  const realCoOwners = hasCoOwners ? coOwners.filter((c) => inReal(c.role)) : [];
+  const legalCoOwners = hasCoOwners ? coOwners.filter((c) => inLegal(c.role)) : [];
 
   if (isLoading) {
     return <div className="flex justify-center py-8"><Loader2 size={16} className="animate-spin text-muted-foreground" /></div>;
@@ -713,23 +737,7 @@ function OwnersSection({
                     onView={() => router.push(`/propietarios/${main.ownerId}`)}
                   />
                 )}
-                {realCoOwners.map((co) => {
-                  const coName = [co.clientLastName, co.clientFirstName].filter(Boolean).join(", ") || "Sin nombre";
-                  const coInitials = ((co.clientFirstName?.[0] ?? "") + (co.clientLastName?.[0] ?? "")).toUpperCase() || "?";
-                  return (
-                    <OwnerCard
-                      key={co.id + "-real"}
-                      name={coName}
-                      initials={coInitials}
-                      subtitle={co.vinculo ?? undefined}
-                      dni={co.clientDni}
-                      role={co.role}
-                      onRoleChange={(r) => handleCoOwnerRoleChange(co.id, r)}
-                      onView={() => router.push(`/propietarios/${co.clientId}`)}
-                      onRemove={() => setDeleteId(co.id)}
-                    />
-                  );
-                })}
+                {realCoOwners.map((co) => renderCoOwnerCard(co, "-real"))}
               </>
             )}
           </div>
@@ -758,23 +766,7 @@ function OwnersSection({
                     onView={() => router.push(`/propietarios/${main.ownerId}`)}
                   />
                 )}
-                {legalCoOwners.map((co) => {
-                  const coName = [co.clientLastName, co.clientFirstName].filter(Boolean).join(", ") || "Sin nombre";
-                  const coInitials = ((co.clientFirstName?.[0] ?? "") + (co.clientLastName?.[0] ?? "")).toUpperCase() || "?";
-                  return (
-                    <OwnerCard
-                      key={co.id + "-legal"}
-                      name={coName}
-                      initials={coInitials}
-                      subtitle={co.vinculo ?? undefined}
-                      dni={co.clientDni}
-                      role={co.role}
-                      onRoleChange={(r) => handleCoOwnerRoleChange(co.id, r)}
-                      onView={() => router.push(`/propietarios/${co.clientId}`)}
-                      onRemove={() => setDeleteId(co.id)}
-                    />
-                  );
-                })}
+                {legalCoOwners.map((co) => renderCoOwnerCard(co, "-legal"))}
               </>
             )}
           </div>
@@ -804,7 +796,7 @@ function OwnersSection({
               {selectedClient ? (
                 <div className="flex items-center justify-between px-3 py-2 rounded-[8px] border border-primary bg-primary/5">
                   <span className="text-[0.82rem] font-semibold">
-                    {[selectedClient.lastName, selectedClient.firstName].filter(Boolean).join(", ")}
+                    {formatName(selectedClient.lastName, selectedClient.firstName)}
                   </span>
                   <button onClick={() => setSelectedClient(null)} className="text-muted-foreground hover:text-foreground">
                     <X size={13} />
@@ -818,7 +810,7 @@ function OwnersSection({
                     <CommandGroup>
                       {availableClients.map((c) => (
                         <CommandItem key={c.id} onSelect={() => setSelectedClient(c)} className="cursor-pointer">
-                          <span>{[c.lastName, c.firstName].filter(Boolean).join(", ")}</span>
+                          <span>{formatName(c.lastName, c.firstName)}</span>
                           {c.dni && <span className="ml-2 text-muted-foreground text-[0.72rem]">DNI {c.dni}</span>}
                         </CommandItem>
                       ))}
@@ -1023,7 +1015,7 @@ function PropiedadFichaContent() {
       if (!res.ok) throw new Error("Error al cargar ambientes");
       return res.json();
     },
-    enabled: !!id,
+    enabled: !!id && activeTab === "datos",
   });
 
   const { data: featuresData } = useQuery<{ features: { id: string; name: string }[] }>({
@@ -1033,7 +1025,7 @@ function PropiedadFichaContent() {
       if (!res.ok) throw new Error("Error al cargar características");
       return res.json();
     },
-    enabled: !!id,
+    enabled: !!id && activeTab === "datos",
   });
 
   const { data: activeContractData } = useQuery({
@@ -1256,7 +1248,7 @@ function PropiedadFichaContent() {
     );
   }
 
-  const ownerName = [prop.ownerLastName, prop.ownerFirstName].filter(Boolean).join(", ") || "—";
+  const ownerName = formatName(prop.ownerLastName, prop.ownerFirstName, "—");
 
   // ── Tabs definition ──────────────────────────────────────────────────────────
 

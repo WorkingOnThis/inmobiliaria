@@ -17,6 +17,7 @@ export * from "./contract-guarantee";
 export * from "./contract-participant";
 export * from "./contract-tenant";
 export * from "./custom-adjustment-index";
+export * from "./document-template";
 export * from "./property";
 export * from "./property-co-owner";
 export * from "./property-feature";

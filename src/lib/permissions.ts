@@ -60,6 +60,8 @@ export const SERVICE_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_adm
  */
 export const TASK_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
 
+export const DOCUMENT_TEMPLATE_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
+
 /**
  * Verifica si un rol tiene permisos para crear cláusulas
  * 
@@ -124,6 +126,11 @@ export function canManageServices(role: string | null | undefined): boolean {
 export function canManageTasks(role: string | null | undefined): boolean {
   if (!role) return false;
   return TASK_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
+}
+
+export function canManageDocumentTemplates(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return DOCUMENT_TEMPLATE_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
 }
 
 /**
