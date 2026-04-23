@@ -45,7 +45,7 @@ In practice, **all business endpoints are Next.js Route Handlers** (standalone f
 ### Authorization / Permissions
 
 - Centralized in `src/lib/permissions.ts`
-- Permission functions: `canManageClauses()`, `canManageClients()`, `canManageProperties()`
+- Permission functions: `canManageClauses()`, `canManageClients()`, `canManageProperties()`, `canManageDocumentTemplates()`
 - Roles with write access: `agent`, `account_admin`; `visitor` is read-only
 - Menu items respect permissions via `requiredPermission` field in `src/lib/navigation/menu-config.ts`
 - Every API route handler must call the relevant `canManage*()` check before mutating data
@@ -69,11 +69,14 @@ All schemas re-exported from `src/db/schema/index.ts`. DB instance at `src/db/in
 | `service.ts` | service, service_receipt, service_skip |
 | `task.ts` | task, task_history, task_comment, task_file |
 | `clause.ts` | clauseTemplate with `{{variable_name}}` placeholders |
+| `document-template.ts` | documentTemplate (id, agencyId, name) + documentTemplateClause (templateId, title, body, order, isActive, category, isOptional, notes) |
 | `zone.ts` | zone — barrio/zona catalog per agency |
 
 **Key relationships**: `client` is the polymorphic contact model — owners, tenants and guarantors are all `client` rows differentiated by `type`. A `contract` links a `property` (→ owner) to one or more `client` rows (tenants) via `contract_tenant`.
 
 **Property ownership model**: `property.ownerId` is the primary owner (used for contracts). `property.ownerRole` and `property_co_owner.role` both use "ambos" | "real" | "legal". The UI (`OwnersSection` in the property detail page) shows a single "Propietario" section when no co-owners exist; splits into "Propietario Real" / "Propietario Legal" sections when co-owners are added.
+
+**Parte Locadora (legal owner)**: whoever has role `"legal"` or `"ambos"` is the Parte Locadora — the person who collects rent and signs the contract. The document-template resolve API always looks up the current legal owner from the property's ownership structure (`isLegalRole = role === "legal" || role === "ambos"`), not from a frozen `contract.ownerId`. The `OwnersSection` in the property detail shows a "Parte Locadora" badge on legal-role cards.
 
 **Monetary amounts**: stored as `numeric(15,2)` in ARS. Dates as ISO `"YYYY-MM-DD"` strings. Periods as `"YYYY-MM"`.
 
@@ -101,6 +104,43 @@ All schemas re-exported from `src/db/schema/index.ts`. DB instance at `src/db/in
 
 **`EditSelect` with unset support**: use a `NONE_SENTINEL = "__none__"` value to allow shadcn `<Select>` to show a "Sin especificar" option that maps to `""` / `null` — shadcn Select doesn't support `value=""`.
 
+### Document Templates (Generador de documentos)
+
+Module at `src/app/(dashboard)/generador-documentos/`. Lets agents write reusable document templates with live preview against a real contract.
+
+**Template syntax** (in clause bodies):
+- `[[variable.path]]` — system variable resolved from contract data
+- `[[if:variable.path]]content[[/if]]` — conditional block: renders content only if the variable resolves to a non-null value
+- `{{name [default]}}` — free-text variable: prompts the user for a value via a form before printing; `[default]` is the fallback label shown when no value is entered
+- `**bold**`, `*italic*`, `__underline__` — inline markdown
+- `# ## ### ####` — heading levels (rendered as h3–h6 inside clause bodies)
+
+**Variable catalog** (`src/lib/document-templates/variables-catalog.ts`):
+- `VARIABLES_CATALOG` — array of `TemplateVariable` objects with `path`, `label`, `category`, and `resolver(ctx)`
+- Categories: `"propiedad"`, `"propietario"`, `"inquilino"`, `"contrato"`, `"administradora"`, `"garante"`
+- `TemplateContext` — `{ property, owner, tenants[], guarantors[], contract, agency }`
+- `owner` in `TemplateContext` is always the **legal owner** (Parte Locadora), not necessarily `contract.ownerId`
+- Fiadora entries (1–3) are generated via `flatMap` — do not add them manually
+- Variables with no backing schema field return `null` (e.g. split address fields); add a resolver when the schema is extended
+
+**Renderer** (`src/lib/document-templates/render-segments.tsx`):
+- `renderClauseBody(body, resolved, hasContract, freeTextValues)` — main renderer; returns a React node tree
+- `parseFreeTextVarsFromBodies(bodies[])` — extracts all unique `{{name [default]}}` vars from a list of clause bodies
+- `renderPreviewSegments` — legacy wrapper kept for backward compatibility; prefer `renderClauseBody`
+
+**API routes** under `src/app/api/document-templates/`:
+- `GET/POST /api/document-templates` — list and create templates (scoped to current agency)
+- `GET/PATCH/DELETE /api/document-templates/[id]` — single template
+- `GET/POST /api/document-templates/[id]/clauses` — list and add clauses
+- `PATCH/DELETE /api/document-templates/[id]/clauses/[clauseId]` — edit/delete clause
+- `PUT /api/document-templates/[id]/clauses/reorder` — reorder clauses
+- `GET /api/document-templates/resolve?contractId=X` — resolve all variables for a contract; returns `{ resolved: Record<string, string | null> }`
+
+**Editor** (`src/app/(dashboard)/generador-documentos/[id]/document-template-editor.tsx`):
+- `getHighlightedHTML` generates colored HTML for the backdrop textarea (green = resolved, red = missing, amber = free-text, slate = `[[if:]]` markers)
+- `CATALOG_BY_GROUP` — module-level pre-grouped catalog; do not call `VARIABLES_CATALOG.filter()` inside render
+- `FreeTextVarsPanel` — rendered in the preview column when any active clause contains `{{vars}}`; values are ephemeral (not persisted)
+
 ### Structured Clause Content
 
 `src/lib/clauses/structured-content/` contains parser, serializer, validator, and types for the `{{variable_name}}` template system used in contract clauses.
@@ -122,6 +162,7 @@ app/
 │   ├── inquilinos/   # Tenants
 │   ├── propiedades/  # Properties
 │   ├── contratos/    # Contracts + clausulas/nueva/
+│   ├── generador-documentos/ # Document templates — list + [id] editor + nueva/
 │   ├── servicios/    # Services
 │   ├── tareas/       # Tasks
 │   └── caja/         # Cash management
@@ -138,6 +179,7 @@ app/
     ├── services/     # REST + summary + companies
     ├── tasks/        # REST + archivos
     ├── clauses/      # REST
+    ├── document-templates/ # REST + [id]/clauses + [id]/clauses/reorder + resolve
     ├── receipts/     # PDF generation
     ├── dashboard/    # summary + portfolio
     └── arrears/      # active arrears
@@ -156,6 +198,7 @@ User-facing navigation URLs are in Spanish and match folder names under `app/(da
 - /inquilinos → not /tenants
 - /propiedades → not /properties
 - /contratos → not /contracts
+- /generador-documentos → not /document-templates
 - /servicios → not /services
 - /tareas → not /tasks
 - /caja → not /cash
