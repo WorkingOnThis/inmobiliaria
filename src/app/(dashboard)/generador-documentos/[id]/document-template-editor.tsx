@@ -58,11 +58,11 @@ import {
   Printer,
   ChevronDown,
   ChevronRight,
-  ChevronUp,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { VARIABLES_CATALOG } from "@/lib/document-templates/variables-catalog";
+import { renderPreviewSegments } from "@/lib/document-templates/render-segments";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -93,43 +93,6 @@ type ContractListItem = {
   propertyAddress: string;
   tenantName?: string;
 };
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-const VAR_RE = /\[\[([^\]]+)\]\]/g;
-
-function renderPreviewSegments(
-  text: string,
-  resolved: Record<string, string | null>
-): React.ReactNode[] {
-  const parts: React.ReactNode[] = [];
-  let last = 0;
-  VAR_RE.lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = VAR_RE.exec(text)) !== null) {
-    if (match.index > last) {
-      parts.push(<span key={`t-${last}`}>{text.slice(last, match.index)}</span>);
-    }
-    const path = match[1].trim();
-    const value = resolved[path];
-    if (value !== null && value !== undefined) {
-      parts.push(<span key={`v-${match.index}`}>{value}</span>);
-    } else {
-      parts.push(
-        <span key={`m-${match.index}`} className="text-destructive font-bold">
-          {match[0]}
-        </span>
-      );
-    }
-    last = match.index + match[0].length;
-  }
-
-  if (last < text.length) {
-    parts.push(<span key="t-end">{text.slice(last)}</span>);
-  }
-  return parts;
-}
 
 // ─── Inline clause editor (expanded card) ───────────────────────────────────
 

@@ -843,7 +843,7 @@ export function ContractDetail({ id }: { id: string }) {
 
         {/* ── Tab: Datos para documentos ─────────────────── */}
         {activeTab === "datos" && (
-          <ContractTabDocumentData data={data} />
+          <ContractTabDocumentData data={data} contractId={id} />
         )}
 
         {/* ── Tab: Operativo ─────────────────────────────── */}

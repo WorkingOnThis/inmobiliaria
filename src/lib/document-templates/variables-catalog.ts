@@ -1,10 +1,12 @@
 // Catálogo de variables disponibles para plantillas de documentos.
 //
-// Variables disponibles (12 en total):
+// Variables disponibles (14 en total):
 //
 //  PROPIEDAD
 //   [[propiedad.direccion_completa]]  Dirección completa del inmueble  → property.address
 //   [[propiedad.barrio]]              Barrio/zona                       → property.zone
+//   [[propiedad.unidad]]              Piso/Unidad (depto)               → property.floorUnit
+//   [[propiedad.tipo]]                Tipo de inmueble                  → property.type
 //
 //  PROPIETARIO
 //   [[propietario.nombre_completo]]   Nombre del propietario            → client.firstName + lastName
@@ -66,6 +68,16 @@ export const VARIABLES_CATALOG: TemplateVariable[] = [
     path: "propiedad.barrio",
     label: "Barrio/zona del inmueble",
     resolver: (ctx) => ctx.property?.zone ?? null,
+  },
+  {
+    path: "propiedad.unidad",
+    label: "Piso/Unidad del inmueble",
+    resolver: (ctx) => ctx.property?.floorUnit ?? null,
+  },
+  {
+    path: "propiedad.tipo",
+    label: "Tipo de inmueble",
+    resolver: (ctx) => ctx.property?.type ?? null,
   },
   {
     path: "propietario.nombre_completo",
