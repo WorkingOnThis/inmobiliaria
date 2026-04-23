@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
-import { documentTemplate } from "@/db/schema/document-template";
+import { documentTemplate, documentTemplateClause } from "@/db/schema/document-template";
 import { agency } from "@/db/schema/agency";
 import { auth } from "@/lib/auth";
 import { canManageDocumentTemplates } from "@/lib/permissions";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { z } from "zod";
 
 const patchSchema = z.object({
-  name: z.string().min(1).max(200).optional(),
-  body: z.string().max(100000).optional(),
+  name: z.string().min(1).max(200),
 });
 
 async function getUserAgencyId(userId: string): Promise<string | null> {
@@ -23,7 +22,7 @@ async function getUserAgencyId(userId: string): Promise<string | null> {
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -44,16 +43,20 @@ export async function GET(
     const [template] = await db
       .select()
       .from(documentTemplate)
-      .where(
-        and(eq(documentTemplate.id, id), eq(documentTemplate.agencyId, agencyId))
-      )
+      .where(and(eq(documentTemplate.id, id), eq(documentTemplate.agencyId, agencyId)))
       .limit(1);
 
     if (!template) {
       return NextResponse.json({ error: "Plantilla no encontrada" }, { status: 404 });
     }
 
-    return NextResponse.json({ template });
+    const clauses = await db
+      .select()
+      .from(documentTemplateClause)
+      .where(eq(documentTemplateClause.templateId, id))
+      .orderBy(asc(documentTemplateClause.order));
+
+    return NextResponse.json({ template, clauses });
   } catch {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
@@ -87,16 +90,10 @@ export async function PATCH(
       );
     }
 
-    const updates: Record<string, unknown> = { updatedAt: new Date() };
-    if (parsed.data.name !== undefined) updates.name = parsed.data.name.trim();
-    if (parsed.data.body !== undefined) updates.body = parsed.data.body;
-
     const [template] = await db
       .update(documentTemplate)
-      .set(updates)
-      .where(
-        and(eq(documentTemplate.id, id), eq(documentTemplate.agencyId, agencyId))
-      )
+      .set({ name: parsed.data.name.trim(), updatedAt: new Date() })
+      .where(and(eq(documentTemplate.id, id), eq(documentTemplate.agencyId, agencyId)))
       .returning();
 
     if (!template) {
@@ -110,7 +107,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -130,9 +127,7 @@ export async function DELETE(
 
     const [deleted] = await db
       .delete(documentTemplate)
-      .where(
-        and(eq(documentTemplate.id, id), eq(documentTemplate.agencyId, agencyId))
-      )
+      .where(and(eq(documentTemplate.id, id), eq(documentTemplate.agencyId, agencyId)))
       .returning({ id: documentTemplate.id });
 
     if (!deleted) {

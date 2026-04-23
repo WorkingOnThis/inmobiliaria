@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
-import { documentTemplate } from "@/db/schema/document-template";
+import { documentTemplate, documentTemplateClause } from "@/db/schema/document-template";
 import { agency } from "@/db/schema/agency";
 import { auth } from "@/lib/auth";
 import { canManageDocumentTemplates } from "@/lib/permissions";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
 import { z } from "zod";
 
 const createSchema = z.object({
   name: z.string().min(1, "El nombre es requerido").max(200),
-  body: z.string().max(100000).default(""),
 });
 
 async function getUserAgencyId(userId: string): Promise<string | null> {
@@ -22,7 +21,7 @@ async function getUserAgencyId(userId: string): Promise<string | null> {
   return row?.id ?? null;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) {
@@ -38,9 +37,20 @@ export async function GET(request: NextRequest) {
     }
 
     const templates = await db
-      .select()
+      .select({
+        id: documentTemplate.id,
+        name: documentTemplate.name,
+        createdAt: documentTemplate.createdAt,
+        updatedAt: documentTemplate.updatedAt,
+        clauseCount: count(documentTemplateClause.id),
+      })
       .from(documentTemplate)
+      .leftJoin(
+        documentTemplateClause,
+        eq(documentTemplateClause.templateId, documentTemplate.id)
+      )
       .where(eq(documentTemplate.agencyId, agencyId))
+      .groupBy(documentTemplate.id)
       .orderBy(desc(documentTemplate.createdAt));
 
     return NextResponse.json({ templates });
@@ -82,7 +92,6 @@ export async function POST(request: NextRequest) {
         id: crypto.randomUUID(),
         agencyId,
         name: parsed.data.name.trim(),
-        body: parsed.data.body,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
