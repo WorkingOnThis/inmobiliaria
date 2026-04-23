@@ -4,6 +4,74 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## Sesión 2026-04-23 — Módulo generador de documentos: markdown, variables libres, catálogo expandido y Parte Locadora
+
+### Qué hice
+
+Completamos el módulo de generador de documentos con cuatro bloques grandes:
+
+**1. Catálogo de variables expandido** (`src/lib/document-templates/variables-catalog.ts`)
+- De 16 variables pasamos a ~80. Nuevas categorías: `"administradora"` (razón social, CUIT, CBU, ciudad, provincia, etc.) y ampliación de `"propietario"`, `"inquilino"`, `"contrato"`.
+- Aliases legales: `locador.*` y `locatario.*` apuntan a los mismos datos que `propietario.*` e `inquilino.*` — en los contratos argentinos se usan ambos términos.
+- Fiadoras 1/2/3: 21 entradas que eran copy-paste se reemplazaron por un generador `[1,2,3].flatMap(...)`.
+- Variables sin campo en el schema (ej: `propiedad.domicilio_calle`) retornan `null` con resolver declarado — el path ya existe, cuando se extienda el schema solo hay que actualizar el resolver.
+
+**2. Markdown y variables de texto libre** (`src/lib/document-templates/render-segments.tsx`)
+- Soporte de `**negrita**`, `*cursiva*`, `__subrayado__`, `# ## ### ####` (headers h3–h6) dentro del cuerpo de cláusulas.
+- Variables de texto libre `{{nombre [default]}}`: no se resuelven desde el contrato sino desde un formulario que el usuario completa antes de imprimir. Se muestran en ámbar.
+- `parseFreeTextVarsFromBodies(bodies[])`: extrae todas las `{{vars}}` únicas de una lista de cuerpos.
+
+**3. Editor actualizado** (`src/app/(dashboard)/generador-documentos/[id]/document-template-editor.tsx`)
+- Resaltado de sintaxis en el textarea: verde = variable resuelta, rojo = faltante, ámbar = texto libre, gris = `[[if:]]`.
+- `FreeTextVarsPanel`: panel destacado en ámbar que aparece automáticamente en la columna de preview cuando hay `{{vars}}` en el documento.
+- Panel de variables reorganizado en 6 grupos colapsables (propiedad, propietario/locador, inquilino/locatario, contrato, administradora, garantes/fiadoras).
+- `CATALOG_BY_GROUP`: agrupación pre-calculada al cargar el módulo, evita filtrar el catálogo en cada render.
+
+**4. Bug fix: Parte Locadora** (`src/app/api/document-templates/resolve/route.ts`)
+- El bug: al cambiar el rol de un propietario de Legal a Real (y viceversa), el documento seguía mostrando el propietario viejo porque `resolve` usaba `contract.ownerId` fijo.
+- El fix: `resolve` ahora busca quién tiene rol `"legal"` o `"ambos"` en la propiedad actual. Primero mira el propietario principal, luego los co-propietarios. Si nadie tiene rol legal, usa `contract.ownerId` como fallback.
+- Optimización: el propietario principal se busca en Round 1 (paralelo), así en el 99% de los casos no hay round-trip extra. Solo se hace un fetch adicional cuando el locador es un co-propietario distinto.
+- Badge "Parte Locadora" en la ficha de la propiedad, junto a quien tiene rol legal.
+
+**Limpieza post-`/simplify`:**
+- `isLegalRole = inLegal`: alias innecesario en `page.tsx`, eliminado.
+- Doble guard en `FreeTextVarsPanel`: inner guard `vars.length === 0` removido (el call site ya lo guarda).
+- `VARIABLES_CATALOG.filter()` en render: reemplazado por `CATALOG_BY_GROUP` calculado una vez.
+- 21 entradas copy-paste de fiadoras: reemplazadas por `flatMap` con generador.
+
+### Por qué lo hice así y no de otra forma
+
+**Variables de texto libre como formulario, no como variables del contrato.** Podría haber creado un campo en el schema para cada dato faltante. Pero muchos datos son específicos de cada instancia del documento (ej: la fecha de firma exacta), no del contrato en general. El sistema `{{var}}` permite capturarlos en el momento de imprimir sin modificar la base de datos.
+
+**Aliases locador/propietario en lugar de renombrar.** Los contratos argentinos usan "locador" en el texto legal pero "propietario" en el lenguaje de la inmobiliaria. En vez de elegir uno, los dos paths apuntan al mismo dato. El editor muestra ambos en el panel de variables.
+
+**Parte Locadora desde la propiedad, no desde el contrato.** El `contract.ownerId` es un snapshot del momento en que se creó el contrato. Si cambian los roles después, el documento quedaría desactualizado. Al buscar en la propiedad actual, el documento siempre refleja la realidad vigente. La contrapartida es que si alguien cambia roles por error, el documento también cambia — pero eso es manejable con permisos.
+
+**Round 1 + fetch condicional en el resolve API.** La alternativa más simple era siempre hacer dos rounds de DB. Pero en el 99% de los contratos el propietario principal es el legal, y ya teníamos su ID en `contractRow.ownerId`. Buscarlo en Round 1 (paralelo con todo lo demás) evita la latencia extra en el caso común.
+
+### Conceptos que aparecieron
+
+- **Backdrop textarea:** técnica para superponer HTML coloreado detrás de un `<textarea>` transparente. Un div "sombra" invisible crece el contenedor; un div "backdrop" con `dangerouslySetInnerHTML` muestra el HTML; el textarea encima tiene `color: transparent` pero `caretColor` visible. El scroll se sincroniza manualmente con `onScroll`.
+- **Regex global con `lastIndex`:** las regex con flag `/g` guardan su posición en `lastIndex`. Si reutilizás la misma instancia (como `FREE_VAR_RE`) en múltiples llamadas, tenés que resetear `lastIndex = 0` antes de cada uso, si no, empieza desde donde terminó la vez anterior.
+- **Two-round DB fetching:** cuando un query depende del resultado de otro, no podés paralelizarlos. La solución es buscar en Round 1 todo lo que no tiene dependencias (incluyendo datos que probablemente ya alcancen), y solo en Round 2 hacer el fetch condicional que depende de Round 1. En el caso feliz, Round 2 no tiene ese fetch extra.
+- **Variables de plantilla vs. variables de contrato:** las `[[variables]]` se resuelven desde la base de datos (datos persistidos). Las `{{variables}}` se capturan en el momento de uso (datos efímeros, no persistidos). Son dos niveles distintos de "completar" un documento.
+- **Generator pattern para catálogo:** cuando tenés N grupos de M campos idénticos (fiadoras 1/2/3 con apellido/dni/cuit/...), un `flatMap` con una función `mk(field, label, resolver)` evita 21 objetos literales casi iguales. El código dice "generá 7 campos para cada una de las 3 fiadoras" en vez de repetir 21 veces.
+
+### Preguntas para reflexionar
+
+1. Si un contrato tiene dos co-propietarios legales (ambos con rol "ambos"), el resolve toma el primero que encuentra. ¿Debería el sistema avisar que hay ambigüedad, o es suficiente con el orden de carga?
+2. Las `{{variables de texto libre}}` son efímeras: si cerrás el editor, se pierden. Para un contrato real que vas a imprimir muchas veces (ej: copias para distintas partes), ¿tiene sentido persistirlas? ¿Dónde las guardarías sin romper la plantilla reutilizable?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Patrón: Backdrop textarea para syntax highlighting — cómo superponer HTML coloreado sobre un textarea
+- [ ] Concepto: Two-round DB fetching — cuándo paralelizar y cuándo necesitás secuenciar queries
+- [ ] Decisión técnica: Variables efímeras {{}} vs. variables persistidas [[]] — por qué no guardamos los valores de texto libre en la DB
+- [ ] Patrón: Generator con flatMap para catálogos repetitivos — reemplazar copy-paste de objetos literales
+- [ ] Bug: Parte Locadora congelada en `contract.ownerId` — por qué resolver desde la propiedad actual y no desde el contrato
+
+---
+
 ## Sesión 2026-04-21 — Modelo multi-rol de clientes y tenants sin contrato vigente
 
 ### Qué hice
