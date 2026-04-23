@@ -23,13 +23,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { FilePlus, Pencil, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 type DocumentTemplate = {
   id: string;
   name: string;
-  body: string;
+  clauseCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -93,6 +94,7 @@ export function DocumentTemplatesList() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
+                <TableHead className="hidden sm:table-cell">Cláusulas</TableHead>
                 <TableHead className="hidden sm:table-cell">Creada</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -105,6 +107,9 @@ export function DocumentTemplatesList() {
                       <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                       {t.name}
                     </div>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <Badge variant="secondary">{t.clauseCount}</Badge>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
                     {new Date(t.createdAt).toLocaleDateString("es-AR", {
