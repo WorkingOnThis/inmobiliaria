@@ -54,14 +54,16 @@ import {
   Plus,
   Trash2,
   Copy,
-  Check,
   Printer,
   ChevronDown,
   ChevronRight,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { VARIABLES_CATALOG } from "@/lib/document-templates/variables-catalog";
+import {
+  VARIABLES_CATALOG,
+  type TemplateVariable,
+} from "@/lib/document-templates/variables-catalog";
 import { renderPreviewSegments } from "@/lib/document-templates/render-segments";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -94,16 +96,255 @@ type ContractListItem = {
   tenantName?: string;
 };
 
+// ─── Syntax highlighting for body textarea ───────────────────────────────────
+
+function getHighlightedHTML(
+  text: string,
+  resolved: Record<string, string | null>,
+  hasContract: boolean
+): string {
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  return escaped.replace(/\[\[([^\]]*)\]\]/g, (match, inner: string) => {
+    const trimmed = inner.trim();
+
+    if (trimmed.startsWith("if:") || trimmed === "/if") {
+      // Conditional syntax markers → slate muted
+      return `<span style="color:#94a3b8">${match}</span>`;
+    }
+
+    if (!hasContract) {
+      // No contract selected → primary color (neutral, no judgment)
+      return `<span style="color:hsl(var(--primary))">${match}</span>`;
+    }
+
+    const val = resolved[trimmed];
+    const color =
+      val !== null && val !== undefined
+        ? "#4ade80"               // resolved → green-400
+        : "hsl(var(--destructive))"; // unresolved → red
+    return `<span style="color:${color}">${match}</span>`;
+  });
+}
+
+// Backdrop-based textarea that highlights [[variables]] as you type
+function HighlightedBodyTextarea({
+  value,
+  onChange,
+  resolved,
+  hasContract,
+  placeholder,
+  textareaRef: externalRef,
+  onBodyBlur,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  resolved: Record<string, string | null>;
+  hasContract: boolean;
+  placeholder?: string;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  onBodyBlur?: () => void;
+}) {
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const internalRef = useRef<HTMLTextAreaElement>(null);
+  const ref = externalRef ?? internalRef;
+
+  function syncScroll() {
+    if (backdropRef.current && ref.current) {
+      backdropRef.current.scrollTop = ref.current.scrollTop;
+    }
+  }
+
+  const highlighted = getHighlightedHTML(value, resolved, hasContract);
+
+  const sharedStyle: React.CSSProperties = {
+    fontFamily: "ui-monospace, monospace",
+    fontSize: "0.875rem",
+    lineHeight: "1.5rem",
+    padding: "8px 12px",
+    wordBreak: "break-word",
+    whiteSpace: "pre-wrap",
+  };
+
+  return (
+    <div className="relative rounded-md border border-input bg-background focus-within:ring-1 focus-within:ring-ring">
+      {/* Shadow element — grows container to match content height */}
+      <div
+        aria-hidden="true"
+        className="invisible min-h-[240px] w-full"
+        style={sharedStyle}
+      >
+        {value + "\n"}
+      </div>
+
+      {/* Backdrop with highlighted HTML */}
+      <div
+        ref={backdropRef}
+        aria-hidden="true"
+        className="absolute inset-0 overflow-hidden pointer-events-none"
+        style={{ ...sharedStyle, color: "hsl(var(--foreground))" }}
+        dangerouslySetInnerHTML={{ __html: highlighted }}
+      />
+
+      {/* Textarea — transparent text, visible caret */}
+      <textarea
+        ref={ref}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onScroll={syncScroll}
+        onBlur={onBodyBlur}
+        placeholder={placeholder}
+        className="absolute inset-0 w-full h-full resize-none bg-transparent focus:outline-none placeholder:text-muted-foreground"
+        style={{
+          ...sharedStyle,
+          color: "transparent",
+          caretColor: "hsl(var(--foreground))",
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── Variable group section ──────────────────────────────────────────────────
+
+const VARIABLE_GROUPS: {
+  key: TemplateVariable["category"];
+  label: string;
+}[] = [
+  { key: "propiedad", label: "Propiedad" },
+  { key: "propietario", label: "Propietario" },
+  { key: "inquilino", label: "Inquilino" },
+  { key: "contrato", label: "Contrato y Agencia" },
+  { key: "garante", label: "Garante" },
+];
+
+function VariableGroupSection({
+  label,
+  catalogVars,
+  customPaths,
+  onInsert,
+  onAddCustom,
+}: {
+  label: string;
+  catalogVars: TemplateVariable[];
+  customPaths: string[];
+  onInsert: (path: string) => void;
+  onAddCustom: (path: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [newPath, setNewPath] = useState("");
+  const total = catalogVars.length + customPaths.length;
+
+  function handleAdd() {
+    const path = newPath.trim();
+    if (!path) return;
+    onAddCustom(path);
+    setNewPath("");
+  }
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-between px-2 h-7 text-xs font-medium"
+        >
+          <span>{label}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-muted-foreground text-[10px]">{total}</span>
+            {open ? (
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            )}
+          </div>
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="rounded-md border divide-y mb-1 overflow-hidden">
+          {catalogVars.map((v) => (
+            <button
+              key={v.path}
+              type="button"
+              onClick={() => onInsert(v.path)}
+              title="Insertar en el cuerpo"
+              className="flex items-center justify-between w-full px-2 py-1.5 hover:bg-muted/50 text-left gap-1"
+            >
+              <div className="min-w-0">
+                <code className="text-primary text-[10px] block truncate">
+                  [[{v.path}]]
+                </code>
+                <p className="text-muted-foreground text-[10px] truncate">
+                  {v.label}
+                </p>
+              </div>
+              <Plus className="h-3 w-3 text-muted-foreground shrink-0" />
+            </button>
+          ))}
+          {customPaths.map((path) => (
+            <button
+              key={path}
+              type="button"
+              onClick={() => onInsert(path)}
+              title="Insertar en el cuerpo"
+              className="flex items-center justify-between w-full px-2 py-1.5 hover:bg-muted/50 text-left gap-1"
+            >
+              <div className="min-w-0">
+                <code className="text-primary text-[10px] block truncate">
+                  [[{path}]]
+                </code>
+                <p className="text-muted-foreground text-[10px] truncate">
+                  Variable personalizada
+                </p>
+              </div>
+              <Plus className="h-3 w-3 text-muted-foreground shrink-0" />
+            </button>
+          ))}
+        </div>
+        {/* Add custom variable */}
+        <div className="flex gap-1 px-0.5 pb-1">
+          <Input
+            value={newPath}
+            onChange={(e) => setNewPath(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+            placeholder={`${label.toLowerCase().split(" ")[0]}.campo`}
+            className="h-6 text-[10px] px-2"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 shrink-0"
+            onClick={handleAdd}
+            disabled={!newPath.trim()}
+            title="Agregar variable personalizada"
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 // ─── Inline clause editor (expanded card) ───────────────────────────────────
 
 function InlineClauseEditor({
   clause,
   templateId,
+  resolved,
+  hasContract,
   onCollapse,
   onSaved,
 }: {
   clause: Clause;
   templateId: string;
+  resolved: Record<string, string | null>;
+  hasContract: boolean;
   onCollapse: () => void;
   onSaved: (updated: Clause) => void;
 }) {
@@ -113,9 +354,10 @@ function InlineClauseEditor({
   const [isOptional, setIsOptional] = useState(clause.isOptional);
   const [notes, setNotes] = useState(clause.notes);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [varListOpen, setVarListOpen] = useState(false);
-  const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  const [customVars, setCustomVars] = useState<Record<string, string[]>>({});
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  const lastCursor = useRef<number>(0);
 
   async function persist(fields: Partial<{
     title: string; body: string; category: string;
@@ -151,15 +393,39 @@ function InlineClauseEditor({
     saveTimer.current = setTimeout(() => persist(fields), 800);
   }
 
-  async function copyPath(path: string) {
-    await navigator.clipboard.writeText(`[[${path}]]`);
-    setCopiedPath(path);
-    setTimeout(() => setCopiedPath(null), 1500);
+  function saveBodyCursor() {
+    if (bodyRef.current) {
+      lastCursor.current = bodyRef.current.selectionStart ?? body.length;
+    }
+  }
+
+  function insertVariable(path: string) {
+    const snippet = `[[${path}]]`;
+    const pos = lastCursor.current;
+    const newBody = body.slice(0, pos) + snippet + body.slice(pos);
+    setBody(newBody);
+    const newPos = pos + snippet.length;
+    lastCursor.current = newPos;
+    scheduleAutosave({ title, body: newBody, category, isOptional, notes });
+    // Restore focus and cursor after React re-render
+    setTimeout(() => {
+      if (bodyRef.current) {
+        bodyRef.current.focus();
+        bodyRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
+  }
+
+  function addCustomVar(groupKey: string, path: string) {
+    setCustomVars((prev) => ({
+      ...prev,
+      [groupKey]: [...(prev[groupKey] ?? []), path],
+    }));
   }
 
   return (
     <div className="rounded-lg border border-primary/40 bg-card p-4 flex flex-col gap-3">
-      {/* Header row */}
+      {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-muted-foreground h-4">
           {saveStatus === "saving" && "Guardando..."}
@@ -226,59 +492,50 @@ function InlineClauseEditor({
         </div>
       </div>
 
-      {/* Body + variables side by side */}
+      {/* Body + variables */}
       <div className="flex gap-3">
         <div className="flex-1 flex flex-col gap-1">
           <Label className="text-xs">Contenido</Label>
-          <Textarea
+          <HighlightedBodyTextarea
             value={body}
-            onChange={(e) => {
-              setBody(e.target.value);
-              scheduleAutosave({ title, body: e.target.value, category, isOptional, notes });
+            onChange={(v) => {
+              setBody(v);
+              scheduleAutosave({ title, body: v, category, isOptional, notes });
             }}
+            resolved={resolved}
+            hasContract={hasContract}
             placeholder="Texto de la cláusula. Usá [[variable.path]] para datos del contrato."
-            className="min-h-[240px] resize-y font-mono text-sm"
+            textareaRef={bodyRef}
+            onBodyBlur={saveBodyCursor}
           />
         </div>
 
-        {/* Variables */}
-        <div className="w-48 shrink-0">
-          <Collapsible open={varListOpen} onOpenChange={setVarListOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1 px-1 h-7 w-full justify-start text-xs mb-1">
-                {varListOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                Variables ({VARIABLES_CATALOG.length})
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="rounded-md border divide-y max-h-[260px] overflow-y-auto">
-                {VARIABLES_CATALOG.map((v) => (
-                  <button
-                    key={v.path}
-                    type="button"
-                    onClick={() => copyPath(v.path)}
-                    className="flex items-center justify-between w-full px-2 py-1.5 hover:bg-muted/50 text-left gap-1"
-                  >
-                    <div className="min-w-0">
-                      <code className="text-primary text-[10px] block truncate">[[{v.path}]]</code>
-                      <p className="text-muted-foreground text-[10px] truncate">{v.label}</p>
-                    </div>
-                    {copiedPath === v.path ? (
-                      <Check className="h-3 w-3 text-green-500 shrink-0" />
-                    ) : (
-                      <Copy className="h-3 w-3 text-muted-foreground shrink-0" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+        {/* Variables panel */}
+        <div className="w-52 shrink-0 flex flex-col gap-0.5">
+          <p className="text-xs text-muted-foreground font-medium px-2 mb-0.5">
+            Variables
+          </p>
+          {VARIABLE_GROUPS.map((group) => (
+            <VariableGroupSection
+              key={group.key}
+              label={group.label}
+              catalogVars={VARIABLES_CATALOG.filter((v) => v.category === group.key)}
+              customPaths={customVars[group.key] ?? []}
+              onInsert={insertVariable}
+              onAddCustom={(path) => addCustomVar(group.key, path)}
+            />
+          ))}
+          <p className="text-[9px] text-muted-foreground px-2 pt-1 leading-tight">
+            Clic en cualquier variable para insertarla en el cuerpo.
+          </p>
         </div>
       </div>
 
       {/* Notes */}
       <div className="flex flex-col gap-1">
-        <Label className="text-xs text-muted-foreground">Notas internas (no se imprimen)</Label>
+        <Label className="text-xs text-muted-foreground">
+          Notas internas (no se imprimen)
+        </Label>
         <Textarea
           value={notes}
           onChange={(e) => {
@@ -299,6 +556,8 @@ function SortableClauseCard({
   clause,
   isExpanded,
   templateId,
+  resolved,
+  hasContract,
   onExpand,
   onCollapse,
   onSaved,
@@ -309,6 +568,8 @@ function SortableClauseCard({
   clause: Clause;
   isExpanded: boolean;
   templateId: string;
+  resolved: Record<string, string | null>;
+  hasContract: boolean;
   onExpand: () => void;
   onCollapse: () => void;
   onSaved: (updated: Clause) => void;
@@ -331,6 +592,8 @@ function SortableClauseCard({
         <InlineClauseEditor
           clause={clause}
           templateId={templateId}
+          resolved={resolved}
+          hasContract={hasContract}
           onCollapse={onCollapse}
           onSaved={onSaved}
         />
@@ -346,11 +609,7 @@ function SortableClauseCard({
         !clause.isActive ? "opacity-40" : ""
       }`}
     >
-      {/* Clickable header area */}
-      <button
-        className="w-full text-left px-3 pt-3 pb-2"
-        onClick={onExpand}
-      >
+      <button className="w-full text-left px-3 pt-3 pb-2" onClick={onExpand}>
         <div className="flex items-start gap-2">
           <div
             {...attributes}
@@ -365,7 +624,9 @@ function SortableClauseCard({
             <div className="flex items-center gap-2 mb-0.5">
               <p className="font-semibold text-sm leading-tight flex-1 truncate">
                 {clause.title || (
-                  <span className="text-muted-foreground italic font-normal">Sin título</span>
+                  <span className="text-muted-foreground italic font-normal">
+                    Sin título
+                  </span>
                 )}
               </p>
               <div className="flex items-center gap-1.5 shrink-0">
@@ -375,13 +636,16 @@ function SortableClauseCard({
                   </Badge>
                 )}
                 {clause.isOptional && (
-                  <Badge variant="outline" className="text-xs">Opcional</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    Opcional
+                  </Badge>
                 )}
               </div>
             </div>
             {clause.body && (
               <p className="text-xs text-muted-foreground truncate">
-                {clause.body.slice(0, 120)}{clause.body.length > 120 ? "…" : ""}
+                {clause.body.slice(0, 120)}
+                {clause.body.length > 120 ? "…" : ""}
               </p>
             )}
           </div>
@@ -389,7 +653,6 @@ function SortableClauseCard({
         </div>
       </button>
 
-      {/* Actions bar */}
       <div className="flex items-center gap-1 px-3 pb-2 border-t pt-2">
         <Button
           variant="ghost"
@@ -424,7 +687,8 @@ function SortableClauseCard({
                 <AlertDialogTitle>¿Eliminar cláusula?</AlertDialogTitle>
                 <AlertDialogDescription>
                   Se eliminará{" "}
-                  <strong>{clause.title || "esta cláusula"}</strong>. No se puede deshacer.
+                  <strong>{clause.title || "esta cláusula"}</strong>. No se
+                  puede deshacer.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -457,8 +721,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  // ── Fetch template + clauses ─────────────────────────────────────────────
-
   const { data, isLoading } = useQuery<{
     template: DocumentTemplate;
     clauses: Clause[];
@@ -476,8 +738,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
   const template = data?.template;
   const name = localNameEdit ?? template?.name ?? "";
   const clauses = localClauses ?? data?.clauses ?? [];
-
-  // ── Fetch contracts for preview ──────────────────────────────────────────
 
   const { data: contractsData } = useQuery<{ contracts: ContractListItem[] }>({
     queryKey: ["contracts-for-preview"],
@@ -502,8 +762,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
       }),
   });
 
-  // ── Fetch resolved variables ─────────────────────────────────────────────
-
   const { data: resolvedData } = useQuery<{
     resolved: Record<string, string | null>;
   }>({
@@ -516,9 +774,8 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
   });
 
   const resolved = resolvedData?.resolved ?? {};
+  const hasContract = !!selectedContractId && !!resolvedData;
   const contracts = contractsData?.contracts ?? [];
-
-  // ── Autosave name ────────────────────────────────────────────────────────
 
   const saveName = useCallback(
     async (newName: string) => {
@@ -545,8 +802,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     saveTimer.current = setTimeout(() => saveName(val), 1000);
   }
 
-  // ── Add clause ───────────────────────────────────────────────────────────
-
   const addClauseMutation = useMutation({
     mutationFn: () =>
       fetch(`/api/document-templates/${templateId}/clauses`, {
@@ -563,8 +818,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     onError: () => toast.error("Error al agregar cláusula"),
   });
 
-  // ── Toggle active ────────────────────────────────────────────────────────
-
   async function handleToggleActive(clauseId: string, active: boolean) {
     setLocalClauses((prev) =>
       (prev ?? []).map((c) => (c.id === clauseId ? { ...c, isActive: active } : c))
@@ -580,8 +833,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
       toast.error("Error al actualizar");
     }
   }
-
-  // ── Duplicate ────────────────────────────────────────────────────────────
 
   async function handleDuplicate(clause: Clause) {
     try {
@@ -606,8 +857,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     }
   }
 
-  // ── Delete ───────────────────────────────────────────────────────────────
-
   async function handleDelete(clauseId: string) {
     if (expandedClauseId === clauseId) setExpandedClauseId(null);
     setLocalClauses((prev) => (prev ?? []).filter((c) => c.id !== clauseId));
@@ -621,8 +870,6 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
       toast.error("Error al eliminar");
     }
   }
-
-  // ── Drag and drop reorder ────────────────────────────────────────────────
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -647,15 +894,11 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     });
   }
 
-  // ── Clause saved callback ────────────────────────────────────────────────
-
   function handleClauseSaved(updated: Clause) {
     setLocalClauses((prev) =>
       (prev ?? []).map((c) => (c.id === updated.id ? updated : c))
     );
   }
-
-  // ── Loading ──────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -738,6 +981,8 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
                       clause={clause}
                       isExpanded={expandedClauseId === clause.id}
                       templateId={templateId}
+                      resolved={resolved}
+                      hasContract={hasContract}
                       onExpand={() => setExpandedClauseId(clause.id)}
                       onCollapse={() => setExpandedClauseId(null)}
                       onSaved={handleClauseSaved}
@@ -825,8 +1070,10 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
           {selectedContractId && (
             <p className="text-xs text-muted-foreground">
               Variables en{" "}
-              <span className="text-destructive font-bold">rojo</span> no tienen
-              datos en el contrato seleccionado.
+              <span className="text-emerald-500 font-medium">verde</span> se
+              resuelven correctamente.{" "}
+              <span className="text-destructive font-bold">Rojo</span> = sin
+              datos en este contrato.
             </p>
           )}
         </div>

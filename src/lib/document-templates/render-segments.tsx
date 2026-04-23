@@ -1,7 +1,7 @@
 import React from "react";
 
 // Conditional block: [[if:path]]content[[/if]]
-// If `path` resolves to a non-null value, the inner content is kept (and further processed).
+// If `path` resolves to a non-null value, the inner content is kept.
 // Otherwise the entire block is removed.
 const IF_RE = /\[\[if:([^\]]+)\]\]([\s\S]*?)\[\[\/if\]\]/g;
 
@@ -19,7 +19,7 @@ export function renderPreviewSegments(
     return val !== null && val !== undefined ? content : "";
   });
 
-  // Pass 2 — replace [[path]] with values or red error spans
+  // Pass 2 — replace [[path]] with values or error spans
   const parts: React.ReactNode[] = [];
   let last = 0;
   VAR_RE.lastIndex = 0;
@@ -32,7 +32,11 @@ export function renderPreviewSegments(
     const path = match[1].trim();
     const value = resolved[path];
     if (value !== null && value !== undefined) {
-      parts.push(<span key={`v-${match.index}`}>{value}</span>);
+      parts.push(
+        <span key={`v-${match.index}`} className="text-emerald-500 font-medium">
+          {value}
+        </span>
+      );
     } else {
       parts.push(
         <span key={`m-${match.index}`} className="text-destructive font-bold">

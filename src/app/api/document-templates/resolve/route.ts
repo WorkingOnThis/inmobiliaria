@@ -8,7 +8,7 @@ import { property } from "@/db/schema/property";
 import { agency } from "@/db/schema/agency";
 import { auth } from "@/lib/auth";
 import { canManageDocumentTemplates } from "@/lib/permissions";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import {
   VARIABLES_CATALOG,
   type TemplateContext,
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const [propertyRow, ownerRow, agencyRow, participantRows] =
+    const [propertyRow, ownerRow, agencyRow, tenantParticipants, guarantorParticipants] =
       await Promise.all([
         db
           .select()
@@ -74,26 +74,37 @@ export async function GET(request: NextRequest) {
               eq(contractParticipant.role, "tenant")
             )
           ),
+        db
+          .select({ clientId: contractParticipant.clientId })
+          .from(contractParticipant)
+          .where(
+            and(
+              eq(contractParticipant.contractId, contractId),
+              eq(contractParticipant.role, "guarantor")
+            )
+          ),
       ]);
 
-    const tenantRows =
-      participantRows.length > 0
-        ? await db
+    const [tenantRows, guarantorRows] = await Promise.all([
+      tenantParticipants.length > 0
+        ? db
             .select()
             .from(client)
-            .where(
-              eq(
-                client.id,
-                participantRows[0].clientId
-              )
-            )
-            .limit(participantRows.length)
-        : [];
+            .where(inArray(client.id, tenantParticipants.map((p) => p.clientId)))
+        : Promise.resolve([]),
+      guarantorParticipants.length > 0
+        ? db
+            .select()
+            .from(client)
+            .where(inArray(client.id, guarantorParticipants.map((p) => p.clientId)))
+        : Promise.resolve([]),
+    ]);
 
     const ctx: TemplateContext = {
       property: propertyRow,
       owner: ownerRow,
       tenants: tenantRows,
+      guarantors: guarantorRows,
       contract: contractRow,
       agency: agencyRow,
     };
