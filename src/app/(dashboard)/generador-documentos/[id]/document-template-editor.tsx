@@ -230,6 +230,13 @@ const VARIABLE_GROUPS: {
   { key: "garante", label: "Garantes / Fiadoras" },
 ];
 
+const CATALOG_BY_GROUP = Object.fromEntries(
+  VARIABLE_GROUPS.map((g) => [
+    g.key,
+    VARIABLES_CATALOG.filter((v) => v.category === g.key),
+  ])
+) as Record<TemplateVariable["category"], TemplateVariable[]>;
+
 // ─── Free text variables panel ───────────────────────────────────────────────
 
 function FreeTextVarsPanel({
@@ -241,8 +248,6 @@ function FreeTextVarsPanel({
   values: Record<string, string>;
   onChange: (name: string, value: string) => void;
 }) {
-  if (vars.length === 0) return null;
-
   return (
     <div className="rounded-lg border-2 border-amber-400/60 bg-amber-400/5 p-4 flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -571,7 +576,7 @@ function InlineClauseEditor({
             <VariableGroupSection
               key={group.key}
               label={group.label}
-              catalogVars={VARIABLES_CATALOG.filter((v) => v.category === group.key)}
+              catalogVars={CATALOG_BY_GROUP[group.key]}
               customPaths={customVars[group.key] ?? []}
               onInsert={insertVariable}
               onAddCustom={(path) => addCustomVar(group.key, path)}

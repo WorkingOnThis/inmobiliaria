@@ -48,63 +48,69 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Round 1 — fetch property, its co-owners, agency, and participant IDs in parallel
-    const [propertyRow, coOwnerRows, agencyRow, tenantParticipants, guarantorParticipants] =
-      await Promise.all([
-        db
-          .select()
-          .from(property)
-          .where(eq(property.id, contractRow.propertyId))
-          .limit(1)
-          .then((r) => r[0] ?? null),
-        db
-          .select({ clientId: propertyCoOwner.clientId, role: propertyCoOwner.role })
-          .from(propertyCoOwner)
-          .where(eq(propertyCoOwner.propertyId, contractRow.propertyId)),
-        db
-          .select()
-          .from(agency)
-          .where(eq(agency.ownerId, session.user.id))
-          .limit(1)
-          .then((r) => r[0] ?? null),
-        db
-          .select({ clientId: contractParticipant.clientId })
-          .from(contractParticipant)
-          .where(
-            and(
-              eq(contractParticipant.contractId, contractId),
-              eq(contractParticipant.role, "tenant")
-            )
-          ),
-        db
-          .select({ clientId: contractParticipant.clientId })
-          .from(contractParticipant)
-          .where(
-            and(
-              eq(contractParticipant.contractId, contractId),
-              eq(contractParticipant.role, "guarantor")
-            )
-          ),
-      ]);
-
-    // Determine the legal owner (Parte Locadora): whoever has role "legal" or "ambos"
-    // Primary owner takes precedence; falls back to first legal co-owner; then contract.ownerId
-    let legalOwnerId = contractRow.ownerId;
-    if (propertyRow) {
-      if (!isLegalRole(propertyRow.ownerRole)) {
-        const legalCo = coOwnerRows.find((co) => isLegalRole(co.role));
-        if (legalCo) legalOwnerId = legalCo.clientId;
-      }
-    }
-
-    // Round 2 — fetch the legal owner client, tenants, and guarantors in parallel
-    const [ownerRow, tenantRows, guarantorRows] = await Promise.all([
+    // Round 1 — fetch everything in parallel, including the primary owner (contractRow.ownerId).
+    // In the common case the primary owner IS the legal owner, so this avoids a second round-trip.
+    const [
+      propertyRow,
+      primaryOwnerRow,
+      coOwnerRows,
+      agencyRow,
+      tenantParticipants,
+      guarantorParticipants,
+    ] = await Promise.all([
+      db
+        .select()
+        .from(property)
+        .where(eq(property.id, contractRow.propertyId))
+        .limit(1)
+        .then((r) => r[0] ?? null),
       db
         .select()
         .from(client)
-        .where(eq(client.id, legalOwnerId))
+        .where(eq(client.id, contractRow.ownerId))
         .limit(1)
         .then((r) => r[0] ?? null),
+      db
+        .select({ clientId: propertyCoOwner.clientId, role: propertyCoOwner.role })
+        .from(propertyCoOwner)
+        .where(eq(propertyCoOwner.propertyId, contractRow.propertyId)),
+      db
+        .select()
+        .from(agency)
+        .where(eq(agency.ownerId, session.user.id))
+        .limit(1)
+        .then((r) => r[0] ?? null),
+      db
+        .select({ clientId: contractParticipant.clientId })
+        .from(contractParticipant)
+        .where(
+          and(
+            eq(contractParticipant.contractId, contractId),
+            eq(contractParticipant.role, "tenant")
+          )
+        ),
+      db
+        .select({ clientId: contractParticipant.clientId })
+        .from(contractParticipant)
+        .where(
+          and(
+            eq(contractParticipant.contractId, contractId),
+            eq(contractParticipant.role, "guarantor")
+          )
+        ),
+    ]);
+
+    // Determine the legal owner (Parte Locadora): whoever has role "legal" or "ambos".
+    // Primary owner is already fetched; only fetch a co-owner client when the primary is "real".
+    let legalOwnerId = contractRow.ownerId;
+    if (propertyRow && !isLegalRole(propertyRow.ownerRole)) {
+      const legalCo = coOwnerRows.find((co) => isLegalRole(co.role));
+      if (legalCo) legalOwnerId = legalCo.clientId;
+    }
+
+    // Round 2 — tenants, guarantors, and (only if needed) the legal co-owner client
+    const needsCoOwnerFetch = legalOwnerId !== contractRow.ownerId;
+    const [tenantRows, guarantorRows, coOwnerRow] = await Promise.all([
       tenantParticipants.length > 0
         ? db
             .select()
@@ -117,7 +123,17 @@ export async function GET(request: NextRequest) {
             .from(client)
             .where(inArray(client.id, guarantorParticipants.map((p) => p.clientId)))
         : Promise.resolve([]),
+      needsCoOwnerFetch
+        ? db
+            .select()
+            .from(client)
+            .where(eq(client.id, legalOwnerId))
+            .limit(1)
+            .then((r) => r[0] ?? null)
+        : Promise.resolve(null),
     ]);
+
+    const ownerRow = needsCoOwnerFetch ? coOwnerRow : primaryOwnerRow;
 
     const ctx: TemplateContext = {
       property: propertyRow,

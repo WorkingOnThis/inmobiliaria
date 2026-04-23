@@ -683,7 +683,6 @@ function OwnersSection({
 
   const inReal = (role: string) => role === "ambos" || role === "real";
   const inLegal = (role: string) => role === "ambos" || role === "legal";
-  const isLegalRole = inLegal;
 
   const mainInReal = hasCoOwners && inReal(main.ownerRole);
   const mainInLegal = hasCoOwners && inLegal(main.ownerRole);
@@ -717,7 +716,7 @@ function OwnersSection({
             cuit={main.ownerCuit}
             dni={main.ownerDni}
             role={main.ownerRole}
-            isLocadora={isLegalRole(main.ownerRole)}
+            isLocadora={inLegal(main.ownerRole)}
             onRoleChange={onMainRoleChange}
             onView={() => router.push(`/propietarios/${main.ownerId}`)}
           />

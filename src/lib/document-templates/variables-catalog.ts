@@ -522,137 +522,30 @@ export const VARIABLES_CATALOG: TemplateVariable[] = [
     resolver: (ctx) => String(ctx.guarantors.length),
   },
 
-  // Fiadora 1
-  {
-    path: "fiadora1.apellido",
-    label: "Apellido fiadora 1",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[0]?.lastName ?? null,
-  },
-  {
-    path: "fiadora1.nombres",
-    label: "Nombres fiadora 1",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[0]?.firstName ?? null,
-  },
-  {
-    path: "fiadora1.dni",
-    label: "DNI fiadora 1",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[0]?.dni ?? null,
-  },
-  {
-    path: "fiadora1.cuit",
-    label: "CUIT fiadora 1",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[0]?.cuit ?? null,
-  },
-  {
-    path: "fiadora1.domicilio",
-    label: "Domicilio fiadora 1",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[0]?.address ?? null,
-  },
-  {
-    path: "fiadora1.email",
-    label: "Email fiadora 1",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[0]?.email ?? null,
-  },
-  {
-    path: "fiadora1.telefono",
-    label: "Teléfono fiadora 1",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[0]?.phone ?? null,
-  },
-
-  // Fiadora 2
-  {
-    path: "fiadora2.apellido",
-    label: "Apellido fiadora 2",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[1]?.lastName ?? null,
-  },
-  {
-    path: "fiadora2.nombres",
-    label: "Nombres fiadora 2",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[1]?.firstName ?? null,
-  },
-  {
-    path: "fiadora2.dni",
-    label: "DNI fiadora 2",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[1]?.dni ?? null,
-  },
-  {
-    path: "fiadora2.cuit",
-    label: "CUIT fiadora 2",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[1]?.cuit ?? null,
-  },
-  {
-    path: "fiadora2.domicilio",
-    label: "Domicilio fiadora 2",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[1]?.address ?? null,
-  },
-  {
-    path: "fiadora2.email",
-    label: "Email fiadora 2",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[1]?.email ?? null,
-  },
-  {
-    path: "fiadora2.telefono",
-    label: "Teléfono fiadora 2",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[1]?.phone ?? null,
-  },
-
-  // Fiadora 3
-  {
-    path: "fiadora3.apellido",
-    label: "Apellido fiadora 3",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[2]?.lastName ?? null,
-  },
-  {
-    path: "fiadora3.nombres",
-    label: "Nombres fiadora 3",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[2]?.firstName ?? null,
-  },
-  {
-    path: "fiadora3.dni",
-    label: "DNI fiadora 3",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[2]?.dni ?? null,
-  },
-  {
-    path: "fiadora3.cuit",
-    label: "CUIT fiadora 3",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[2]?.cuit ?? null,
-  },
-  {
-    path: "fiadora3.domicilio",
-    label: "Domicilio fiadora 3",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[2]?.address ?? null,
-  },
-  {
-    path: "fiadora3.email",
-    label: "Email fiadora 3",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[2]?.email ?? null,
-  },
-  {
-    path: "fiadora3.telefono",
-    label: "Teléfono fiadora 3",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[2]?.phone ?? null,
-  },
+  // Fiadoras 1–3 (generated)
+  ...[1, 2, 3].flatMap((n): TemplateVariable[] => {
+    const i = n - 1;
+    const suffix = `fiadora ${n}`;
+    const mk = (
+      field: string,
+      label: string,
+      get: (ctx: TemplateContext) => string | null | undefined
+    ): TemplateVariable => ({
+      path: `fiadora${n}.${field}`,
+      label: `${label} ${suffix}`,
+      category: "garante",
+      resolver: (ctx) => get(ctx) ?? null,
+    });
+    return [
+      mk("apellido",  "Apellido",   (ctx) => ctx.guarantors[i]?.lastName),
+      mk("nombres",   "Nombres",    (ctx) => ctx.guarantors[i]?.firstName),
+      mk("dni",       "DNI",        (ctx) => ctx.guarantors[i]?.dni),
+      mk("cuit",      "CUIT",       (ctx) => ctx.guarantors[i]?.cuit),
+      mk("domicilio", "Domicilio",  (ctx) => ctx.guarantors[i]?.address),
+      mk("email",     "Email",      (ctx) => ctx.guarantors[i]?.email),
+      mk("telefono",  "Teléfono",   (ctx) => ctx.guarantors[i]?.phone),
+    ];
+  }),
 ];
 
 export const VARIABLE_PATHS = VARIABLES_CATALOG.map((v) => v.path);
