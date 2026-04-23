@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RefreshCw, Printer, FileText } from "lucide-react";
-import { renderPreviewSegments } from "@/lib/document-templates/render-segments";
+import { renderClauseBody } from "@/lib/document-templates/render-segments";
 import type { ContractParticipant, ContractGuarantee } from "./contract-detail";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -241,9 +241,9 @@ function DocumentPreviewSection({ contractId }: { contractId: string }) {
                     {clause.title && (
                       <h3 className="preview-clause-title">{clause.title}</h3>
                     )}
-                    <p className="preview-clause-body">
-                      {renderPreviewSegments(clause.body, resolved)}
-                    </p>
+                    <div className="preview-clause-body">
+                      {renderClauseBody(clause.body, resolved, true, {})}
+                    </div>
                   </div>
                 ))}
               </div>

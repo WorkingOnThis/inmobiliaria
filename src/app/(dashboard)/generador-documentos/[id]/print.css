@@ -105,6 +105,26 @@
     font-weight: bold;
   }
 
+  /* Markdown inline: negrita, cursiva, subrayado */
+  #print-preview strong { font-weight: bold; }
+  #print-preview em { font-style: italic; }
+  #print-preview u { text-decoration: underline; }
+
+  /* Markdown headers dentro de cláusulas */
+  #print-preview h3,
+  #print-preview h4,
+  #print-preview h5,
+  #print-preview h6 {
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 0.3em;
+  }
+  #print-preview h3 { font-size: 12pt; margin-top: 1em; }
+  #print-preview h4 { font-size: 11pt; margin-top: 0.7em; }
+  #print-preview h5 { font-size: 11pt; margin-top: 0.5em; font-weight: normal; font-style: italic; }
+  #print-preview h6 { font-size: 10pt; margin-top: 0.4em; }
+
   /* Ocultar elementos de navegación que pudieran quedar */
   nav,
   header,

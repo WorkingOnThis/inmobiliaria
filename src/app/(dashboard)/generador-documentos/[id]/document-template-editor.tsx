@@ -64,7 +64,11 @@ import {
   VARIABLES_CATALOG,
   type TemplateVariable,
 } from "@/lib/document-templates/variables-catalog";
-import { renderPreviewSegments } from "@/lib/document-templates/render-segments";
+import {
+  renderClauseBody,
+  parseFreeTextVarsFromBodies,
+  type FreeTextVar,
+} from "@/lib/document-templates/render-segments";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -108,25 +112,29 @@ function getHighlightedHTML(
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  return escaped.replace(/\[\[([^\]]*)\]\]/g, (match, inner: string) => {
+  // Highlight [[system variables]]
+  const withSysVars = escaped.replace(/\[\[([^\]]*)\]\]/g, (match, inner: string) => {
     const trimmed = inner.trim();
 
     if (trimmed.startsWith("if:") || trimmed === "/if") {
-      // Conditional syntax markers → slate muted
       return `<span style="color:#94a3b8">${match}</span>`;
     }
 
     if (!hasContract) {
-      // No contract selected → primary color (neutral, no judgment)
       return `<span style="color:hsl(var(--primary))">${match}</span>`;
     }
 
     const val = resolved[trimmed];
     const color =
       val !== null && val !== undefined
-        ? "#4ade80"               // resolved → green-400
-        : "hsl(var(--destructive))"; // unresolved → red
+        ? "#4ade80"
+        : "hsl(var(--destructive))";
     return `<span style="color:${color}">${match}</span>`;
+  });
+
+  // Highlight {{free text variables}} in amber
+  return withSysVars.replace(/\{\{(\w+)(?:\s+\[[^\]]*\])?\}\}/g, (match) => {
+    return `<span style="color:#fbbf24">${match}</span>`;
   });
 }
 
@@ -215,11 +223,55 @@ const VARIABLE_GROUPS: {
   label: string;
 }[] = [
   { key: "propiedad", label: "Propiedad" },
-  { key: "propietario", label: "Propietario" },
-  { key: "inquilino", label: "Inquilino" },
-  { key: "contrato", label: "Contrato y Agencia" },
-  { key: "garante", label: "Garante" },
+  { key: "propietario", label: "Propietario / Locador" },
+  { key: "inquilino", label: "Inquilino / Locatario" },
+  { key: "contrato", label: "Contrato" },
+  { key: "administradora", label: "Administradora" },
+  { key: "garante", label: "Garantes / Fiadoras" },
 ];
+
+// ─── Free text variables panel ───────────────────────────────────────────────
+
+function FreeTextVarsPanel({
+  vars,
+  values,
+  onChange,
+}: {
+  vars: FreeTextVar[];
+  values: Record<string, string>;
+  onChange: (name: string, value: string) => void;
+}) {
+  if (vars.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border-2 border-amber-400/60 bg-amber-400/5 p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <div className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+        <p className="text-sm font-semibold text-amber-400">
+          Variables a completar antes de imprimir
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {vars.map((v) => (
+          <div key={v.name} className="flex flex-col gap-1">
+            <Label className="text-xs text-amber-400/80 font-medium">
+              {v.name}
+            </Label>
+            <Input
+              value={values[v.name] ?? ""}
+              onChange={(e) => onChange(v.name, e.target.value)}
+              placeholder={v.defaultVal || `Ingresá ${v.name}...`}
+              className="h-8 text-sm border-amber-400/30 focus-visible:ring-amber-400/50"
+            />
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-amber-400/60 leading-tight">
+        Estos valores sólo se usan en la previsualización e impresión. No se guardan en la plantilla.
+      </p>
+    </div>
+  );
+}
 
 function VariableGroupSection({
   label,
@@ -717,6 +769,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
   const [localClauses, setLocalClauses] = useState<Clause[] | null>(null);
   const [expandedClauseId, setExpandedClauseId] = useState<string | null>(null);
   const [selectedContractId, setSelectedContractId] = useState("");
+  const [freeTextValues, setFreeTextValues] = useState<Record<string, string>>({});
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -920,6 +973,10 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
     .filter((c) => c.isActive)
     .sort((a, b) => a.order - b.order);
 
+  const allFreeTextVarDefs = parseFreeTextVarsFromBodies(
+    activeClauses.map((c) => c.body)
+  );
+
   return (
     <>
       <div className="flex items-center justify-between gap-2 mb-1">
@@ -1038,6 +1095,16 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
 
           <Separator />
 
+          {allFreeTextVarDefs.length > 0 && (
+            <FreeTextVarsPanel
+              vars={allFreeTextVarDefs}
+              values={freeTextValues}
+              onChange={(name, value) =>
+                setFreeTextValues((prev) => ({ ...prev, [name]: value }))
+              }
+            />
+          )}
+
           <div
             id="print-preview"
             className="rounded-md border bg-card p-6 min-h-[400px] text-sm leading-relaxed preview-content"
@@ -1058,9 +1125,9 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
                     {clause.title && (
                       <h3 className="preview-clause-title">{clause.title}</h3>
                     )}
-                    <p className="preview-clause-body">
-                      {renderPreviewSegments(clause.body, resolved)}
-                    </p>
+                    <div className="preview-clause-body">
+                      {renderClauseBody(clause.body, resolved, hasContract, freeTextValues)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1073,7 +1140,8 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
               <span className="text-emerald-500 font-medium">verde</span> se
               resuelven correctamente.{" "}
               <span className="text-destructive font-bold">Rojo</span> = sin
-              datos en este contrato.
+              datos.{" "}
+              <span className="text-amber-400 font-medium">Naranja</span> = texto libre.
             </p>
           )}
         </div>
