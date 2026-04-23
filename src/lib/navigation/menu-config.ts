@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { MenuItem, MenuConfig, UserRole, MenuSubItem } from "./types";
-import { canManageClauses, canManageClients, canManageContracts, canManageProperties, canManageServices, canManageTasks, hasRouteAccess } from "@/lib/permissions";
+import { canManageClauses, canManageClients, canManageContracts, canManageDocumentTemplates, canManageProperties, canManageServices, canManageTasks, hasRouteAccess } from "@/lib/permissions";
 
 /**
  * Configuración de menú para rol visitor (menú básico)
@@ -103,6 +103,12 @@ const accountAdminMenuItems: MenuItem[] = [
         requiredPermission: "canManageClauses",
       },
     ],
+  },
+  {
+    title: "Generador de documentos",
+    url: "/generador-documentos",
+    icon: FileText,
+    requiredPermission: "canManageDocumentTemplates",
   },
   {
     title: "Control Servicios",
@@ -233,6 +239,7 @@ const permissionFunctions: Record<string, (role: string | null | undefined) => b
   canManageProperties,
   canManageServices,
   canManageTasks,
+  canManageDocumentTemplates,
 };
 
 /**

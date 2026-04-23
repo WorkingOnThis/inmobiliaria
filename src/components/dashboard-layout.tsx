@@ -57,6 +57,7 @@ const routeLabels: Record<string, string> = {
   permisos: "Permisos",
   caja: "Caja General",
   servicios: "Control de Servicios",
+  "generador-documentos": "Generador de documentos",
   general: "General",
   team: "Equipo",
   equipo: "Equipo",

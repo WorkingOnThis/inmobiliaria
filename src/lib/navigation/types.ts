@@ -17,7 +17,8 @@ export type PermissionFunction =
   | "canManageProperties"
   | "canManageContracts"
   | "canManageServices"
-  | "canManageTasks";
+  | "canManageTasks"
+  | "canManageDocumentTemplates";
 
 /**
  * Tipo para un item de menú individual
