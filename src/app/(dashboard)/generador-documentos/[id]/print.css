@@ -1,0 +1,115 @@
+/* ─── Estilos del preview en pantalla ─────────────────────────────────────── */
+
+.preview-content {
+  font-family: sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.preview-body {
+  text-align: justify;
+  hyphens: auto;
+}
+
+.preview-doc-title {
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1.2em;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.preview-clause-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  margin-bottom: 0.4em;
+  margin-top: 0;
+}
+
+.preview-clause-body {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ─── Estilos de impresión ─────────────────────────────────────────────────── */
+
+@media print {
+  /* Ocultar todo excepto el preview */
+  body > * {
+    display: none !important;
+  }
+
+  /* El contenedor del preview ocupa la página completa */
+  #print-preview {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 2.5cm 3cm;
+    border: none;
+    background: #fff;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  /* Fuente y espaciado del documento impreso */
+  #print-preview .preview-body {
+    font-family: Arial, sans-serif;
+    font-size: 12pt;
+    line-height: 1.15;
+    text-align: justify;
+    color: #000;
+  }
+
+  /* Título principal del documento: centrado, negrita, 14pt */
+  #print-preview .preview-doc-title {
+    font-family: Arial, sans-serif;
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 1.2em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #000;
+  }
+
+  /* Títulos de cláusula: izquierda, negrita, 12pt, espacio arriba */
+  #print-preview .preview-clause-title {
+    font-family: Arial, sans-serif;
+    font-size: 12pt;
+    font-weight: bold;
+    text-align: left;
+    margin-top: 1.2em;
+    margin-bottom: 0.4em;
+    color: #000;
+  }
+
+  /* Cuerpo de cláusula */
+  #print-preview .preview-clause-body {
+    font-family: Arial, sans-serif;
+    font-size: 12pt;
+    line-height: 1.15;
+    color: #000;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Variables sin dato: en rojo en pantalla, visibles en impresión */
+  #print-preview .text-destructive {
+    color: #000 !important;
+    font-weight: bold;
+  }
+
+  /* Ocultar elementos de navegación que pudieran quedar */
+  nav,
+  header,
+  aside,
+  .no-print {
+    display: none !important;
+  }
+}
