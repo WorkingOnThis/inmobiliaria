@@ -26,6 +26,11 @@ interface Tenant {
   phone: string | null;
   email: string | null;
   address: string | null;
+  addressStreet: string | null;
+  addressNumber: string | null;
+  addressZone: string | null;
+  addressCity: string | null;
+  addressProvince: string | null;
   birthDate: string | null;
   condicionFiscal: string | null;
   nationality: string | null;

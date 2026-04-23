@@ -28,6 +28,11 @@ export const agency = pgTable("agency", {
   contactEmail: text("contactEmail"),
   website: text("website"),
 
+  // 2b. Domicilio fiscal desglosado (complementa fiscalAddress)
+  fiscalAddressStreet: text("fiscalAddressStreet"),
+  fiscalAddressNumber: text("fiscalAddressNumber"),
+  fiscalAddressZone: text("fiscalAddressZone"),   // barrio
+
   // 3. Matrícula profesional
   professionalAssociation: text("professionalAssociation"),
   licenseNumber: text("licenseNumber"),

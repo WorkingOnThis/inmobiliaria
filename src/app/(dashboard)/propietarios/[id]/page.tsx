@@ -25,6 +25,11 @@ interface Owner {
   phone: string | null;
   email: string | null;
   address: string | null;
+  addressStreet: string | null;
+  addressNumber: string | null;
+  addressZone: string | null;
+  addressCity: string | null;
+  addressProvince: string | null;
   birthDate: string | null;
   cbu: string | null;
   alias: string | null;

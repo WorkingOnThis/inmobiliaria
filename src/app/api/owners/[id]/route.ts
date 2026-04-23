@@ -33,6 +33,11 @@ const updatePropietarioSchema = z.object({
   confianzaTelefono: z.string().nullable().optional(),
   confianzaVinculo: z.string().nullable().optional(),
   status: z.enum(["activo", "suspendido", "baja"]).optional(),
+  addressStreet: z.string().trim().max(200).optional().nullable(),
+  addressNumber: z.string().trim().max(20).optional().nullable(),
+  addressZone: z.string().trim().max(100).optional().nullable(),
+  addressCity: z.string().trim().max(100).optional().nullable(),
+  addressProvince: z.string().trim().max(100).optional().nullable(),
 });
 
 export async function GET(

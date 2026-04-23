@@ -38,6 +38,27 @@ export const property = pgTable("property", {
   serviceStateTax: text("serviceStateTax").notNull().default("inquilino"),
   serviceHoa: text("serviceHoa").notNull().default("na"),
 
+  // Domicilio desglosado (complementa address que queda como legado)
+  addressStreet: text("addressStreet"),
+  addressNumber: text("addressNumber"),
+  city: text("city"),
+  province: text("province"),
+
+  // Destino del inmueble: "vivienda" | "comercial" | "mixto" | "oficina"
+  destino: text("destino"),
+
+  // Confección del inmueble (descripción por planta y observaciones)
+  plantaPB: text("plantaPB"),
+  plantaPA: text("plantaPA"),
+  observacionesConfeccion: text("observacionesConfeccion"),
+
+  // Datos registrales
+  registryNumber: text("registryNumber"),
+  cadastralRef: text("cadastralRef"),
+
+  // Expensas: si tiene expensas (serviceHoa distinto de "na" es heurística; este campo es explícito)
+  tieneExpensas: boolean("tieneExpensas").notNull().default(false),
+
   // false when created as a guarantee property (not actively marketed/managed by the agency)
   isManaged: boolean("isManaged").notNull().default(true),
 

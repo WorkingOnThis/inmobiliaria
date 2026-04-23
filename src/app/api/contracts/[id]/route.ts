@@ -29,6 +29,10 @@ const patchContractSchema = z.object({
     .enum(["draft", "pending_signature", "active", "expiring_soon", "expired", "terminated"])
     .optional(),
   ownerId: z.string().min(1).optional(),
+  graceDays: z.coerce.number().int().min(0).max(31).optional(),
+  electronicPaymentFeePct: z.string().regex(/^\d+(\.\d{1,2})?$/).optional().nullable(),
+  lateInterestPct: z.string().regex(/^\d+(\.\d{1,2})?$/).optional().nullable(),
+  isRenewal: z.boolean().optional(),
 });
 
 export async function GET(
@@ -412,6 +416,10 @@ export async function PATCH(
       }
       updates.ownerId = data.ownerId;
     }
+    if (data.graceDays !== undefined) updates.graceDays = data.graceDays;
+    if (data.electronicPaymentFeePct !== undefined) updates.electronicPaymentFeePct = data.electronicPaymentFeePct;
+    if (data.lateInterestPct !== undefined) updates.lateInterestPct = data.lateInterestPct;
+    if (data.isRenewal !== undefined) updates.isRenewal = data.isRenewal;
 
     const activating =
       data.status === "active" && existing.status !== "active";

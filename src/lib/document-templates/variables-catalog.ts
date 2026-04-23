@@ -50,293 +50,291 @@ function formatARS(val: string | null | undefined): string | null {
   return "$ " + num.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Maps service responsibility DB values to legal labels for contracts.
+function labelResponsable(v: string | null | undefined): string | null {
+  if (!v || v === "na") return null;
+  if (v === "inquilino") return "Locatario";
+  if (v === "propietario") return "Locadora";
+  return null;
+}
+
 // ─── Catalog ──────────────────────────────────────────────────────────────────
 
 export const VARIABLES_CATALOG: TemplateVariable[] = [
 
   // ── Propiedad ──────────────────────────────────────────────────────────────
   {
-    path: "propiedad.direccion_completa",
+    path: "domicilio_propiedad_completo",
     label: "Dirección completa",
     category: "propiedad",
     resolver: (ctx) => ctx.property?.address ?? null,
   },
   {
-    path: "propiedad.barrio",
+    path: "domicilio_propiedad_barrio",
     label: "Barrio/zona",
     category: "propiedad",
     resolver: (ctx) => ctx.property?.zone ?? null,
   },
   {
-    path: "propiedad.unidad",
+    path: "domicilio_propiedad_unidad",
     label: "Piso/Unidad",
     category: "propiedad",
     resolver: (ctx) => ctx.property?.floorUnit ?? null,
   },
   {
-    path: "propiedad.tipo",
+    path: "tipo_inmueble",
     label: "Tipo de inmueble",
     category: "propiedad",
     resolver: (ctx) => ctx.property?.type ?? null,
   },
   {
-    path: "propiedad.domicilio_calle",
+    path: "domicilio_propiedad_calle",
     label: "Calle de la propiedad",
     category: "propiedad",
-    resolver: () => null, // address is a single field — no split
+    resolver: (ctx) => ctx.property?.addressStreet ?? null,
   },
   {
-    path: "propiedad.domicilio_numero",
+    path: "domicilio_propiedad_numero",
     label: "Número de la propiedad",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => ctx.property?.addressNumber ?? null,
   },
   {
-    path: "propiedad.domicilio_ciudad",
+    path: "domicilio_propiedad_ciudad",
     label: "Ciudad de la propiedad",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => ctx.property?.city ?? null,
   },
   {
-    path: "propiedad.domicilio_provincia",
+    path: "domicilio_propiedad_provincia",
     label: "Provincia de la propiedad",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => ctx.property?.province ?? null,
   },
   {
-    path: "propiedad.destino",
+    path: "destino_propiedad",
     label: "Destino del inmueble",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => ctx.property?.destino ?? null,
   },
   {
-    path: "propiedad.tiene_expensas",
+    path: "tiene_expensas",
     label: "¿Tiene expensas?",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => ctx.property != null ? (ctx.property.tieneExpensas ? "Sí" : "No") : null,
   },
   {
-    path: "propiedad.responsable_expensas",
+    path: "responsable_expensas",
     label: "Responsable de expensas",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => labelResponsable(ctx.property?.serviceHoa),
   },
   {
-    path: "propiedad.responsable_dgr",
+    path: "responsable_DGR",
     label: "Responsable de DGR",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => labelResponsable(ctx.property?.serviceStateTax),
   },
   {
-    path: "propiedad.responsable_municipal",
+    path: "responsable_municipal",
     label: "Responsable de tasa municipal",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => labelResponsable(ctx.property?.serviceCouncil),
   },
   {
-    path: "propiedad.responsable_agua",
+    path: "responsable_agua",
     label: "Responsable de agua",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => labelResponsable(ctx.property?.serviceWater),
   },
   {
-    path: "propiedad.responsable_luz",
+    path: "responsable_luz",
     label: "Responsable de luz",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => labelResponsable(ctx.property?.serviceElectricity),
   },
   {
-    path: "propiedad.responsable_gas",
+    path: "responsable_gas",
     label: "Responsable de gas",
     category: "propiedad",
-    resolver: () => null,
+    resolver: (ctx) => labelResponsable(ctx.property?.serviceGas),
   },
 
-  // ── Propietario / Locador ──────────────────────────────────────────────────
+  // ── Locador / Propietario ──────────────────────────────────────────────────
   {
-    path: "propietario.nombre_completo",
-    label: "Nombre completo del propietario",
+    path: "nombre_completo_locador",
+    label: "Nombre completo del locador",
     category: "propietario",
     resolver: (ctx) => fullName(ctx.owner),
   },
   {
-    path: "propietario.dni",
-    label: "DNI del propietario",
-    category: "propietario",
-    resolver: (ctx) => ctx.owner?.dni ?? null,
-  },
-  {
-    path: "locador.nombres",
+    path: "nombres_locador",
     label: "Nombres del locador",
     category: "propietario",
     resolver: (ctx) => ctx.owner?.firstName ?? null,
   },
   {
-    path: "locador.apellido",
+    path: "apellido_locador",
     label: "Apellido del locador",
     category: "propietario",
     resolver: (ctx) => ctx.owner?.lastName ?? null,
   },
   {
-    path: "locador.dni",
+    path: "dni_locador",
     label: "DNI del locador",
     category: "propietario",
     resolver: (ctx) => ctx.owner?.dni ?? null,
   },
   {
-    path: "locador.cuit",
+    path: "cuit_locador",
     label: "CUIT del locador",
     category: "propietario",
     resolver: (ctx) => ctx.owner?.cuit ?? null,
   },
   {
-    path: "locador.email",
+    path: "email_locador",
     label: "Email del locador",
     category: "propietario",
     resolver: (ctx) => ctx.owner?.email ?? null,
   },
   {
-    path: "locador.telefono",
+    path: "telefono_locador",
     label: "Teléfono del locador",
     category: "propietario",
     resolver: (ctx) => ctx.owner?.phone ?? null,
   },
   {
-    path: "locador.domicilio",
+    path: "domicilio_locador",
     label: "Domicilio del locador",
     category: "propietario",
     resolver: (ctx) => ctx.owner?.address ?? null,
   },
   {
-    path: "locador.domicilio_calle",
+    path: "domicilio_locador_calle",
     label: "Calle del locador",
     category: "propietario",
-    resolver: () => null,
+    resolver: (ctx) => ctx.owner?.addressStreet ?? null,
   },
   {
-    path: "locador.domicilio_numero",
+    path: "domicilio_locador_numero",
     label: "Número del domicilio del locador",
     category: "propietario",
-    resolver: () => null,
+    resolver: (ctx) => ctx.owner?.addressNumber ?? null,
   },
   {
-    path: "locador.domicilio_ciudad",
+    path: "domicilio_locador_barrio",
+    label: "Barrio del locador",
+    category: "propietario",
+    resolver: (ctx) => ctx.owner?.addressZone ?? null,
+  },
+  {
+    path: "domicilio_locador_ciudad",
     label: "Ciudad del locador",
     category: "propietario",
-    resolver: () => null,
+    resolver: (ctx) => ctx.owner?.addressCity ?? null,
   },
   {
-    path: "locador.domicilio_provincia",
+    path: "domicilio_locador_provincia",
     label: "Provincia del locador",
     category: "propietario",
-    resolver: () => null,
+    resolver: (ctx) => ctx.owner?.addressProvince ?? null,
   },
 
-  // ── Inquilino / Locatario ──────────────────────────────────────────────────
+  // ── Locatario / Inquilino ──────────────────────────────────────────────────
   {
-    path: "inquilino.nombre_completo",
-    label: "Nombre completo del inquilino",
+    path: "nombre_completo_locatario",
+    label: "Nombre completo del locatario",
     category: "inquilino",
     resolver: (ctx) => fullName(ctx.tenants[0] ?? null),
   },
   {
-    path: "inquilino.dni",
-    label: "DNI del inquilino",
-    category: "inquilino",
-    resolver: (ctx) => ctx.tenants[0]?.dni ?? null,
-  },
-  {
-    path: "locatario.nombres",
+    path: "nombres_locatario",
     label: "Nombres del locatario",
     category: "inquilino",
     resolver: (ctx) => ctx.tenants[0]?.firstName ?? null,
   },
   {
-    path: "locatario.apellido",
+    path: "apellido_locatario",
     label: "Apellido del locatario",
     category: "inquilino",
     resolver: (ctx) => ctx.tenants[0]?.lastName ?? null,
   },
   {
-    path: "locatario.dni",
+    path: "dni_locatario",
     label: "DNI del locatario",
     category: "inquilino",
     resolver: (ctx) => ctx.tenants[0]?.dni ?? null,
   },
   {
-    path: "locatario.cuit",
+    path: "cuit_locatario",
     label: "CUIT del locatario",
     category: "inquilino",
     resolver: (ctx) => ctx.tenants[0]?.cuit ?? null,
   },
   {
-    path: "locatario.email",
+    path: "email_locatario",
     label: "Email del locatario",
     category: "inquilino",
     resolver: (ctx) => ctx.tenants[0]?.email ?? null,
   },
   {
-    path: "locatario.telefono",
+    path: "telefono_locatario",
     label: "Teléfono del locatario",
     category: "inquilino",
     resolver: (ctx) => ctx.tenants[0]?.phone ?? null,
   },
   {
-    path: "locatario.domicilio",
+    path: "domicilio_locatario",
     label: "Domicilio del locatario",
     category: "inquilino",
     resolver: (ctx) => ctx.tenants[0]?.address ?? null,
   },
   {
-    path: "locatario.domicilio_calle",
+    path: "domicilio_locatario_calle",
     label: "Calle del locatario",
     category: "inquilino",
-    resolver: () => null,
+    resolver: (ctx) => ctx.tenants[0]?.addressStreet ?? null,
   },
   {
-    path: "locatario.domicilio_numero",
+    path: "domicilio_locatario_numero",
     label: "Número del domicilio del locatario",
     category: "inquilino",
-    resolver: () => null,
+    resolver: (ctx) => ctx.tenants[0]?.addressNumber ?? null,
   },
   {
-    path: "locatario.domicilio_ciudad",
+    path: "domicilio_locatario_barrio",
+    label: "Barrio del locatario",
+    category: "inquilino",
+    resolver: (ctx) => ctx.tenants[0]?.addressZone ?? null,
+  },
+  {
+    path: "domicilio_locatario_ciudad",
     label: "Ciudad del locatario",
     category: "inquilino",
-    resolver: () => null,
+    resolver: (ctx) => ctx.tenants[0]?.addressCity ?? null,
   },
   {
-    path: "locatario.domicilio_provincia",
+    path: "domicilio_locatario_provincia",
     label: "Provincia del locatario",
     category: "inquilino",
-    resolver: () => null,
+    resolver: (ctx) => ctx.tenants[0]?.addressProvince ?? null,
   },
 
   // ── Contrato ───────────────────────────────────────────────────────────────
   {
-    path: "contrato.fecha_inicio",
+    path: "fecha_inicio",
     label: "Fecha de inicio",
     category: "contrato",
     resolver: (ctx) => ctx.contract?.startDate ?? null,
   },
   {
-    path: "contrato.fecha_fin",
+    path: "fecha_fin",
     label: "Fecha de fin",
     category: "contrato",
     resolver: (ctx) => ctx.contract?.endDate ?? null,
   },
   {
-    path: "contrato.plazo_meses",
-    label: "Plazo en meses",
-    category: "contrato",
-    resolver: (ctx) => {
-      if (!ctx.contract?.startDate || !ctx.contract?.endDate) return null;
-      const months = monthsBetween(ctx.contract.startDate, ctx.contract.endDate);
-      return months !== null ? String(months) : null;
-    },
-  },
-  {
-    path: "contrato.duracion_meses",
+    path: "duracion_meses",
     label: "Duración en meses",
     category: "contrato",
     resolver: (ctx) => {
@@ -346,37 +344,37 @@ export const VARIABLES_CATALOG: TemplateVariable[] = [
     },
   },
   {
-    path: "contrato.monto_alquiler",
-    label: "Monto mensual de alquiler",
+    path: "duracion_texto",
+    label: "Duración en letras",
     category: "contrato",
-    resolver: (ctx) => ctx.contract?.monthlyAmount ?? null,
+    resolver: () => null, // TODO PR 3: requires to-words num→letras
   },
   {
-    path: "contrato.precio_inicial_numero",
+    path: "precio_inicial_numero",
     label: "Precio inicial (número)",
     category: "contrato",
     resolver: (ctx) => ctx.contract?.monthlyAmount ?? null,
   },
   {
-    path: "contrato.precio_inicial_formato",
+    path: "precio_inicial_formato",
     label: "Precio inicial (formato ARS)",
     category: "contrato",
     resolver: (ctx) => formatARS(ctx.contract?.monthlyAmount),
   },
   {
-    path: "contrato.precio_inicial_letras",
+    path: "precio_inicial_letras",
     label: "Precio inicial en letras",
     category: "contrato",
-    resolver: () => null, // requires number-to-words library
+    resolver: () => null, // TODO PR 3: requires to-words num→letras
   },
   {
-    path: "contrato.tipo_ajuste",
+    path: "tipo_ajuste",
     label: "Tipo de ajuste (índice)",
     category: "contrato",
     resolver: (ctx) => ctx.contract?.adjustmentIndex ?? null,
   },
   {
-    path: "contrato.periodo_ajuste_meses",
+    path: "periodo_ajuste_meses",
     label: "Período de ajuste en meses",
     category: "contrato",
     resolver: (ctx) =>
@@ -385,112 +383,124 @@ export const VARIABLES_CATALOG: TemplateVariable[] = [
         : null,
   },
   {
-    path: "contrato.dia_vencimiento",
+    path: "dia_vencimiento",
     label: "Día de vencimiento del pago",
     category: "contrato",
     resolver: (ctx) =>
       ctx.contract?.paymentDay != null ? String(ctx.contract.paymentDay) : null,
   },
   {
-    path: "contrato.modalidad_pago",
+    path: "modalidad_pago",
     label: "Modalidad de pago (A/B)",
     category: "contrato",
     resolver: (ctx) => ctx.contract?.paymentModality ?? null,
   },
   {
-    path: "contrato.dia_gracia",
+    path: "dia_gracia",
     label: "Días de gracia para el pago",
     category: "contrato",
-    resolver: () => null,
+    resolver: (ctx) => ctx.contract != null ? String(ctx.contract.graceDays ?? 0) : null,
   },
   {
-    path: "contrato.porcentaje_comision",
-    label: "Porcentaje comisión pago electrónico",
+    path: "porcentaje_comision_pago_electronico",
+    label: "Comisión por pago electrónico (%)",
     category: "contrato",
-    resolver: () => null,
+    resolver: (ctx) => ctx.contract?.electronicPaymentFeePct ?? null,
   },
   {
-    path: "contrato.porcentaje_interes_mora",
-    label: "Porcentaje interés por mora",
+    path: "porcentaje_interes_mora",
+    label: "Interés por mora (%)",
     category: "contrato",
-    resolver: () => null,
+    resolver: (ctx) => ctx.contract?.lateInterestPct ?? null,
   },
   {
-    path: "contrato.es_renovacion",
+    path: "es_renovacion",
     label: "¿Es renovación?",
     category: "contrato",
-    resolver: () => null,
-  },
-  {
-    path: "agencia.razon_social",
-    label: "Razón social de la agencia",
-    category: "contrato",
-    resolver: (ctx) => ctx.agency?.legalName ?? null,
+    resolver: (ctx) => ctx.contract != null ? (ctx.contract.isRenewal ? "Sí" : "No") : null,
   },
 
   // ── Administradora ─────────────────────────────────────────────────────────
   {
-    path: "administradora.nombre",
+    path: "nombre_administradora",
     label: "Nombre / razón social",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.legalName ?? null,
   },
   {
-    path: "administradora.cuit",
+    path: "cuit_administradora",
     label: "CUIT de la administradora",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.cuit ?? null,
   },
   {
-    path: "administradora.domicilio",
+    path: "domicilio_administradora",
     label: "Domicilio fiscal",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.fiscalAddress ?? null,
   },
   {
-    path: "administradora.ciudad",
+    path: "domicilio_administradora_calle",
+    label: "Calle de la administradora",
+    category: "administradora",
+    resolver: (ctx) => ctx.agency?.fiscalAddressStreet ?? null,
+  },
+  {
+    path: "domicilio_administradora_numero",
+    label: "Número de la administradora",
+    category: "administradora",
+    resolver: (ctx) => ctx.agency?.fiscalAddressNumber ?? null,
+  },
+  {
+    path: "domicilio_administradora_barrio",
+    label: "Barrio de la administradora",
+    category: "administradora",
+    resolver: (ctx) => ctx.agency?.fiscalAddressZone ?? null,
+  },
+  {
+    path: "domicilio_administradora_ciudad",
     label: "Ciudad de la administradora",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.city ?? null,
   },
   {
-    path: "administradora.provincia",
+    path: "domicilio_administradora_provincia",
     label: "Provincia de la administradora",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.province ?? null,
   },
   {
-    path: "administradora.telefono",
+    path: "telefono_administradora",
     label: "Teléfono de la administradora",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.phone ?? null,
   },
   {
-    path: "administradora.email",
+    path: "email_administradora",
     label: "Email de la administradora",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.contactEmail ?? null,
   },
   {
-    path: "administradora.matricula",
+    path: "matricula_administradora",
     label: "Matrícula profesional",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.licenseNumber ?? null,
   },
   {
-    path: "administradora.firmante",
+    path: "firmante_administradora",
     label: "Nombre del firmante",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.signatory ?? null,
   },
   {
-    path: "administradora.cbu",
+    path: "cbu_administradora",
     label: "CBU de la administradora",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.bancoCBU ?? null,
   },
   {
-    path: "administradora.alias",
+    path: "alias_administradora",
     label: "Alias CBU de la administradora",
     category: "administradora",
     resolver: (ctx) => ctx.agency?.bancoAlias ?? null,
@@ -498,40 +508,28 @@ export const VARIABLES_CATALOG: TemplateVariable[] = [
 
   // ── Garante / Fiadoras ─────────────────────────────────────────────────────
   {
-    path: "garante.nombre_completo",
-    label: "Nombre completo del garante",
-    category: "garante",
-    resolver: (ctx) => fullName(ctx.guarantors[0] ?? null),
-  },
-  {
-    path: "garante.dni",
-    label: "DNI del garante",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[0]?.dni ?? null,
-  },
-  {
-    path: "garante.domicilio",
-    label: "Domicilio del garante",
-    category: "garante",
-    resolver: (ctx) => ctx.guarantors[0]?.address ?? null,
-  },
-  {
-    path: "garante.cantidad",
-    label: "Cantidad de garantes",
+    path: "cantidad_fiadoras",
+    label: "Cantidad de fiadores",
     category: "garante",
     resolver: (ctx) => String(ctx.guarantors.length),
+  },
+  {
+    path: "nombre_completo_fiador",
+    label: "Nombre completo del fiador (1°)",
+    category: "garante",
+    resolver: (ctx) => fullName(ctx.guarantors[0] ?? null),
   },
 
   // Fiadoras 1–3 (generated)
   ...[1, 2, 3].flatMap((n): TemplateVariable[] => {
     const i = n - 1;
-    const suffix = `fiadora ${n}`;
+    const suffix = `fiador ${n}`;
     const mk = (
       field: string,
       label: string,
       get: (ctx: TemplateContext) => string | null | undefined
     ): TemplateVariable => ({
-      path: `fiadora${n}.${field}`,
+      path: `${field}_fiador_${n}`,
       label: `${label} ${suffix}`,
       category: "garante",
       resolver: (ctx) => get(ctx) ?? null,
@@ -540,7 +538,7 @@ export const VARIABLES_CATALOG: TemplateVariable[] = [
       mk("apellido",  "Apellido",   (ctx) => ctx.guarantors[i]?.lastName),
       mk("nombres",   "Nombres",    (ctx) => ctx.guarantors[i]?.firstName),
       mk("dni",       "DNI",        (ctx) => ctx.guarantors[i]?.dni),
-      mk("cuit",      "CUIT",       (ctx) => ctx.guarantors[i]?.cuit),
+      mk("cuil",      "CUIL",       (ctx) => ctx.guarantors[i]?.cuit),
       mk("domicilio", "Domicilio",  (ctx) => ctx.guarantors[i]?.address),
       mk("email",     "Email",      (ctx) => ctx.guarantors[i]?.email),
       mk("telefono",  "Teléfono",   (ctx) => ctx.guarantors[i]?.phone),

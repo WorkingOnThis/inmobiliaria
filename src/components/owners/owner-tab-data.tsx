@@ -17,6 +17,11 @@ interface Owner {
   phone: string | null;
   email: string | null;
   address: string | null;
+  addressStreet: string | null;
+  addressNumber: string | null;
+  addressZone: string | null;
+  addressCity: string | null;
+  addressProvince: string | null;
   birthDate: string | null;
   cbu: string | null;
   alias: string | null;
@@ -194,6 +199,11 @@ export function OwnerTabData({
     phone:            owner.phone,
     email:            owner.email,
     address:          owner.address,
+    addressStreet:    owner.addressStreet,
+    addressNumber:    owner.addressNumber,
+    addressZone:      owner.addressZone,
+    addressCity:      owner.addressCity,
+    addressProvince:  owner.addressProvince,
     birthDate:        owner.birthDate,
     cbu:              owner.cbu,
     alias:            owner.alias,
@@ -259,6 +269,11 @@ export function OwnerTabData({
       phone:            owner.phone,
       email:            owner.email,
       address:          owner.address,
+      addressStreet:    owner.addressStreet,
+      addressNumber:    owner.addressNumber,
+      addressZone:      owner.addressZone,
+      addressCity:      owner.addressCity,
+      addressProvince:  owner.addressProvince,
       birthDate:        owner.birthDate,
       cbu:              owner.cbu,
       alias:            owner.alias,
@@ -394,7 +409,14 @@ export function OwnerTabData({
               <DataField id="phone"     label="Teléfono"            value={form.phone}     editing={editing} onChange={setField("phone")}     placeholder="351 612-4400" />
               <DataField id="birthDate" label="Fecha de nacimiento" value={form.birthDate} editing={editing} onChange={setField("birthDate")} type="date" mono />
             </div>
-            <DataField id="address" label="Domicilio fiscal" value={form.address} editing={editing} onChange={setField("address")} placeholder="Av. Colón 1234, Córdoba" />
+            <DataField id="address" label="Domicilio completo" value={form.address} editing={editing} onChange={setField("address")} placeholder="Av. Colón 1234, Córdoba" />
+            <div className="grid grid-cols-2 gap-4">
+              <DataField id="addressStreet"   label="Calle"     value={form.addressStreet}   editing={editing} onChange={setField("addressStreet")}   placeholder="Av. Colón" />
+              <DataField id="addressNumber"   label="Número"    value={form.addressNumber}   editing={editing} onChange={setField("addressNumber")}   placeholder="1234" />
+              <DataField id="addressZone"     label="Barrio"    value={form.addressZone}     editing={editing} onChange={setField("addressZone")}     placeholder="Nueva Córdoba" />
+              <DataField id="addressCity"     label="Ciudad"    value={form.addressCity}     editing={editing} onChange={setField("addressCity")}     placeholder="Córdoba" />
+              <DataField id="addressProvince" label="Provincia" value={form.addressProvince} editing={editing} onChange={setField("addressProvince")} placeholder="Córdoba" />
+            </div>
           </div>
         </SectionCard>
 

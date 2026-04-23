@@ -18,6 +18,7 @@ import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-bad
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ZoneCombobox } from "@/components/ui/zone-combobox";
 import { FeatureCombobox } from "@/components/ui/feature-combobox";
@@ -119,6 +120,17 @@ interface PropertyDetail {
   serviceCouncil: string;
   serviceStateTax: string;
   serviceHoa: string;
+  addressStreet: string | null;
+  addressNumber: string | null;
+  city: string | null;
+  province: string | null;
+  destino: string | null;
+  plantaPB: string | null;
+  plantaPA: string | null;
+  observacionesConfeccion: string | null;
+  registryNumber: string | null;
+  cadastralRef: string | null;
+  tieneExpensas: boolean;
   createdAt: string;
   updatedAt: string;
   ownerId: string;
@@ -317,6 +329,37 @@ function EditSelect({
           </SelectGroup>
         </SelectContent>
       </Select>
+    </div>
+  );
+}
+
+// ── Edit textarea ─────────────────────────────────────────────────────────────
+
+function EditTextarea({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows = 3,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
+        {label}
+      </Label>
+      <Textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        className="resize-none"
+      />
     </div>
   );
 }
@@ -1097,7 +1140,18 @@ function PropiedadFichaContent() {
     yearBuilt: "",
     condition: "",
     keys: "",
+    addressStreet: "",
+    addressNumber: "",
+    city: "",
+    province: "",
+    destino: "",
+    plantaPB: "",
+    plantaPA: "",
+    observacionesConfeccion: "",
+    registryNumber: "",
+    cadastralRef: "",
   });
+  const [formTieneExpensas, setFormTieneExpensas] = useState(false);
 
   const startEdit = () => {
     if (!prop) return;
@@ -1121,7 +1175,18 @@ function PropiedadFichaContent() {
       yearBuilt: prop.yearBuilt != null ? String(prop.yearBuilt) : "",
       condition: prop.condition ?? "",
       keys: prop.keys ?? "",
+      addressStreet: prop.addressStreet ?? "",
+      addressNumber: prop.addressNumber ?? "",
+      city: prop.city ?? "",
+      province: prop.province ?? "",
+      destino: prop.destino ?? "",
+      plantaPB: prop.plantaPB ?? "",
+      plantaPA: prop.plantaPA ?? "",
+      observacionesConfeccion: prop.observacionesConfeccion ?? "",
+      registryNumber: prop.registryNumber ?? "",
+      cadastralRef: prop.cadastralRef ?? "",
     });
+    setFormTieneExpensas(prop.tieneExpensas ?? false);
     setEditError(null);
     setEditing(true);
   };
@@ -1158,6 +1223,17 @@ function PropiedadFichaContent() {
           yearBuilt: form.yearBuilt ? Number(form.yearBuilt) : null,
           condition: form.condition || null,
           keys: form.keys || null,
+          addressStreet: form.addressStreet || null,
+          addressNumber: form.addressNumber || null,
+          city: form.city || null,
+          province: form.province || null,
+          destino: form.destino || null,
+          plantaPB: form.plantaPB || null,
+          plantaPA: form.plantaPA || null,
+          observacionesConfeccion: form.observacionesConfeccion || null,
+          registryNumber: form.registryNumber || null,
+          cadastralRef: form.cadastralRef || null,
+          tieneExpensas: formTieneExpensas,
         }),
       });
       if (!res.ok) {
@@ -1595,9 +1671,11 @@ function PropiedadFichaContent() {
                     </SectionLabel>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="col-span-2">
-                        <EditInput label="Dirección" value={form.address} onChange={set("address")} placeholder="Av. Corrientes 1234" />
+                        <EditInput label="Dirección completa" value={form.address} onChange={set("address")} placeholder="Av. Corrientes 1234" />
                       </div>
                       <EditInput label="Piso / Unidad" value={form.floorUnit} onChange={set("floorUnit")} placeholder="3B" />
+                      <EditInput label="Calle" value={form.addressStreet} onChange={set("addressStreet")} placeholder="Av. Corrientes" />
+                      <EditInput label="Número" value={form.addressNumber} onChange={set("addressNumber")} placeholder="1234" />
                       <div className="flex flex-col gap-1.5">
                         <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
                           Barrio / Zona
@@ -1608,6 +1686,8 @@ function PropiedadFichaContent() {
                           placeholder="Nueva Córdoba"
                         />
                       </div>
+                      <EditInput label="Ciudad" value={form.city} onChange={set("city")} placeholder="Córdoba" />
+                      <EditInput label="Provincia" value={form.province} onChange={set("province")} placeholder="Córdoba" />
                       <EditSelect
                         label="Tipo"
                         value={form.type}
@@ -1620,6 +1700,18 @@ function PropiedadFichaContent() {
                           { value: "oficina", label: "Oficina" },
                           { value: "cochera", label: "Cochera" },
                           { value: "otro", label: "Otro" },
+                        ]}
+                      />
+                      <EditSelect
+                        label="Destino"
+                        value={form.destino}
+                        onChange={set("destino")}
+                        placeholder="Sin especificar"
+                        options={[
+                          { value: "vivienda", label: "Vivienda" },
+                          { value: "comercial", label: "Comercial" },
+                          { value: "mixto", label: "Mixto" },
+                          { value: "oficina", label: "Oficina" },
                         ]}
                       />
                       <EditSelect
@@ -1731,6 +1823,40 @@ function PropiedadFichaContent() {
                     </SectionLabel>
                     <FeatureCombobox propertyId={id} />
                   </div>
+
+                  <div>
+                    <SectionLabel className="mb-3">
+                      Confección
+                    </SectionLabel>
+                    <div className="grid grid-cols-1 gap-3">
+                      <EditTextarea label="Planta baja" value={form.plantaPB} onChange={set("plantaPB")} placeholder="Descripción de planta baja…" />
+                      <EditTextarea label="Planta alta" value={form.plantaPA} onChange={set("plantaPA")} placeholder="Descripción de planta alta…" />
+                      <EditTextarea label="Observaciones generales" value={form.observacionesConfeccion} onChange={set("observacionesConfeccion")} placeholder="Observaciones de la confección…" rows={2} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <SectionLabel className="mb-3">
+                      Datos registrales
+                    </SectionLabel>
+                    <div className="grid grid-cols-2 gap-3">
+                      <EditInput label="Matrícula" value={form.registryNumber} onChange={set("registryNumber")} placeholder="Nro. de matrícula" />
+                      <EditInput label="Catastro" value={form.cadastralRef} onChange={set("cadastralRef")} placeholder="Referencia catastral" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <SectionLabel className="mb-3">
+                      Expensas
+                    </SectionLabel>
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <Checkbox
+                        checked={formTieneExpensas}
+                        onCheckedChange={(v) => setFormTieneExpensas(Boolean(v))}
+                      />
+                      <span className="text-[0.82rem] text-foreground">Esta propiedad tiene expensas</span>
+                    </label>
+                  </div>
                 </div>
               ) : (
                 /* ── View mode ── */
@@ -1745,8 +1871,13 @@ function PropiedadFichaContent() {
                         <DatoItem label="Dirección" value={prop.address} />
                       </div>
                       <DatoItem label="Piso / Unidad" value={prop.floorUnit} />
+                      <DatoItem label="Calle" value={prop.addressStreet} />
+                      <DatoItem label="Número" value={prop.addressNumber} />
                       <DatoItem label="Barrio / Zona" value={prop.zone} />
+                      <DatoItem label="Ciudad" value={prop.city} />
+                      <DatoItem label="Provincia" value={prop.province} />
                       <DatoItem label="Tipo" value={TYPE_LABEL[prop.type] ?? prop.type} />
+                      <DatoItem label="Destino" value={prop.destino ?? null} />
                       <DatoItem label="Estado alquiler" value={RENTAL_STATUS_LABELS[prop.rentalStatus as keyof typeof RENTAL_STATUS_LABELS] ?? prop.rentalStatus} />
                       <DatoItem label="Estado venta" value={prop.saleStatus ? (SALE_STATUS_LABELS[prop.saleStatus as keyof typeof SALE_STATUS_LABELS] ?? prop.saleStatus) : null} />
                       <DatoItem
@@ -1807,9 +1938,31 @@ function PropiedadFichaContent() {
                       <DatoItem label="Agua" value={SERVICIO_LABEL[prop.serviceWater]} />
                       <DatoItem label="Municipalidad" value={SERVICIO_LABEL[prop.serviceCouncil]} />
                       <DatoItem label="Rentas" value={SERVICIO_LABEL[prop.serviceStateTax]} />
-                      <DatoItem label="Expensas" value={SERVICIO_LABEL[prop.serviceHoa]} />
+                      <DatoItem label="Expensas (responsable)" value={SERVICIO_LABEL[prop.serviceHoa]} />
+                      <DatoItem label="Tiene expensas" value={prop.tieneExpensas ? "Sí" : "No"} />
                     </div>
                   </div>
+
+                  {(prop.plantaPB || prop.plantaPA || prop.observacionesConfeccion) && (
+                    <div>
+                      <SectionLabel className="mb-3">Confección</SectionLabel>
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {prop.plantaPB && <DatoItem label="Planta baja" value={prop.plantaPB} />}
+                        {prop.plantaPA && <DatoItem label="Planta alta" value={prop.plantaPA} />}
+                        {prop.observacionesConfeccion && <DatoItem label="Observaciones" value={prop.observacionesConfeccion} />}
+                      </div>
+                    </div>
+                  )}
+
+                  {(prop.registryNumber || prop.cadastralRef) && (
+                    <div>
+                      <SectionLabel className="mb-3">Datos registrales</SectionLabel>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <DatoItem label="Matrícula" value={prop.registryNumber} />
+                        <DatoItem label="Catastro" value={prop.cadastralRef} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

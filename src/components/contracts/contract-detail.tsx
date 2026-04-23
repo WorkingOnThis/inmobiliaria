@@ -123,6 +123,10 @@ interface ContractDetail extends PropertyServices {
   paymentModality: string;
   adjustmentIndex: string;
   adjustmentFrequency: number;
+  graceDays: number | null;
+  electronicPaymentFeePct: string | null;
+  lateInterestPct: string | null;
+  isRenewal: boolean | null;
   createdAt: string;
   propertyAddress: string | null;
   propertyType: string | null;
@@ -163,6 +167,10 @@ interface EditableConditions {
   paymentModality: "A" | "B";
   adjustmentIndex: string;
   adjustmentFrequency: string;
+  graceDays: string;
+  electronicPaymentFeePct: string;
+  lateInterestPct: string;
+  isRenewal: boolean;
   serviceElectricity: string;
   serviceGas: string;
   serviceWater: string;
@@ -401,6 +409,10 @@ export function ContractDetail({ id }: { id: string }) {
         paymentModality: values.paymentModality,
         adjustmentIndex: values.adjustmentIndex,
         adjustmentFrequency: parseInt(values.adjustmentFrequency),
+        graceDays: parseInt(values.graceDays) || 0,
+        electronicPaymentFeePct: values.electronicPaymentFeePct || null,
+        lateInterestPct: values.lateInterestPct || null,
+        isRenewal: values.isRenewal,
       };
       if (values.depositAmount) body.depositAmount = parseFloat(values.depositAmount);
       else body.depositAmount = null;
@@ -501,6 +513,10 @@ export function ContractDetail({ id }: { id: string }) {
       paymentModality: data.paymentModality as "A" | "B",
       adjustmentIndex: data.adjustmentIndex,
       adjustmentFrequency: String(data.adjustmentFrequency),
+      graceDays: data.graceDays != null ? String(data.graceDays) : "0",
+      electronicPaymentFeePct: data.electronicPaymentFeePct ?? "",
+      lateInterestPct: data.lateInterestPct ?? "",
+      isRenewal: data.isRenewal ?? false,
       serviceElectricity: data.serviceElectricity || "inquilino",
       serviceGas: data.serviceGas || "inquilino",
       serviceWater: data.serviceWater || "inquilino",
@@ -899,6 +915,27 @@ export function ContractDetail({ id }: { id: string }) {
                     <Input type="number" min="1" max="28" value={editValues.paymentDay}
                       onChange={(e) => setEditValues((v) => v && { ...v, paymentDay: e.target.value })} />
                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Días de gracia</Label>
+                    <Input type="number" min="0" max="31" value={editValues.graceDays}
+                      onChange={(e) => setEditValues((v) => v && { ...v, graceDays: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Comisión pago electrónico (%)</Label>
+                    <Input type="number" min="0" step="0.01" value={editValues.electronicPaymentFeePct}
+                      onChange={(e) => setEditValues((v) => v && { ...v, electronicPaymentFeePct: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Interés por mora (%)</Label>
+                    <Input type="number" min="0" step="0.01" value={editValues.lateInterestPct}
+                      onChange={(e) => setEditValues((v) => v && { ...v, lateInterestPct: e.target.value })} />
+                  </div>
+                  <div className="space-y-1 flex items-center gap-2 pt-5">
+                    <input type="checkbox" id="isRenewal" checked={editValues.isRenewal}
+                      onChange={(e) => setEditValues((v) => v && { ...v, isRenewal: e.target.checked })}
+                      className="size-4 rounded border-border" />
+                    <Label htmlFor="isRenewal" className="text-xs cursor-pointer">¿Es renovación?</Label>
+                  </div>
                   <div className="space-y-1 col-span-2">
                     <Label className="text-xs">Modalidad de pago</Label>
                     <Select value={editValues.paymentModality}
@@ -945,7 +982,7 @@ export function ContractDetail({ id }: { id: string }) {
                       <div key={key} className="flex items-center gap-3">
                         <span className="text-[0.75rem] text-text-secondary w-[110px] shrink-0">{label}</span>
                         <Select
-                          value={editValues[key as keyof EditableConditions]}
+                          value={editValues[key as keyof EditableConditions] as string}
                           onValueChange={(v) => setEditValues((p) => p ? { ...p, [key]: v } : p)}
                         >
                           <SelectTrigger className="h-7 text-xs flex-1">

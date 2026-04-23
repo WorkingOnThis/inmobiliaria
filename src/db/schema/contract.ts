@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, decimal, boolean } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 import { client } from "./client";
 import { property } from "./property";
@@ -38,6 +38,11 @@ export const contract = pgTable("contract", {
   paymentModality: text("paymentModality").notNull().default("A"),
   adjustmentIndex: text("adjustmentIndex").notNull().default("none"),
   adjustmentFrequency: integer("adjustmentFrequency").notNull().default(12), // meses entre actualizaciones
+
+  graceDays: integer("graceDays").notNull().default(0),
+  electronicPaymentFeePct: decimal("electronicPaymentFeePct", { precision: 5, scale: 2 }),
+  lateInterestPct: decimal("lateInterestPct", { precision: 5, scale: 2 }),
+  isRenewal: boolean("isRenewal").notNull().default(false),
 
   createdBy: text("createdBy")
     .notNull()

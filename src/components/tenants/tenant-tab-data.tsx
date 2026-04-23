@@ -17,6 +17,11 @@ interface Tenant {
   phone: string | null;
   email: string | null;
   address: string | null;
+  addressStreet: string | null;
+  addressNumber: string | null;
+  addressZone: string | null;
+  addressCity: string | null;
+  addressProvince: string | null;
   birthDate: string | null;
   condicionFiscal: string | null;
   nationality: string | null;
@@ -36,7 +41,8 @@ interface TenantTabDataProps {
 type EditableFields = Pick<
   Tenant,
   | "firstName" | "lastName" | "dni" | "cuit" | "phone" | "email"
-  | "address" | "birthDate" | "condicionFiscal" | "nationality"
+  | "address" | "addressStreet" | "addressNumber" | "addressZone" | "addressCity" | "addressProvince"
+  | "birthDate" | "condicionFiscal" | "nationality"
   | "occupation" | "internalNotes"
 >;
 
@@ -155,6 +161,11 @@ export function TenantTabData({
     phone:           tenant.phone,
     email:           tenant.email,
     address:         tenant.address,
+    addressStreet:   tenant.addressStreet,
+    addressNumber:   tenant.addressNumber,
+    addressZone:     tenant.addressZone,
+    addressCity:     tenant.addressCity,
+    addressProvince: tenant.addressProvince,
     birthDate:       tenant.birthDate,
     condicionFiscal: tenant.condicionFiscal,
     nationality:     tenant.nationality,
@@ -210,6 +221,11 @@ export function TenantTabData({
       phone:           tenant.phone,
       email:           tenant.email,
       address:         tenant.address,
+      addressStreet:   tenant.addressStreet,
+      addressNumber:   tenant.addressNumber,
+      addressZone:     tenant.addressZone,
+      addressCity:     tenant.addressCity,
+      addressProvince: tenant.addressProvince,
       birthDate:       tenant.birthDate,
       condicionFiscal: tenant.condicionFiscal,
       nationality:     tenant.nationality,
@@ -335,7 +351,14 @@ export function TenantTabData({
             <DataField id="phone"     label="Teléfono"            value={form.phone}     editing={editing} onChange={setField("phone")}     placeholder="351 612-4400" />
             <DataField id="birthDate" label="Fecha de nacimiento" value={form.birthDate} editing={editing} onChange={setField("birthDate")} type="date" mono />
           </div>
-          <DataField id="address" label="Domicilio" value={form.address} editing={editing} onChange={setField("address")} placeholder="Av. Colón 1234, Córdoba" />
+          <DataField id="address" label="Domicilio completo" value={form.address} editing={editing} onChange={setField("address")} placeholder="Av. Colón 1234, Córdoba" />
+            <div className="grid grid-cols-2 gap-4">
+              <DataField id="addressStreet"   label="Calle"     value={form.addressStreet}   editing={editing} onChange={setField("addressStreet")}   placeholder="Av. Colón" />
+              <DataField id="addressNumber"   label="Número"    value={form.addressNumber}   editing={editing} onChange={setField("addressNumber")}   placeholder="1234" />
+              <DataField id="addressZone"     label="Barrio"    value={form.addressZone}     editing={editing} onChange={setField("addressZone")}     placeholder="Nueva Córdoba" />
+              <DataField id="addressCity"     label="Ciudad"    value={form.addressCity}     editing={editing} onChange={setField("addressCity")}     placeholder="Córdoba" />
+              <DataField id="addressProvince" label="Provincia" value={form.addressProvince} editing={editing} onChange={setField("addressProvince")} placeholder="Córdoba" />
+            </div>
         </div>
       </SectionCard>
 

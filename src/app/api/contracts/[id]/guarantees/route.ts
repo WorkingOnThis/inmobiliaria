@@ -23,6 +23,13 @@ const addGuaranteeSchema = z.discriminatedUnion("type", [
     externalCadastralRef: z.string().optional(),
     externalOwnerName: z.string().optional(),
     externalOwnerDni: z.string().optional(),
+    externalOwnerCuit: z.string().trim().max(15).optional().nullable(),
+    externalOwnerAddress: z.string().trim().max(300).optional().nullable(),
+    externalOwnerEmail: z.string().email().optional().nullable(),
+    externalOwnerPhone: z.string().trim().max(30).optional().nullable(),
+    externalRegistryNumber: z.string().trim().max(50).optional().nullable(),
+    externalSurfaceLand: z.string().regex(/^\d+(\.\d{1,2})?$/).optional().nullable(),
+    externalSurfaceBuilt: z.string().regex(/^\d+(\.\d{1,2})?$/).optional().nullable(),
   }),
 ]);
 
@@ -104,6 +111,19 @@ export async function POST(
         kind: data.type === "personal" ? "salaryReceipt" : "propertyOwner",
         personClientId: data.type === "personal" ? data.clientId : null,
         propertyId: data.type === "real" ? (data.propertyId ?? null) : null,
+        ...(data.type === "real" ? {
+          externalAddress: data.externalAddress ?? null,
+          externalCadastralRef: data.externalCadastralRef ?? null,
+          externalOwnerName: data.externalOwnerName ?? null,
+          externalOwnerDni: data.externalOwnerDni ?? null,
+          externalOwnerCuit: data.externalOwnerCuit ?? null,
+          externalOwnerAddress: data.externalOwnerAddress ?? null,
+          externalOwnerEmail: data.externalOwnerEmail ?? null,
+          externalOwnerPhone: data.externalOwnerPhone ?? null,
+          externalRegistryNumber: data.externalRegistryNumber ?? null,
+          externalSurfaceLand: data.externalSurfaceLand ?? null,
+          externalSurfaceBuilt: data.externalSurfaceBuilt ?? null,
+        } : {}),
       })
       .returning();
 

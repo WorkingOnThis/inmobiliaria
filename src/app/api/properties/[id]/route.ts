@@ -40,6 +40,17 @@ const updatePropertySchema = z.object({
   serviceCouncil: z.enum(["inquilino", "propietario", "na"]).optional(),
   serviceStateTax: z.enum(["inquilino", "propietario", "na"]).optional(),
   serviceHoa: z.enum(["inquilino", "propietario", "na"]).optional(),
+  addressStreet: z.string().trim().max(200).optional().nullable(),
+  addressNumber: z.string().trim().max(20).optional().nullable(),
+  city: z.string().trim().max(100).optional().nullable(),
+  province: z.string().trim().max(100).optional().nullable(),
+  destino: z.enum(["vivienda", "comercial", "mixto", "oficina"]).optional().nullable(),
+  plantaPB: z.string().trim().max(2000).optional().nullable(),
+  plantaPA: z.string().trim().max(2000).optional().nullable(),
+  observacionesConfeccion: z.string().trim().max(5000).optional().nullable(),
+  registryNumber: z.string().trim().max(50).optional().nullable(),
+  cadastralRef: z.string().trim().max(50).optional().nullable(),
+  tieneExpensas: z.boolean().optional(),
 });
 
 export async function GET(
@@ -193,6 +204,17 @@ export async function PATCH(
     if (data.serviceCouncil !== undefined) updateData.serviceCouncil = data.serviceCouncil;
     if (data.serviceStateTax !== undefined) updateData.serviceStateTax = data.serviceStateTax;
     if (data.serviceHoa !== undefined) updateData.serviceHoa = data.serviceHoa;
+    if (data.addressStreet !== undefined) updateData.addressStreet = data.addressStreet;
+    if (data.addressNumber !== undefined) updateData.addressNumber = data.addressNumber;
+    if (data.city !== undefined) updateData.city = data.city;
+    if (data.province !== undefined) updateData.province = data.province;
+    if (data.destino !== undefined) updateData.destino = data.destino;
+    if (data.plantaPB !== undefined) updateData.plantaPB = data.plantaPB;
+    if (data.plantaPA !== undefined) updateData.plantaPA = data.plantaPA;
+    if (data.observacionesConfeccion !== undefined) updateData.observacionesConfeccion = data.observacionesConfeccion;
+    if (data.registryNumber !== undefined) updateData.registryNumber = data.registryNumber;
+    if (data.cadastralRef !== undefined) updateData.cadastralRef = data.cadastralRef;
+    if (data.tieneExpensas !== undefined) updateData.tieneExpensas = data.tieneExpensas;
 
     const [updated] = await db
       .update(property)

@@ -36,6 +36,19 @@ export const guarantee = pgTable("guarantee", {
   depositHeldBy: text("depositHeldBy"),
   depositNotes: text("depositNotes"),
 
+  // kind = "propertyOwner" (external — property not managed in this system)
+  externalOwnerName: text("externalOwnerName"),
+  externalOwnerDni: text("externalOwnerDni"),
+  externalOwnerCuit: text("externalOwnerCuit"),
+  externalOwnerAddress: text("externalOwnerAddress"),
+  externalOwnerEmail: text("externalOwnerEmail"),
+  externalOwnerPhone: text("externalOwnerPhone"),
+  externalAddress: text("externalAddress"),
+  externalCadastralRef: text("externalCadastralRef"),
+  externalRegistryNumber: text("externalRegistryNumber"),
+  externalSurfaceLand: decimal("externalSurfaceLand", { precision: 10, scale: 2 }),
+  externalSurfaceBuilt: decimal("externalSurfaceBuilt", { precision: 10, scale: 2 }),
+
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

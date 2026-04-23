@@ -36,6 +36,13 @@ export const client = pgTable("client", {
   nationality: text("nationality"),
   occupation: text("occupation"),
   internalNotes: text("internalNotes"),
+  // Domicilio desglosado (complementa address que queda como legado)
+  addressStreet: text("addressStreet"),
+  addressNumber: text("addressNumber"),
+  addressZone: text("addressZone"),   // barrio
+  addressCity: text("addressCity"),
+  addressProvince: text("addressProvince"),
+
   // Persona de confianza
   confianzaNombre: text("confianzaNombre"),
   confianzaApellido: text("confianzaApellido"),

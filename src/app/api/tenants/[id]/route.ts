@@ -29,6 +29,11 @@ const patchTenantSchema = z.object({
   occupation: z.string().optional().nullable(),
   internalNotes: z.string().optional().nullable(),
   status: z.enum(["activo", "suspendido", "baja"]).optional(),
+  addressStreet: z.string().trim().max(200).optional().nullable(),
+  addressNumber: z.string().trim().max(20).optional().nullable(),
+  addressZone: z.string().trim().max(100).optional().nullable(),
+  addressCity: z.string().trim().max(100).optional().nullable(),
+  addressProvince: z.string().trim().max(100).optional().nullable(),
 });
 
 const CONTRACT_STATUS_PRIORITY: Record<string, number> = {

@@ -32,6 +32,9 @@ interface AgencyData {
   activityStart?: string | null;
   logoUrl?: string | null;
   fiscalAddress?: string | null;
+  fiscalAddressStreet?: string | null;
+  fiscalAddressNumber?: string | null;
+  fiscalAddressZone?: string | null;
   city?: string | null;
   zipCode?: string | null;
   province?: string | null;
@@ -457,7 +460,8 @@ type FormState = {
   legalName: string; tradeName: string; cuit: string;
   vatStatus: string; grossIncome: string; activityStart: string;
   logoUrl: string | null;
-  fiscalAddress: string; city: string; zipCode: string;
+  fiscalAddress: string; fiscalAddressStreet: string; fiscalAddressNumber: string; fiscalAddressZone: string;
+  city: string; zipCode: string;
   province: string; country: string; phone: string;
   contactEmail: string; website: string;
   professionalAssociation: string; licenseNumber: string; signatory: string;
@@ -479,6 +483,9 @@ function toFormState(d: AgencyData | null): FormState {
     activityStart:           d?.activityStart           ?? "",
     logoUrl:                 d?.logoUrl                 ?? null,
     fiscalAddress:           d?.fiscalAddress           ?? "",
+    fiscalAddressStreet:     d?.fiscalAddressStreet     ?? "",
+    fiscalAddressNumber:     d?.fiscalAddressNumber     ?? "",
+    fiscalAddressZone:       d?.fiscalAddressZone       ?? "",
     city:                    d?.city                    ?? "",
     zipCode:                 d?.zipCode                 ?? "",
     province:                d?.province                ?? "",
@@ -698,8 +705,17 @@ export default function AdministracionPage() {
               {/* 2. Domicilio y contacto */}
               <SectionCard num={2} title="Domicilio y contacto" desc="Se imprimen en el pie del recibo." state={{ label: sec2Ok ? "Completo" : "Incompleto", ok: sec2Ok }}>
                 <div className="grid grid-cols-2 gap-3.5">
-                  <Field label="Domicilio fiscal" req span2>
+                  <Field label="Domicilio completo" req span2>
                     <input type="text" value={form.fiscalAddress} onChange={(e) => setField("fiscalAddress", e.target.value)} placeholder="Av. Callao 1280, Piso 4º B" className={inputCls} />
+                  </Field>
+                  <Field label="Calle">
+                    <input type="text" value={form.fiscalAddressStreet} onChange={(e) => setField("fiscalAddressStreet", e.target.value)} placeholder="Av. Callao" className={inputCls} />
+                  </Field>
+                  <Field label="Número">
+                    <input type="text" value={form.fiscalAddressNumber} onChange={(e) => setField("fiscalAddressNumber", e.target.value)} placeholder="1280" className={inputCls} />
+                  </Field>
+                  <Field label="Barrio" span2>
+                    <input type="text" value={form.fiscalAddressZone} onChange={(e) => setField("fiscalAddressZone", e.target.value)} placeholder="Balvanera" className={inputCls} />
                   </Field>
                   <Field label="Localidad">
                     <input type="text" value={form.city} onChange={(e) => setField("city", e.target.value)} placeholder="C.A.B.A." className={inputCls} />
