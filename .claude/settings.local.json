@@ -53,7 +53,9 @@
       "Bash(mkdir -p \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/guarantors/[id]\")",
       "Bash(mkdir -p \"F:/Documentos/Proyectos/inmobiliaria/src/app/\\(dashboard\\)/garantes/[id]\")",
       "Bash(Select-String -Path \"F:\\\\Documentos\\\\Proyectos\\\\inmobiliaria\\\\src\\\\app\\\\\\(dashboard\\)\\\\propiedades\\\\[id]\\\\page.tsx\" -Pattern \"<button\")",
-      "Bash(Select-Object LineNumber, Line)"
+      "Bash(Select-Object LineNumber, Line)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(grep -E \"\\\\.tsx$\")"
     ]
   }
 }

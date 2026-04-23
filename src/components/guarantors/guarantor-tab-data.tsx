@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Edit2, Save, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { GuarantorCompletenessBar } from "@/components/guarantors/guarantor-completeness-bar";
 
 interface Guarantor {
   id: string;
@@ -161,8 +162,21 @@ export function GuarantorTabData({ guarantor }: Props) {
     setEditing(false);
   };
 
+  const handleChipClick = (fieldId: string) => {
+    setEditing(true);
+    setTimeout(() => {
+      const el = document.getElementById(`field-${fieldId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        (el.querySelector("input, select, textarea") as HTMLElement | null)?.focus();
+      }
+    }, 50);
+  };
+
   return (
     <div className="p-7 flex flex-col gap-5">
+      <GuarantorCompletenessBar guarantor={form} onChipClick={handleChipClick} />
+
       <div className="flex items-center justify-end gap-2">
         {editing ? (
           <>
