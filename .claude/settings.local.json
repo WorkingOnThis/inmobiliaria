@@ -7,8 +7,8 @@
       "Bash(popover)",
       "Bash(badge)",
       "Bash(check\")",
-      "Bash(mkdir -p \"E:\\\\Ordenar\\\\Todo el escritorio\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\servicios\\\\[id]\\\\comprobante\")",
-      "Bash(mkdir -p \"E:\\\\Ordenar\\\\Todo el escritorio\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\servicios\\\\[id]\\\\omitir-bloqueo\")",
+      "Bash(mkdir -p \"F:\\\\Ordenar\\\\Todo el escritorio\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\servicios\\\\[id]\\\\comprobante\")",
+      "Bash(mkdir -p \"F:\\\\Ordenar\\\\Todo el escritorio\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\servicios\\\\[id]\\\\omitir-bloqueo\")",
       "Bash(gh api:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(curl:*)",
@@ -55,7 +55,8 @@
       "Bash(Select-String -Path \"F:\\\\Documentos\\\\Proyectos\\\\inmobiliaria\\\\src\\\\app\\\\\\(dashboard\\)\\\\propiedades\\\\[id]\\\\page.tsx\" -Pattern \"<button\")",
       "Bash(Select-Object LineNumber, Line)",
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
-      "Bash(grep -E \"\\\\.tsx$\")"
+      "Bash(grep -E \"\\\\.tsx$\")",
+      "Bash(git push *)"
     ]
   }
 }
