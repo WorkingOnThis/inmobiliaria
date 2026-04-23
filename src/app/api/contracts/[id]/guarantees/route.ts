@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { contract } from "@/db/schema/contract";
-import { contractGuarantee } from "@/db/schema/contract-guarantee";
+import { guarantee } from "@/db/schema/guarantee";
+import { contractTenant } from "@/db/schema/contract-tenant";
 import { client } from "@/db/schema/client";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
@@ -49,6 +50,16 @@ export async function POST(
       return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
     }
 
+    const [firstTenant] = await db
+      .select({ clientId: contractTenant.clientId })
+      .from(contractTenant)
+      .where(eq(contractTenant.contractId, id))
+      .limit(1);
+
+    if (!firstTenant) {
+      return NextResponse.json({ error: "El contrato no tiene inquilinos asociados" }, { status: 400 });
+    }
+
     const body = await request.json();
     const result = addGuaranteeSchema.safeParse(body);
     if (!result.success) {
@@ -85,22 +96,15 @@ export async function POST(
       }
     }
 
-    const insertValues =
-      data.type === "personal"
-        ? { contractId: id, type: data.type, clientId: data.clientId }
-        : {
-            contractId: id,
-            type: data.type,
-            propertyId: data.propertyId ?? null,
-            externalAddress: data.externalAddress ?? null,
-            externalCadastralRef: data.externalCadastralRef ?? null,
-            externalOwnerName: data.externalOwnerName ?? null,
-            externalOwnerDni: data.externalOwnerDni ?? null,
-          };
-
     const [inserted] = await db
-      .insert(contractGuarantee)
-      .values(insertValues)
+      .insert(guarantee)
+      .values({
+        tenantClientId: firstTenant.clientId,
+        contractId: id,
+        kind: data.type === "personal" ? "salaryReceipt" : "propertyOwner",
+        personClientId: data.type === "personal" ? data.clientId : null,
+        propertyId: data.type === "real" ? (data.propertyId ?? null) : null,
+      })
       .returning();
 
     return NextResponse.json(inserted, { status: 201 });

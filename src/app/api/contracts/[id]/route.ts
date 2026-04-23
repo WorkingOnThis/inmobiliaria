@@ -3,14 +3,15 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { contract } from "@/db/schema/contract";
 import { contractParticipant } from "@/db/schema/contract-participant";
-import { contractGuarantee } from "@/db/schema/contract-guarantee";
+import { guarantee } from "@/db/schema/guarantee";
 import { contractDocument } from "@/db/schema/contract-document";
 import { client } from "@/db/schema/client";
 import { property } from "@/db/schema/property";
+import { propertyCoOwner } from "@/db/schema/property-co-owner";
 import { user } from "@/db/schema/better-auth";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
-import { eq, inArray, and, ne } from "drizzle-orm";
+import { eq, inArray, and, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { ADJUSTMENT_INDEXES } from "@/lib/clients/constants";
 
@@ -121,15 +122,14 @@ export async function GET(
           .where(eq(contractParticipant.contractId, id)),
         db
           .select({
-            id: contractGuarantee.id,
-            type: contractGuarantee.type,
-            clientId: contractGuarantee.clientId,
-            propertyId: contractGuarantee.propertyId,
-            externalAddress: contractGuarantee.externalAddress,
-            externalCadastralRef: contractGuarantee.externalCadastralRef,
-            externalOwnerName: contractGuarantee.externalOwnerName,
-            externalOwnerDni: contractGuarantee.externalOwnerDni,
-            createdAt: contractGuarantee.createdAt,
+            id: guarantee.id,
+            kind: guarantee.kind,
+            personClientId: guarantee.personClientId,
+            propertyId: guarantee.propertyId,
+            depositAmount: guarantee.depositAmount,
+            depositCurrency: guarantee.depositCurrency,
+            depositHeldBy: guarantee.depositHeldBy,
+            createdAt: guarantee.createdAt,
             guarantorFirstName: client.firstName,
             guarantorLastName: client.lastName,
             guarantorDni: client.dni,
@@ -138,9 +138,9 @@ export async function GET(
             guarantorPhone: client.phone,
             guarantorEmail: client.email,
           })
-          .from(contractGuarantee)
-          .leftJoin(client, eq(contractGuarantee.clientId, client.id))
-          .where(eq(contractGuarantee.contractId, id)),
+          .from(guarantee)
+          .leftJoin(client, eq(guarantee.personClientId, client.id))
+          .where(eq(guarantee.contractId, id)),
         db
           .select({
             id: contractDocument.id,
@@ -198,28 +198,119 @@ export async function GET(
       },
     }));
 
-    const guarantees = guaranteesData.map((g) => ({
-      id: g.id,
-      type: g.type,
-      clientId: g.clientId,
-      propertyId: g.propertyId,
-      externalAddress: g.externalAddress,
-      externalCadastralRef: g.externalCadastralRef,
-      externalOwnerName: g.externalOwnerName,
-      externalOwnerDni: g.externalOwnerDni,
-      createdAt: g.createdAt,
-      guarantor: g.clientId
-        ? {
-            firstName: g.guarantorFirstName,
-            lastName: g.guarantorLastName,
-            dni: g.guarantorDni,
-            cuit: g.guarantorCuit,
-            address: g.guarantorAddress,
-            phone: g.guarantorPhone,
-            email: g.guarantorEmail,
-          }
-        : null,
-    }));
+    type GuarantorInfo = {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      dni: string | null;
+      cuit: string | null;
+      address: string | null;
+      phone: string | null;
+      email: string | null;
+    };
+
+    // For propertyOwner guarantees: resolve the legal owner of the guarantee property
+    const propertyGuaranteeIds = guaranteesData
+      .filter((g) => g.kind === "propertyOwner" && g.propertyId)
+      .map((g) => g.propertyId!);
+
+    const legalOwnerByPropertyId = new Map<string, GuarantorInfo>();
+
+    if (propertyGuaranteeIds.length > 0) {
+      const coOwnerRows = await db
+        .select({
+          propertyId: propertyCoOwner.propertyId,
+          id: client.id,
+          firstName: client.firstName,
+          lastName: client.lastName,
+          dni: client.dni,
+          cuit: client.cuit,
+          address: client.address,
+          phone: client.phone,
+          email: client.email,
+        })
+        .from(propertyCoOwner)
+        .innerJoin(client, eq(client.id, propertyCoOwner.clientId))
+        .where(
+          and(
+            inArray(propertyCoOwner.propertyId, propertyGuaranteeIds),
+            or(eq(propertyCoOwner.role, "legal"), eq(propertyCoOwner.role, "ambos"))
+          )
+        );
+
+      for (const row of coOwnerRows) {
+        if (!legalOwnerByPropertyId.has(row.propertyId)) {
+          legalOwnerByPropertyId.set(row.propertyId, row);
+        }
+      }
+
+      const missingPropertyIds = propertyGuaranteeIds.filter(
+        (pid) => !legalOwnerByPropertyId.has(pid)
+      );
+
+      if (missingPropertyIds.length > 0) {
+        const fallbackRows = await db
+          .select({
+            propertyId: property.id,
+            id: client.id,
+            firstName: client.firstName,
+            lastName: client.lastName,
+            dni: client.dni,
+            cuit: client.cuit,
+            address: client.address,
+            phone: client.phone,
+            email: client.email,
+          })
+          .from(property)
+          .innerJoin(client, eq(client.id, property.ownerId))
+          .where(inArray(property.id, missingPropertyIds));
+
+        for (const row of fallbackRows) {
+          legalOwnerByPropertyId.set(row.propertyId, row);
+        }
+      }
+    }
+
+    const guarantees = guaranteesData.map((g) => {
+      let guarantorInfo: GuarantorInfo | null = null;
+      if (g.kind === "salaryReceipt" && g.personClientId) {
+        guarantorInfo = {
+          id: g.personClientId,
+          firstName: g.guarantorFirstName,
+          lastName: g.guarantorLastName,
+          dni: g.guarantorDni,
+          cuit: g.guarantorCuit,
+          address: g.guarantorAddress,
+          phone: g.guarantorPhone,
+          email: g.guarantorEmail,
+        };
+      } else if (g.kind === "propertyOwner" && g.propertyId) {
+        guarantorInfo = legalOwnerByPropertyId.get(g.propertyId) ?? null;
+      }
+
+      return {
+        id: g.id,
+        type: g.kind === "salaryReceipt" ? "personal" : "real",
+        clientId: guarantorInfo?.id ?? null,
+        propertyId: g.propertyId ?? null,
+        externalAddress: null,
+        externalCadastralRef: null,
+        externalOwnerName: null,
+        externalOwnerDni: null,
+        createdAt: g.createdAt,
+        guarantor: guarantorInfo
+          ? {
+              firstName: guarantorInfo.firstName,
+              lastName: guarantorInfo.lastName,
+              dni: guarantorInfo.dni,
+              cuit: guarantorInfo.cuit,
+              address: guarantorInfo.address,
+              phone: guarantorInfo.phone,
+              email: guarantorInfo.email,
+            }
+          : null,
+      };
+    });
 
     const documents = documentsData.map((d) => ({
       id: d.id,

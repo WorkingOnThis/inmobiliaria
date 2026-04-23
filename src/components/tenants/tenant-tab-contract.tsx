@@ -1,165 +1,296 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { FileText, Home, User, Plus, ChevronRight, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { GuaranteeCard } from "@/components/guarantees/guarantee-card";
+import { AddGuaranteeModal } from "@/components/guarantees/add-guarantee-modal";
+import type { GuaranteeKind } from "@/lib/guarantees/constants";
 
-interface ContratoData {
+interface Contrato {
   id: string;
   contractNumber: string;
+  propertyId: string;
+  ownerId: string;
   status: string;
   contractType: string;
   startDate: string;
   endDate: string;
   monthlyAmount: string;
+  depositAmount: string | null;
+  agencyCommission: string | null;
   paymentDay: number;
   paymentModality: string;
   adjustmentIndex: string;
   adjustmentFrequency: number;
-  agencyCommission: string | null;
-  depositAmount: string | null;
+}
+
+interface PropiedadData {
+  id: string;
+  address: string;
+  type: string;
+  rentalStatus: string;
+  saleStatus: string | null;
+  floorUnit: string | null;
+  zone: string | null;
+}
+
+interface OwnerData {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+}
+
+interface GuaranteeRow {
+  guarantee: {
+    id: string;
+    kind: GuaranteeKind;
+    status: string;
+    contractId: string;
+    tenantClientId: string;
+    propertyId: string | null;
+    personClientId: string | null;
+    depositAmount: string | null;
+    depositCurrency: string | null;
+    depositHeldBy: string | null;
+    depositNotes: string | null;
+  };
+  property: { id: string; address: string; type: string } | null;
+  personClient: { id: string; firstName: string; lastName: string | null; dni: string | null; phone: string | null; email: string | null } | null;
+  salaryInfo: { employerName: string | null; jobTitle: string | null } | null;
 }
 
 interface Props {
-  contrato: ContratoData | null;
+  contrato: Contrato | null;
+  contratos: Contrato[];
+  property: PropiedadData | null;
+  owner: OwnerData | null;
+  tenantId: string;
+  guarantees: GuaranteeRow[];
 }
 
-function formatFecha(iso: string) {
-  if (!iso) return "—";
-  const [year, month, day] = iso.split("-");
-  return `${day}/${month}/${year}`;
-}
-
-function formatMonto(val: string | number | null) {
-  if (val === null || val === undefined) return "—";
-  return "$" + Number(val).toLocaleString("es-AR", { minimumFractionDigits: 0 });
-}
-
-function calcularDuracionMeses(start: string, end: string) {
-  const s = new Date(start);
-  const e = new Date(end);
-  return (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
-}
-
-const modalidadLabel: Record<string, string> = {
-  A: "Modalidad A — CBU Inmobiliaria",
-  B: "Modalidad B — Pago directo al owner",
+const contractStatusMap: Record<string, { label: string; variant: "active" | "expiring" | "baja" | "draft" | "reserved" }> = {
+  active:            { label: "Vigente",          variant: "active" },
+  expiring_soon:     { label: "Por vencer",       variant: "expiring" },
+  expired:           { label: "Vencido",          variant: "baja" },
+  terminated:        { label: "Rescindido",       variant: "baja" },
+  draft:             { label: "Borrador",         variant: "draft" },
+  pending_signature: { label: "Pendiente firma",  variant: "reserved" },
 };
 
 const tipoLabel: Record<string, string> = {
-  residential: "Vivienda",
-  office: "Oficina",
-  commercial: "Local comercial",
-  other: "Otro",
+  departamento: "Departamento", casa: "Casa", local: "Local comercial",
+  oficina: "Oficina", terreno: "Terreno", otro: "Otro",
 };
 
-const statusLabel: Record<string, { label: string; variant: StatusBadgeVariant }> = {
-  active:            { label: "Vigente",         variant: "active" },
-  expiring_soon:     { label: "Por vencer",      variant: "expiring" },
-  expired:           { label: "Vencido",         variant: "baja" },
-  terminated:        { label: "Rescindido",      variant: "draft" },
-  draft:             { label: "Borrador",        variant: "draft" },
-  pending_signature: { label: "Pendiente firma", variant: "reserved" },
-};
+function formatFecha(iso: string) {
+  if (!iso) return "—";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
 
-export function TenantTabContract({ contrato }: Props) {
-  const router = useRouter();
+function SectionHeader({ icon, title, children }: { icon: React.ReactNode; title: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <div className="size-6 rounded-[6px] bg-surface-mid flex items-center justify-center text-muted-foreground flex-shrink-0">
+          {icon}
+        </div>
+        <span className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+          {title}
+        </span>
+      </div>
+      {children}
+    </div>
+  );
+}
 
-  if (!contrato) {
+export function TenantTabContract({ contrato, contratos, property, owner, tenantId, guarantees }: Props) {
+  const queryClient = useQueryClient();
+  const [addGuaranteeOpen, setAddGuaranteeOpen] = useState(false);
+
+  // If multiple contracts exist, allow switching which one is displayed
+  const [selectedContractId, setSelectedContractId] = useState<string | null>(
+    contrato?.id ?? null
+  );
+
+  const activeContrato = contratos.find((c) => c.id === selectedContractId) ?? contrato;
+
+  // Guarantees for the currently displayed contract
+  const contractGuarantees = activeContrato
+    ? guarantees.filter((g) => g.guarantee.contractId === activeContrato.id && g.guarantee.status === "active")
+    : [];
+
+  const handleDeleteGuarantee = async (guaranteeId: string) => {
+    try {
+      const res = await fetch(`/api/guarantees/${guaranteeId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Error al eliminar");
+      await queryClient.invalidateQueries({ queryKey: ["tenant", tenantId] });
+      toast.success("Garantía eliminada");
+    } catch {
+      toast.error("No se pudo eliminar la garantía");
+    }
+  };
+
+  if (!activeContrato) {
     return (
-      <div className="p-7 flex flex-col items-center justify-center min-h-[200px] text-center gap-2">
-        <div className="text-2xl opacity-40">📄</div>
-        <div className="text-[0.85rem] text-muted-foreground">Este tenant no tiene contrato activo</div>
+      <div className="p-7 flex flex-col items-center justify-center min-h-[300px] text-center gap-3">
+        <div className="size-12 rounded-full bg-surface-mid flex items-center justify-center">
+          <FileText size={22} className="text-muted-foreground" />
+        </div>
+        <div className="text-[0.85rem] text-muted-foreground">Sin contrato activo</div>
+        <div className="text-[0.75rem] text-muted-foreground/60">
+          Creá un contrato para ver las partes y las garantías
+        </div>
       </div>
     );
   }
 
-  const status = statusLabel[contrato.status] ?? { label: contrato.status, variant: "draft" as StatusBadgeVariant };
-  const duracion = calcularDuracionMeses(contrato.startDate, contrato.endDate);
+  const statusInfo = contractStatusMap[activeContrato.status] ?? { label: activeContrato.status, variant: "draft" as const };
 
   return (
-    <div className="p-7 flex flex-col gap-5">
-      {/* Mini card de contrato — clickeable para navegar */}
-      <Card
-        className={cn("rounded-[8px] border-blue/20 bg-surface-mid cursor-pointer hover:border-blue/40 hover:bg-blue/5 transition-all py-0 gap-0")}
-        onClick={() => router.push(`/contratos/${contrato.id}`)}
-      >
-        <CardContent className="px-4 py-3.5 flex items-center gap-4">
-          <div className="size-9 bg-blue/10 rounded-[8px] flex items-center justify-center text-base flex-shrink-0">
-            📄
-          </div>
-          <div className="flex-1">
-            <div className="text-[0.8rem] font-semibold text-blue">{contrato.contractNumber}</div>
-            <div className="text-[0.75rem] text-muted-foreground mt-0.5">
-              Vigente desde {formatFecha(contrato.startDate)} · Vence {formatFecha(contrato.endDate)}
-            </div>
-          </div>
-          <StatusBadge variant={status.variant}>
-            {status.label}
-          </StatusBadge>
-          <span className="text-muted-foreground text-lg ml-1">›</span>
-        </CardContent>
-      </Card>
+    <div className="p-7 flex flex-col gap-6">
+      {/* Selector de contrato si hay más de uno */}
+      {contratos.length > 1 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[11px] text-muted-foreground uppercase tracking-[0.06em] font-semibold">Contrato:</span>
+          {contratos.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedContractId(c.id)}
+              className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium border transition-all ${
+                c.id === selectedContractId
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-border text-muted-foreground hover:border-primary/40"
+              }`}
+            >
+              {c.contractNumber}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Resumen del contrato */}
-      <Card className="rounded-[10px] border py-0 gap-0 overflow-hidden">
-        <CardHeader className="px-5 py-3.5 border-b border-border gap-0">
-          <CardTitle className="text-[0.82rem] font-semibold">Resumen del contrato</CardTitle>
-        </CardHeader>
-        <CardContent className="p-5 grid grid-cols-2 gap-x-8 gap-y-4">
-          <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Tipo de contrato</div>
-            <div className="text-[0.85rem] font-medium text-on-bg">{tipoLabel[contrato.contractType] ?? contrato.contractType}</div>
+      {/* Mini-card del contrato */}
+      <Link
+        href={`/contratos/${activeContrato.id}`}
+        className="flex items-center gap-3 bg-surface border border-border rounded-[10px] px-4 py-3.5 hover:border-primary/40 transition-colors group"
+      >
+        <div className="size-9 rounded-[8px] bg-surface-mid flex items-center justify-center flex-shrink-0">
+          <FileText size={17} className="text-muted-foreground" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13.5px] font-semibold text-on-surface">
+            {activeContrato.contractNumber}
           </div>
-          <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Duración</div>
-            <div className="text-[0.85rem] font-medium text-on-bg">{duracion} meses</div>
+          <div className="text-[11.5px] text-muted-foreground mt-0.5">
+            {formatFecha(activeContrato.startDate)} — {formatFecha(activeContrato.endDate)}
           </div>
-          <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Inicio</div>
-            <div className="text-[0.85rem] font-medium text-on-bg">{formatFecha(contrato.startDate)}</div>
-          </div>
-          <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Fin</div>
-            <div className="text-[0.85rem] font-medium text-on-bg">{formatFecha(contrato.endDate)}</div>
-          </div>
-          <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Alquiler vigente</div>
-            <div className="text-[0.85rem] font-medium text-on-bg">{formatMonto(contrato.monthlyAmount)}</div>
-          </div>
-          <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Día de pago</div>
-            <div className="text-[0.85rem] font-medium text-on-bg">Día {contrato.paymentDay} de cada mes</div>
-          </div>
-          <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Índice de actualización</div>
-            <div className="text-[0.85rem] font-medium text-on-bg">
-              {contrato.adjustmentIndex === "none"
-                ? "Sin ajuste"
-                : `${contrato.adjustmentIndex} (cada ${contrato.adjustmentFrequency} meses)`}
+        </div>
+        <Badge
+          variant={statusInfo.variant}
+          className="normal-case font-medium text-[0.72rem] tracking-normal"
+        >
+          {statusInfo.label}
+        </Badge>
+        <ChevronRight size={14} className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+      </Link>
+
+      {/* Parte locadora */}
+      {owner && (
+        <div>
+          <SectionHeader icon={<User size={13} />} title="Parte locadora" />
+          <Link
+            href={`/propietarios/${owner.id}`}
+            className="flex items-center gap-3 bg-surface border border-border rounded-[10px] px-4 py-3.5 hover:border-primary/40 transition-colors group"
+          >
+            <div className="size-8 rounded-full bg-surface-mid flex items-center justify-center flex-shrink-0 text-[13px] font-bold text-muted-foreground">
+              {[owner.firstName, owner.lastName].filter(Boolean).map((s) => s![0]).join("").toUpperCase().slice(0, 2)}
             </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13.5px] font-medium text-on-surface">
+                {owner.lastName ? `${owner.firstName} ${owner.lastName}` : owner.firstName}
+              </div>
+            </div>
+            <Badge className="text-[10px] px-[7px] py-[2px] h-auto rounded-[4px] bg-surface-mid border-border normal-case tracking-normal font-normal leading-none">
+              Parte Locadora
+            </Badge>
+            <ChevronRight size={14} className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+          </Link>
+        </div>
+      )}
+
+      {/* Propiedad */}
+      {property && (
+        <div>
+          <SectionHeader icon={<Home size={13} />} title="Propiedad" />
+          <Link
+            href={`/propiedades/${property.id}`}
+            className="flex items-center gap-3 bg-surface border border-border rounded-[10px] px-4 py-3.5 hover:border-primary/40 transition-colors group"
+          >
+            <div className="size-8 rounded-[8px] bg-surface-mid flex items-center justify-center flex-shrink-0">
+              <Home size={14} className="text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13.5px] font-medium text-on-surface truncate">
+                {property.floorUnit ? `${property.address}, ${property.floorUnit}` : property.address}
+              </div>
+              <div className="text-[11.5px] text-muted-foreground mt-0.5">
+                {tipoLabel[property.type] ?? property.type}
+                {property.zone ? ` · ${property.zone}` : ""}
+              </div>
+            </div>
+            <ChevronRight size={14} className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+          </Link>
+        </div>
+      )}
+
+      {/* Garantías del contrato */}
+      <div>
+        <SectionHeader icon={<Shield size={13} />} title={`Garantías${contractGuarantees.length > 0 ? ` (${contractGuarantees.length})` : ""}`}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-[12px] h-7"
+            onClick={() => setAddGuaranteeOpen(true)}
+          >
+            <Plus size={12} /> Agregar garantía
+          </Button>
+        </SectionHeader>
+
+        {contractGuarantees.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-2 bg-surface border border-dashed border-border rounded-[10px]">
+            <Shield size={20} className="text-muted-foreground/40" />
+            <div className="text-[12.5px] text-muted-foreground">Sin garantías registradas para este contrato</div>
           </div>
-          <div>
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Modalidad de pago</div>
-            <div className="text-[0.85rem] font-medium text-on-bg">
-              {modalidadLabel[contrato.paymentModality] ?? contrato.paymentModality}
-            </div>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {contractGuarantees.map((row) => (
+              <GuaranteeCard
+                key={row.guarantee.id}
+                guarantee={row.guarantee}
+                property={row.property}
+                personClient={row.personClient}
+                salaryInfo={row.salaryInfo}
+                onDelete={handleDeleteGuarantee}
+              />
+            ))}
           </div>
-          {contrato.depositAmount && (
-            <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Depósito</div>
-              <div className="text-[0.85rem] font-medium text-on-bg">{formatMonto(contrato.depositAmount)}</div>
-            </div>
-          )}
-          {contrato.agencyCommission && (
-            <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Honorarios inmobiliaria</div>
-              <div className="text-[0.85rem] font-medium text-on-bg">{contrato.agencyCommission}%</div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </div>
+
+      {activeContrato && (
+        <AddGuaranteeModal
+          open={addGuaranteeOpen}
+          onOpenChange={setAddGuaranteeOpen}
+          contractId={activeContrato.id}
+          tenantClientId={tenantId}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["tenant", tenantId] })}
+        />
+      )}
     </div>
   );
 }

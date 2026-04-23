@@ -133,7 +133,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false, default
           zone: zone || null,
           floorUnit: floorUnit || null,
           ownerId,
-          status: "available",
+          rentalStatus: "available",
         }),
       });
 

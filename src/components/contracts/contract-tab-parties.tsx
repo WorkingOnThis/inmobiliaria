@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { UserPlus, X, Search, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { CreateOwnerPopup } from "@/components/properties/create-owner-popup";
+import { AddGuaranteeModal } from "@/components/guarantees/add-guarantee-modal";
 import type { ContractParticipant, ContractGuarantee } from "./contract-detail";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -67,11 +68,10 @@ function PersonCard({
   const fullName = `${firstName} ${lastName || ""}`.trim();
   const initials = getInitials(firstName, lastName);
   const profileLink =
-    role === "owner"
-      ? `/propietarios/${clientId}`
-      : role === "tenant"
-      ? `/inquilinos/${clientId}`
-      : null;
+    role === "owner"    ? `/propietarios/${clientId}`
+    : role === "tenant" ? `/inquilinos/${clientId}`
+    : role === "guarantor" ? `/garantes/${clientId}`
+    : null;
 
   return (
     <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
@@ -150,8 +150,9 @@ export function ContractTabParties({ contractId, owner, participants, guarantees
   const queryClient = useQueryClient();
   const [clientSearch, setClientSearch] = useState("");
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
-  const [addingRole, setAddingRole] = useState<"owner" | "tenant" | "guarantor" | null>(null);
+  const [addingRole, setAddingRole] = useState<"owner" | "tenant" | null>(null);
   const [showCreatePopup, setShowCreatePopup] = useState(false);
+  const [addGuaranteeOpen, setAddGuaranteeOpen] = useState(false);
 
   const tenantParticipant = participants.find((p) => p.role === "tenant");
 
@@ -231,7 +232,7 @@ export function ContractTabParties({ contractId, owner, participants, guarantees
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const openSearch = (role: "owner" | "tenant" | "guarantor") => {
+  const openSearch = (role: "owner" | "tenant") => {
     setAddingRole(role);
     setClientSearch("");
     setClientSearchOpen(true);
@@ -248,7 +249,7 @@ export function ContractTabParties({ contractId, owner, participants, guarantees
         <CreateOwnerPopup
           isOpen={showCreatePopup}
           onClose={() => setShowCreatePopup(false)}
-          defaultType={addingRole === "owner" ? "owner" : addingRole === "tenant" ? "tenant" : "guarantor"}
+          defaultType={addingRole === "owner" ? "owner" : "tenant"}
           onCreated={(created) => {
             if (!addingRole) return;
             addParticipantMutation.mutate({
@@ -350,11 +351,17 @@ export function ContractTabParties({ contractId, owner, participants, guarantees
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openSearch("guarantor")}
+              onClick={() => {
+                if (!tenantParticipant) {
+                  toast.error("Asigná un inquilino primero para agregar garantías");
+                  return;
+                }
+                setAddGuaranteeOpen(true);
+              }}
               className="flex items-center gap-1.5 h-7 text-[0.72rem]"
             >
               <UserPlus className="h-3 w-3" />
-              + Agregar garante
+              + Agregar garantía
             </Button>
           </div>
 
@@ -387,8 +394,18 @@ export function ContractTabParties({ contractId, owner, participants, guarantees
                   <div key={g.id} className="rounded-[18px] border border-border bg-surface overflow-hidden">
                     <div className="flex items-center gap-3 px-[18px] py-4 border-b border-border">
                       <Badge variant="secondary" className="text-[0.65rem] px-2 py-0.5 h-auto rounded-full">
-                        Garantía real externa
+                        Garantía propietaria
                       </Badge>
+                      {g.propertyId && (
+                        <Link
+                          href={`/propiedades/${g.propertyId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[0.72rem] text-primary hover:underline"
+                        >
+                          Ver propiedad <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      )}
                       <button
                         type="button"
                         onClick={() => removeGuaranteeMutation.mutate(g.id)}
@@ -410,6 +427,16 @@ export function ContractTabParties({ contractId, owner, participants, guarantees
           )}
         </section>
 
+        {tenantParticipant && (
+          <AddGuaranteeModal
+            open={addGuaranteeOpen}
+            onOpenChange={setAddGuaranteeOpen}
+            contractId={contractId}
+            tenantClientId={tenantParticipant.client.id}
+            onSuccess={() => queryClient.invalidateQueries({ queryKey: ["contract", contractId] })}
+          />
+        )}
+
         {/* Combobox de búsqueda inline */}
         {clientSearchOpen && (
           <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
@@ -420,7 +447,7 @@ export function ContractTabParties({ contractId, owner, participants, guarantees
                 type="text"
                 value={clientSearch}
                 onChange={(e) => setClientSearch(e.target.value)}
-                placeholder={`Buscar ${addingRole === "owner" ? "propietario" : addingRole === "tenant" ? "inquilino" : "garante"}...`}
+                placeholder={`Buscar ${addingRole === "owner" ? "propietario" : "inquilino"}...`}
                 className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
               />
               <button

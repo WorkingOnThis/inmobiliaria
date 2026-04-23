@@ -1,0 +1,3 @@
+-- Verificación previa al rediseño de garantías — 2026-04-23
+-- contract_guarantee count: 0 (tabla vacía, OK para borrar directamente)
+-- client WHERE type='guarantor': [] (ningún registro, no hay huérfanos)

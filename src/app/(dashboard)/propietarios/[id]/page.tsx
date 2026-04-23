@@ -48,9 +48,13 @@ interface PropertyData {
   id: string;
   title: string | null;
   address: string;
-  price: string | null;
+  rentalPrice: string | null;
+  rentalPriceCurrency: string;
+  salePrice: string | null;
+  salePriceCurrency: string;
   type: string;
-  status: string;
+  rentalStatus: string;
+  saleStatus: string | null;
   zone: string | null;
   floorUnit: string | null;
   rooms: number | null;

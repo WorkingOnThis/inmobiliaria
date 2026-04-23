@@ -96,7 +96,7 @@ export function ContractForm() {
   const { data: propertiesData } = useQuery({
     queryKey: ["properties", "select"],
     queryFn: async () => {
-      const res = await fetch("/api/properties?limit=100");
+      const res = await fetch("/api/properties?limit=100&isManaged=true");
       if (!res.ok) throw new Error("Error cargando propiedades");
       return res.json();
     },

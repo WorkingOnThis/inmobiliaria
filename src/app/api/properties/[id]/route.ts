@@ -3,6 +3,9 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { property } from "@/db/schema/property";
 import { client } from "@/db/schema/client";
+import { guarantee } from "@/db/schema/guarantee";
+import { contract } from "@/db/schema/contract";
+import { contractTenant } from "@/db/schema/contract-tenant";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
 import { eq } from "drizzle-orm";
@@ -12,7 +15,12 @@ const updatePropertySchema = z.object({
   title: z.string().optional().nullable(),
   address: z.string().min(1).optional(),
   type: z.string().optional(),
-  status: z.string().optional(),
+  rentalStatus: z.enum(["available", "rented", "reserved", "maintenance"]).optional(),
+  saleStatus: z.enum(["for_sale", "sold"]).optional().nullable(),
+  rentalPrice: z.coerce.number().optional().nullable(),
+  rentalPriceCurrency: z.enum(["ARS", "USD"]).optional(),
+  salePrice: z.coerce.number().optional().nullable(),
+  salePriceCurrency: z.enum(["ARS", "USD"]).optional(),
   zone: z.string().optional().nullable(),
   floorUnit: z.string().optional().nullable(),
   rooms: z.coerce.number().int().min(0).optional().nullable(),
@@ -25,7 +33,6 @@ const updatePropertySchema = z.object({
   condition: z.enum(["a_reciclar", "a_refaccionar", "bueno", "muy_bueno", "excelente", "a_estrenar"]).optional().nullable(),
   keys: z.enum(["no_se_sabe", "coordinar_dueno", "coordinar_inquilino", "tenemos"]).optional().nullable(),
   ownerRole: z.enum(["ambos", "real", "legal"]).optional(),
-  price: z.coerce.number().optional().nullable(),
   serviceElectricity: z.enum(["inquilino", "propietario", "na"]).optional(),
   serviceGas: z.enum(["inquilino", "propietario", "na"]).optional(),
   serviceWater: z.enum(["inquilino", "propietario", "na"]).optional(),
@@ -51,9 +58,13 @@ export async function GET(
         id: property.id,
         title: property.title,
         address: property.address,
-        price: property.price,
+        rentalPrice: property.rentalPrice,
+        rentalPriceCurrency: property.rentalPriceCurrency,
+        salePrice: property.salePrice,
+        salePriceCurrency: property.salePriceCurrency,
         type: property.type,
-        status: property.status,
+        rentalStatus: property.rentalStatus,
+        saleStatus: property.saleStatus,
         zone: property.zone,
         floorUnit: property.floorUnit,
         rooms: property.rooms,
@@ -66,6 +77,7 @@ export async function GET(
         condition: property.condition,
         keys: property.keys,
         ownerRole: property.ownerRole,
+        isManaged: property.isManaged,
         serviceElectricity: property.serviceElectricity,
         serviceGas: property.serviceGas,
         serviceWater: property.serviceWater,
@@ -92,7 +104,40 @@ export async function GET(
       return NextResponse.json({ error: "Propiedad no encontrada" }, { status: 404 });
     }
 
-    return NextResponse.json({ property: row });
+    // Contracts where this property is used as a guarantee
+    const usedAsGuaranteeRows = await db
+      .select({
+        guaranteeId: guarantee.id,
+        contractId: guarantee.contractId,
+        tenantClientId: guarantee.tenantClientId,
+        contractNumber: contract.contractNumber,
+        tenantFirstName: client.firstName,
+        tenantLastName: client.lastName,
+      })
+      .from(guarantee)
+      .innerJoin(contract, eq(contract.id, guarantee.contractId))
+      .innerJoin(contractTenant, eq(contractTenant.contractId, guarantee.contractId))
+      .innerJoin(client, eq(client.id, contractTenant.clientId))
+      .where(eq(guarantee.propertyId, id));
+
+    // Deduplicate by contractId (multiple tenants per contract)
+    const seenContracts = new Set<string>();
+    const usedAsGuaranteeIn = usedAsGuaranteeRows
+      .filter((r) => {
+        if (seenContracts.has(r.contractId)) return false;
+        seenContracts.add(r.contractId);
+        return true;
+      })
+      .map((r) => ({
+        guaranteeId: r.guaranteeId,
+        contractId: r.contractId,
+        contractNumber: r.contractNumber,
+        tenantName: r.tenantLastName
+          ? `${r.tenantFirstName} ${r.tenantLastName}`
+          : r.tenantFirstName,
+      }));
+
+    return NextResponse.json({ property: row, usedAsGuaranteeIn });
   } catch (error) {
     console.error("Error fetching property:", error);
     return NextResponse.json({ error: "Error al obtener la propiedad" }, { status: 500 });
@@ -121,12 +166,16 @@ export async function PATCH(
     }
 
     const data = result.data;
-    // Build update object with only provided fields
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (data.title !== undefined) updateData.title = data.title;
     if (data.address !== undefined) updateData.address = data.address;
     if (data.type !== undefined) updateData.type = data.type;
-    if (data.status !== undefined) updateData.status = data.status;
+    if (data.rentalStatus !== undefined) updateData.rentalStatus = data.rentalStatus;
+    if (data.saleStatus !== undefined) updateData.saleStatus = data.saleStatus;
+    if (data.rentalPrice !== undefined) updateData.rentalPrice = data.rentalPrice != null ? String(data.rentalPrice) : null;
+    if (data.rentalPriceCurrency !== undefined) updateData.rentalPriceCurrency = data.rentalPriceCurrency;
+    if (data.salePrice !== undefined) updateData.salePrice = data.salePrice != null ? String(data.salePrice) : null;
+    if (data.salePriceCurrency !== undefined) updateData.salePriceCurrency = data.salePriceCurrency;
     if (data.zone !== undefined) updateData.zone = data.zone;
     if (data.floorUnit !== undefined) updateData.floorUnit = data.floorUnit;
     if (data.rooms !== undefined) updateData.rooms = data.rooms;
@@ -139,7 +188,6 @@ export async function PATCH(
     if (data.condition !== undefined) updateData.condition = data.condition;
     if (data.keys !== undefined) updateData.keys = data.keys;
     if (data.ownerRole !== undefined) updateData.ownerRole = data.ownerRole;
-    if (data.price !== undefined) updateData.price = data.price != null ? String(data.price) : null;
     if (data.serviceElectricity !== undefined) updateData.serviceElectricity = data.serviceElectricity;
     if (data.serviceGas !== undefined) updateData.serviceGas = data.serviceGas;
     if (data.serviceWater !== undefined) updateData.serviceWater = data.serviceWater;

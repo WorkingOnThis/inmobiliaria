@@ -48,7 +48,12 @@
       "Bash(git checkout *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(bunx next *)"
+      "Bash(bunx next *)",
+      "Bash(node -e ' *)",
+      "Bash(mkdir -p \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/guarantors/[id]\")",
+      "Bash(mkdir -p \"F:/Documentos/Proyectos/inmobiliaria/src/app/\\(dashboard\\)/garantes/[id]\")",
+      "Bash(Select-String -Path \"F:\\\\Documentos\\\\Proyectos\\\\inmobiliaria\\\\src\\\\app\\\\\\(dashboard\\)\\\\propiedades\\\\[id]\\\\page.tsx\" -Pattern \"<button\")",
+      "Bash(Select-Object LineNumber, Line)"
     ]
   }
 }

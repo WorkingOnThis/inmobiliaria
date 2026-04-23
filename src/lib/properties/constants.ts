@@ -25,27 +25,40 @@ export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
 };
 
 /**
- * Property Statuses
+ * Rental Statuses (occupancy)
  */
-export const PROPERTY_STATUSES = [
+export const RENTAL_STATUSES = [
   "available",
   "rented",
-  "sold",
   "reserved",
   "maintenance",
 ] as const;
 
-/**
- * Property Status Labels
- */
-export const PROPERTY_STATUS_LABELS: Record<PropertyStatus, string> = {
+export const RENTAL_STATUS_LABELS: Record<RentalStatus, string> = {
   available: "Disponible",
   rented: "Alquilada",
-  sold: "Vendida",
   reserved: "Reservada",
   maintenance: "En mantenimiento",
 };
 
-export type PropertyType = (typeof PROPERTY_TYPES)[number];
-export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
+/**
+ * Sale Statuses (null = not for sale)
+ */
+export const SALE_STATUSES = ["for_sale", "sold"] as const;
 
+export const SALE_STATUS_LABELS: Record<SaleStatus, string> = {
+  for_sale: "En venta",
+  sold: "Vendida",
+};
+
+export const PRICE_CURRENCIES = ["ARS", "USD"] as const;
+
+export type PropertyType = (typeof PROPERTY_TYPES)[number];
+export type RentalStatus = (typeof RENTAL_STATUSES)[number];
+export type SaleStatus = (typeof SALE_STATUSES)[number];
+export type PriceCurrency = (typeof PRICE_CURRENCIES)[number];
+
+// Legacy alias kept for any callers not yet migrated
+export const PROPERTY_STATUSES = RENTAL_STATUSES;
+export type PropertyStatus = RentalStatus;
+export const PROPERTY_STATUS_LABELS = RENTAL_STATUS_LABELS;

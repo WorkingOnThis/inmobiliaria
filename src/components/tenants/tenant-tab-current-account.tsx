@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Plus, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import {
   Table,
@@ -17,6 +18,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -30,6 +32,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
+
+const inputCls =
+  "w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[0.82rem] px-3 py-2 outline-none focus:border-primary transition-all placeholder:text-muted-foreground";
+const labelCls =
+  "text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-0.5 block";
 
 interface Movimiento {
   id: string;
@@ -270,7 +277,7 @@ export function TenantTabCurrentAccount({
       {contrato && contrato.adjustmentIndex !== "none" && (
         <div className="bg-surface border border-blue/20 border-l-[3px] border-l-blue rounded-[10px] px-5 py-4">
           <div className="text-[0.82rem] font-semibold text-blue flex items-center gap-2 mb-3">
-            📈 Actualización por índice
+            Actualización por índice
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -292,8 +299,8 @@ export function TenantTabCurrentAccount({
       {/* Historial */}
       <Card className="rounded-[10px] border py-0 gap-0 overflow-hidden">
         <CardHeader className="px-5 py-3.5 border-b border-border gap-0 flex flex-row items-center justify-between">
-          <CardTitle className="text-[0.82rem] font-semibold flex items-center gap-2">
-            📅 Historial de movimientos
+          <CardTitle className="text-[0.82rem] font-semibold">
+            Historial de movimientos
           </CardTitle>
           <CardAction className="flex items-center gap-2">
             <Select value={filtro} onValueChange={(v) => setFiltro(v as FiltroEstado)}>
@@ -388,80 +395,86 @@ export function TenantTabCurrentAccount({
 
       {/* Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[520px]">
           <DialogHeader>
             <DialogTitle>Registrar movimiento</DialogTitle>
+            <DialogDescription>Ingreso o egreso manual en la cuenta del inquilino</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
-            <div className="grid grid-cols-2 gap-2">
-              {(["income", "expense"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => handleTipoChange(t)}
-                  className={cn(
-                    "py-2.5 rounded-[8px] text-[0.8rem] font-semibold border transition-all",
-                    tipo === t
-                      ? t === "income"
-                        ? "bg-success/10 border-success text-success"
-                        : "bg-error/10 border-error text-error"
-                      : "bg-surface border-border text-muted-foreground hover:border-text-muted"
-                  )}
-                >
-                  {t === "income" ? "💰 Ingreso" : "💸 Egreso"}
-                </button>
-              ))}
+            {/* Segmented tipo */}
+            <div>
+              <label className={labelCls}>Tipo</label>
+              <div className="flex w-full rounded-[7px] p-[2px] border border-border" style={{ background: "var(--surface-mid)" }}>
+                {(["income", "expense"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => handleTipoChange(t)}
+                    className={cn(
+                      "flex-1 py-2 text-[0.75rem] font-semibold rounded-[5px] transition-all border",
+                      tipo === t
+                        ? "bg-primary-dim border-primary text-on-surface"
+                        : "border-transparent text-text-secondary hover:text-on-surface"
+                    )}
+                  >
+                    {t === "income" ? "↑ Ingreso" : "↓ Egreso"}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div>
-              <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                Categoría
-              </label>
-              <Select value={categoria} onValueChange={handleCategoriaChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {categoriasActuales.map((c) => (
-                    <SelectItem key={c} value={c} className="capitalize">
-                      {c.charAt(0).toUpperCase() + c.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Fecha <span className="text-error">*</span></label>
+                <input
+                  type="date"
+                  value={fecha}
+                  onChange={(e) => setFecha(e.target.value)}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Categoría</label>
+                <Select value={categoria} onValueChange={handleCategoriaChange}>
+                  <SelectTrigger className="w-full h-auto py-2 text-[0.82rem]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoriasActuales.map((c) => (
+                      <SelectItem key={c} value={c} className="capitalize">
+                        {c.charAt(0).toUpperCase() + c.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {tipo === "income" && categoria === "alquiler" && (
               <div>
-                <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                  Período
-                </label>
+                <label className={labelCls}>Período</label>
                 <input
                   type="month"
                   value={periodo}
                   onChange={(e) => setPeriodo(e.target.value)}
-                  className="w-full border border-border rounded-[8px] px-3 py-2 text-[0.82rem] text-on-bg bg-surface outline-none focus:border-primary"
+                  className={inputCls}
                 />
               </div>
             )}
 
             <div>
-              <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                Descripción
-              </label>
+              <label className={labelCls}>Concepto <span className="text-error">*</span></label>
               <input
                 type="text"
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-[0.82rem] text-on-bg bg-surface outline-none focus:border-primary"
-                placeholder="Descripción del movimiento"
+                className={inputCls}
+                placeholder="Ej: Cobro de alquiler"
               />
             </div>
 
             <div>
-              <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                Monto
-              </label>
+              <label className={labelCls}>Monto <span className="text-error">*</span></label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[0.82rem] text-muted-foreground">$</span>
                 <input
@@ -470,34 +483,20 @@ export function TenantTabCurrentAccount({
                   onChange={(e) => setMonto(e.target.value)}
                   min="0"
                   step="0.01"
-                  className="w-full border border-border rounded-[8px] pl-7 pr-3 py-2 text-[0.82rem] text-on-bg bg-surface outline-none focus:border-primary"
+                  className={cn(inputCls, "pl-7")}
                   placeholder="0"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                Fecha
-              </label>
+              <label className={labelCls}>Nota interna (opcional)</label>
               <input
-                type="date"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-[0.82rem] text-on-bg bg-surface outline-none focus:border-primary"
-              />
-            </div>
-
-            <div>
-              <label className="text-[0.72rem] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                Nota interna (opcional)
-              </label>
-              <textarea
+                type="text"
                 value={nota}
                 onChange={(e) => setNota(e.target.value)}
-                rows={2}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-[0.82rem] text-on-bg bg-surface outline-none focus:border-primary resize-none"
-                placeholder="Ej: pagó con cheque, acuerda el día 5..."
+                className={inputCls}
+                placeholder="Solo visible para el staff"
               />
             </div>
 
@@ -515,19 +514,12 @@ export function TenantTabCurrentAccount({
           </div>
 
           <DialogFooter>
-            <button
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 text-[0.8rem] text-text-secondary hover:text-on-bg border border-border rounded-[8px] transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setModalOpen(false)} disabled={guardando}>
               Cancelar
-            </button>
-            <button
-              onClick={handleGuardar}
-              disabled={guardando}
-              className="px-4 py-2 text-[0.8rem] font-semibold bg-primary text-white rounded-[8px] hover:bg-primary/90 transition-colors disabled:opacity-60"
-            >
-              {guardando ? "Guardando..." : "Guardar"}
-            </button>
+            </Button>
+            <Button size="sm" onClick={handleGuardar} disabled={guardando} className="bg-primary text-primary-foreground hover:opacity-90">
+              {guardando ? "Guardando..." : "Guardar movimiento"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

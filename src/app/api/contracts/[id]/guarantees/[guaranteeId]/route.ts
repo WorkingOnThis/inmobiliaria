@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
-import { contractGuarantee } from "@/db/schema/contract-guarantee";
+import { guarantee } from "@/db/schema/guarantee";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
 import { eq, and } from "drizzle-orm";
@@ -22,12 +22,12 @@ export async function DELETE(
     const { id, guaranteeId } = await params;
 
     const [existing] = await db
-      .select({ id: contractGuarantee.id })
-      .from(contractGuarantee)
+      .select({ id: guarantee.id })
+      .from(guarantee)
       .where(
         and(
-          eq(contractGuarantee.id, guaranteeId),
-          eq(contractGuarantee.contractId, id)
+          eq(guarantee.id, guaranteeId),
+          eq(guarantee.contractId, id)
         )
       )
       .limit(1);
@@ -37,8 +37,8 @@ export async function DELETE(
     }
 
     await db
-      .delete(contractGuarantee)
-      .where(eq(contractGuarantee.id, guaranteeId));
+      .delete(guarantee)
+      .where(eq(guarantee.id, guaranteeId));
 
     return NextResponse.json({ message: "Garantía eliminada" });
   } catch (error) {

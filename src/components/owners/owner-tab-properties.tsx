@@ -10,9 +10,13 @@ interface PropertyData {
   id: string;
   title: string | null;
   address: string;
-  price: string | null;
+  rentalPrice: string | null;
+  rentalPriceCurrency: string;
+  salePrice: string | null;
+  salePriceCurrency: string;
   type: string;
-  status: string;
+  rentalStatus: string;
+  saleStatus: string | null;
   zone: string | null;
   floorUnit: string | null;
   rooms: number | null;
@@ -153,7 +157,7 @@ export function OwnerTabProperties({
       {/* Grid: xl:3 md:2 sm:1 */}
       {propiedades.length > 0 && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[14px]">
         {propiedades.map((prop) => {
-          const { cls: statusCls, label: statusLabel } = getStatusPill(prop.status);
+          const { cls: statusCls, label: statusLabel } = getStatusPill(prop.rentalStatus);
           const contratos = contratosActivos.filter((c) => c.propertyId === prop.id);
           const contrato = contratos[0] ?? null;
 

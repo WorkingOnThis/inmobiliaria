@@ -201,6 +201,7 @@
   --primary-subtle: rgba(107, 23, 2, 0.04);
   --gradient-property: linear-gradient(135deg, #1a2a1a, #2a4a2a);
   --gradient-owner: linear-gradient(145deg, oklch(0.56 0.14 30), oklch(0.42 0.12 25));
+  --gradient-tenant: linear-gradient(145deg, oklch(0.45 0.16 265), oklch(0.35 0.14 260));
   --inset-highlight: rgba(255, 255, 255, 0.08);
   /* --- Tokens Arce: origen de movimiento --- */
   --origin-auto: oklch(0.48 0.09 210);
@@ -312,6 +313,7 @@
   --primary-subtle: rgba(255, 180, 162, 0.05);
   --gradient-property: linear-gradient(135deg, #1a2a1a, #2a4a2a);
   --gradient-owner: linear-gradient(145deg, oklch(0.56 0.14 30), oklch(0.42 0.12 25));
+  --gradient-tenant: linear-gradient(145deg, oklch(0.45 0.16 265), oklch(0.35 0.14 260));
   --inset-highlight: rgba(255, 255, 255, 0.08);
   /* --- Tokens Arce: origen de movimiento --- */
   --origin-auto: oklch(0.75 0.1 210);

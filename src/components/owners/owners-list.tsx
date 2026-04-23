@@ -41,14 +41,15 @@ function getInitials(firstName: string, lastName: string | null) {
 }
 
 function ownerStatusVariant(status: string): StatusBadgeVariant {
-  if (status === "active") return "active";
-  if (status === "suspended") return "suspended";
+  if (status === "active"    || status === "activo")     return "active";
+  if (status === "suspended" || status === "suspendido") return "suspended";
   return "baja";
 }
 
 function ownerStatusLabel(status: string): string {
-  if (status === "active") return "Activo";
-  if (status === "suspended") return "Suspendido";
+  if (status === "active"    || status === "activo")     return "Activo";
+  if (status === "suspended" || status === "suspendido") return "Suspendido";
+  if (status === "inactive"  || status === "inactivo")   return "Inactivo";
   return "Baja";
 }
 

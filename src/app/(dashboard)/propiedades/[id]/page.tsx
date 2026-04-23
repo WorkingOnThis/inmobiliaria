@@ -9,6 +9,7 @@ import { es } from "date-fns/locale";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ServiceTabProperty } from "@/components/services/service-tab-property";
+import { SectionLabel } from "@/components/ui/section-label";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -92,9 +93,13 @@ interface PropertyDetail {
   id: string;
   title: string | null;
   address: string;
-  price: string | null;
+  rentalPrice: string | null;
+  rentalPriceCurrency: string;
+  salePrice: string | null;
+  salePriceCurrency: string;
   type: string;
-  status: string;
+  rentalStatus: string;
+  saleStatus: string | null;
   zone: string | null;
   floorUnit: string | null;
   rooms: number | null;
@@ -149,12 +154,16 @@ const TYPE_LABEL: Record<string, string> = {
   otro: "Otro",
 };
 
-const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; dot: string }> = {
+const RENTAL_STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; dot: string }> = {
   available:    { label: "Disponible",        bg: "var(--status-available-dim)",   color: "var(--status-available)",   dot: "var(--status-available)" },
   rented:       { label: "Alquilada",         bg: "var(--status-rented-dim)",      color: "var(--status-rented)",      dot: "var(--status-rented)" },
   maintenance:  { label: "En mantenimiento",  bg: "var(--status-maintenance-dim)", color: "var(--status-maintenance)", dot: "var(--status-maintenance)" },
   reserved:     { label: "Reservada",         bg: "var(--status-reserved-dim)",    color: "var(--status-reserved)",    dot: "var(--status-reserved)" },
-  sold:         { label: "Vendida",           bg: "var(--destructive-dim)",        color: "var(--destructive)",        dot: "var(--destructive)" },
+};
+
+const SALE_STATUS_LABEL: Record<string, string> = {
+  for_sale: "En venta",
+  sold:     "Vendida",
 };
 
 const SERVICIO_LABEL: Record<string, string> = {
@@ -210,12 +219,16 @@ function buildSubtitle(prop: PropertyDetail) {
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 
-const STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
+const RENTAL_STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
   available:   "available",
   rented:      "rented",
   maintenance: "maintenance",
   reserved:    "reserved",
-  sold:        "baja",
+};
+
+const SALE_STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
+  for_sale: "reserved",
+  sold:     "baja",
 };
 
 // ── Dato item ─────────────────────────────────────────────────────────────────
@@ -386,9 +399,7 @@ function ContratosTab({ propertyId }: { propertyId: string }) {
   return (
     <div className="px-7 py-6 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-          Historial de contratos
-        </div>
+        <SectionLabel>Historial de contratos</SectionLabel>
         <Button variant="outline" size="sm" asChild>
           <Link href={`/contratos/nuevo?propertyId=${propertyId}`}>
             <PlusCircle size={12} /> Nuevo contrato
@@ -698,16 +709,18 @@ function OwnersSection({
       {!hasCoOwners ? (
         /* ── Simple mode: one section ── */
         <>
-          <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 flex items-center justify-between">
+          <SectionLabel className="mb-3 flex items-center justify-between">
             <span>Propietario</span>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-auto py-0 gap-1 text-primary text-[0.6rem] font-bold uppercase tracking-[0.1em]"
               onClick={() => { resetModal(); setShowAdd(true); }}
-              className="flex items-center gap-1 text-primary hover:opacity-80 transition-opacity"
             >
               <Plus size={11} />
-              <span className="text-[0.6rem] font-bold uppercase tracking-[0.1em]">Agregar co-propietario</span>
-            </button>
-          </div>
+              Agregar co-propietario
+            </Button>
+          </SectionLabel>
           <OwnerCard
             name={mainName}
             initials={mainInitials}
@@ -724,9 +737,9 @@ function OwnersSection({
       ) : (
         /* ── Split mode: real and legal sections ── */
         <>
-          <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+          <SectionLabel className="mb-3">
             Propietario Real
-          </div>
+          </SectionLabel>
           <div className="flex flex-col gap-2 mb-5">
             {!mainInReal && realCoOwners.length === 0 ? (
               <div className="flex items-center justify-center px-4 py-4 rounded-[12px] bg-card border border-dashed border-border">
@@ -753,9 +766,9 @@ function OwnersSection({
             )}
           </div>
 
-          <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+          <SectionLabel className="mb-3">
             Propietario Legal
-          </div>
+          </SectionLabel>
           <div className="flex flex-col gap-2 mb-5">
             {!mainInLegal && legalCoOwners.length === 0 ? (
               <div className="flex items-center justify-center px-4 py-4 rounded-[12px] bg-card border border-dashed border-border">
@@ -783,13 +796,15 @@ function OwnersSection({
             )}
           </div>
 
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto py-0 gap-1 text-primary text-[0.6rem] font-bold uppercase tracking-[0.1em] mb-2"
             onClick={() => { resetModal(); setShowAdd(true); }}
-            className="flex items-center gap-1 text-primary hover:opacity-80 transition-opacity mb-2"
           >
             <Plus size={11} />
-            <span className="text-[0.6rem] font-bold uppercase tracking-[0.1em]">Agregar propietario</span>
-          </button>
+            Agregar propietario
+          </Button>
         </>
       )}
 
@@ -810,9 +825,9 @@ function OwnersSection({
                   <span className="text-[0.82rem] font-semibold">
                     {formatName(selectedClient.lastName, selectedClient.firstName)}
                   </span>
-                  <button onClick={() => setSelectedClient(null)} className="text-muted-foreground hover:text-foreground">
+                  <Button variant="ghost" size="icon" className="size-6" onClick={() => setSelectedClient(null)}>
                     <X size={13} />
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <Command className="border border-border rounded-[8px]">
@@ -950,14 +965,16 @@ function RoomCard({
           placeholder="Ej: Living, Cocina, Dormitorio 1…"
           className="text-[0.82rem] font-semibold flex-1"
         />
-        <button
+        <Button
           type="button"
-          onClick={onDelete}
-          className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          variant="ghost"
+          size="icon"
+          className="size-7 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
           title="Eliminar ambiente"
+          onClick={onDelete}
         >
           <Trash2 size={13} />
-        </button>
+        </Button>
       </div>
       <Textarea
         value={description}
@@ -1008,7 +1025,7 @@ function PropiedadFichaContent() {
     router.replace(`/propiedades/${id}?${p.toString()}`, { scroll: false });
   };
 
-  const { data, isLoading, error } = useQuery<{ property: PropertyDetail }>({
+  const { data, isLoading, error } = useQuery<{ property: PropertyDetail; usedAsGuaranteeIn: { guaranteeId: string; contractId: string; contractNumber: string; tenantName: string }[] }>({
     queryKey: ["property", id],
     queryFn: async () => {
       const res = await fetch(`/api/properties/${id}`);
@@ -1073,7 +1090,12 @@ function PropiedadFichaContent() {
   const [form, setForm] = useState({
     address: "",
     type: "",
-    status: "",
+    rentalStatus: "",
+    saleStatus: "",
+    rentalPrice: "",
+    rentalPriceCurrency: "ARS",
+    salePrice: "",
+    salePriceCurrency: "USD",
     zone: "",
     floorUnit: "",
     rooms: "",
@@ -1092,7 +1114,12 @@ function PropiedadFichaContent() {
     setForm({
       address: prop.address,
       type: prop.type,
-      status: prop.status,
+      rentalStatus: prop.rentalStatus,
+      saleStatus: prop.saleStatus ?? "",
+      rentalPrice: prop.rentalPrice != null ? String(parseFloat(prop.rentalPrice)) : "",
+      rentalPriceCurrency: prop.rentalPriceCurrency ?? "ARS",
+      salePrice: prop.salePrice != null ? String(parseFloat(prop.salePrice)) : "",
+      salePriceCurrency: prop.salePriceCurrency ?? "USD",
       zone: prop.zone ?? "",
       floorUnit: prop.floorUnit ?? "",
       rooms: prop.rooms != null ? String(prop.rooms) : "",
@@ -1124,7 +1151,12 @@ function PropiedadFichaContent() {
         body: JSON.stringify({
           address: form.address || undefined,
           type: form.type || undefined,
-          status: form.status || undefined,
+          rentalStatus: form.rentalStatus || undefined,
+          saleStatus: form.saleStatus || null,
+          rentalPrice: form.rentalPrice ? Number(form.rentalPrice) : null,
+          rentalPriceCurrency: form.rentalPriceCurrency || undefined,
+          salePrice: form.salePrice ? Number(form.salePrice) : null,
+          salePriceCurrency: form.salePriceCurrency || undefined,
           zone: form.zone || null,
           floorUnit: form.floorUnit || null,
           rooms: form.rooms ? Number(form.rooms) : null,
@@ -1321,9 +1353,14 @@ function PropiedadFichaContent() {
               </h1>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[0.75rem] text-muted-foreground">{buildSubtitle(prop)}</span>
-                <StatusBadge variant={STATUS_VARIANT[prop.status] ?? "available"}>
-                  {STATUS_CONFIG[prop.status]?.label ?? prop.status}
+                <StatusBadge variant={RENTAL_STATUS_VARIANT[prop.rentalStatus] ?? "available"}>
+                  {RENTAL_STATUS_CONFIG[prop.rentalStatus]?.label ?? prop.rentalStatus}
                 </StatusBadge>
+                {prop.saleStatus && (
+                  <StatusBadge variant={SALE_STATUS_VARIANT[prop.saleStatus] ?? "reserved"}>
+                    {SALE_STATUS_LABEL[prop.saleStatus] ?? prop.saleStatus}
+                  </StatusBadge>
+                )}
               </div>
             </div>
 
@@ -1448,9 +1485,9 @@ function PropiedadFichaContent() {
               />
 
               {/* Inquilino */}
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 mt-5">
+              <SectionLabel className="mb-3 mt-5">
                 Inquilino
-              </div>
+              </SectionLabel>
               {activeContract && activeContract.tenantNames.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   {activeContract.tenantNames.map((name, i) => {
@@ -1507,15 +1544,42 @@ function PropiedadFichaContent() {
               )}
 
               {/* Garantes */}
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3 mt-5">
+              <SectionLabel className="mb-3 mt-5">
                 Garantes
-              </div>
+              </SectionLabel>
               <div
                 className="flex items-center gap-3 px-4 py-4 rounded-[12px] text-center justify-center bg-card border border-dashed border-border"
               >
                 <span className="text-[0.78rem] text-muted-foreground">Sin garantes</span>
                 <span className="text-[0.65rem] text-muted-foreground">· Se vinculan al contrato</span>
               </div>
+
+              {/* Usada como garantía en otros contratos */}
+              {(data?.usedAsGuaranteeIn ?? []).length > 0 && (
+                <>
+                  <SectionLabel className="mb-3 mt-5 flex items-center gap-2">
+                    <span>Usada como garantía en</span>
+                    <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[0.6rem] font-bold bg-card text-muted-foreground border border-border">
+                      {data!.usedAsGuaranteeIn.length}
+                    </span>
+                  </SectionLabel>
+                  <div className="flex flex-col gap-2">
+                    {data!.usedAsGuaranteeIn.map((g) => (
+                      <div
+                        key={g.guaranteeId}
+                        className="flex items-center gap-3 px-4 py-3 rounded-[12px] bg-card border border-border cursor-pointer hover:border-[var(--border-accent)] transition-colors"
+                        onClick={() => router.push(`/contratos/${g.contractId}`)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[0.78rem] font-semibold text-foreground">Contrato {g.contractNumber}</div>
+                          <div className="text-[0.62rem] text-muted-foreground">{g.tenantName}</div>
+                        </div>
+                        <ExternalLink size={12} className="text-muted-foreground flex-shrink-0" />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -1536,9 +1600,9 @@ function PropiedadFichaContent() {
                 <div className="flex flex-col gap-6">
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+                    <SectionLabel className="mb-3">
                       Identificación y ubicación
-                    </div>
+                    </SectionLabel>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="col-span-2">
                         <EditInput label="Dirección" value={form.address} onChange={set("address")} placeholder="Av. Corrientes 1234" />
@@ -1569,14 +1633,23 @@ function PropiedadFichaContent() {
                         ]}
                       />
                       <EditSelect
-                        label="Estado"
-                        value={form.status}
-                        onChange={set("status")}
+                        label="Estado alquiler"
+                        value={form.rentalStatus}
+                        onChange={set("rentalStatus")}
                         options={[
                           { value: "available", label: "Disponible" },
                           { value: "rented", label: "Alquilada" },
                           { value: "reserved", label: "Reservada" },
                           { value: "maintenance", label: "En mantenimiento" },
+                        ]}
+                      />
+                      <EditSelect
+                        label="Estado venta"
+                        value={form.saleStatus}
+                        onChange={set("saleStatus")}
+                        placeholder="No está en venta"
+                        options={[
+                          { value: "for_sale", label: "En venta" },
                           { value: "sold", label: "Vendida" },
                         ]}
                       />
@@ -1584,9 +1657,47 @@ function PropiedadFichaContent() {
                   </div>
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
-                      Características físicas
+                    <SectionLabel className="mb-3">
+                      Precios
+                    </SectionLabel>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <EditInput label="Precio alquiler" value={form.rentalPrice} onChange={set("rentalPrice")} type="number" placeholder="120000" />
+                        </div>
+                        <div className="w-24 flex flex-col gap-1.5">
+                          <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">Moneda</Label>
+                          <Select value={form.rentalPriceCurrency} onValueChange={set("rentalPriceCurrency")}>
+                            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ARS">$ ARS</SelectItem>
+                              <SelectItem value="USD">US$</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <EditInput label="Precio venta" value={form.salePrice} onChange={set("salePrice")} type="number" placeholder="50000" />
+                        </div>
+                        <div className="w-24 flex flex-col gap-1.5">
+                          <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">Moneda</Label>
+                          <Select value={form.salePriceCurrency} onValueChange={set("salePriceCurrency")}>
+                            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ARS">$ ARS</SelectItem>
+                              <SelectItem value="USD">US$</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     </div>
+                  </div>
+
+                  <div>
+                    <SectionLabel className="mb-3">
+                      Características físicas
+                    </SectionLabel>
                     <div className="grid grid-cols-3 gap-3">
                       <EditInput label="Superficie total (m²)" value={form.surface} onChange={set("surface")} type="number" placeholder="52" />
                       <EditInput label="M² construidos" value={form.surfaceBuilt} onChange={set("surfaceBuilt")} type="number" placeholder="45" />
@@ -1625,9 +1736,9 @@ function PropiedadFichaContent() {
                   </div>
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+                    <SectionLabel className="mb-3">
                       Características
-                    </div>
+                    </SectionLabel>
                     <FeatureCombobox propertyId={id} />
                   </div>
                 </div>
@@ -1636,9 +1747,9 @@ function PropiedadFichaContent() {
                 <div className="flex flex-col gap-6">
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+                    <SectionLabel className="mb-3">
                       Identificación y ubicación
-                    </div>
+                    </SectionLabel>
                     <div className="grid grid-cols-3 gap-2.5">
                       <div className="col-span-2">
                         <DatoItem label="Dirección" value={prop.address} />
@@ -1646,14 +1757,25 @@ function PropiedadFichaContent() {
                       <DatoItem label="Piso / Unidad" value={prop.floorUnit} />
                       <DatoItem label="Barrio / Zona" value={prop.zone} />
                       <DatoItem label="Tipo" value={TYPE_LABEL[prop.type] ?? prop.type} />
-                      <DatoItem label="Estado" value={STATUS_CONFIG[prop.status]?.label} />
+                      <DatoItem label="Estado alquiler" value={RENTAL_STATUS_CONFIG[prop.rentalStatus]?.label ?? prop.rentalStatus} />
+                      <DatoItem label="Estado venta" value={prop.saleStatus ? (SALE_STATUS_LABEL[prop.saleStatus] ?? prop.saleStatus) : null} />
+                      <DatoItem
+                        label="Precio alquiler"
+                        value={prop.rentalPrice ? `${prop.rentalPriceCurrency === "USD" ? "US$ " : "$ "}${Number(prop.rentalPrice).toLocaleString("es-AR")}` : null}
+                        highlight={!!prop.rentalPrice}
+                      />
+                      <DatoItem
+                        label="Precio venta"
+                        value={prop.salePrice ? `${prop.salePriceCurrency === "USD" ? "US$ " : "$ "}${Number(prop.salePrice).toLocaleString("es-AR")}` : null}
+                        highlight={!!prop.salePrice}
+                      />
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+                    <SectionLabel className="mb-3">
                       Características físicas
-                    </div>
+                    </SectionLabel>
                     <div className="grid grid-cols-3 gap-2.5">
                       <DatoItem label="Superficie total" value={formatSurface(prop.surface)} />
                       <DatoItem label="M² construidos" value={formatSurface(prop.surfaceBuilt)} />
@@ -1669,9 +1791,9 @@ function PropiedadFichaContent() {
 
                   {(featuresData?.features ?? []).length > 0 && (
                     <div>
-                      <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+                      <SectionLabel className="mb-3">
                         Características
-                      </div>
+                      </SectionLabel>
                       <div className="flex flex-wrap gap-1.5">
                         {(featuresData?.features ?? []).map((f) => (
                           <span
@@ -1686,9 +1808,9 @@ function PropiedadFichaContent() {
                   )}
 
                   <div>
-                    <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3">
+                    <SectionLabel className="mb-3">
                       Responsabilidad de servicios
-                    </div>
+                    </SectionLabel>
                     <div className="grid grid-cols-3 gap-2.5">
                       <DatoItem label="Luz" value={SERVICIO_LABEL[prop.serviceElectricity]} />
                       <DatoItem label="Gas" value={SERVICIO_LABEL[prop.serviceGas]} />
@@ -1711,9 +1833,7 @@ function PropiedadFichaContent() {
                       roomsOpen && "rotate-180"
                     )}
                   />
-                  <div className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                    Ambientes
-                  </div>
+                  <SectionLabel>Ambientes</SectionLabel>
                   {rooms.length > 0 && (
                     <span className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[0.6rem] font-bold bg-card text-muted-foreground border border-border">
                       {rooms.length}
@@ -1740,11 +1860,12 @@ function PropiedadFichaContent() {
                     </div>
                   )}
 
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={handleAddRoom}
                     disabled={addingRoom}
-                    className="flex items-center gap-2 rounded-[10px] border border-dashed border-border bg-card px-4 py-3 text-[0.78rem] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-60"
+                    className="w-full justify-start gap-2 border-dashed border-border bg-card py-3 h-auto text-[0.78rem] font-medium text-muted-foreground hover:border-primary/40 hover:text-foreground"
                   >
                     {addingRoom ? (
                       <Loader2 size={13} className="animate-spin" />
@@ -1752,7 +1873,7 @@ function PropiedadFichaContent() {
                       <Plus size={13} />
                     )}
                     Agregar ambiente
-                  </button>
+                  </Button>
                 </CollapsibleContent>
               </Collapsible>
             </div>

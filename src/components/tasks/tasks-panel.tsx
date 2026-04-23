@@ -549,7 +549,7 @@ function SidePanel({
   const { data: propiedadesData } = useQuery({
     queryKey: ["propiedades-lista"],
     queryFn: async () => {
-      const res = await fetch("/api/properties?limit=200");
+      const res = await fetch("/api/properties?limit=200&isManaged=true");
       if (!res.ok) return { properties: [] };
       const json = await res.json();
       return json as { properties: PropertySimple[] };

@@ -38,9 +38,13 @@ interface PropertyRow {
   id: string;
   title: string;
   address: string;
-  price: string;
+  rentalPrice: string | null;
+  rentalPriceCurrency: string;
+  salePrice: string | null;
+  salePriceCurrency: string;
   type: string;
-  status: string;
+  rentalStatus: string;
+  saleStatus: string | null;
   zone: string | null;
   rooms: number | null;
   bathrooms: number | null;
@@ -59,8 +63,9 @@ interface PropertyCounts {
   available: number;
   rented: number;
   reserved: number;
-  sold: number;
   maintenance: number;
+  for_sale: number;
+  sold: number;
 }
 
 interface Pagination {
@@ -98,29 +103,41 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
   otro: <Building2 size={16} />,
 };
 
-const STATUS_CONFIG: Record<string, { label: string; borderLeft?: string }> = {
+const RENTAL_STATUS_CONFIG: Record<string, { label: string; borderLeft?: string }> = {
   available:   { label: "Disponible",    borderLeft: "var(--status-available)" },
   rented:      { label: "Alquilada" },
   reserved:    { label: "Reservada" },
   maintenance: { label: "Mantenimiento", borderLeft: "var(--status-maintenance)" },
-  sold:        { label: "Vendida" },
 };
 
-const STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
+const RENTAL_STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
   available:   "available",
   rented:      "rented",
   reserved:    "reserved",
   maintenance: "maintenance",
-  sold:        "baja",
 };
 
-/** Colores activos para cada chip de filtro */
-const FILTER_TABS = [
-  { value: "", label: "Todos", activeBg: "var(--primary)", activeColor: "var(--primary-foreground)" },
-  { value: "rented", label: "Alquiladas", activeBg: "var(--status-rented-dim)", activeColor: "var(--status-rented)" },
-  { value: "available", label: "Disponibles", activeBg: "var(--status-available-dim)", activeColor: "var(--status-available)" },
-  { value: "reserved", label: "Reservadas", activeBg: "var(--status-reserved-dim)", activeColor: "var(--status-reserved)" },
-  { value: "maintenance", label: "Mantenimiento", activeBg: "var(--status-maintenance-dim)", activeColor: "var(--status-maintenance)" },
+const SALE_STATUS_CONFIG: Record<string, { label: string }> = {
+  for_sale: { label: "En venta" },
+  sold:     { label: "Vendida" },
+};
+
+const SALE_STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
+  for_sale: "reserved",
+  sold:     "baja",
+};
+
+/**
+ * Each tab carries: a param name + value to set (empty string = clear that param).
+ * Only one dimension is active at a time.
+ */
+const FILTER_TABS: { param: "rentalStatus" | "saleStatus" | ""; value: string; label: string; activeBg: string; activeColor: string }[] = [
+  { param: "",             value: "",         label: "Todos",        activeBg: "var(--primary)",                activeColor: "var(--primary-foreground)" },
+  { param: "rentalStatus", value: "rented",   label: "Alquiladas",   activeBg: "var(--status-rented-dim)",      activeColor: "var(--status-rented)" },
+  { param: "rentalStatus", value: "available",label: "Disponibles",  activeBg: "var(--status-available-dim)",   activeColor: "var(--status-available)" },
+  { param: "rentalStatus", value: "reserved", label: "Reservadas",   activeBg: "var(--status-reserved-dim)",    activeColor: "var(--status-reserved)" },
+  { param: "rentalStatus", value: "maintenance", label: "Mantenimiento", activeBg: "var(--status-maintenance-dim)", activeColor: "var(--status-maintenance)" },
+  { param: "saleStatus",   value: "for_sale", label: "En venta",     activeBg: "var(--status-reserved-dim)",    activeColor: "var(--status-reserved)" },
 ];
 
 function getOwnerInitials(firstName: string | null, lastName: string | null) {
@@ -283,7 +300,7 @@ function ContratoCell({ prop }: { prop: PropertyRow }) {
 // ── Property row ──────────────────────────────────────────────────────────────
 
 function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boolean; onClick: () => void }) {
-  const cfg = STATUS_CONFIG[prop.status];
+  const rentalCfg = RENTAL_STATUS_CONFIG[prop.rentalStatus];
   return (
     <div
       className={cn(
@@ -292,9 +309,9 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
         even ? "bg-[var(--surface-mid)]" : "bg-background"
       )}
       style={{
-        gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 130px 60px 64px",
+        gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 150px 60px 64px",
         borderBottom: "1px solid rgba(160,132,126,0.07)",
-        borderLeft: cfg?.borderLeft ? `2px solid ${cfg.borderLeft}` : "2px solid transparent",
+        borderLeft: rentalCfg?.borderLeft ? `2px solid ${rentalCfg.borderLeft}` : "2px solid transparent",
       }}
       onClick={onClick}
     >
@@ -333,10 +350,15 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
       </div>
 
       {/* Estado */}
-      <div className="flex items-center">
-        <StatusBadge variant={STATUS_VARIANT[prop.status] ?? "available"}>
-          {STATUS_CONFIG[prop.status]?.label ?? prop.status}
+      <div className="flex flex-col gap-1 justify-center">
+        <StatusBadge variant={RENTAL_STATUS_VARIANT[prop.rentalStatus] ?? "available"}>
+          {RENTAL_STATUS_CONFIG[prop.rentalStatus]?.label ?? prop.rentalStatus}
         </StatusBadge>
+        {prop.saleStatus && (
+          <StatusBadge variant={SALE_STATUS_VARIANT[prop.saleStatus] ?? "reserved"}>
+            {SALE_STATUS_CONFIG[prop.saleStatus]?.label ?? prop.saleStatus}
+          </StatusBadge>
+        )}
       </div>
 
       {/* Tareas — placeholder hasta que exista el módulo */}
@@ -364,7 +386,8 @@ function PropertyListContent() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const page = parseInt(searchParams.get("page") || "1");
-  const statusFilter = searchParams.get("status") || "";
+  const rentalStatusFilter = searchParams.get("rentalStatus") || "";
+  const saleStatusFilter = searchParams.get("saleStatus") || "";
   const zoneFilter = searchParams.get("zone") || "";
 
   const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
@@ -375,7 +398,8 @@ function PropertyListContent() {
   const queryKey = [
     "properties",
     page,
-    statusFilter,
+    rentalStatusFilter,
+    saleStatusFilter,
     zoneFilter,
     searchParams.get("search") || "",
   ];
@@ -386,7 +410,9 @@ function PropertyListContent() {
       const params = new URLSearchParams({
         page: String(page),
         limit: "8",
-        ...(statusFilter ? { status: statusFilter } : {}),
+        isManaged: "true",
+        ...(rentalStatusFilter ? { rentalStatus: rentalStatusFilter } : {}),
+        ...(saleStatusFilter ? { saleStatus: saleStatusFilter } : {}),
         ...(zoneFilter ? { zone: zoneFilter } : {}),
         ...(searchParams.get("search") ? { search: searchParams.get("search")! } : {}),
       });
@@ -429,11 +455,13 @@ function PropertyListContent() {
     [searchParams, router]
   );
 
-  const handleStatusFilter = (value: string) => {
+  const handleStatusFilter = (tab: typeof FILTER_TABS[number]) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", "1");
-    if (value) params.set("status", value);
-    else params.delete("status");
+    // Clear both dimensions, then set only the one for this tab
+    params.delete("rentalStatus");
+    params.delete("saleStatus");
+    if (tab.param && tab.value) params.set(tab.param, tab.value);
     router.push(`/propiedades?${params.toString()}`);
   };
 
@@ -454,7 +482,7 @@ function PropertyListContent() {
   const properties = data?.properties ?? [];
 
   const occupancyPct = counts?.total
-    ? Math.round((counts.rented / counts.total) * 100)
+    ? Math.round(((counts.rented ?? 0) / counts.total) * 100)
     : 0;
 
   return (
@@ -542,12 +570,12 @@ function PropertyListContent() {
             bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(253,222,168,0.06) 100%)"
           />
           <KpiCard
-            label="Mantenimiento"
-            value={counts?.maintenance ?? 0}
-            sub="fuera de disponibilidad"
-            valueColor="var(--status-maintenance)"
-            borderColor="rgba(253,186,116,0.2)"
-            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(253,186,116,0.06) 100%)"
+            label="En venta"
+            value={counts?.for_sale ?? 0}
+            sub="publicadas para venta"
+            valueColor="var(--status-reserved)"
+            borderColor="rgba(167,139,250,0.2)"
+            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(167,139,250,0.06) 100%)"
           />
         </div>
       </div>
@@ -585,12 +613,17 @@ function PropertyListContent() {
         {/* Chips de estado — cada uno con su color */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {FILTER_TABS.map((tab) => {
-            const isActive = tab.value === statusFilter;
+            const isActive =
+              tab.param === ""
+                ? !rentalStatusFilter && !saleStatusFilter
+                : tab.param === "rentalStatus"
+                  ? tab.value === rentalStatusFilter
+                  : tab.value === saleStatusFilter;
             return (
               <Button
-                key={tab.value}
+                key={tab.param + tab.value}
                 variant="outline"
-                onClick={() => handleStatusFilter(tab.value)}
+                onClick={() => handleStatusFilter(tab)}
                 className="px-3.5 py-1.5 h-auto text-[11px] rounded-full"
                 style={{
                   background: isActive ? tab.activeBg : "transparent",
@@ -663,7 +696,7 @@ function PropertyListContent() {
         <div
           className="grid text-[10px] font-bold uppercase tracking-[0.12em] px-4 py-3"
           style={{
-            gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 130px 60px 64px",
+            gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 150px 60px 64px",
             color: "var(--muted-foreground)",
             background: "var(--muted)",
             borderBottom: "1px solid rgba(160,132,126,0.12)",

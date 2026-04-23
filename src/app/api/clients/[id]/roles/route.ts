@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { client } from "@/db/schema/client";
 import { contract } from "@/db/schema/contract";
 import { contractTenant } from "@/db/schema/contract-tenant";
-import { contractGuarantee } from "@/db/schema/contract-guarantee";
+import { guarantee } from "@/db/schema/guarantee";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
@@ -49,9 +49,9 @@ export async function GET(
       .where(eq(property.ownerId, id));
 
     const [guarantorCount] = await db
-      .select({ count: countDistinct(contractGuarantee.id) })
-      .from(contractGuarantee)
-      .where(and(eq(contractGuarantee.clientId, id), isNotNull(contractGuarantee.clientId)));
+      .select({ count: countDistinct(guarantee.id) })
+      .from(guarantee)
+      .where(and(eq(guarantee.personClientId, id), isNotNull(guarantee.personClientId)));
 
     const roles: string[] = [];
     if ((tenantCount?.count ?? 0) > 0) roles.push("tenant");

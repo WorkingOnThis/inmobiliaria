@@ -114,9 +114,15 @@ export async function PATCH(
       return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
     }
 
+    const statusMap: Record<string, string> = { activo: "active", suspendido: "suspended", baja: "inactive" };
+    const data = {
+      ...result.data,
+      ...(result.data.status ? { status: statusMap[result.data.status] ?? result.data.status } : {}),
+    };
+
     const [updated] = await db
       .update(client)
-      .set({ ...result.data, updatedAt: new Date() })
+      .set({ ...data, updatedAt: new Date() })
       .where(eq(client.id, id))
       .returning();
 

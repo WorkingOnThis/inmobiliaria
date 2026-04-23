@@ -8,13 +8,17 @@ interface PropiedadData {
   id: string;
   address: string;
   type: string;
-  status: string;
+  rentalStatus: string;
+  saleStatus: string | null;
   floorUnit: string | null;
   zone: string | null;
   rooms: number | null;
   bathrooms: number | null;
   surface: string | null;
-  price: string | null;
+  rentalPrice: string | null;
+  rentalPriceCurrency: string;
+  salePrice: string | null;
+  salePriceCurrency: string;
   title: string | null;
 }
 
@@ -51,8 +55,14 @@ export function TenantTabProperty({ property, ownerName, onVerOwner }: Props) {
     );
   }
 
-  const status = statusLabel[property.status] ?? {
-    label: property.status,
+  const RENTAL_LABELS: Record<string, { label: string; variant: StatusBadgeVariant }> = {
+    available:   { label: "Disponible",   variant: "reserved" },
+    rented:      { label: "Alquilada",    variant: "active" },
+    reserved:    { label: "Reservada",    variant: "reserved" },
+    maintenance: { label: "Mantenimiento", variant: "draft" },
+  };
+  const status = RENTAL_LABELS[property.rentalStatus] ?? {
+    label: property.rentalStatus,
     variant: "draft" as StatusBadgeVariant,
   };
 

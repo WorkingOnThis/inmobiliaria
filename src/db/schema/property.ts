@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, decimal, smallint } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, decimal, smallint, boolean } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 import { client } from "./client";
 
@@ -11,9 +11,13 @@ export const property = pgTable("property", {
   id: text("id").primaryKey(),
   title: text("title"), // Opcional, se puede completar luego en la ficha
   address: text("address").notNull(),
-  price: decimal("price", { precision: 12, scale: 2 }), // Opcional, se puede completar luego en la ficha
   type: text("type").notNull(), // casa, depto, terreno, local, etc.
-  status: text("status").notNull().default("available"), // available, rented, sold, reserved
+  rentalStatus: text("rentalStatus").notNull().default("available"), // available, rented, reserved, maintenance
+  saleStatus: text("saleStatus"), // null | "for_sale" | "sold"
+  rentalPrice: decimal("rentalPrice", { precision: 15, scale: 2 }),
+  rentalPriceCurrency: text("rentalPriceCurrency").notNull().default("ARS"),
+  salePrice: decimal("salePrice", { precision: 15, scale: 2 }),
+  salePriceCurrency: text("salePriceCurrency").notNull().default("USD"),
   zone: text("zone"), // Barrio / Zona
   floorUnit: text("floorUnit"), // Piso / Unidad
   rooms: integer("rooms"),
@@ -33,6 +37,9 @@ export const property = pgTable("property", {
   serviceCouncil: text("serviceCouncil").notNull().default("inquilino"),
   serviceStateTax: text("serviceStateTax").notNull().default("inquilino"),
   serviceHoa: text("serviceHoa").notNull().default("na"),
+
+  // false when created as a guarantee property (not actively marketed/managed by the agency)
+  isManaged: boolean("isManaged").notNull().default(true),
 
   ownerId: text("ownerId")
     .notNull()

@@ -6,21 +6,22 @@ import { client } from "@/db/schema/client";
 import { contract } from "@/db/schema/contract";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
-import { PROPERTY_TYPES, PROPERTY_STATUSES } from "@/lib/properties/constants";
+import { PROPERTY_TYPES, RENTAL_STATUSES, SALE_STATUSES } from "@/lib/properties/constants";
 import { z } from "zod";
-import { count, desc, eq, ilike, or, and, inArray } from "drizzle-orm";
+import { count, desc, eq, ilike, or, and, inArray, isNotNull } from "drizzle-orm";
 
-/**
- * Zod schema for property creation
- */
 const createPropertySchema = z.object({
   title: z.string().optional().nullable(),
   address: z.string().min(1, "La dirección es requerida"),
-  price: z.coerce.number().optional().nullable(),
   type: z.enum(PROPERTY_TYPES, {
     errorMap: () => ({ message: "El tipo de propiedad no es válido" }),
   }),
-  status: z.enum(PROPERTY_STATUSES).default("available"),
+  rentalStatus: z.enum(RENTAL_STATUSES).default("available"),
+  saleStatus: z.enum(SALE_STATUSES).optional().nullable(),
+  rentalPrice: z.coerce.number().optional().nullable(),
+  rentalPriceCurrency: z.enum(["ARS", "USD"]).default("ARS"),
+  salePrice: z.coerce.number().optional().nullable(),
+  salePriceCurrency: z.enum(["ARS", "USD"]).default("USD"),
   zone: z.string().optional().nullable(),
   floorUnit: z.string().optional().nullable(),
   rooms: z.coerce.number().int().min(0).optional().nullable(),
@@ -29,22 +30,12 @@ const createPropertySchema = z.object({
   ownerId: z.string().min(1, "El dueño es requerido"),
 });
 
-/**
- * Statuses considered "active" for display in the property list contract column.
- * Excludes expired and terminated contracts.
- */
 const ACTIVE_CONTRACT_STATUSES = ["active", "expiring_soon", "pending_signature", "draft"] as const;
 
-/**
- * Generate a unique ID for database records
- */
 function generateId(): string {
   return crypto.randomUUID();
 }
 
-/**
- * Properties API Route
- */
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -56,13 +47,23 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "8")));
     const offset = (page - 1) * limit;
-    const statusFilter = searchParams.get("status") || "";
+    const rentalStatusFilter = searchParams.get("rentalStatus") || "";
+    const saleStatusFilter = searchParams.get("saleStatus") || "";
     const search = searchParams.get("search") || "";
     const zone = searchParams.get("zone") || "";
 
     const conditions = [];
-    if (statusFilter && PROPERTY_STATUSES.includes(statusFilter as any)) {
-      conditions.push(eq(property.status, statusFilter));
+    const isManagedParam = searchParams.get("isManaged");
+    if (isManagedParam === "true") conditions.push(eq(property.isManaged, true));
+    else if (isManagedParam === "false") conditions.push(eq(property.isManaged, false));
+
+    if (rentalStatusFilter && RENTAL_STATUSES.includes(rentalStatusFilter as any)) {
+      conditions.push(eq(property.rentalStatus, rentalStatusFilter));
+    }
+    if (saleStatusFilter === "for_sale" || saleStatusFilter === "sold") {
+      conditions.push(eq(property.saleStatus, saleStatusFilter));
+    } else if (saleStatusFilter === "en_venta_cualquier") {
+      conditions.push(isNotNull(property.saleStatus));
     }
     if (zone.trim()) {
       conditions.push(ilike(property.zone, `%${zone.trim()}%`));
@@ -81,20 +82,25 @@ export async function GET(request: NextRequest) {
     }
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const [propertiesWithOwner, [totalResult], statusCountsRaw] = await Promise.all([
+    const [propertiesWithOwner, [totalResult], rentalCountsRaw, saleCountsRaw] = await Promise.all([
       db
         .select({
           id: property.id,
           title: property.title,
           address: property.address,
-          price: property.price,
+          rentalPrice: property.rentalPrice,
+          rentalPriceCurrency: property.rentalPriceCurrency,
+          salePrice: property.salePrice,
+          salePriceCurrency: property.salePriceCurrency,
           type: property.type,
-          status: property.status,
+          rentalStatus: property.rentalStatus,
+          saleStatus: property.saleStatus,
           zone: property.zone,
           floorUnit: property.floorUnit,
           rooms: property.rooms,
           bathrooms: property.bathrooms,
           surface: property.surface,
+          isManaged: property.isManaged,
           ownerId: property.ownerId,
           createdAt: property.createdAt,
           updatedAt: property.updatedAt,
@@ -112,11 +118,10 @@ export async function GET(request: NextRequest) {
         .from(property)
         .leftJoin(client, eq(property.ownerId, client.id))
         .where(where),
-      db.select({ status: property.status, cnt: count() }).from(property).groupBy(property.status),
+      db.select({ status: property.rentalStatus, cnt: count() }).from(property).groupBy(property.rentalStatus),
+      db.select({ status: property.saleStatus, cnt: count() }).from(property).where(isNotNull(property.saleStatus)).groupBy(property.saleStatus),
     ]);
 
-    // ── Fetch active contracts for this page of properties ──────────────────────
-    // One additional query for up to `limit` properties — not N+1.
     const propertyIds = propertiesWithOwner.map((p) => p.id);
     let contractsByPropertyId: Map<string, {
       contractNumber: string;
@@ -141,7 +146,6 @@ export async function GET(request: NextRequest) {
         )
         .orderBy(desc(contract.endDate));
 
-      // Keep only the most recent contract per property
       for (const c of activeContracts) {
         if (!contractsByPropertyId.has(c.propertyId)) {
           contractsByPropertyId.set(c.propertyId, {
@@ -153,7 +157,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Merge contract info into each property row
     const propertiesWithContract = propertiesWithOwner.map((p) => {
       const contractInfo = contractsByPropertyId.get(p.id) ?? null;
       return {
@@ -164,11 +167,15 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const countsMap: Record<string, number> = {};
+    const rentalCountsMap: Record<string, number> = {};
     let grandTotal = 0;
-    for (const row of statusCountsRaw) {
-      countsMap[row.status] = Number(row.cnt);
+    for (const row of rentalCountsRaw) {
+      rentalCountsMap[row.status] = Number(row.cnt);
       grandTotal += Number(row.cnt);
+    }
+    const saleCountsMap: Record<string, number> = {};
+    for (const row of saleCountsRaw) {
+      if (row.status) saleCountsMap[row.status] = Number(row.cnt);
     }
 
     return NextResponse.json({
@@ -181,11 +188,12 @@ export async function GET(request: NextRequest) {
       },
       counts: {
         total: grandTotal,
-        available: countsMap["available"] ?? 0,
-        rented: countsMap["rented"] ?? 0,
-        reserved: countsMap["reserved"] ?? 0,
-        sold: countsMap["sold"] ?? 0,
-        maintenance: countsMap["maintenance"] ?? 0,
+        available: rentalCountsMap["available"] ?? 0,
+        rented: rentalCountsMap["rented"] ?? 0,
+        reserved: rentalCountsMap["reserved"] ?? 0,
+        maintenance: rentalCountsMap["maintenance"] ?? 0,
+        for_sale: saleCountsMap["for_sale"] ?? 0,
+        sold: saleCountsMap["sold"] ?? 0,
       },
     });
   } catch (error) {
@@ -194,9 +202,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * POST /api/properties
- */
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -228,11 +233,15 @@ export async function POST(request: NextRequest) {
       .insert(property)
       .values({
         id: propertyId,
-        title: data.title || data.address.split(",")[0], // Fallback a parte de la dirección
+        title: data.title || data.address.split(",")[0],
         address: data.address,
-        price: data.price?.toString() || null,
         type: data.type,
-        status: data.status,
+        rentalStatus: data.rentalStatus,
+        saleStatus: data.saleStatus ?? null,
+        rentalPrice: data.rentalPrice?.toString() || null,
+        rentalPriceCurrency: data.rentalPriceCurrency,
+        salePrice: data.salePrice?.toString() || null,
+        salePriceCurrency: data.salePriceCurrency,
         zone: data.zone,
         floorUnit: data.floorUnit,
         rooms: data.rooms,
