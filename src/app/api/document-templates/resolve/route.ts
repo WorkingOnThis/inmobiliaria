@@ -22,6 +22,22 @@ import {
 
 const isLegalRole = (role: string) => role === "legal" || role === "ambos";
 
+// Maps list item keys to GuaranteeResolvedInfo fields — single source of truth for the mapping.
+const GUARANTEE_KEY_MAP: [string, keyof GuaranteeResolvedInfo][] = [
+  ["apellido_fiador_propietario",  "ownerLastName"],
+  ["nombres_fiador_propietario",   "ownerFirstName"],
+  ["dni_fiador_propietario",       "ownerDni"],
+  ["cuil_fiador_propietario",      "ownerCuit"],
+  ["domicilio_fiador_propietario", "ownerAddress"],
+  ["email_fiador_propietario",     "ownerEmail"],
+  ["telefono_fiador_propietario",  "ownerPhone"],
+  ["matricula_inmueble_garantia",  "propertyRegistryNumber"],
+  ["catastro_inmueble_garantia",   "propertyCadastralRef"],
+  ["domicilio_inmueble_garantia",  "propertyAddress"],
+  ["superficie_terreno_garantia",  "propertySurfaceLand"],
+  ["superficie_cubierta_garantia", "propertySurfaceBuilt"],
+];
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -62,6 +78,7 @@ export async function GET(request: NextRequest) {
       agencyRow,
       tenantParticipants,
       guarantorParticipants,
+      guaranteeRows,
     ] = await Promise.all([
       db
         .select()
@@ -103,6 +120,24 @@ export async function GET(request: NextRequest) {
             eq(contractParticipant.role, "guarantor")
           )
         ),
+      db
+        .select({
+          kind: guarantee.kind,
+          propertyId: guarantee.propertyId,
+          externalOwnerName: guarantee.externalOwnerName,
+          externalOwnerDni: guarantee.externalOwnerDni,
+          externalOwnerCuit: guarantee.externalOwnerCuit,
+          externalOwnerAddress: guarantee.externalOwnerAddress,
+          externalOwnerEmail: guarantee.externalOwnerEmail,
+          externalOwnerPhone: guarantee.externalOwnerPhone,
+          externalAddress: guarantee.externalAddress,
+          externalCadastralRef: guarantee.externalCadastralRef,
+          externalRegistryNumber: guarantee.externalRegistryNumber,
+          externalSurfaceLand: guarantee.externalSurfaceLand,
+          externalSurfaceBuilt: guarantee.externalSurfaceBuilt,
+        })
+        .from(guarantee)
+        .where(eq(guarantee.contractId, contractId)),
     ]);
 
     // Determine the legal owner (Parte Locadora): whoever has role "legal" or "ambos".
@@ -113,65 +148,37 @@ export async function GET(request: NextRequest) {
       if (legalCo) legalOwnerId = legalCo.clientId;
     }
 
-    // Round 2 — tenants, guarantors, and (only if needed) the legal co-owner client
-    const needsCoOwnerFetch = legalOwnerId !== contractRow.ownerId;
-    const [tenantRows, guarantorRows, coOwnerRow] = await Promise.all([
-      tenantParticipants.length > 0
-        ? db
-            .select()
-            .from(client)
-            .where(inArray(client.id, tenantParticipants.map((p) => p.clientId)))
-        : Promise.resolve([]),
-      guarantorParticipants.length > 0
-        ? db
-            .select()
-            .from(client)
-            .where(inArray(client.id, guarantorParticipants.map((p) => p.clientId)))
-        : Promise.resolve([]),
-      needsCoOwnerFetch
-        ? db
-            .select()
-            .from(client)
-            .where(eq(client.id, legalOwnerId))
-            .limit(1)
-            .then((r) => r[0] ?? null)
-        : Promise.resolve(null),
-    ]);
-
-    const ownerRow = needsCoOwnerFetch ? coOwnerRow : primaryOwnerRow;
-
-    // Round 3 — guarantees, rooms, features (all in parallel)
-    const [guaranteeRows, roomRows, featureRows] = await Promise.all([
-      db.select().from(guarantee).where(eq(guarantee.contractId, contractId)),
-      propertyRow
-        ? db
-            .select({ id: propertyRoom.id, name: propertyRoom.name, description: propertyRoom.description })
-            .from(propertyRoom)
-            .where(eq(propertyRoom.propertyId, propertyRow.id))
-            .orderBy(propertyRoom.position)
-        : Promise.resolve([] as { id: string; name: string; description: string }[]),
-      propertyRow
-        ? db
-            .select({ name: propertyFeature.name })
-            .from(propertyFeature)
-            .innerJoin(propertyToFeature, eq(propertyToFeature.featureId, propertyFeature.id))
-            .where(eq(propertyToFeature.propertyId, propertyRow.id))
-        : Promise.resolve([] as { name: string }[]),
-    ]);
-
-    // Resolve first real (propertyOwner) guarantee into GuaranteeResolvedInfo
+    // Compute guarantee property IDs so their fetches can join Round 2.
     const realGuarantees = guaranteeRows.filter((g) => g.kind === "propertyOwner");
-    let firstRealGuarantee: GuaranteeResolvedInfo | null = null;
+    const internalGuaranteePropertyIds = [
+      ...new Set(realGuarantees.filter((g) => g.propertyId).map((g) => g.propertyId!)),
+    ];
 
-    type GuaranteeListItem = Record<string, string | null>;
-    const garantiasRealesItems: GuaranteeListItem[] = [];
-
-    if (realGuarantees.length > 0) {
-      // Fetch linked properties and their legal owners in parallel
-      const internalIds = [...new Set(realGuarantees.filter((g) => g.propertyId).map((g) => g.propertyId!))];
-
-      const [linkedProperties, linkedCoOwners] = await Promise.all([
-        internalIds.length > 0
+    // Round 2 — tenants, guarantors, legal co-owner (if needed), guarantee property data (if any).
+    const needsCoOwnerFetch = legalOwnerId !== contractRow.ownerId;
+    const [tenantRows, guarantorRows, coOwnerRow, linkedProperties, linkedCoOwners, roomRows, featureRows] =
+      await Promise.all([
+        tenantParticipants.length > 0
+          ? db
+              .select()
+              .from(client)
+              .where(inArray(client.id, tenantParticipants.map((p) => p.clientId)))
+          : Promise.resolve([]),
+        guarantorParticipants.length > 0
+          ? db
+              .select()
+              .from(client)
+              .where(inArray(client.id, guarantorParticipants.map((p) => p.clientId)))
+          : Promise.resolve([]),
+        needsCoOwnerFetch
+          ? db
+              .select()
+              .from(client)
+              .where(eq(client.id, legalOwnerId))
+              .limit(1)
+              .then((r) => r[0] ?? null)
+          : Promise.resolve(null),
+        internalGuaranteePropertyIds.length > 0
           ? db
               .select({
                 id: property.id,
@@ -184,30 +191,51 @@ export async function GET(request: NextRequest) {
                 surfaceBuilt: property.surfaceBuilt,
               })
               .from(property)
-              .where(inArray(property.id, internalIds))
+              .where(inArray(property.id, internalGuaranteePropertyIds))
           : Promise.resolve([] as {
               id: string; ownerId: string; ownerRole: string;
               address: string | null; cadastralRef: string | null;
               registryNumber: string | null; surfaceLand: string | null;
               surfaceBuilt: string | null;
             }[]),
-        internalIds.length > 0
+        internalGuaranteePropertyIds.length > 0
           ? db
               .select({ propertyId: propertyCoOwner.propertyId, clientId: propertyCoOwner.clientId, role: propertyCoOwner.role })
               .from(propertyCoOwner)
               .where(
                 and(
-                  inArray(propertyCoOwner.propertyId, internalIds),
+                  inArray(propertyCoOwner.propertyId, internalGuaranteePropertyIds),
                   or(eq(propertyCoOwner.role, "legal"), eq(propertyCoOwner.role, "ambos"))
                 )
               )
           : Promise.resolve([] as { propertyId: string; clientId: string; role: string }[]),
+        propertyRow
+          ? db
+              .select({ id: propertyRoom.id, name: propertyRoom.name, description: propertyRoom.description })
+              .from(propertyRoom)
+              .where(eq(propertyRoom.propertyId, propertyRow.id))
+              .orderBy(propertyRoom.position)
+          : Promise.resolve([] as { id: string; name: string; description: string }[]),
+        propertyRow
+          ? db
+              .select({ name: propertyFeature.name })
+              .from(propertyFeature)
+              .innerJoin(propertyToFeature, eq(propertyToFeature.featureId, propertyFeature.id))
+              .where(eq(propertyToFeature.propertyId, propertyRow.id))
+          : Promise.resolve([] as { name: string }[]),
       ]);
 
-      // Determine legal owner clientId per property
+    const ownerRow = needsCoOwnerFetch ? coOwnerRow : primaryOwnerRow;
+
+    // Resolve real (propertyOwner) guarantees into GuaranteeResolvedInfo objects.
+    let firstRealGuarantee: GuaranteeResolvedInfo | null = null;
+    const garantiasRealesItems: Record<string, string | null>[] = [];
+
+    if (realGuarantees.length > 0) {
+      // Determine legal owner clientId per guarantee property
       const legalOwnerIdByPropertyId = new Map<string, string>();
       for (const p of linkedProperties) {
-        if (p.ownerRole === "legal" || p.ownerRole === "ambos") {
+        if (isLegalRole(p.ownerRole)) {
           legalOwnerIdByPropertyId.set(p.id, p.ownerId);
         }
       }
@@ -216,14 +244,12 @@ export async function GET(request: NextRequest) {
           legalOwnerIdByPropertyId.set(co.propertyId, co.clientId);
         }
       }
-      // Fallback to primary owner if still missing
       for (const p of linkedProperties) {
         if (!legalOwnerIdByPropertyId.has(p.id)) {
           legalOwnerIdByPropertyId.set(p.id, p.ownerId);
         }
       }
 
-      // Fetch all needed clients in one query
       const ownerClientIds = [...new Set([...legalOwnerIdByPropertyId.values()])];
       const linkedOwnerClients = ownerClientIds.length > 0
         ? await db
@@ -257,7 +283,7 @@ export async function GET(request: NextRequest) {
             propertySurfaceBuilt: prop.surfaceBuilt,
           };
         } else {
-          // External guarantee — split name heuristically on last space
+          // External guarantee — split name on last space to separate nombres from apellido.
           const extName = g.externalOwnerName ?? "";
           const lastSpace = extName.lastIndexOf(" ");
           info = {
@@ -277,21 +303,9 @@ export async function GET(request: NextRequest) {
         }
 
         if (!firstRealGuarantee) firstRealGuarantee = info;
-
-        garantiasRealesItems.push({
-          apellido_fiador_propietario: info.ownerLastName,
-          nombres_fiador_propietario: info.ownerFirstName,
-          dni_fiador_propietario: info.ownerDni,
-          cuil_fiador_propietario: info.ownerCuit,
-          domicilio_fiador_propietario: info.ownerAddress,
-          email_fiador_propietario: info.ownerEmail,
-          telefono_fiador_propietario: info.ownerPhone,
-          matricula_inmueble_garantia: info.propertyRegistryNumber,
-          catastro_inmueble_garantia: info.propertyCadastralRef,
-          domicilio_inmueble_garantia: info.propertyAddress,
-          superficie_terreno_garantia: info.propertySurfaceLand,
-          superficie_cubierta_garantia: info.propertySurfaceBuilt,
-        });
+        garantiasRealesItems.push(
+          Object.fromEntries(GUARANTEE_KEY_MAP.map(([key, field]) => [key, info[field]]))
+        );
       }
     }
 
