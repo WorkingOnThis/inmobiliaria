@@ -10,7 +10,7 @@ import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { z } from "zod";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { calculateStatus } from "@/lib/tenants/status";
 import { guarantee } from "@/db/schema/guarantee";
 import { guaranteeSalaryInfo } from "@/db/schema/guarantee-salary-info";
@@ -147,11 +147,27 @@ export async function GET(
 
     // Merge and deduplicate by contract ID
     const seen = new Set<string>();
-    const tenantContracts = [...fromTenant, ...fromParticipant].filter((c) => {
+    const tenantContractsRaw = [...fromTenant, ...fromParticipant].filter((c) => {
       if (seen.has(c.id)) return false;
       seen.add(c.id);
       return true;
     });
+
+    // Enrich with property address for each contract
+    const contractPropIds = [...new Set(tenantContractsRaw.map((c) => c.propertyId))];
+    const contractProps = contractPropIds.length > 0
+      ? await db
+          .select({ id: property.id, address: property.address })
+          .from(property)
+          .where(inArray(property.id, contractPropIds))
+      : [];
+    const contractPropMap: Record<string, string> = {};
+    for (const p of contractProps) contractPropMap[p.id] = p.address;
+
+    const tenantContracts = tenantContractsRaw.map((c) => ({
+      ...c,
+      propertyAddress: contractPropMap[c.propertyId] ?? null,
+    }));
 
     // Pick the most relevant contract
     const bestContract = tenantContracts.sort(

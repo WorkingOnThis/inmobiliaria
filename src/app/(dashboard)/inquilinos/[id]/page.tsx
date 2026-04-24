@@ -46,6 +46,7 @@ interface Contrato {
   id: string;
   contractNumber: string;
   propertyId: string;
+  propertyAddress: string | null;
   ownerId: string;
   status: string;
   contractType: string;
@@ -338,7 +339,7 @@ export default function TenantDetailPage() {
                 estado={tenant.estado}
                 diasMora={tenant.diasMora}
                 contrato={data?.contrato ?? null}
-                movimientos={(data?.movimientos ?? []) as Parameters<typeof TenantTabCurrentAccount>[0]["movimientos"]}
+                contratos={data?.contratos ?? []}
                 propertyId={data?.property?.id ?? null}
               />
             )}

@@ -85,6 +85,20 @@ export default function ReciboPage() {
     contrato: {
       contractNumber: string;
     } | null;
+    serviceItems: {
+      id: string;
+      etiqueta: string;
+      period: string;
+      monto: string | null;
+      servicioId: string | null;
+    }[];
+    charges: {
+      id: string;
+      periodo: string | null;
+      categoria: string;
+      descripcion: string;
+      monto: string;
+    }[];
   }>({
     queryKey: ["receipt", id],
     queryFn: async () => {
@@ -116,7 +130,7 @@ export default function ReciboPage() {
     );
   }
 
-  const { movimiento, inquilino, propiedad, contrato } = data;
+  const { movimiento, inquilino, propiedad, contrato, serviceItems = [], charges = [] } = data;
   const montoNum = Number(movimiento.monto);
   const nombreInquilino = inquilino
     ? inquilino.lastName
@@ -198,21 +212,87 @@ export default function ReciboPage() {
             {/* Concepto y monto */}
             <div className="border-b border-border pb-6">
               <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-3">Concepto</div>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="text-[0.9rem] text-on-bg">{movimiento.descripcion}</div>
-                  {movimiento.nota && (
-                    <div className="text-[0.75rem] text-muted-foreground mt-1">{movimiento.nota}</div>
-                  )}
+              {charges.length > 0 ? (
+                <>
+                  <table className="w-full text-[0.82rem] mb-3">
+                    <thead>
+                      <tr className="border-b border-border/40">
+                        <th className="text-left py-1.5 text-[0.65rem] text-muted-foreground uppercase tracking-wider font-semibold">Descripción</th>
+                        <th className="text-left py-1.5 text-[0.65rem] text-muted-foreground uppercase tracking-wider font-semibold">Período</th>
+                        <th className="text-right py-1.5 text-[0.65rem] text-muted-foreground uppercase tracking-wider font-semibold">Monto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {charges.map((c) => (
+                        <tr key={c.id} className="border-b border-border/30 last:border-0">
+                          <td className="py-1.5 text-on-bg">{c.descripcion}</td>
+                          <td className="py-1.5 text-muted-foreground text-[0.75rem]">{c.periodo ? formatPeriodo(c.periodo) : "—"}</td>
+                          <td className="py-1.5 text-right font-semibold text-on-bg">{formatMonto(c.monto)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-[0.75rem] font-semibold text-muted-foreground uppercase tracking-wider">Total</span>
+                    <div className="text-[1.6rem] font-bold text-primary">{formatMonto(movimiento.monto)}</div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div className="flex-1">
+                    <div className="text-[0.9rem] text-on-bg">{movimiento.descripcion}</div>
+                    {movimiento.nota && (
+                      <div className="text-[0.75rem] text-muted-foreground mt-1">{movimiento.nota}</div>
+                    )}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-[1.6rem] font-bold text-primary">{formatMonto(movimiento.monto)}</div>
+                  </div>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="text-[1.6rem] font-bold text-primary">{formatMonto(movimiento.monto)}</div>
-                </div>
-              </div>
-              <div className="mt-3 text-[0.72rem] text-muted-foreground italic">
+              )}
+              <div className="text-[0.72rem] text-muted-foreground italic">
                 Son: {montoEnLetras(montoNum)}
               </div>
             </div>
+
+            {/* Service items */}
+            {serviceItems.length > 0 && (() => {
+              const aCobrar = serviceItems.filter((s) => s.monto != null && Number(s.monto) > 0);
+              const constancia = serviceItems.filter((s) => s.monto == null || Number(s.monto) === 0);
+              return (
+                <div className="border-b border-border pb-6 space-y-4">
+                  {aCobrar.length > 0 && (
+                    <div>
+                      <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-2">Servicios incluidos en el cobro</div>
+                      <table className="w-full text-[0.82rem]">
+                        <tbody>
+                          {aCobrar.map((s) => (
+                            <tr key={s.id} className="border-b border-border/30 last:border-0">
+                              <td className="py-1.5 text-on-bg">{s.etiqueta}</td>
+                              <td className="py-1.5 text-muted-foreground text-[0.75rem]">{formatPeriodo(s.period)}</td>
+                              <td className="py-1.5 text-right font-semibold text-on-bg">{formatMonto(s.monto!)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {constancia.length > 0 && (
+                    <div>
+                      <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-2">Constancia de pago directo por el inquilino</div>
+                      <ul className="space-y-1">
+                        {constancia.map((s) => (
+                          <li key={s.id} className="flex items-center gap-2 text-[0.8rem] text-text-secondary">
+                            <span className="size-1.5 rounded-full bg-muted-foreground/50 flex-shrink-0" />
+                            {s.etiqueta} — {formatPeriodo(s.period)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Firma */}
             <div className="pt-2">

@@ -61,7 +61,8 @@
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:github.com)",
       "Bash(bun test *)",
-      "Bash(python -c \"import sys,json; p=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in p.items\\(\\) if k in ['main','module','exports','types']}, indent=2\\)\\)\")"
+      "Bash(python -c \"import sys,json; p=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in p.items\\(\\) if k in ['main','module','exports','types']}, indent=2\\)\\)\")",
+      "PowerShell(bun run *)"
     ]
   }
 }

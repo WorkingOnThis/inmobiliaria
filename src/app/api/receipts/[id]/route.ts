@@ -8,6 +8,8 @@ import { contractTenant } from "@/db/schema/contract-tenant";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { receiptServiceItem } from "@/db/schema/receipt-service-item";
+import { tenantCharge } from "@/db/schema/tenant-charge";
 import { and, eq } from "drizzle-orm";
 
 export async function GET(
@@ -84,7 +86,32 @@ export async function GET(
       contrato = con ?? null;
     }
 
-    return NextResponse.json({ movimiento, inquilino, propiedad, contrato });
+    const serviceItems = await db
+      .select({
+        id: receiptServiceItem.id,
+        etiqueta: receiptServiceItem.etiqueta,
+        period: receiptServiceItem.period,
+        monto: receiptServiceItem.monto,
+        servicioId: receiptServiceItem.servicioId,
+      })
+      .from(receiptServiceItem)
+      .where(eq(receiptServiceItem.movimientoId, id));
+
+    // Load tenant charges associated to this receipt number
+    const charges = movimiento.reciboNumero
+      ? await db
+          .select({
+            id: tenantCharge.id,
+            periodo: tenantCharge.period,
+            categoria: tenantCharge.categoria,
+            descripcion: tenantCharge.descripcion,
+            monto: tenantCharge.monto,
+          })
+          .from(tenantCharge)
+          .where(eq(tenantCharge.reciboNumero, movimiento.reciboNumero))
+      : [];
+
+    return NextResponse.json({ movimiento, inquilino, propiedad, contrato, serviceItems, charges });
   } catch (error) {
     console.error("Error GET /api/receipts/:id:", error);
     return NextResponse.json({ error: "Error al obtener el recibo" }, { status: 500 });
