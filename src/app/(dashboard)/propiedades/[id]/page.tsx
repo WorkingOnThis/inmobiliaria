@@ -21,6 +21,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ZoneCombobox } from "@/components/ui/zone-combobox";
+import { CityCombobox } from "@/components/ui/city-combobox";
+import { ProvinceSelect } from "@/components/ui/province-select";
 import { FeatureCombobox } from "@/components/ui/feature-combobox";
 import {
   Select,
@@ -1686,8 +1688,18 @@ function PropiedadFichaContent() {
                           placeholder="Nueva Córdoba"
                         />
                       </div>
-                      <EditInput label="Ciudad" value={form.city} onChange={set("city")} placeholder="Córdoba" />
-                      <EditInput label="Provincia" value={form.province} onChange={set("province")} placeholder="Córdoba" />
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
+                          Ciudad
+                        </Label>
+                        <CityCombobox value={form.city} onChange={set("city")} placeholder="Córdoba" />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
+                          Provincia
+                        </Label>
+                        <ProvinceSelect value={form.province} onChange={set("province")} />
+                      </div>
                       <EditSelect
                         label="Tipo"
                         value={form.type}

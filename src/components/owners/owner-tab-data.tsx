@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import { Edit2, Save, X, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ZoneCombobox } from "@/components/ui/zone-combobox";
+import { CityCombobox } from "@/components/ui/city-combobox";
+import { ProvinceSelect } from "@/components/ui/province-select";
 import { OwnerCompletenessBar } from "@/components/owners/owner-completeness-bar";
 
 interface Owner {
@@ -413,9 +416,36 @@ export function OwnerTabData({
             <div className="grid grid-cols-2 gap-4">
               <DataField id="addressStreet"   label="Calle"     value={form.addressStreet}   editing={editing} onChange={setField("addressStreet")}   placeholder="Av. Colón" />
               <DataField id="addressNumber"   label="Número"    value={form.addressNumber}   editing={editing} onChange={setField("addressNumber")}   placeholder="1234" />
-              <DataField id="addressZone"     label="Barrio"    value={form.addressZone}     editing={editing} onChange={setField("addressZone")}     placeholder="Nueva Córdoba" />
-              <DataField id="addressCity"     label="Ciudad"    value={form.addressCity}     editing={editing} onChange={setField("addressCity")}     placeholder="Córdoba" />
-              <DataField id="addressProvince" label="Provincia" value={form.addressProvince} editing={editing} onChange={setField("addressProvince")} placeholder="Córdoba" />
+              <div id="field-addressZone" className="flex flex-col gap-1">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">Barrio</span>
+                {editing ? (
+                  <ZoneCombobox value={form.addressZone ?? ""} onChange={setField("addressZone")} />
+                ) : form.addressZone ? (
+                  <div className="text-[13.5px] text-on-surface">{form.addressZone}</div>
+                ) : (
+                  <div className="text-[12px] text-muted-foreground italic">Sin cargar</div>
+                )}
+              </div>
+              <div id="field-addressCity" className="flex flex-col gap-1">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">Ciudad</span>
+                {editing ? (
+                  <CityCombobox value={form.addressCity ?? ""} onChange={setField("addressCity")} />
+                ) : form.addressCity ? (
+                  <div className="text-[13.5px] text-on-surface">{form.addressCity}</div>
+                ) : (
+                  <div className="text-[12px] text-muted-foreground italic">Sin cargar</div>
+                )}
+              </div>
+              <div id="field-addressProvince" className="flex flex-col gap-1">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">Provincia</span>
+                {editing ? (
+                  <ProvinceSelect value={form.addressProvince ?? ""} onChange={setField("addressProvince")} />
+                ) : form.addressProvince ? (
+                  <div className="text-[13.5px] text-on-surface">{form.addressProvince}</div>
+                ) : (
+                  <div className="text-[12px] text-muted-foreground italic">Sin cargar</div>
+                )}
+              </div>
             </div>
           </div>
         </SectionCard>
