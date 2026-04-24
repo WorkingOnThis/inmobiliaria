@@ -17,6 +17,9 @@ import {
   Loader2,
   X,
   ArrowRight,
+  Key,
+  CheckCircle2,
+  Tag,
 } from "lucide-react";
 import {
   Dialog,
@@ -188,38 +191,34 @@ function buildPageNumbers(current: number, total: number): (number | "…")[] {
   return pages;
 }
 
-/** KPI card con colores específicos por tipo */
 function KpiCard({
   label,
   value,
   sub,
-  valueColor,
-  borderColor,
-  bgGradient,
+  valueClassName,
+  icon: Icon,
 }: {
   label: string;
   value: number;
   sub: string;
-  valueColor: string;
-  borderColor: string;
-  bgGradient: string;
+  valueClassName?: string;
+  icon: React.ElementType;
 }) {
   return (
-    <Card
-      className="flex-1 min-w-0 rounded-lg border gap-0 py-0"
-      style={{ background: bgGradient, borderColor }}
-    >
-      <CardContent className="px-6 py-5 flex flex-col">
-        <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-3 text-muted-foreground">
-          {label}
-        </p>
-        <p
-          className="text-4xl font-bold leading-none mb-1 tabular-nums font-headline"
-          style={{ color: valueColor }}
-        >
-          {value}
-        </p>
-        <p className="text-[11px] text-muted-foreground">{sub}</p>
+    <Card className="flex-1 min-w-0 rounded-xl border py-0 gap-0">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {label}
+            </p>
+            <p className={cn("mt-1 text-3xl font-bold tabular-nums", valueClassName ?? "")}>
+              {value}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+          </div>
+          <Icon className="size-5 text-muted-foreground" />
+        </div>
       </CardContent>
     </Card>
   );
@@ -542,40 +541,35 @@ function PropertyListContent() {
         </div>
       </div>
 
-      {/* KPI cards — colores diferenciados por tipo */}
+      {/* KPI cards */}
       <div className="px-8 mb-5">
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <KpiCard
             label="Total"
             value={counts?.total ?? 0}
             sub="propiedades en cartera"
-            valueColor="var(--primary)"
-            borderColor="rgba(255,180,162,0.2)"
-            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(107,23,2,0.08) 100%)"
+            icon={Building2}
           />
           <KpiCard
             label="Alquiladas"
             value={counts?.rented ?? 0}
             sub={`${occupancyPct}% de ocupación`}
-            valueColor="var(--status-rented)"
-            borderColor="rgba(141,207,149,0.2)"
-            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(141,207,149,0.06) 100%)"
+            valueClassName="text-[var(--status-rented)]"
+            icon={Key}
           />
           <KpiCard
             label="Disponibles"
             value={counts?.available ?? 0}
             sub="sin contrato activo"
-            valueColor="var(--status-available)"
-            borderColor="rgba(253,222,168,0.2)"
-            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(253,222,168,0.06) 100%)"
+            valueClassName="text-mustard"
+            icon={CheckCircle2}
           />
           <KpiCard
             label="En venta"
             value={counts?.for_sale ?? 0}
             sub="publicadas para venta"
-            valueColor="var(--status-reserved)"
-            borderColor="rgba(167,139,250,0.2)"
-            bgGradient="linear-gradient(135deg, var(--background) 0%, rgba(167,139,250,0.06) 100%)"
+            valueClassName="text-muted-foreground"
+            icon={Tag}
           />
         </div>
       </div>

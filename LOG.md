@@ -4,6 +4,48 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## Sesión 2026-04-23 — Unificación visual de KPI cards en Propiedades
+
+### Qué hice
+
+Actualicé el componente `KpiCard` en `src/components/properties/property-list.tsx` para que use el mismo patrón visual que las tarjetas de estadísticas de la lista de inquilinos.
+
+**Antes:** `KpiCard` era un componente completamente custom con gradientes y colores hardcodeados via `style={{}}` inline (props `bgGradient`, `borderColor`, `valueColor`). No tenía iconos. El layout usaba `flex gap-3`.
+
+**Después:**
+- Usa `Card + CardContent` de shadcn con clases estándar (`rounded-xl border py-0 gap-0`, `p-4`)
+- Layout interno `flex items-start justify-between` con un icono de Lucide en la esquina superior derecha
+- Tipografía unificada: `text-xs font-medium text-muted-foreground uppercase tracking-wide` para el label, `text-3xl font-bold tabular-nums` para el número
+- Colores del número via `valueClassName` (clase de Tailwind) en lugar de `style={{ color: ... }}`
+- Layout externo cambiado a `grid grid-cols-2 gap-3 sm:grid-cols-4` — igual que inquilinos, más responsivo
+- Iconos elegidos: `Building2` (total), `Key` (alquiladas), `CheckCircle2` (disponibles), `Tag` (en venta)
+
+### Por qué lo hice así y no de otra forma
+
+**`valueClassName` en lugar de `valueColor` con `style={{}}`:** los `style={{}}` inline rompen el sistema de diseño — no aprovechan las clases de Tailwind ni el modo oscuro. Con `valueClassName` el componente acepta cualquier clase de Tailwind, lo que es más consistente con el resto del proyecto.
+
+**Saqué `bgGradient` y `borderColor` completamente:** los gradientes diferenciaban visualmente cada card, pero ese efecto "temático" es justamente lo que hacía que las propiedades se vieran distintas al resto de la app. El diseño de shadcn sin fondo personalizado es más limpio y consistente.
+
+**`grid` en lugar de `flex`:** `flex` con `flex-1` en cada card funciona bien en desktop, pero en mobile los cuatro KPIs quedarían muy estrechos. `grid-cols-2 sm:grid-cols-4` es el mismo patrón que usan los inquilinos y se adapta mejor.
+
+### Conceptos que aparecieron
+
+- **Inline styles vs. clases de Tailwind:** `style={{ color: "var(--algo)" }}` y `className="text-[var(--algo)]"` producen el mismo resultado visual, pero las clases de Tailwind participan del sistema de purging y son más fáciles de inspeccionar en DevTools. Los inline styles solo tienen sentido cuando el valor es dinámico y calculado en runtime.
+- **Sistema de diseño consistente:** cuando un componente usa su propio sistema de colores y tipografía (gradientes custom, tamaños de fuente únicos), se desconecta visualmente del resto aunque use los mismos tokens. La consistencia no es solo usar las mismas variables — es usar los mismos patrones de layout y composición.
+
+### Preguntas para reflexionar
+
+1. ¿Cuándo tiene sentido que un componente tenga su propio estilo custom vs. usar los patrones del sistema de diseño? ¿Hay casos donde el custom styling agrega valor real?
+2. Las KPI cards de inquilinos no tienen color en el número del total (usa el color de texto por defecto), pero alquiladas, disponibles y en venta sí tienen colores. ¿Qué criterio usarías para decidir cuándo colorear un número en un KPI?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: `style={{}}` inline vs. `className` — cuándo usar cada uno y por qué las clases de Tailwind son preferibles
+- [ ] Patrón: KPI card con shadcn — `Card + CardContent`, icono en esquina, tipografía unificada
+- [ ] Decisión técnica: `valueClassName` en lugar de `valueColor` — pasar clases en lugar de valores CSS raw
+
+---
+
 ## Sesión 2026-04-23 — Módulo generador de documentos: markdown, variables libres, catálogo expandido y Parte Locadora
 
 ### Qué hice
