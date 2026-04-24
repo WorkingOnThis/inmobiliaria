@@ -2,6 +2,7 @@ import React from "react";
 
 // ─── Patterns ────────────────────────────────────────────────────────────────
 
+const FOR_RE = /\[\[for:(\w+)\]\]([\s\S]*?)\[\[\/for\]\]/g;
 const IF_RE = /\[\[if:([^\]]+)\]\]([\s\S]*?)\[\[\/if\]\]/g;
 
 // Inline: ** before * to avoid mis-matching bold as italic
@@ -126,17 +127,42 @@ function renderInline(
   return nodes;
 }
 
+// ─── For-block expander ───────────────────────────────────────────────────────
+
+function expandForBlocks(
+  body: string,
+  lists: Record<string, Record<string, string | null>[]>
+): string {
+  FOR_RE.lastIndex = 0;
+  return body.replace(FOR_RE, (_full, entity: string, inner: string) => {
+    const items = lists[entity];
+    if (!items?.length) return "";
+    return items
+      .map((item) =>
+        inner.replace(/\[\[item\.(\w+)\]\]/g, (_m, key: string) => {
+          const v = item[key];
+          return v != null ? v : `[[item.${key}]]`;
+        })
+      )
+      .join("");
+  });
+}
+
 // ─── Clause body renderer (markdown + vars + free-text) ──────────────────────
 
 export function renderClauseBody(
   body: string,
   resolved: Record<string, string | null>,
   hasContract: boolean,
-  freeTextValues: Record<string, string> = {}
+  freeTextValues: Record<string, string> = {},
+  lists: Record<string, Record<string, string | null>[]> = {}
 ): React.ReactNode {
+  // Pass 0 — expand [[for:entidad]]...[[/for]] blocks
+  const withForExpanded = expandForBlocks(body, lists);
+
   // Pass 1 — expand [[if:]] conditionals
   IF_RE.lastIndex = 0;
-  const processed = body.replace(IF_RE, (_, path: string, content: string) => {
+  const processed = withForExpanded.replace(IF_RE, (_, path: string, content: string) => {
     const val = resolved[path.trim()];
     return val !== null && val !== undefined ? content : "";
   });

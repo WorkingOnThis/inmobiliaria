@@ -41,6 +41,7 @@
         "resend": "^6.6.0",
         "sonner": "^2.0.7",
         "tailwind-merge": "^3.4.0",
+        "to-words": "^5.5.0",
         "vaul": "^1.1.2",
       },
       "devDependencies": {
@@ -1564,6 +1565,8 @@
     "tldts-core": ["tldts-core@7.0.27", "", {}, "sha512-YQ7uPjgWUibIK6DW5lrKujGwUKhLevU4hcGbP5O6TcIUb+oTjJYJVWPS4nZsIHrEEEG6myk/oqAJUEQmpZrHsg=="],
 
     "to-regex-range": ["to-regex-range@5.0.1", "", { "dependencies": { "is-number": "^7.0.0" } }, "sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ=="],
+
+    "to-words": ["to-words@5.5.0", "", { "bin": { "to-words": "dist/cjs/cli.js" } }, "sha512-JHMQrgaO+VA5zDhZ0qXntxh4JW7MNr0VPGx4KjUGgsMmqM5kQ4xfcdQuLWQtw8+/26kopYClkygViwvgKoaJrw=="],
 
     "toidentifier": ["toidentifier@1.0.1", "", {}, "sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA=="],
 

@@ -116,7 +116,7 @@ function getHighlightedHTML(
   const withSysVars = escaped.replace(/\[\[([^\]]*)\]\]/g, (match, inner: string) => {
     const trimmed = inner.trim();
 
-    if (trimmed.startsWith("if:") || trimmed === "/if") {
+    if (trimmed.startsWith("if:") || trimmed === "/if" || trimmed.startsWith("for:") || trimmed === "/for") {
       return `<span style="color:#94a3b8">${match}</span>`;
     }
 
@@ -275,6 +275,56 @@ function FreeTextVarsPanel({
         Estos valores sólo se usan en la previsualización e impresión. No se guardan en la plantilla.
       </p>
     </div>
+  );
+}
+
+// ─── Iteration entities reference panel ─────────────────────────────────────
+
+const ITERATION_ENTITIES: { entity: string; label: string; fields: string[] }[] = [
+  { entity: "ambientes", label: "Ambientes / Habitaciones", fields: ["nombre", "descripcion"] },
+  { entity: "artefactos", label: "Artefactos / Amenidades", fields: ["nombre"] },
+  { entity: "fiadores", label: "Fiadores personales", fields: ["apellido_fiador", "nombres_fiador", "dni_fiador", "cuil_fiador", "domicilio_fiador", "email_fiador", "telefono_fiador"] },
+  { entity: "inquilinos", label: "Inquilinos", fields: ["apellido_locatario", "nombres_locatario", "dni_locatario", "cuit_locatario", "domicilio_locatario", "email_locatario", "telefono_locatario"] },
+  { entity: "garantias_reales", label: "Garantías propietarias", fields: ["apellido_fiador_propietario", "nombres_fiador_propietario", "dni_fiador_propietario", "cuil_fiador_propietario", "domicilio_fiador_propietario", "matricula_inmueble_garantia", "catastro_inmueble_garantia", "domicilio_inmueble_garantia"] },
+];
+
+function IterationSection() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="mt-1 border-t border-border/40 pt-1">
+      <CollapsibleTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-between px-2 h-7 text-xs font-medium text-primary/80"
+        >
+          <span>Iteración [[for:]]</span>
+          {open ? (
+            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+          )}
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="px-1 pb-1 flex flex-col gap-2">
+          <p className="text-[9px] text-muted-foreground leading-tight px-1">
+            Usá bloques <span className="font-mono text-primary/80">[[for:entidad]]</span> para repetir contenido por cada ítem de una lista.
+          </p>
+          {ITERATION_ENTITIES.map((e) => (
+            <div key={e.entity} className="rounded border border-border/60 bg-muted/20 p-1.5">
+              <p className="text-[9px] font-semibold text-muted-foreground mb-1">{e.label}</p>
+              <code className="text-[8.5px] text-primary/70 block whitespace-pre leading-relaxed">
+                {`[[for:${e.entity}]]\n  [[item.${e.fields[0]}]]\n[[/for]]`}
+              </code>
+              <p className="text-[8.5px] text-muted-foreground/60 mt-1 leading-tight">
+                Campos: {e.fields.map((f) => `item.${f}`).join(", ")}
+              </p>
+            </div>
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -590,6 +640,7 @@ function InlineClauseEditor({
             <br />
             <span className="font-mono text-amber-400/80">{"{{campo [default]}}"}</span> → input libre
           </p>
+          <IterationSection />
         </div>
       </div>
 
@@ -827,6 +878,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
 
   const { data: resolvedData } = useQuery<{
     resolved: Record<string, string | null>;
+    lists: Record<string, Record<string, string | null>[]>;
   }>({
     queryKey: ["document-template-resolve", selectedContractId],
     queryFn: () =>
@@ -837,6 +889,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
   });
 
   const resolved = resolvedData?.resolved ?? {};
+  const lists = resolvedData?.lists ?? {};
   const hasContract = !!selectedContractId && !!resolvedData;
   const contracts = contractsData?.contracts ?? [];
 
@@ -1136,7 +1189,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
                       <h3 className="preview-clause-title">{clause.title}</h3>
                     )}
                     <div className="preview-clause-body">
-                      {renderClauseBody(clause.body, resolved, hasContract, freeTextValues)}
+                      {renderClauseBody(clause.body, resolved, hasContract, freeTextValues, lists)}
                     </div>
                   </div>
                 ))}

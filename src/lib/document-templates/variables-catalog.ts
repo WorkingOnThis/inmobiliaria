@@ -3,6 +3,7 @@ import type { property } from "@/db/schema/property";
 import type { client } from "@/db/schema/client";
 import type { contract } from "@/db/schema/contract";
 import type { agency } from "@/db/schema/agency";
+import { numeroEnLetras, montoEnLetras } from "./num-to-words";
 
 export type VariableCategory =
   | "propiedad"
@@ -12,6 +13,21 @@ export type VariableCategory =
   | "administradora"
   | "garante";
 
+export type GuaranteeResolvedInfo = {
+  ownerFirstName: string | null;
+  ownerLastName: string | null;
+  ownerDni: string | null;
+  ownerCuit: string | null;
+  ownerAddress: string | null;
+  ownerEmail: string | null;
+  ownerPhone: string | null;
+  propertyAddress: string | null;
+  propertyCadastralRef: string | null;
+  propertyRegistryNumber: string | null;
+  propertySurfaceLand: string | null;
+  propertySurfaceBuilt: string | null;
+};
+
 export type TemplateContext = {
   property: InferSelectModel<typeof property> | null;
   owner: InferSelectModel<typeof client> | null;
@@ -19,6 +35,7 @@ export type TemplateContext = {
   guarantors: InferSelectModel<typeof client>[];
   contract: InferSelectModel<typeof contract> | null;
   agency: InferSelectModel<typeof agency> | null;
+  firstRealGuarantee: GuaranteeResolvedInfo | null;
 };
 
 export type TemplateVariable = {
@@ -347,7 +364,11 @@ export const VARIABLES_CATALOG: TemplateVariable[] = [
     path: "duracion_texto",
     label: "Duración en letras",
     category: "contrato",
-    resolver: () => null, // TODO PR 3: requires to-words num→letras
+    resolver: (ctx) => {
+      if (!ctx.contract?.startDate || !ctx.contract?.endDate) return null;
+      const months = monthsBetween(ctx.contract.startDate, ctx.contract.endDate);
+      return months !== null ? numeroEnLetras(months) : null;
+    },
   },
   {
     path: "precio_inicial_numero",
@@ -365,7 +386,7 @@ export const VARIABLES_CATALOG: TemplateVariable[] = [
     path: "precio_inicial_letras",
     label: "Precio inicial en letras",
     category: "contrato",
-    resolver: () => null, // TODO PR 3: requires to-words num→letras
+    resolver: (ctx) => montoEnLetras(ctx.contract?.monthlyAmount),
   },
   {
     path: "tipo_ajuste",
@@ -518,6 +539,89 @@ export const VARIABLES_CATALOG: TemplateVariable[] = [
     label: "Nombre completo del fiador (1°)",
     category: "garante",
     resolver: (ctx) => fullName(ctx.guarantors[0] ?? null),
+  },
+
+  // ── Garantía propietaria (primera garantía real) ──────────────────────────
+  {
+    path: "tiene_garantia_propietaria",
+    label: "¿Tiene garantía propietaria?",
+    category: "garante",
+    resolver: (ctx) =>
+      ctx.contract != null
+        ? ctx.firstRealGuarantee != null ? "Sí" : "No"
+        : null,
+  },
+  {
+    path: "apellido_fiador_propietario",
+    label: "Apellido del fiador propietario",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.ownerLastName ?? null,
+  },
+  {
+    path: "nombres_fiador_propietario",
+    label: "Nombres del fiador propietario",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.ownerFirstName ?? null,
+  },
+  {
+    path: "dni_fiador_propietario",
+    label: "DNI del fiador propietario",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.ownerDni ?? null,
+  },
+  {
+    path: "cuil_fiador_propietario",
+    label: "CUIL del fiador propietario",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.ownerCuit ?? null,
+  },
+  {
+    path: "domicilio_fiador_propietario",
+    label: "Domicilio del fiador propietario",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.ownerAddress ?? null,
+  },
+  {
+    path: "email_fiador_propietario",
+    label: "Email del fiador propietario",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.ownerEmail ?? null,
+  },
+  {
+    path: "telefono_fiador_propietario",
+    label: "Teléfono del fiador propietario",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.ownerPhone ?? null,
+  },
+  {
+    path: "matricula_inmueble_garantia",
+    label: "Matrícula del inmueble de garantía",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.propertyRegistryNumber ?? null,
+  },
+  {
+    path: "catastro_inmueble_garantia",
+    label: "Catastro del inmueble de garantía",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.propertyCadastralRef ?? null,
+  },
+  {
+    path: "domicilio_inmueble_garantia",
+    label: "Domicilio del inmueble de garantía",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.propertyAddress ?? null,
+  },
+  {
+    path: "superficie_terreno_garantia",
+    label: "Superficie del terreno de garantía",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.propertySurfaceLand ?? null,
+  },
+  {
+    path: "superficie_cubierta_garantia",
+    label: "Superficie cubierta de garantía",
+    category: "garante",
+    resolver: (ctx) => ctx.firstRealGuarantee?.propertySurfaceBuilt ?? null,
   },
 
   // Fiadoras 1–3 (generated)
