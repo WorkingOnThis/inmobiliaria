@@ -56,7 +56,11 @@
       "Bash(Select-Object LineNumber, Line)",
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
       "Bash(grep -E \"\\\\.tsx$\")",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "WebSearch",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(bun test *)"
     ]
   }
 }

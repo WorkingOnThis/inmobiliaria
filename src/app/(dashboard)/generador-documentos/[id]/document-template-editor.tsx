@@ -585,6 +585,11 @@ function InlineClauseEditor({
           <p className="text-[9px] text-muted-foreground px-2 pt-1 leading-tight">
             Clic en cualquier variable para insertarla en el cuerpo.
           </p>
+          <p className="text-[9px] text-muted-foreground/70 px-2 pt-0.5 leading-tight border-t border-border/40 mt-1">
+            <span className="font-mono text-primary/80">[[variable]]</span> → dato del contrato
+            <br />
+            <span className="font-mono text-amber-400/80">{"{{campo [default]}}"}</span> → input libre
+          </p>
         </div>
       </div>
 
