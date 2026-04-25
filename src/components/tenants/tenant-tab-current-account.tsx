@@ -1510,10 +1510,6 @@ export function TenantTabCurrentAccount({
                 />
                 <span className="text-[0.82rem] font-medium text-on-surface">Trasladar cobro al propietario</span>
               </label>
-              <p className="text-[0.7rem] text-muted-foreground -mt-1">
-                Marcá esta opción para el alquiler y expensas. Desmarcá si el cobro es por gastos tuyos que le pasás al inquilino (ej: materiales, reparaciones).
-              </p>
-
               {emitirTrasladar && (
                 <div>
                   <label className={labelCls}>Honorarios de administración (%)</label>
@@ -1529,12 +1525,23 @@ export function TenantTabCurrentAccount({
                       placeholder="0"
                     />
                     <span className="text-[0.82rem] text-muted-foreground">%</span>
-                    {emitirHonorariosPct && Number(emitirHonorariosPct) > 0 && (
-                      <span className="text-[0.78rem] text-muted-foreground">
-                        = {formatMonto(Math.round(montoSeleccionado * Number(emitirHonorariosPct) / 100))}
-                      </span>
-                    )}
                   </div>
+                  {Number(emitirHonorariosPct) > 0 && (
+                    <div className="mt-2 flex flex-col gap-1 text-[0.78rem]">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Propietario recibe</span>
+                        <span className="font-semibold text-on-surface">
+                          {formatMonto(montoSeleccionado - Math.round(montoSeleccionado * Number(emitirHonorariosPct) / 100))}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Inmobiliaria ({emitirHonorariosPct}%)</span>
+                        <span className="font-semibold text-on-surface">
+                          {formatMonto(Math.round(montoSeleccionado * Number(emitirHonorariosPct) / 100))}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
