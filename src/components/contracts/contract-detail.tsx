@@ -119,6 +119,7 @@ interface ContractDetail extends PropertyServices {
   monthlyAmount: string;
   depositAmount: string | null;
   agencyCommission: string | null;
+  managementCommissionPct: string | null;
   paymentDay: number;
   paymentModality: string;
   adjustmentIndex: string;
@@ -163,6 +164,7 @@ interface EditableConditions {
   monthlyAmount: string;
   depositAmount: string;
   agencyCommission: string;
+  managementCommissionPct: string;
   paymentDay: string;
   paymentModality: "A" | "B";
   adjustmentIndex: string;
@@ -418,6 +420,9 @@ export function ContractDetail({ id }: { id: string }) {
       else body.depositAmount = null;
       if (values.agencyCommission) body.agencyCommission = parseFloat(values.agencyCommission);
       else body.agencyCommission = null;
+      body.managementCommissionPct = values.managementCommissionPct
+        ? parseFloat(values.managementCommissionPct)
+        : 10;
 
       const res = await fetch(`/api/contracts/${id}`, {
         method: "PATCH",
@@ -509,6 +514,7 @@ export function ContractDetail({ id }: { id: string }) {
       monthlyAmount: data.monthlyAmount,
       depositAmount: data.depositAmount ?? "",
       agencyCommission: data.agencyCommission ?? "",
+      managementCommissionPct: data.managementCommissionPct ?? "10",
       paymentDay: String(data.paymentDay),
       paymentModality: data.paymentModality as "A" | "B",
       adjustmentIndex: data.adjustmentIndex,
@@ -906,9 +912,14 @@ export function ContractDetail({ id }: { id: string }) {
                       onChange={(e) => setEditValues((v) => v && { ...v, depositAmount: e.target.value })} />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Comisión (%)</Label>
+                    <Label className="text-xs">Comisión inmobiliaria (%)</Label>
                     <Input type="number" min="0" max="100" step="0.5" value={editValues.agencyCommission}
                       onChange={(e) => setEditValues((v) => v && { ...v, agencyCommission: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Comisión de administración al propietario (%)</Label>
+                    <Input type="number" min="0" max="100" step="0.5" value={editValues.managementCommissionPct}
+                      onChange={(e) => setEditValues((v) => v && { ...v, managementCommissionPct: e.target.value })} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Día de pago</Label>
@@ -1021,7 +1032,8 @@ export function ContractDetail({ id }: { id: string }) {
                   { label: "Índice", value: adjustmentLabel },
                   { label: "Frecuencia", value: frequencyLabel },
                   { label: "Vto. pago", value: `Día ${data.paymentDay}` },
-                  ...(data.agencyCommission ? [{ label: "Comisión", value: `${data.agencyCommission}%` }] : []),
+                  ...(data.agencyCommission ? [{ label: "Comisión inmobiliaria", value: `${data.agencyCommission}%` }] : []),
+                  { label: "Comisión adm. propietario", value: `${data.managementCommissionPct ?? "10"}%` },
                 ].map(({ label, value }) => (
                   <div key={label} className="grid grid-cols-2 gap-2 px-[18px] py-[11px]">
                     <span className="text-muted-foreground text-[0.75rem]">{label}</span>

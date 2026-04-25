@@ -33,6 +33,7 @@ export const contract = pgTable("contract", {
   monthlyAmount: decimal("monthlyAmount", { precision: 12, scale: 2 }).notNull(),
   depositAmount: decimal("depositAmount", { precision: 12, scale: 2 }),
   agencyCommission: decimal("agencyCommission", { precision: 5, scale: 2 }),
+  managementCommissionPct: decimal("managementCommissionPct", { precision: 5, scale: 2 }).default("10"),
 
   paymentDay: integer("paymentDay").notNull(),
   paymentModality: text("paymentModality").notNull().default("A"),

@@ -21,6 +21,7 @@ const patchContractSchema = z.object({
   monthlyAmount: z.coerce.number().positive().optional(),
   depositAmount: z.coerce.number().min(0).optional().nullable(),
   agencyCommission: z.coerce.number().min(0).max(100).optional().nullable(),
+  managementCommissionPct: z.coerce.number().min(0).max(100).optional().nullable(),
   paymentDay: z.coerce.number().int().min(1).max(28).optional(),
   paymentModality: z.enum(["A", "B"]).optional(),
   adjustmentIndex: z.string().min(1).optional(),
@@ -61,6 +62,7 @@ export async function GET(
         monthlyAmount: contract.monthlyAmount,
         depositAmount: contract.depositAmount,
         agencyCommission: contract.agencyCommission,
+        managementCommissionPct: contract.managementCommissionPct,
         paymentDay: contract.paymentDay,
         paymentModality: contract.paymentModality,
         adjustmentIndex: contract.adjustmentIndex,
@@ -391,6 +393,8 @@ export async function PATCH(
       updates.depositAmount = data.depositAmount?.toString() ?? null;
     if (data.agencyCommission !== undefined)
       updates.agencyCommission = data.agencyCommission?.toString() ?? null;
+    if (data.managementCommissionPct !== undefined)
+      updates.managementCommissionPct = data.managementCommissionPct?.toString() ?? "10";
     if (data.paymentDay !== undefined) updates.paymentDay = data.paymentDay;
     if (data.paymentModality !== undefined)
       updates.paymentModality = data.paymentModality;

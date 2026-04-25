@@ -55,6 +55,7 @@ interface Contrato {
   monthlyAmount: string;
   depositAmount: string | null;
   agencyCommission: string | null;
+  managementCommissionPct: string | null;
   paymentDay: number;
   paymentModality: string;
   adjustmentIndex: string;

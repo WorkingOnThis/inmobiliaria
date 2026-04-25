@@ -85,6 +85,7 @@ interface ContratoData {
   propertyAddress: string | null;
   status: string;
   agencyCommission: string | null;
+  managementCommissionPct: string | null;
 }
 
 interface PropiedadOption {
@@ -638,7 +639,7 @@ export function TenantTabCurrentAccount({
     const contratoDelSeleccionado = charges.find((c) => chargesSeleccionados.has(c.id));
     const contratoData = contratos.find((ct) => ct.id === contratoDelSeleccionado?.contratoId);
     const modalidad = contratoData?.paymentModality ?? "A";
-    const comision = contratoData?.agencyCommission != null ? String(contratoData.agencyCommission) : "0";
+    const comision = contratoData?.managementCommissionPct != null ? String(contratoData.managementCommissionPct) : "10";
     setEmitirFecha(hoy());
     setEmitirContratoComision(comision);
     setEmitirHonorariosPct(comision);
@@ -891,6 +892,30 @@ export function TenantTabCurrentAccount({
               </TableBody>
             </Table>
           )}
+          {(() => {
+            if (chargesSeleccionados.size === 0 || !seleccionadosMismoContrato) return null;
+            const contratoId = charges.find((c) => chargesSeleccionados.has(c.id))?.contratoId;
+            const ct = contratos.find((c) => c.id === contratoId);
+            const pct = Number(ct?.managementCommissionPct ?? 10);
+            const comision = Math.round(montoSeleccionado * pct / 100);
+            const total = montoSeleccionado + comision;
+            return (
+              <div className="px-5 py-3 border-t border-border bg-surface-mid flex flex-wrap items-center gap-x-6 gap-y-1 text-[0.78rem]">
+                <span className="text-muted-foreground font-medium uppercase tracking-[0.07em] text-[0.62rem]">Desglose del pago</span>
+                <span className="text-on-surface">
+                  Propietario <span className="font-semibold text-income">{formatMonto(montoSeleccionado)}</span>
+                </span>
+                <span className="text-muted-foreground">+</span>
+                <span className="text-on-surface">
+                  Inmobiliaria ({pct}%) <span className="font-semibold text-income">{formatMonto(comision)}</span>
+                </span>
+                <span className="text-muted-foreground">=</span>
+                <span className="text-on-surface">
+                  Total a transferir <span className="font-bold text-on-surface">{formatMonto(total)}</span>
+                </span>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 

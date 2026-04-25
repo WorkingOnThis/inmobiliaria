@@ -50,6 +50,7 @@ interface Step2Data {
   monthlyAmount: string;
   depositAmount: string;
   agencyCommission: string;
+  managementCommissionPct: string;
   paymentDay: string;
   paymentModality: "A" | "B";
   adjustmentIndex: string;
@@ -87,6 +88,7 @@ export function ContractForm() {
     monthlyAmount: "",
     depositAmount: "",
     agencyCommission: "",
+    managementCommissionPct: "10",
     paymentDay: "1",
     paymentModality: "A",
     adjustmentIndex: "none",
@@ -265,6 +267,9 @@ export function ContractForm() {
           agencyCommission: step2.agencyCommission
             ? parseFloat(step2.agencyCommission)
             : null,
+          managementCommissionPct: step2.managementCommissionPct
+            ? parseFloat(step2.managementCommissionPct)
+            : 10,
           paymentDay: parseInt(step2.paymentDay),
           paymentModality: step2.paymentModality,
           adjustmentIndex: step2.adjustmentIndex,
@@ -790,12 +795,27 @@ export function ContractForm() {
 
             <div className="space-y-2">
               <Label>Comisión inmobiliaria (%)</Label>
-              <MoneyInput
-                thousandSeparator={false}
-                decimalScale={2}
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
                 value={step2.agencyCommission}
-                onValueChange={(v) => setStep2((s) => ({ ...s, agencyCommission: v }))}
+                onChange={(e) => setStep2((s) => ({ ...s, agencyCommission: e.target.value }))}
                 placeholder="Ej: 5"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Comisión de administración al propietario (%)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                value={step2.managementCommissionPct}
+                onChange={(e) => setStep2((s) => ({ ...s, managementCommissionPct: e.target.value }))}
+                placeholder="Ej: 10"
               />
             </div>
 
