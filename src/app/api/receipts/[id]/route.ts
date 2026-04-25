@@ -65,7 +65,7 @@ export async function GET(
     let contrato = null;
     if (movimiento.contratoId) {
       const [con] = await db
-        .select({ contractNumber: contract.contractNumber })
+        .select({ contractNumber: contract.contractNumber, paymentModality: contract.paymentModality })
         .from(contract)
         .where(eq(contract.id, movimiento.contratoId))
         .limit(1);
@@ -73,7 +73,7 @@ export async function GET(
     } else if (movimiento.inquilinoId) {
       // Intentar obtener el contrato activo del inquilino
       const [con] = await db
-        .select({ contractNumber: contract.contractNumber })
+        .select({ contractNumber: contract.contractNumber, paymentModality: contract.paymentModality })
         .from(contractTenant)
         .innerJoin(contract, eq(contract.id, contractTenant.contractId))
         .where(

@@ -84,6 +84,7 @@ export default function ReciboPage() {
     } | null;
     contrato: {
       contractNumber: string;
+      paymentModality: string | null;
     } | null;
     serviceItems: {
       id: string;
@@ -191,6 +192,16 @@ export default function ReciboPage() {
                 <div>
                   <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-1">N° de contrato</div>
                   <div className="text-[0.9rem] font-semibold text-on-bg">{contrato.contractNumber}</div>
+                </div>
+              )}
+              {contrato?.paymentModality && (
+                <div>
+                  <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-1">Modalidad de pago</div>
+                  <div className="text-[0.9rem] font-semibold text-on-bg">
+                    {contrato.paymentModality === "B"
+                      ? "B — Pago directo al propietario"
+                      : "A — Cobro por inmobiliaria"}
+                  </div>
                 </div>
               )}
             </div>

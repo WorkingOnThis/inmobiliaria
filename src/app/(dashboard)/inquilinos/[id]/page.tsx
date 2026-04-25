@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Loader2, ArrowLeft, MoreHorizontal, Bell, ChevronRight } from "lucide-react";
+import { Loader2, ArrowLeft, MoreHorizontal, Bell, ChevronRight, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -238,6 +238,11 @@ export default function TenantDetailPage() {
               <div className="flex items-center gap-2 flex-shrink-0 pt-1">
                 <Button variant="ghost" size="icon" className="size-8">
                   <MoreHorizontal size={15} />
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" asChild>
+                  <Link href={`/contratos/nuevo?tenantId=${tenant.id}`}>
+                    <PlusCircle size={13} /> Agregar contrato
+                  </Link>
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <Bell size={13} /> Notificar

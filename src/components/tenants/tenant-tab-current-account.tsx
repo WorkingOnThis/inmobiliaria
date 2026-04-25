@@ -238,6 +238,8 @@ export function TenantTabCurrentAccount({
   const [emitirFecha, setEmitirFecha] = useState(hoy());
   const [emitirHonorariosPct, setEmitirHonorariosPct] = useState<string>("");
   const [emitirTrasladar, setEmitirTrasladar] = useState(true);
+  const [emitirModalidad, setEmitirModalidad] = useState<string>("A");
+  const [emitirContratoComision, setEmitirContratoComision] = useState<string>("0");
   const [emitirGuardando, setEmitirGuardando] = useState(false);
   const [emitirError, setEmitirError] = useState<string | null>(null);
   const [chargeModalOpen, setChargeModalOpen] = useState(false);
@@ -635,9 +637,13 @@ export function TenantTabCurrentAccount({
   function abrirEmitirModal() {
     const contratoDelSeleccionado = charges.find((c) => chargesSeleccionados.has(c.id));
     const contratoData = contratos.find((ct) => ct.id === contratoDelSeleccionado?.contratoId);
+    const modalidad = contratoData?.paymentModality ?? "A";
+    const comision = contratoData?.agencyCommission != null ? String(contratoData.agencyCommission) : "0";
     setEmitirFecha(hoy());
-    setEmitirHonorariosPct(contratoData?.agencyCommission != null ? String(contratoData.agencyCommission) : "0");
-    setEmitirTrasladar(true);
+    setEmitirContratoComision(comision);
+    setEmitirHonorariosPct(comision);
+    setEmitirTrasladar(modalidad !== "B");
+    setEmitirModalidad(modalidad);
     setEmitirError(null);
     setEmitirModalOpen(true);
   }
@@ -1459,11 +1465,22 @@ export function TenantTabCurrentAccount({
 
             {/* Owner section */}
             <div className="border border-border rounded-[8px] p-3 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className={labelCls}>Modalidad de cobro</span>
+                <span className="text-[0.72rem] font-semibold px-2 py-0.5 rounded bg-surface-mid border border-border text-on-surface">
+                  {emitirModalidad === "B"
+                    ? "B — Pago directo al propietario"
+                    : "A — Cobro por inmobiliaria"}
+                </span>
+              </div>
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={emitirTrasladar}
-                  onChange={(e) => setEmitirTrasladar(e.target.checked)}
+                  onChange={(e) => {
+                    setEmitirTrasladar(e.target.checked);
+                    if (e.target.checked) setEmitirHonorariosPct(emitirContratoComision);
+                  }}
                   className="size-4 rounded border-border accent-primary"
                 />
                 <span className="text-[0.82rem] font-medium text-on-surface">Trasladar cobro al propietario</span>

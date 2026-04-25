@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { MoneyInput } from "@/components/ui/money-input";
 import { toast } from "sonner";
 import { X, Users, Search, Plus, Loader2 as Spin, Shield } from "lucide-react";
 import {
@@ -57,6 +58,7 @@ interface Step2Data {
 
 export function ContractForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -69,9 +71,12 @@ export function ContractForm() {
   const [showTenantPopup, setShowTenantPopup] = useState(false);
   const [durationMonths, setDurationMonths] = useState("");
 
+  const presetTenantId = searchParams.get("tenantId");
+  const presetPropertyId = searchParams.get("propertyId");
+
   const [step1, setStep1] = useState<Step1Data>({
-    propertyId: "",
-    tenantIds: [],
+    propertyId: presetPropertyId ?? "",
+    tenantIds: presetTenantId ? [presetTenantId] : [],
     ownerId: "",
     contractType: "",
   });
@@ -85,7 +90,7 @@ export function ContractForm() {
     paymentDay: "1",
     paymentModality: "A",
     adjustmentIndex: "none",
-    adjustmentFrequency: "12",
+    adjustmentFrequency: "3",
   });
 
   const [showNewIndexForm, setShowNewIndexForm] = useState(false);
@@ -700,6 +705,7 @@ export function ContractForm() {
                   if (newStart && months >= 1) {
                     const d = new Date(newStart);
                     d.setMonth(d.getMonth() + months);
+                    d.setDate(d.getDate() - 1);
                     const newEnd = d.toISOString().slice(0, 10);
                     setStep2((s) => ({ ...s, startDate: newStart, endDate: newEnd }));
                   } else {
@@ -725,6 +731,7 @@ export function ContractForm() {
                   if (step2.startDate && months >= 1) {
                     const d = new Date(step2.startDate);
                     d.setMonth(d.getMonth() + months);
+                    d.setDate(d.getDate() - 1);
                     setStep2((s) => ({ ...s, endDate: d.toISOString().slice(0, 10) }));
                   }
                 }}
@@ -760,15 +767,10 @@ export function ContractForm() {
               <Label>
                 Monto mensual ($) <span className="text-destructive">*</span>
               </Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
+              <MoneyInput
                 value={step2.monthlyAmount}
-                onChange={(e) =>
-                  setStep2((s) => ({ ...s, monthlyAmount: e.target.value }))
-                }
-                placeholder="Ej: 150000"
+                onValueChange={(v) => setStep2((s) => ({ ...s, monthlyAmount: v }))}
+                placeholder="Ej: 150.000"
               />
               {fieldErrors.monthlyAmount && (
                 <p className="text-sm text-destructive">
@@ -779,29 +781,20 @@ export function ContractForm() {
 
             <div className="space-y-2">
               <Label>Depósito ($)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
+              <MoneyInput
                 value={step2.depositAmount}
-                onChange={(e) =>
-                  setStep2((s) => ({ ...s, depositAmount: e.target.value }))
-                }
-                placeholder="Ej: 300000"
+                onValueChange={(v) => setStep2((s) => ({ ...s, depositAmount: v }))}
+                placeholder="Ej: 300.000"
               />
             </div>
 
             <div className="space-y-2">
               <Label>Comisión inmobiliaria (%)</Label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.5"
+              <MoneyInput
+                thousandSeparator={false}
+                decimalScale={2}
                 value={step2.agencyCommission}
-                onChange={(e) =>
-                  setStep2((s) => ({ ...s, agencyCommission: e.target.value }))
-                }
+                onValueChange={(v) => setStep2((s) => ({ ...s, agencyCommission: v }))}
                 placeholder="Ej: 5"
               />
             </div>
@@ -947,26 +940,17 @@ export function ContractForm() {
             </div>
 
             <div className="space-y-2">
-              <Label>Frecuencia de ajuste</Label>
-              <Select
+              <Label>Frecuencia de ajuste (meses)</Label>
+              <Input
+                type="number"
+                min="1"
+                max="36"
                 value={step2.adjustmentFrequency}
-                onValueChange={(v) =>
-                  setStep2((s) => ({ ...s, adjustmentFrequency: v }))
+                onChange={(e) =>
+                  setStep2((s) => ({ ...s, adjustmentFrequency: e.target.value }))
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(ADJUSTMENT_FREQUENCY_LABELS).map(
-                    ([val, label]) => (
-                      <SelectItem key={val} value={val}>
-                        {label}
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
+                placeholder="Ej: 12"
+              />
             </div>
           </div>
 
