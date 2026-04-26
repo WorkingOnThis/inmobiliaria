@@ -4,6 +4,64 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## Sesión 2026-04-26 — Bugs post-implementación + planificación de sub-proyectos
+
+### Qué hice
+
+Continué la sesión anterior donde se habían implementado las 19 tareas del plan Cuenta Corriente v2. Al probar en el navegador aparecieron varios bugs que fui resolviendo:
+
+1. **Bug: TypeError `ledgerEntries.filter` undefined** — El `queryFn` de TanStack Query no tiraba error en respuestas no-2xx (fetch no lanza en errores HTTP). Solución: agregar `if (!r.ok) throw new Error(...)` en el queryFn. También agregué `= []` como default en el destructure.
+
+2. **Bug: props incorrectos en page.tsx** — La página de inquilinos llamaba al componente reescrito con los props viejos (`tenantId`, `tenantName`, etc.) en lugar del nuevo `inquilinoId`. El componente recibía `undefined` y la API fallaba.
+
+3. **Bug: `contract_tenant` vacía** — Los contratos existían pero no tenían inquilinos vinculados (la tabla intermedia estaba vacía). Creé `scripts/fix-and-generate.ts` para poblar la relación y generar el ledger manualmente.
+
+4. **Bug: `tenant_ledger` sin datos** — La tabla existía pero no tenía entradas porque nunca se llamó al endpoint `generate-ledger`. El script lo resolvió generando 24 entradas para el contrato activo.
+
+5. **Bug: `db:migrate` falla** — Las migraciones se aplicaron con `db:push` en sesiones anteriores. El historial de `__drizzle_migrations` está desincronizado. Workaround: seguir con `db:push` en dev.
+
+6. **UX: rediseño del layout de cuenta corriente** — A pedido del usuario, reestructuré el componente:
+   - Panel scrolleable con altura propia (`max-h: calc(100dvh - 420px)`)
+   - Botón "Emitir recibo" siempre visible abajo (antes solo aparecía al seleccionar)
+   - Diálogo de confirmación con desglose completo + campo de observaciones
+   - Diálogo de cargo manual implementado (era TODO en el plan)
+   - Default de vista cambiado a "Solo historial"
+   - Filas del ledger clickeables para seleccionar (antes solo el checkbox de 28px)
+   - Opacidad de meses pasados subida de 40% a 60%
+   - Auto-scroll al período actual al cargar
+
+7. **Planificación de próximos pasos** — Identificamos 4 sub-proyectos pendientes (ver handoff).
+
+### Por qué lo hice así y no de otra forma
+
+- **fetch + TanStack Query**: `fetch` resuelve el promise aunque el servidor devuelva 403/500. TanStack Query solo marca `isError=true` si el promise se rechaza. Solución estándar: verificar `r.ok` manualmente.
+
+- **Layout con `max-h` en lugar de `flex-1`**: El wrapper padre de la pestaña tiene `overflow-y-auto`, lo que impide que `flex-1` funcione en hijos (el padre no tiene altura fija). `max-h` con valor viewport es más predecible en este contexto.
+
+- **`stopPropagation` en acciones de fila**: Hacer la fila clickeable para seleccionar requiere bloquear la propagación en el Input de monto y en los botones de acción internos, para que no disparen la selección accidentalmente.
+
+### Conceptos que aparecieron
+
+- **fetch vs XHR**: `fetch` no lanza en errores HTTP (4xx, 5xx), solo en errores de red. Hay que verificar `response.ok` manualmente.
+- **TanStack Query isError**: Solo se activa si el queryFn tira una excepción. Si devuelve un objeto `{ error: "..." }`, `isError` queda en `false`.
+- **event.stopPropagation()**: Evita que el evento click "suba" por el árbol de componentes y dispare handlers de los padres.
+- **100dvh vs 100vh**: `dvh` (dynamic viewport height) excluye la barra del navegador en móvil. Más preciso para layouts full-screen.
+- **contract_tenant**: Tabla intermedia de la relación muchos-a-muchos entre contratos e inquilinos. Si está vacía, el contrato no tiene inquilino vinculado y el ledger no se puede generar.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué `db:push` no actualiza el historial de migraciones? ¿Qué diferencia hay con `db:migrate`?
+2. Si una fila es clickeable pero tiene elementos interactivos dentro, ¿qué otros patrones existen además de `stopPropagation` para manejar esto?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Patrón**: fetch + TanStack Query — siempre verificar `r.ok` en el queryFn para que `isError` funcione correctamente
+- [ ] **Bug**: diferencia entre `db:push` y `db:migrate` en Drizzle — cuándo usar cada uno
+- [ ] **Concepto**: event bubbling y stopPropagation — cómo funciona el click en elementos anidados
+- [ ] **Decisión técnica**: layout con `max-h` calc(100dvh - Xpx) vs flex-1 para paneles scrolleables
+
+---
+
 ## Sesión 2026-04-23 — Unificación visual de KPI cards en Propiedades
 
 ### Qué hice
