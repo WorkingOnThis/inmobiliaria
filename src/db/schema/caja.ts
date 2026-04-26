@@ -62,6 +62,16 @@ export const cajaMovimiento = pgTable("cash_movement", {
   // Período de alquiler al que corresponde el pago, formato "YYYY-MM"
   period: text("period"),
 
+  // Fund segregation
+  tipoFondo: text("tipoFondo").notNull().default("agencia"),
+  // "agencia"     — money that belongs to the agency (fees, commissions)
+  // "propietario" — in-transit money from an owner (rent collected, pending settlement)
+  // "inquilino"   — in-transit money from a tenant (deposit, advance payments)
+
+  // Link to the tenant_ledger entry that originated this movement (nullable for manual entries)
+  ledgerEntryId: text("ledgerEntryId"),
+  // No FK here — would create circular import: caja.ts → tenant-ledger.ts → ... → caja.ts.
+
   // Quién registró el movimiento
   createdBy: text("createdBy").references(() => user.id, { onDelete: "set null" }),
 
