@@ -2,6 +2,7 @@ import { db } from "../src/db";
 import { tenantCharge } from "../src/db/schema/tenant-charge";
 import { tenantLedger } from "../src/db/schema/tenant-ledger";
 import { defaultFlagsForTipo } from "../src/lib/ledger/flags";
+import { inArray } from "drizzle-orm";
 
 // Maps tenant_charge.categoria → tenant_ledger.tipo
 const CATEGORIA_MAP: Record<string, string> = {
@@ -25,10 +26,31 @@ async function run() {
   const charges = await db.select().from(tenantCharge);
   console.log(`Found ${charges.length} charges to migrate`);
 
+  if (charges.length === 0) {
+    console.log("Nothing to migrate.");
+    return;
+  }
+
+  // Idempotency check: skip IDs already in tenant_ledger
+  const chargeIds = charges.map((c) => c.id);
+  const existingIds = new Set(
+    (await db
+      .select({ id: tenantLedger.id })
+      .from(tenantLedger)
+      .where(inArray(tenantLedger.id, chargeIds))
+    ).map((r) => r.id)
+  );
+
+  if (existingIds.size > 0) {
+    console.log(`Skipping ${existingIds.size} already-migrated entries.`);
+  }
+
   let migrated = 0;
-  let skipped = 0;
+  let skipped = existingIds.size;
 
   for (const charge of charges) {
+    if (existingIds.has(charge.id)) continue;
+
     const tipo = CATEGORIA_MAP[charge.categoria ?? ""] ?? "gasto";
     const estado = ESTADO_MAP[charge.estado ?? ""] ?? "pendiente";
 
