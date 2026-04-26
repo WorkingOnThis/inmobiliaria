@@ -13,6 +13,10 @@ type Props = {
   isEmitting: boolean;
 };
 
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 function getMonto(entry: LedgerEntry, overrides: Record<string, string>): number {
   const raw = overrides[entry.id] ?? entry.monto;
   return raw !== null ? Number(raw) : 0;
@@ -32,9 +36,9 @@ export function CobroPanel({
     .filter((e) => e.tipo !== "punitorio" && e.tipo !== "descuento")
     .reduce((s, e) => s + getMonto(e, montoOverrides), 0);
 
-  const totalRecibo = selectedEntries.reduce((s, e) => s + getMonto(e, montoOverrides), 0);
-  const honorarios = baseComision * (honorariosPct / 100);
-  const netoPropietario = totalRecibo - honorarios;
+  const totalRecibo = round2(selectedEntries.reduce((s, e) => s + getMonto(e, montoOverrides), 0));
+  const honorarios = round2(baseComision * (honorariosPct / 100));
+  const netoPropietario = round2(totalRecibo - honorarios);
 
   return (
     <div className="sticky bottom-0 z-10 border-t-2 border-primary bg-background">

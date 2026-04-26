@@ -45,7 +45,7 @@ export function PunitorioPopover({ parentId, alquilerMonto, dueDate, onConfirm }
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(next) => { if (next) handleOpen(); else setOpen(false); }}>
       <PopoverTrigger asChild>
         <button
           onClick={handleOpen}

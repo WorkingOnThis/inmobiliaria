@@ -30,7 +30,6 @@ type Props = {
   onAddPunitorio: (parentId: string, monto: number, descripcion: string) => void;
   onCancelPunitorio: (id: string) => void;
   viewMode: "completa" | "historial";
-  inquilinoId: string;
 };
 
 const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
@@ -76,7 +75,6 @@ export function LedgerTable({
   onAddPunitorio,
   onCancelPunitorio,
   viewMode,
-  inquilinoId,
 }: Props) {
   const todayPeriod = new Date().toISOString().slice(0, 7);
 
@@ -103,7 +101,7 @@ export function LedgerTable({
             className={cn(
               "border-b border-border",
               past && "opacity-40",
-              future && !current && "opacity-45",
+              future && "opacity-45",
               current && "border-l-2 border-l-primary bg-primary/5"
             )}
           >
@@ -181,6 +179,8 @@ export function LedgerTable({
                       <Input
                         value={displayMonto ?? ""}
                         onChange={(e) => onMontoChange(entry.id, e.target.value)}
+                        type="number"
+                        min="0"
                         className="h-7 w-24 text-right text-xs font-mono"
                       />
                     ) : (
@@ -210,6 +210,7 @@ export function LedgerTable({
                     {isPunitorio && entry.estado !== "conciliado" && (
                       <button
                         onClick={() => onCancelPunitorio(entry.id)}
+                        aria-label="Cancelar punitorio"
                         className="text-xs text-muted-foreground hover:text-destructive"
                       >
                         ✕
