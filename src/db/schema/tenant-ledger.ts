@@ -51,8 +51,7 @@ export const tenantLedger = pgTable("tenant_ledger", {
   conciliadoAt: timestamp("conciliadoAt"),
   conciliadoPor: text("conciliadoPor").references(() => user.id, { onDelete: "set null" }),
 
-  // Self-reference for installments — plain text, no FK (Drizzle circular FK limitation)
-  // Documented in src/db/schema/relations.ts
+  // Self-reference for installments — plain text, no FK to avoid Drizzle circular reference
   installmentOf: text("installmentOf"),
   installmentNumber: integer("installmentNumber"),
   installmentTotal: integer("installmentTotal"),
