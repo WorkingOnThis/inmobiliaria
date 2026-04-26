@@ -155,14 +155,12 @@ export default function OwnerDetailPage() {
 
   const owner = data?.owner;
   const propiedadesCount = data?.propiedades?.length ?? 0;
-  const [ccPendingCount, setCcPendingCount] = useState(0);
-
   const handleStatusChange = () => {
     queryClient.invalidateQueries({ queryKey: ["propietario", id] });
   };
 
   const tabs: { key: Tab; label: string; count?: number }[] = [
-    { key: "cuenta-corriente", label: "Cuenta corriente", count: ccPendingCount },
+    { key: "cuenta-corriente", label: "Cuenta corriente" },
     { key: "datos",            label: "Datos" },
     { key: "propiedades",      label: "Propiedades", count: propiedadesCount },
     { key: "documentos",       label: "Documentos",  count: 0 },
@@ -308,7 +306,7 @@ export default function OwnerDetailPage() {
               />
             )}
             {activeTab === "cuenta-corriente" && (
-              <OwnerTabCurrentAccount ownerId={owner.id} onPendingCount={setCcPendingCount} />
+              <OwnerTabCurrentAccount propietarioId={owner.id} />
             )}
             {activeTab === "propiedades" && (
               <OwnerTabProperties
