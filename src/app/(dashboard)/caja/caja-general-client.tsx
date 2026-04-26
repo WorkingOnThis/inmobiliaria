@@ -18,6 +18,7 @@ interface Movimiento {
   origen: string;
   comprobante: string | null;
   nota: string | null;
+  tipoFondo: string | null;
   contratoId: string | null;
   contratoNumero: string | null;
   propiedadId: string | null;
@@ -96,6 +97,7 @@ export function CajaGeneralClient() {
   const [mes, setMes] = useState(hoy.getMonth());
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [filtro, setFiltro] = useState<Filtro>("todos");
+  const [tipoFondo, setTipoFondo] = useState<"all" | "agencia" | "propietario" | "inquilino">("all");
   const [showModalCrear, setShowModalCrear] = useState(false);
   const [movimientoEditando, setMovimientoEditando] = useState<Movimiento | null>(null);
 
@@ -245,8 +247,9 @@ export function CajaGeneralClient() {
   const movimientos = data?.movimientos ?? [];
   const totales = data?.totales ?? { ingresos: 0, egresos: 0, saldo: 0 };
   const movFiltrados = movimientos.filter((m) => {
-    if (filtro === "ingresos") return m.tipo === "income";
-    if (filtro === "egresos") return m.tipo === "expense";
+    if (filtro === "ingresos" && m.tipo !== "income") return false;
+    if (filtro === "egresos" && m.tipo !== "expense") return false;
+    if (tipoFondo !== "all" && m.tipoFondo !== tipoFondo) return false;
     return true;
   });
 
@@ -336,6 +339,21 @@ export function CajaGeneralClient() {
                 onClick={() => setFiltro(f)}
               >
                 {f === "todos" ? "Todos" : f === "ingresos" ? "Ingresos" : "Egresos"}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1 ml-2">
+            {(["all", "agencia", "propietario", "inquilino"] as const).map((f) => (
+              <button
+                key={f}
+                className="px-2.5 py-1 text-[10px] font-semibold rounded-full capitalize transition-colors"
+                style={tipoFondo === f
+                  ? { background: "var(--primary-dim)", color: "var(--primary)", border: "1px solid var(--border-accent)" }
+                  : { background: "none", border: S.border, color: "var(--muted-foreground)" }
+                }
+                onClick={() => setTipoFondo(f)}
+              >
+                {f === "all" ? "Todos" : f === "agencia" ? "Agencia" : f === "propietario" ? "Propietarios" : "Inquilinos"}
               </button>
             ))}
           </div>

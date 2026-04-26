@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
       origen: cajaMovimiento.source,
       comprobante: cajaMovimiento.comprobante,
       nota: cajaMovimiento.note,
+      tipoFondo: cajaMovimiento.tipoFondo,
       creadoEn: cajaMovimiento.createdAt,
       // Contrato vinculado
       contratoId: cajaMovimiento.contratoId,
