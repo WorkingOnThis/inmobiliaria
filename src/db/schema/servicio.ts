@@ -16,6 +16,13 @@ export const servicio = pgTable("service", {
   paymentResponsible: text("paymentResponsible").notNull().default("propietario"), // "propietario" | "inquilino"
   dueDay: integer("dueDay"),
   triggersBlock: boolean("triggersBlock").notNull().default(true),
+  // Whether the owner is responsible for this service (so it appears in tenant_ledger charges)
+  propietarioResponsable: boolean("propietarioResponsable").notNull().default(false),
+  // How the agency manages this service
+  tipoGestion: text("tipoGestion").notNull().default("comprobante"),
+  // "comprobante"                — staff uploads receipt; if missing and triggersBlock=true, blocks rent collection
+  // "pago_agencia"               — agency pays the service and recovers from tenant
+  // "pago_propietario_recuperar" — owner paid; agency collects from tenant and returns to owner
   createdBy: text("createdBy")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
