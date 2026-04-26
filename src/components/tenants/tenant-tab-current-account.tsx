@@ -34,6 +34,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [montoOverrides, setMontoOverrides] = useState<Record<string, string>>({});
   const [confirmEmit, setConfirmEmit] = useState(false);
+  const [emitError, setEmitError] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery<CuentaCorrienteData>({
     queryKey: ["cuenta-corriente", inquilinoId],
@@ -62,7 +63,11 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
     onSuccess: () => {
       setSelectedIds(new Set());
       setMontoOverrides({});
+      setEmitError(null);
       queryClient.invalidateQueries({ queryKey: ["cuenta-corriente", inquilinoId] });
+    },
+    onError: (error: Error) => {
+      setEmitError(error.message);
     },
   });
 
@@ -95,7 +100,13 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
 
   const cancelPunitorio = useMutation({
     mutationFn: async (entryId: string) => {
-      await fetch(`/api/tenants/${inquilinoId}/ledger/${entryId}`, { method: "DELETE" });
+      const response = await fetch(`/api/tenants/${inquilinoId}/ledger/${entryId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Error al cancelar punitorio");
+      }
     },
     onSuccess: (_, entryId) => {
       setSelectedIds((prev) => {
@@ -110,8 +121,15 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   function handleToggleSelect(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        setMontoOverrides((overrides) => {
+          const { [id]: _, ...rest } = overrides;
+          return rest;
+        });
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }
@@ -154,7 +172,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
         <Card>
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Estado</p>
-            <p className={`text-base font-bold mt-1 ${kpis.estadoCuenta === "al_dia" ? "text-green-400" : "text-destructive"}`}>
+            <p className={`text-base font-bold mt-1 ${kpis.estadoCuenta === "al_dia" ? "text-[var(--income)]" : "text-destructive"}`}>
               {kpis.estadoCuenta === "al_dia" ? "Al día" : "En mora"}
             </p>
           </CardContent>
@@ -177,7 +195,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
         <Card>
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Cobrado {new Date().getFullYear()}</p>
-            <p className="text-base font-bold mt-1 font-mono text-green-400">
+            <p className="text-base font-bold mt-1 font-mono text-[var(--income)]">
               ${kpis.totalCobradoYTD.toLocaleString("es-AR")}
             </p>
           </CardContent>
@@ -185,7 +203,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       </div>
 
       {/* Próximo ajuste alert */}
-      {proximoAjuste && (
+      {proximoAjuste && proximoAjuste.mesesRestantes !== null && (
         <div className="px-4">
           <Alert variant="default" className="border-amber-800 bg-amber-950/20">
             <AlertTitle className="text-amber-400 text-sm">
@@ -252,6 +270,12 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
         onEmitirRecibo={() => setConfirmEmit(true)}
         isEmitting={emitirMutation.isPending}
       />
+
+      {emitError && (
+        <div className="px-4">
+          <p className="text-sm text-destructive">{emitError}</p>
+        </div>
+      )}
 
       {/* Confirmation dialog */}
       <AlertDialog open={confirmEmit} onOpenChange={setConfirmEmit}>
