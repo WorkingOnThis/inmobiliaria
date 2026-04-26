@@ -2,13 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { client } from "@/db/schema/client";
-import { cajaMovimiento } from "@/db/schema/caja";
-import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
-import { property } from "@/db/schema/property";
+import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
-import { and, desc, eq, inArray, sql, sum } from "drizzle-orm";
+import { and, eq, sum, sql } from "drizzle-orm";
 
 export async function GET(
   request: NextRequest,
@@ -20,13 +17,13 @@ export async function GET(
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
     }
     if (!canManageClients(session.user.role)) {
-      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+      return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
     const { id } = await params;
 
     const [inquilino] = await db
-      .select({ id: client.id, firstName: client.firstName, lastName: client.lastName })
+      .select({ id: client.id })
       .from(client)
       .where(eq(client.id, id))
       .limit(1);
@@ -35,128 +32,70 @@ export async function GET(
       return NextResponse.json({ error: "Inquilino no encontrado" }, { status: 404 });
     }
 
-    const searchParams = request.nextUrl.searchParams;
-    const propiedadFilter = searchParams.get("propiedadId");
-    const periodoFilter = searchParams.get("periodo"); // "YYYY-MM"
+    // All ledger entries for this tenant, ordered by period then tipo
+    const entries = await db
+      .select()
+      .from(tenantLedger)
+      .where(eq(tenantLedger.inquilinoId, id))
+      .orderBy(tenantLedger.period, tenantLedger.tipo);
 
-    const movimientos = await db
-      .select({
-        id: cajaMovimiento.id,
-        fecha: cajaMovimiento.date,
-        descripcion: cajaMovimiento.description,
-        tipo: cajaMovimiento.tipo,
-        categoria: cajaMovimiento.categoria,
-        monto: cajaMovimiento.amount,
-        origen: cajaMovimiento.source,
-        contratoId: cajaMovimiento.contratoId,
-        propiedadId: cajaMovimiento.propiedadId,
-        nota: cajaMovimiento.note,
-        period: cajaMovimiento.period,
-        reciboNumero: cajaMovimiento.reciboNumero,
-        creadoEn: cajaMovimiento.createdAt,
-        reconciled: cajaMovimiento.reconciled,
-      })
-      .from(cajaMovimiento)
-      .where(
-        and(
-          eq(cajaMovimiento.inquilinoId, id),
-          propiedadFilter ? eq(cajaMovimiento.propiedadId, propiedadFilter) : undefined,
-          periodoFilter
-            ? sql`to_char(${cajaMovimiento.date}::date, 'YYYY-MM') = ${periodoFilter}`
-            : undefined
-        )
-      )
-      .orderBy(desc(cajaMovimiento.date));
-
-    // Enrich with property address
-    const propIds = [...new Set(movimientos.map((m) => m.propiedadId).filter(Boolean))] as string[];
-    let propAddressMap: Record<string, string> = {};
-    if (propIds.length > 0) {
-      const props = await db
-        .select({ id: property.id, address: property.address })
-        .from(property)
-        .where(inArray(property.id, propIds));
-      for (const p of props) propAddressMap[p.id] = p.address;
-    }
-
-    const movimientosEnriquecidos = movimientos.map((m) => ({
-      ...m,
-      propiedadAddress: m.propiedadId ? (propAddressMap[m.propiedadId] ?? null) : null,
-      periodo: m.fecha ? m.fecha.substring(0, 7) : null,
-    }));
-
-    // KPIs
+    // KPI: total collected YTD (conciliado, alquiler tipo)
     const currentYear = new Date().getFullYear().toString();
-
-    // Active contract for next payment KPI
-    const activeContract = await db
-      .select({
-        paymentDay: contract.paymentDay,
-        monthlyAmount: contract.monthlyAmount,
-        endDate: contract.endDate,
-        status: contract.status,
-      })
-      .from(contract)
-      .innerJoin(contractTenant, eq(contractTenant.contractId, contract.id))
+    const [ytdResult] = await db
+      .select({ total: sum(tenantLedger.monto) })
+      .from(tenantLedger)
       .where(
         and(
-          eq(contractTenant.clientId, id),
-          sql`${contract.status} IN ('active', 'expiring_soon')`
+          eq(tenantLedger.inquilinoId, id),
+          eq(tenantLedger.estado, "conciliado"),
+          eq(tenantLedger.tipo, "alquiler"),
+          sql`substring(${tenantLedger.period}, 1, 4) = ${currentYear}`
         )
-      )
-      .orderBy(desc(contract.startDate))
-      .limit(1)
-      .then((rows) => rows[0] ?? null);
+      );
 
-    const [[totalCobradoResult], [punitriosResult]] = await Promise.all([
-      db
-        .select({ total: sum(cajaMovimiento.amount) })
-        .from(cajaMovimiento)
-        .where(
-          and(
-            eq(cajaMovimiento.inquilinoId, id),
-            eq(cajaMovimiento.tipo, "income"),
-            sql`extract(year from ${cajaMovimiento.date}::date) = ${currentYear}`
-          )
-        ),
-      db
-        .select({ total: sum(cajaMovimiento.amount) })
-        .from(cajaMovimiento)
-        .where(
-          and(
-            eq(cajaMovimiento.inquilinoId, id),
-            eq(cajaMovimiento.tipo, "expense"),
-            eq(cajaMovimiento.categoria, "punitorios")
-          )
-        ),
-    ]);
+    // Next pending alquiler entry (first pending from current period onward)
+    const todayPeriod = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+    const nextPendingAlquiler = entries.find(
+      (e) => e.tipo === "alquiler" && e.estado === "pendiente" && (e.period ?? "") >= todayPeriod
+    );
 
-    // Compute next payment date from active contract
-    let proximoPago: { fecha: string; monto: string } | null = null;
-    if (activeContract) {
-      const today = new Date();
-      const dueThisMonth = new Date(today.getFullYear(), today.getMonth(), activeContract.paymentDay);
-      const due = dueThisMonth >= today
-        ? dueThisMonth
-        : new Date(today.getFullYear(), today.getMonth() + 1, activeContract.paymentDay);
-      proximoPago = {
-        fecha: due.toISOString().slice(0, 10),
-        monto: activeContract.monthlyAmount,
-      };
-    }
+    // proximoAjuste — first entry with estado="pendiente_revision"
+    const firstPendingRevision = entries.find((e) => e.estado === "pendiente_revision");
+
+    // Estado de cuenta: in mora if any alquiler is pendiente and past its dueDate
+    const today = new Date().toISOString().slice(0, 10);
+    const hayMora = entries.some(
+      (e) =>
+        e.tipo === "alquiler" &&
+        e.estado === "pendiente" &&
+        e.dueDate !== null &&
+        e.dueDate < today
+    );
 
     const kpis = {
-      totalCobradoYTD: Number(totalCobradoResult?.total ?? 0),
-      punitorialAcumulado: Number(punitriosResult?.total ?? 0),
-      proximoPago,
+      estadoCuenta: hayMora ? "en_mora" : "al_dia",
+      totalCobradoYTD: Number(ytdResult?.total ?? 0),
+      proximoPago: nextPendingAlquiler
+        ? { fecha: nextPendingAlquiler.dueDate, monto: nextPendingAlquiler.monto }
+        : null,
     };
 
-    return NextResponse.json({ kpis, movimientos: movimientosEnriquecidos });
+    const proximoAjuste = firstPendingRevision
+      ? {
+          period: firstPendingRevision.period,
+          mesesRestantes: firstPendingRevision.period
+            ? Math.max(
+                0,
+                (parseInt(firstPendingRevision.period.slice(0, 4)) - new Date().getFullYear()) * 12 +
+                  (parseInt(firstPendingRevision.period.slice(5, 7)) - (new Date().getMonth() + 1))
+              )
+            : null,
+        }
+      : null;
+
+    return NextResponse.json({ kpis, ledgerEntries: entries, proximoAjuste });
   } catch (error) {
     console.error("Error GET /api/tenants/:id/cuenta-corriente:", error);
-    return NextResponse.json(
-      { error: "Error al obtener la cuenta corriente" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error al obtener la cuenta corriente" }, { status: 500 });
   }
 }
