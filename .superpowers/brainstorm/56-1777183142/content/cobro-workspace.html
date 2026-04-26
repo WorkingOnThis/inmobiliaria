@@ -1,0 +1,160 @@
+<h2>Workspace de cobro</h2>
+<p class="subtitle">La tabla como herramienta activa — seleccionás, modificás montos, agregás punitorios y ves el resumen antes de emitir</p>
+
+<div class="mockup">
+  <div class="mockup-header">Cuenta corriente · Modo cobro · Gastón Rodríguez</div>
+  <div class="mockup-body" style="padding:0; background:#0d0d0d; position:relative;">
+
+    <!-- Toolbar superior -->
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#111; border-bottom:1px solid #1a1a1a; position:sticky; top:0; z-index:10;">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span style="font-size:11px; font-weight:600; color:#e0e0e0;">Proyección del contrato</span>
+        <span style="font-size:9px; color:#444;">CON-0042</span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <!-- Toggle de vista -->
+        <div style="display:flex; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:6px; padding:2px; gap:1px;">
+          <div style="padding:4px 10px; background:#2d2d2d; border-radius:4px; font-size:9px; color:#e0e0e0; font-weight:600; cursor:pointer;">↔ Completa</div>
+          <div style="padding:4px 10px; font-size:9px; color:#555; cursor:pointer;">← Solo historial</div>
+        </div>
+        <div style="background:#6366f1; color:white; font-size:9px; font-weight:600; padding:4px 10px; border-radius:5px; cursor:pointer;">+ Cargo manual</div>
+      </div>
+    </div>
+
+    <!-- Scroll hint arriba -->
+    <div style="text-align:center; padding:4px; font-size:8px; color:#333;">↑ scroll para ver meses anteriores</div>
+
+    <!-- MES ANTERIOR (pasado, apagado) -->
+    <div style="opacity:.4; border-bottom:1px solid #151515;">
+      <div style="padding:3px 14px; background:#111;">
+        <span style="font-size:8px; color:#555; font-weight:600; text-transform:uppercase; letter-spacing:.1em;">Mar 2026</span>
+      </div>
+      <div style="display:grid; grid-template-columns:28px 90px 1fr 80px 90px 70px 60px; padding:6px 14px; gap:8px; align-items:center;">
+        <input type="checkbox" disabled style="opacity:.3;"/>
+        <div style="font-size:10px; color:#666;">Mar 2026</div>
+        <div style="font-size:10px; color:#666;">Alquiler</div>
+        <div style="font-size:9px; color:#444;">alquiler</div>
+        <div style="font-size:10px; color:#666; text-align:right;">$200.000</div>
+        <div style="text-align:center;"><span style="font-size:8px; background:#1a3a1a; color:#4ade80; padding:2px 6px; border-radius:3px;">Pagado</span></div>
+        <div style="font-size:9px; color:#444; text-align:right;">Rec #003</div>
+      </div>
+    </div>
+
+    <!-- MES ACTUAL — destacado, con items seleccionables -->
+    <div style="background:#0f0f1a; border-left:3px solid #6366f1; border-top:1px solid #2a2a4a; border-bottom:1px solid #2a2a4a;">
+      <div style="padding:5px 14px 3px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:8px; font-weight:700; color:#818cf8; text-transform:uppercase; letter-spacing:.1em;">● Abril 2026 — hoy</span>
+        <span style="font-size:8px; color:#555;">2 ítems · $248.700 total</span>
+      </div>
+
+      <!-- Item 1: Alquiler — SELECCIONADO, monto editable -->
+      <div style="display:grid; grid-template-columns:28px 90px 1fr 80px 110px 90px 70px; padding:8px 14px; gap:8px; align-items:center; background:#13132a;">
+        <div style="width:14px; height:14px; border-radius:3px; background:#6366f1; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+          <div style="width:7px; height:5px; border-left:2px solid white; border-bottom:2px solid white; transform:rotate(-45deg) translate(1px,-1px);"></div>
+        </div>
+        <div style="font-size:10px; color:#c0c0f0; font-weight:600;">Abr 2026</div>
+        <div style="font-size:10px; color:#d0d0f0; font-weight:500;">Alquiler</div>
+        <div style="font-size:9px; color:#818cf8;">alquiler</div>
+        <!-- Monto editable -->
+        <div style="display:flex; align-items:center; gap:3px; justify-content:flex-end;">
+          <span style="font-size:9px; color:#818cf8;">$</span>
+          <div style="background:#1a1a3a; border:1px solid #6366f1; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:700; color:#e0e0ff; min-width:60px; text-align:right;">245.000</div>
+          <span style="font-size:8px; color:#444; cursor:pointer;" title="Pago parcial">✎</span>
+        </div>
+        <div style="text-align:center;"><span style="font-size:8px; background:#1a1a2e; color:#818cf8; padding:2px 6px; border-radius:3px;">Pendiente</span></div>
+        <div style="font-size:9px; color:#6366f1; text-align:right; cursor:pointer; white-space:nowrap;">+ Punitorio</div>
+      </div>
+
+      <!-- Punitorio agregado inline -->
+      <div style="display:grid; grid-template-columns:28px 90px 1fr 80px 110px 90px 70px; padding:5px 14px 5px 42px; gap:8px; align-items:center; background:#1a1020; border-top:1px solid #2a1040;">
+        <div style="width:14px; height:14px; border-radius:3px; background:#7c3aed; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+          <div style="width:7px; height:5px; border-left:2px solid white; border-bottom:2px solid white; transform:rotate(-45deg) translate(1px,-1px);"></div>
+        </div>
+        <div style="font-size:9px; color:#a78bfa; grid-column:span 2; font-style:italic;">↳ Punitorio TIM (12 días mora)</div>
+        <div style="font-size:9px; color:#7c3aed;">punitorio</div>
+        <div style="display:flex; align-items:center; gap:3px; justify-content:flex-end;">
+          <span style="font-size:9px; color:#a78bfa;">$</span>
+          <div style="background:#1a1030; border:1px solid #7c3aed55; border-radius:4px; padding:3px 6px; font-size:10px; font-weight:700; color:#c4b5fd; min-width:60px; text-align:right;">8.900</div>
+        </div>
+        <div style="text-align:center;"><span style="font-size:8px; background:#1a1030; color:#a78bfa; padding:2px 6px; border-radius:3px;">Calculado</span></div>
+        <div style="font-size:9px; color:#555; text-align:right; cursor:pointer;">✕</div>
+      </div>
+
+      <!-- Item 2: Servicio — NO seleccionado -->
+      <div style="display:grid; grid-template-columns:28px 90px 1fr 80px 110px 90px 70px; padding:8px 14px 10px; gap:8px; align-items:center;">
+        <div style="width:14px; height:14px; border-radius:3px; border:1px solid #333; cursor:pointer;"></div>
+        <div style="font-size:10px; color:#c0c0f0;">Abr 2026</div>
+        <div style="font-size:10px; color:#d0d0f0;">Municipalidad</div>
+        <div style="font-size:9px; color:#818cf8;">servicio</div>
+        <div style="text-align:right; font-size:10px; color:#888;">$3.700</div>
+        <div style="text-align:center;"><span style="font-size:8px; background:#1a1a2e; color:#818cf8; padding:2px 6px; border-radius:3px;">Pendiente</span></div>
+        <div></div>
+      </div>
+    </div>
+
+    <!-- MES FUTURO (proyectado) -->
+    <div style="opacity:.45; border-bottom:1px solid #151515;">
+      <div style="padding:3px 14px; background:#111;">
+        <span style="font-size:8px; color:#555; font-weight:600; text-transform:uppercase; letter-spacing:.1em;">May 2026</span>
+      </div>
+      <div style="display:grid; grid-template-columns:28px 90px 1fr 80px 110px 90px 70px; padding:6px 14px; gap:8px; align-items:center;">
+        <input type="checkbox" disabled style="opacity:.3;"/>
+        <div style="font-size:10px; color:#666;">May 2026</div>
+        <div style="font-size:10px; color:#666;">Alquiler</div>
+        <div style="font-size:9px; color:#444;">alquiler</div>
+        <div style="text-align:right; font-size:10px; color:#666;">$245.000</div>
+        <div style="text-align:center;"><span style="font-size:8px; border:1px solid #333; color:#555; padding:2px 6px; border-radius:3px;">Proyectado</span></div>
+        <div></div>
+      </div>
+    </div>
+
+    <!-- Scroll hint abajo -->
+    <div style="text-align:center; padding:4px; font-size:8px; color:#333;">↓ scroll para ver meses futuros</div>
+
+    <!-- PANEL STICKY INFERIOR — resumen running -->
+    <div style="position:sticky; bottom:0; background:#0d0d0d; border-top:2px solid #6366f1; z-index:10;">
+      <div style="padding:10px 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+
+          <!-- Desglose izquierda -->
+          <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+            <div style="font-size:8px; color:#555; text-transform:uppercase; letter-spacing:.08em; margin-bottom:2px;">Desglose del cobro</div>
+            <div style="display:flex; justify-content:space-between; font-size:10px;">
+              <span style="color:#888;">Alquiler Abr 2026</span>
+              <span style="color:#e0e0e0; font-weight:600;">$245.000</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:10px;">
+              <span style="color:#a78bfa;">↳ Punitorio (12 días)</span>
+              <span style="color:#a78bfa; font-weight:600;">$8.900</span>
+            </div>
+            <div style="height:1px; background:#222; margin:3px 0;"></div>
+            <div style="display:flex; justify-content:space-between; font-size:10px;">
+              <span style="color:#818cf8;">Honorarios inmobiliaria (10%)</span>
+              <span style="color:#818cf8; font-weight:600;">$24.500</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:10px;">
+              <span style="color:#4ade80;">Propietario recibe</span>
+              <span style="color:#4ade80; font-weight:600;">$229.400</span>
+            </div>
+          </div>
+
+          <!-- Total derecha + botón -->
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0;">
+            <div>
+              <div style="font-size:8px; color:#555; text-transform:uppercase; letter-spacing:.08em; text-align:right;">Total a cobrar</div>
+              <div style="font-size:22px; font-weight:700; color:#e0e0ff; text-align:right; line-height:1.1;">$253.900</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <div style="padding:7px 12px; border:1px solid #333; border-radius:6px; font-size:9px; color:#888; cursor:pointer;">Limpiar</div>
+              <div style="padding:7px 16px; background:#6366f1; border-radius:6px; font-size:10px; font-weight:700; color:white; cursor:pointer;">Emitir recibo →</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:12px;">El panel inferior aparece en cuanto seleccionás al menos un ítem y se actualiza en tiempo real a medida que marcás conceptos, editás montos o agregás punitorios.</p>

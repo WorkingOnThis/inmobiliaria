@@ -338,17 +338,7 @@ export default function TenantDetailPage() {
             )}
             {activeTab === "cuenta-corriente" && (
               <TenantTabCurrentAccount
-                tenantId={tenant.id}
-                tenantName={
-                  tenant.lastName
-                    ? `${tenant.firstName} ${tenant.lastName}`
-                    : tenant.firstName
-                }
-                estado={tenant.estado}
-                diasMora={tenant.diasMora}
-                contrato={data?.contrato ?? null}
-                contratos={data?.contratos ?? []}
-                propertyId={data?.property?.id ?? null}
+                inquilinoId={tenant.id}
               />
             )}
             {activeTab === "documentos" && (

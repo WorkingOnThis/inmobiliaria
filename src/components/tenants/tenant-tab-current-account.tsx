@@ -38,8 +38,11 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
 
   const { data, isLoading, isError } = useQuery<CuentaCorrienteData>({
     queryKey: ["cuenta-corriente", inquilinoId],
-    queryFn: () =>
-      fetch(`/api/tenants/${inquilinoId}/cuenta-corriente`).then((r) => r.json()),
+    queryFn: async () => {
+      const r = await fetch(`/api/tenants/${inquilinoId}/cuenta-corriente`);
+      if (!r.ok) throw new Error("Error al obtener la cuenta corriente");
+      return r.json() as Promise<CuentaCorrienteData>;
+    },
   });
 
   const emitirMutation = useMutation({
@@ -162,7 +165,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
     );
   }
 
-  const { kpis, ledgerEntries, proximoAjuste } = data;
+  const { kpis, ledgerEntries = [], proximoAjuste } = data;
   const selectedEntries = ledgerEntries.filter((e) => selectedIds.has(e.id));
 
   return (
