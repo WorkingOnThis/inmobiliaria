@@ -34,7 +34,7 @@ export function CobroPanel({
 
   const totalRecibo = selectedEntries.reduce((s, e) => s + getMonto(e, montoOverrides), 0);
   const honorarios = baseComision * (honorariosPct / 100);
-  const netoProietario = totalRecibo - honorarios;
+  const netoPropietario = totalRecibo - honorarios;
 
   return (
     <div className="sticky bottom-0 z-10 border-t-2 border-primary bg-background">
@@ -62,7 +62,7 @@ export function CobroPanel({
             </div>
             <div className="flex justify-between text-xs text-green-400">
               <span>Propietario recibe</span>
-              <span className="font-mono">${netoProietario.toLocaleString("es-AR")}</span>
+              <span className="font-mono">${netoPropietario.toLocaleString("es-AR")}</span>
             </div>
           </div>
 
