@@ -35,6 +35,20 @@ export async function POST(
       return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
     }
 
+    // Idempotency guard — prevent duplicate generation
+    const [existing] = await db
+      .select({ id: tenantLedger.id })
+      .from(tenantLedger)
+      .where(eq(tenantLedger.contratoId, contractId))
+      .limit(1);
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Este contrato ya tiene entradas generadas. Eliminá las existentes antes de regenerar." },
+        { status: 409 }
+      );
+    }
+
     // Get primary tenant
     const [primaryTenant] = await db
       .select({ clientId: contractTenant.clientId })
