@@ -15,6 +15,7 @@ import { OwnerTabCurrentAccount } from "@/components/owners/owner-tab-current-ac
 import { OwnerTabProperties } from "@/components/owners/owner-tab-properties";
 import { OwnerTabDocuments } from "@/components/owners/owner-tab-documents";
 import { ClientRolesBadges } from "@/components/clients/client-roles-badges";
+import { RoleToggle } from "@/components/clients/role-toggle";
 
 interface Owner {
   id: string;
@@ -230,6 +231,7 @@ export default function OwnerDetailPage() {
                       </span>
                     )}
                     <ClientRolesBadges clientId={owner.id} currentRole="owner" />
+                    <RoleToggle clientId={owner.id} currentRole="propietario" />
                   </div>
                 </div>
               </div>
