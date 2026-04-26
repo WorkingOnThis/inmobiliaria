@@ -8,7 +8,7 @@ import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { nextReciboNumero } from "@/lib/receipts/numbering";
 import { z } from "zod";
-import { and, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 const emitSchema = z.object({
   ledgerEntryIds: z.array(z.string().min(1)).min(1),
@@ -32,12 +32,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const result = emitSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
+    const parsed = emitSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
 
-    const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario } = result.data;
+    const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario } = parsed.data;
 
     const entries = await db
       .select()
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     const totalRecibo = round2(entries.reduce((s, e) => s + Number(e.monto), 0));
     const montoHonorarios = round2(baseComision * honorariosPct / 100);
 
-    const result2 = await db.transaction(async (tx) => {
+    const txResult = await db.transaction(async (tx) => {
       const reciboNumero = await nextReciboNumero(tx);
       const now = new Date();
 
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
       return { reciboNumero, movimientoAgenciaId: movAgencia.id, totalRecibo, montoHonorarios };
     });
 
-    return NextResponse.json(result2, { status: 201 });
+    return NextResponse.json(txResult, { status: 201 });
   } catch (error) {
     console.error("Error POST /api/receipts/emit:", error);
     return NextResponse.json({ error: "Error al emitir el recibo" }, { status: 500 });
