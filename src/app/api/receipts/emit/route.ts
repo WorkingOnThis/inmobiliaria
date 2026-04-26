@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { cajaMovimiento } from "@/db/schema/caja";
-import { tenantCharge } from "@/db/schema/tenant-charge";
-import { contract } from "@/db/schema/contract";
+import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { client } from "@/db/schema/client";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
@@ -12,7 +11,7 @@ import { z } from "zod";
 import { and, eq, inArray } from "drizzle-orm";
 
 const emitSchema = z.object({
-  chargeIds: z.array(z.string().min(1)).min(1),
+  ledgerEntryIds: z.array(z.string().min(1)).min(1),
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   honorariosPct: z.number().min(0).max(100),
   trasladarAlPropietario: z.boolean().default(true),
@@ -38,43 +37,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
     }
 
-    const { chargeIds, fecha, honorariosPct, trasladarAlPropietario } = result.data;
+    const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario } = result.data;
 
-    const charges = await db
+    const entries = await db
       .select()
-      .from(tenantCharge)
-      .where(inArray(tenantCharge.id, chargeIds));
+      .from(tenantLedger)
+      .where(inArray(tenantLedger.id, ledgerEntryIds));
 
-    if (charges.length !== chargeIds.length) {
-      return NextResponse.json({ error: "Uno o más cargos no fueron encontrados" }, { status: 404 });
+    if (entries.length !== ledgerEntryIds.length) {
+      return NextResponse.json({ error: "Uno o más ítems no fueron encontrados" }, { status: 404 });
     }
 
-    const cargosNoListos = charges.filter((c) => c.estado !== "pendiente");
-    if (cargosNoListos.length > 0) {
+    const notReady = entries.filter((e) => !["pendiente", "registrado"].includes(e.estado));
+    if (notReady.length > 0) {
       return NextResponse.json(
-        { error: `Los siguientes cargos ya fueron procesados: ${cargosNoListos.map((c) => c.descripcion).join(", ")}` },
+        { error: `Los siguientes ítems no están listos: ${notReady.map((e) => e.descripcion).join(", ")}` },
         { status: 422 }
       );
     }
 
-    const contratoIds = new Set(charges.map((c) => c.contratoId));
+    const nullMonto = entries.filter((e) => e.monto === null);
+    if (nullMonto.length > 0) {
+      return NextResponse.json(
+        { error: `Los siguientes ítems no tienen monto definido: ${nullMonto.map((e) => e.descripcion).join(", ")}` },
+        { status: 422 }
+      );
+    }
+
+    const contratoIds = new Set(entries.map((e) => e.contratoId));
     if (contratoIds.size > 1) {
       return NextResponse.json(
-        { error: "Todos los cargos deben pertenecer al mismo contrato" },
+        { error: "Todos los ítems deben pertenecer al mismo contrato" },
         { status: 422 }
       );
     }
 
-    const contratoId = charges[0].contratoId;
-    const inquilinoId = charges[0].inquilinoId;
-    const propietarioId = charges[0].propietarioId;
-    const propiedadId = charges[0].propiedadId;
-
-    const [contractRow] = await db
-      .select({ contractNumber: contract.contractNumber })
-      .from(contract)
-      .where(eq(contract.id, contratoId))
-      .limit(1);
+    const first = entries[0];
+    const contratoId = first.contratoId;
+    const inquilinoId = first.inquilinoId;
+    const propietarioId = first.propietarioId;
+    const propiedadId = first.propiedadId;
 
     const [inquilinoRow] = await db
       .select({ firstName: client.firstName, lastName: client.lastName })
@@ -86,19 +88,32 @@ export async function POST(request: NextRequest) {
       ? [inquilinoRow.firstName, inquilinoRow.lastName].filter(Boolean).join(" ")
       : "Inquilino";
 
-    const totalRecibo = round2(charges.reduce((s, c) => s + Number(c.monto), 0));
-    const montoHonorarios = round2(totalRecibo * honorariosPct / 100);
+    // Commission base = sum of entries where incluirEnBaseComision=true
+    const baseComision = entries
+      .filter((e) => e.incluirEnBaseComision)
+      .reduce((s, e) => s + Number(e.monto), 0);
+
+    const totalRecibo = round2(entries.reduce((s, e) => s + Number(e.monto), 0));
+    const montoHonorarios = round2(baseComision * honorariosPct / 100);
 
     const result2 = await db.transaction(async (tx) => {
       const reciboNumero = await nextReciboNumero(tx);
+      const now = new Date();
 
-      // Mark charges as paid
+      // Mark entries as conciliado
       await tx
-        .update(tenantCharge)
-        .set({ estado: "pagado", reciboNumero, paidAt: new Date(), updatedAt: new Date() })
-        .where(inArray(tenantCharge.id, chargeIds));
+        .update(tenantLedger)
+        .set({
+          estado: "conciliado",
+          reciboNumero,
+          reciboEmitidoAt: now,
+          conciliadoAt: now,
+          conciliadoPor: session.user.id,
+          updatedAt: now,
+        })
+        .where(inArray(tenantLedger.id, ledgerEntryIds));
 
-      // Insert agency income movement (real cash received)
+      // Agency income movement (total collected from tenant)
       const [movAgencia] = await tx
         .insert(cajaMovimiento)
         .values({
@@ -112,13 +127,14 @@ export async function POST(request: NextRequest) {
           propietarioId,
           contratoId,
           propiedadId,
-          source: "manual",
+          tipoFondo: "agencia",
+          source: "contract",
           createdBy: session.user.id,
         })
         .returning();
 
       if (trasladarAlPropietario) {
-        // Insert owner pending income (to be settled later)
+        // Owner in-transit income (to be settled later)
         await tx.insert(cajaMovimiento).values({
           tipo: "income",
           description: `Ingreso inquilino — ${reciboNumero}`,
@@ -129,11 +145,12 @@ export async function POST(request: NextRequest) {
           propietarioId,
           contratoId,
           propiedadId,
-          source: "manual",
+          tipoFondo: "propietario",
+          source: "contract",
           createdBy: session.user.id,
         });
 
-        // Insert owner pending expense (agency commission)
+        // Agency commission expense
         if (montoHonorarios > 0) {
           await tx.insert(cajaMovimiento).values({
             tipo: "expense",
@@ -145,7 +162,8 @@ export async function POST(request: NextRequest) {
             propietarioId,
             contratoId,
             propiedadId,
-            source: "manual",
+            tipoFondo: "agencia",
+            source: "contract",
             createdBy: session.user.id,
           });
         }
