@@ -35,8 +35,11 @@ export async function POST(
       .limit(1);
 
     if (!entry) return NextResponse.json({ error: "Ítem no encontrado" }, { status: 404 });
-    if (entry.estado === "conciliado") {
-      return NextResponse.json({ error: "El ítem ya está conciliado" }, { status: 422 });
+    if (!["pendiente", "registrado"].includes(entry.estado)) {
+      return NextResponse.json(
+        { error: "Solo se pueden conciliar ítems en estado pendiente o registrado" },
+        { status: 422 }
+      );
     }
     if (entry.monto === null) {
       return NextResponse.json({ error: "No se puede conciliar un ítem sin monto definido" }, { status: 422 });

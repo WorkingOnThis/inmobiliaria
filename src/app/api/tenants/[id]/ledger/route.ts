@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
+import { contract } from "@/db/schema/contract";
+import { contractTenant } from "@/db/schema/contract-tenant";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { defaultFlagsForTipo } from "@/lib/ledger/flags";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 const createEntrySchema = z.object({
@@ -42,6 +45,24 @@ export async function POST(
     }
 
     const data = result.data;
+
+    // Verify the contract belongs to this tenant
+    const [contractRow] = await db
+      .select({ id: contract.id })
+      .from(contract)
+      .innerJoin(contractTenant, eq(contractTenant.contractId, contract.id))
+      .where(
+        and(
+          eq(contract.id, data.contratoId),
+          eq(contractTenant.clientId, inquilinoId)
+        )
+      )
+      .limit(1);
+
+    if (!contractRow) {
+      return NextResponse.json({ error: "Contrato no encontrado para este inquilino" }, { status: 404 });
+    }
+
     const defaults = defaultFlagsForTipo(data.tipo);
 
     const [entry] = await db

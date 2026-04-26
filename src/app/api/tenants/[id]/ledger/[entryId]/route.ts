@@ -83,6 +83,20 @@ export async function DELETE(
       return NextResponse.json({ error: "No se puede eliminar un ítem conciliado" }, { status: 422 });
     }
 
+    // Block deletion if this entry has child entries (e.g. punitorios)
+    const [childEntry] = await db
+      .select({ id: tenantLedger.id })
+      .from(tenantLedger)
+      .where(eq(tenantLedger.installmentOf, entryId))
+      .limit(1);
+
+    if (childEntry) {
+      return NextResponse.json(
+        { error: "No se puede eliminar un ítem con punitorios asociados" },
+        { status: 422 }
+      );
+    }
+
     await db
       .delete(tenantLedger)
       .where(and(eq(tenantLedger.id, entryId), eq(tenantLedger.inquilinoId, inquilinoId)));
