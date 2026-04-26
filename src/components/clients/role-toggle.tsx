@@ -28,22 +28,16 @@ export function RoleToggle({ clientId, currentRole }: Props) {
     queryKey: ["client-roles", clientId],
     queryFn: async () => {
       const res = await fetch(`/api/clients/${clientId}/roles`);
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("Error al obtener roles del cliente");
       return res.json();
     },
     staleTime: 60_000,
   });
 
   const roles = data?.roles ?? [];
-  const hasOtherRole = roles.some(
-    (r) =>
-      r !== (currentRole === "inquilino" ? "tenant" : "owner") &&
-      (r === "tenant" || r === "owner")
-  );
 
-  if (!hasOtherRole) return null;
-
-  const availableRoles: Role[] = ["inquilino"];
+  const availableRoles: Role[] = [];
+  if (roles.includes("tenant")) availableRoles.push("inquilino");
   if (roles.includes("owner")) availableRoles.push("propietario");
 
   if (availableRoles.length <= 1) return null;
