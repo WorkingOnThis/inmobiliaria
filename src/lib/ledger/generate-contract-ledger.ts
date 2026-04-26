@@ -62,7 +62,9 @@ export function buildLedgerEntries(
   const todayPeriod = toPeriod(today);
 
   const noAdjustment =
-    contract.adjustmentIndex === "none" || contract.adjustmentFrequency <= 0;
+    contract.adjustmentIndex === "none" ||
+    contract.adjustmentIndex === "manual" ||
+    contract.adjustmentFrequency <= 0;
 
   const nextAdj = noAdjustment
     ? null
