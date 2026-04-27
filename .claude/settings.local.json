@@ -90,7 +90,14 @@
       "Bash(grep -v \"Warning\\\\|next major\\\\|pg-connection\\\\|sslmode\\\\|uselibpqcompat\\\\|postgresql.org\\\\|deprecatedSsl\\\\|injecting\\\\|Use \\\\`node\\\\| at \")",
       "Bash(grep -v \"Warning\\\\|next major\\\\|pg-connection\\\\|sslmode\\\\|uselibpqcompat\\\\|postgresql.org\\\\|deprecatedSsl\\\\|injecting\\\\|Use \\\\`node\\\\| at \\\\| resolve\\\\| reject\\\\| res =\\\\| rej =\")",
       "Bash(bun scripts/fix-and-generate.ts)",
-      "Bash(grep -v \"Warning\\\\|next major\\\\|pg-connection\\\\|sslmode\\\\|uselibpqcompat\\\\|postgresql.org\\\\|deprecatedSsl\\\\|injecting\\\\|Use \\\\`node\\\\| at resolve\\\\| at reject\\\\| res =\\\\| rej =\")"
+      "Bash(grep -v \"Warning\\\\|next major\\\\|pg-connection\\\\|sslmode\\\\|uselibpqcompat\\\\|postgresql.org\\\\|deprecatedSsl\\\\|injecting\\\\|Use \\\\`node\\\\| at resolve\\\\| at reject\\\\| res =\\\\| rej =\")",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(grep -v \"Warning\\\\|next major\\\\|pg-connection\\\\|sslmode\\\\|uselibpqcompat\\\\|postgresql.org\\\\|Use \\\\`node\")",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_9IprLfGB6nyt@ep-icy-meadow-ac1h59gh.sa-east-1.aws.neon.tech/neondb?sslmode=require\" bun x drizzle-kit migrate --verbose)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(e['tag'], e['when']\\) for e in d['entries'][-5:]]\")",
+      "Bash(gh pr create --title 'feat: pagos parciales en cuenta corriente del inquilino' --body ' *)",
+      "Bash(bun scripts/backfill-receipt-allocations.ts --dry-run)",
+      "Bash(bun scripts/backfill-receipt-allocations.ts)"
     ]
   },
   "enableAllProjectMcpServers": true,
