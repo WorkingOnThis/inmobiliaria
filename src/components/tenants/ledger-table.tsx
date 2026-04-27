@@ -33,6 +33,7 @@ type Props = {
   onSelectMonth: (period: string) => void;
   onMontoChange: (id: string, value: string) => void;
   onCancelPunitorio: (id: string) => void;
+  onAnularRecibo: (reciboNumero: string) => void;
   activeFilters: Set<string>;
 };
 
@@ -100,6 +101,7 @@ export function LedgerTable({
   onSelectMonth,
   onMontoChange,
   onCancelPunitorio,
+  onAnularRecibo,
   activeFilters,
 }: Props) {
   const todayPeriod = new Date().toISOString().slice(0, 7);
@@ -283,7 +285,7 @@ export function LedgerTable({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
                     {isPunitorio && entry.estado !== "conciliado" && (
                       <Button
                         variant="ghost"
@@ -296,7 +298,29 @@ export function LedgerTable({
                       </Button>
                     )}
                     {entry.reciboNumero && (
-                      <span className="text-xs text-muted-foreground">{entry.reciboNumero}</span>
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(`/recibos/n/${entry.reciboNumero}`, "_blank", "noopener,noreferrer")}
+                          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-primary"
+                          title={`Ver recibo ${entry.reciboNumero}`}
+                        >
+                          {entry.reciboNumero}
+                        </Button>
+                        {["conciliado", "pago_parcial"].includes(entry.estado) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onAnularRecibo(entry.reciboNumero!)}
+                            aria-label="Anular recibo"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            title="Anular recibo"
+                          >
+                            ✕
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

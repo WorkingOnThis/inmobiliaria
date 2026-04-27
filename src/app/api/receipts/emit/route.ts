@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
+import { receiptAllocation } from "@/db/schema/receipt-allocation";
 import { client } from "@/db/schema/client";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
@@ -147,6 +148,12 @@ export async function POST(request: NextRequest) {
             updatedAt: now,
           })
           .where(eq(tenantLedger.id, entry.id));
+
+        await tx.insert(receiptAllocation).values({
+          reciboNumero,
+          ledgerEntryId: entry.id,
+          monto: String(effectiveAmount),
+        });
       }
 
       // Agency income movement (total collected from tenant)

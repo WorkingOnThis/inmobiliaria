@@ -63,9 +63,9 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
           onToggleSelect={() => {}}
           onSelectMonth={() => {}}
           onMontoChange={() => {}}
-          onAddPunitorio={() => {}}
           onCancelPunitorio={() => {}}
-          viewMode="completa"
+          onAnularRecibo={() => {}}
+          activeFilters={new Set()}
         />
       )}
     </div>

@@ -78,6 +78,10 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   const [observations, setObservations] = useState("");
   const [emitError, setEmitError] = useState<string | null>(null);
 
+  // Void receipt dialog
+  const [voidConfirm, setVoidConfirm] = useState<{ reciboNumero: string } | null>(null);
+  const [voidError, setVoidError] = useState<string | null>(null);
+
   // Cargo manual dialog
   const [showManual, setShowManual] = useState(false);
   const [manualTipo, setManualTipo] = useState<string>("gasto");
@@ -114,12 +118,15 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result: { reciboNumero: string; movimientoAgenciaId: string }) => {
       setSelectedIds(new Set());
       setMontoOverrides({});
       setObservations("");
       setEmitError(null);
       queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
+      if (result?.movimientoAgenciaId) {
+        window.open(`/recibos/${result.movimientoAgenciaId}`, "_blank", "noopener,noreferrer");
+      }
     },
     onError: (error: Error) => {
       setEmitError(error.message);
@@ -153,6 +160,26 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
     onSuccess: (_, entryId) => {
       setSelectedIds((prev) => { const next = new Set(prev); next.delete(entryId); return next; });
       queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
+    },
+  });
+
+  const anularReciboMutation = useMutation({
+    mutationFn: async (reciboNumero: string) => {
+      const response = await fetch(`/api/receipts/${reciboNumero}/void`, { method: "POST" });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error ?? "Error al anular el recibo");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      setVoidConfirm(null);
+      setVoidError(null);
+      queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
+      queryClient.invalidateQueries({ queryKey: ["caja-movimientos"] });
+    },
+    onError: (error: Error) => {
+      setVoidError(error.message);
     },
   });
 
@@ -400,6 +427,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           onSelectMonth={handleSelectMonth}
           onMontoChange={handleMontoChange}
           onCancelPunitorio={(id) => cancelPunitorio.mutate(id)}
+          onAnularRecibo={(reciboNumero) => { setVoidError(null); setVoidConfirm({ reciboNumero }); }}
           activeFilters={activeFilters}
         />
       </div>
@@ -476,6 +504,55 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
               disabled={emitirMutation.isPending}
             >
               Confirmar y emitir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Void receipt dialog ── */}
+      <Dialog
+        open={voidConfirm !== null}
+        onOpenChange={(open) => { if (!open) { setVoidConfirm(null); setVoidError(null); } }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Anular recibo {voidConfirm?.reciboNumero}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            {voidConfirm && (() => {
+              const affectedEntries = ledgerEntries.filter((e) => e.reciboNumero === voidConfirm.reciboNumero);
+              return (
+                <>
+                  <p className="text-muted-foreground text-xs">
+                    Se revertirán los siguientes ítems a su estado anterior y se eliminarán los movimientos de caja generados por este recibo.
+                  </p>
+                  <div className="space-y-1 rounded-md border border-border p-3">
+                    {affectedEntries.map((e) => (
+                      <div key={e.id} className="flex justify-between text-xs">
+                        <span className="text-muted-foreground truncate max-w-[180px]">{e.descripcion}</span>
+                        <span className="font-mono ml-2">${Number(e.montoPagado ?? e.monto ?? 0).toLocaleString("es-AR")}</span>
+                      </div>
+                    ))}
+                    {affectedEntries.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No se encontraron ítems con este recibo en la vista actual.</p>
+                    )}
+                  </div>
+                  <p className="text-xs text-destructive font-medium">Esta acción no se puede deshacer.</p>
+                </>
+              );
+            })()}
+            {voidError && <p className="text-xs text-destructive">{voidError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setVoidConfirm(null); setVoidError(null); }}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => voidConfirm && anularReciboMutation.mutate(voidConfirm.reciboNumero)}
+              disabled={anularReciboMutation.isPending}
+            >
+              {anularReciboMutation.isPending ? "Anulando..." : "Confirmar anulación"}
             </Button>
           </DialogFooter>
         </DialogContent>
