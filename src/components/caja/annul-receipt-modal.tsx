@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Info } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface AnnulReceiptModalProps {
   open: boolean;
@@ -119,18 +120,18 @@ export function AnnulReceiptModal({
             />
           </div>
 
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-0.5"
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="confirmed"
               checked={confirmed}
-              onChange={(e) => setConfirmed(e.target.checked)}
+              onCheckedChange={(v) => setConfirmed(v === true)}
               disabled={mutation.isPending}
+              className="mt-0.5"
             />
-            <span className="text-muted-foreground text-xs">
+            <label htmlFor="confirmed" className="text-muted-foreground text-xs cursor-pointer">
               Entiendo que esta acción es irreversible. El recibo quedará marcado como anulado.
-            </span>
-          </label>
+            </label>
+          </div>
         </div>
 
         <DialogFooter>
