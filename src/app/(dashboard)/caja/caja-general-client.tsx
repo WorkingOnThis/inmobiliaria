@@ -601,14 +601,14 @@ export function CajaGeneralClient() {
 
       {annulTarget && (
         <AnnulReceiptModal
-          open={annulTarget !== null}
+          open
           onClose={() => setAnnulTarget(null)}
           reciboNumero={annulTarget.reciboNumero}
           fecha={annulTarget.fecha}
           monto={annulTarget.monto}
           inquilinoNombre={annulTarget.inquilinoNombre}
           teniaPagosLiquidados={annulTarget.teniaPagosLiquidados}
-          queryKeysToInvalidate={[["movimientos"]]}
+          queryKeysToInvalidate={[["caja-movimientos"]]}
           onSuccess={() => setAnnulTarget(null)}
         />
       )}
