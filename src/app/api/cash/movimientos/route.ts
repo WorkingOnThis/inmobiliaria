@@ -51,9 +51,9 @@ export async function GET(request: NextRequest) {
       tipoFondo: cajaMovimiento.tipoFondo,
       creadoEn: cajaMovimiento.createdAt,
       reciboNumero: cajaMovimiento.reciboNumero,
-      settledAt: cajaMovimiento.settledAt,
+      liquidadoAt: cajaMovimiento.settledAt,
       anuladoAt: cajaMovimiento.anuladoAt,
-      annulmentId: cajaMovimiento.annulmentId,
+      anulacionId: cajaMovimiento.annulmentId,
       // Contrato vinculado
       contratoId: cajaMovimiento.contratoId,
       contratoNumero: contract.contractNumber,
