@@ -15,10 +15,20 @@ const emitSchema = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   honorariosPct: z.number().min(0).max(100),
   trasladarAlPropietario: z.boolean().default(true),
+  montoOverrides: z.record(z.string(), z.string()).default({}),
 });
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+function getEffectiveAmount(
+  entryId: string,
+  originalMonto: string,
+  overrides: Record<string, string>
+): number {
+  const override = overrides[entryId];
+  return override !== undefined ? Number(override) : Number(originalMonto);
 }
 
 export async function POST(request: NextRequest) {
@@ -37,7 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
 
-    const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario } = parsed.data;
+    const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario, montoOverrides } = parsed.data;
 
     const entries = await db
       .select()
@@ -48,7 +58,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Uno o más ítems no fueron encontrados" }, { status: 404 });
     }
 
-    const notReady = entries.filter((e) => !["pendiente", "registrado"].includes(e.estado));
+    const notReady = entries.filter(
+      (e) => !["pendiente", "registrado", "pago_parcial"].includes(e.estado)
+    );
     if (notReady.length > 0) {
       return NextResponse.json(
         { error: `Los siguientes ítems no están listos: ${notReady.map((e) => e.descripcion).join(", ")}` },
@@ -89,29 +101,39 @@ export async function POST(request: NextRequest) {
       : "Inquilino";
 
     // Commission base = sum of entries where incluirEnBaseComision=true
+    const totalRecibo = round2(
+      entries.reduce((s, e) => s + getEffectiveAmount(e.id, e.monto!, montoOverrides), 0)
+    );
     const baseComision = entries
       .filter((e) => e.incluirEnBaseComision)
-      .reduce((s, e) => s + Number(e.monto), 0);
-
-    const totalRecibo = round2(entries.reduce((s, e) => s + Number(e.monto), 0));
+      .reduce((s, e) => s + getEffectiveAmount(e.id, e.monto!, montoOverrides), 0);
     const montoHonorarios = round2(baseComision * honorariosPct / 100);
 
     const txResult = await db.transaction(async (tx) => {
-      const reciboNumero = await nextReciboNumero(tx);
       const now = new Date();
+      const reciboNumero = await nextReciboNumero(tx);
 
-      // Mark entries as conciliado
-      await tx
-        .update(tenantLedger)
-        .set({
-          estado: "conciliado",
-          reciboNumero,
-          reciboEmitidoAt: now,
-          conciliadoAt: now,
-          conciliadoPor: session.user.id,
-          updatedAt: now,
-        })
-        .where(inArray(tenantLedger.id, ledgerEntryIds));
+      for (const entry of entries) {
+        const effectiveAmount = getEffectiveAmount(entry.id, entry.monto!, montoOverrides);
+        const prevPagado = Number(entry.montoPagado ?? 0);
+        const newMontoPagado = round2(prevPagado + effectiveAmount);
+        const isFullyPaid = newMontoPagado >= Number(entry.monto);
+
+        await tx
+          .update(tenantLedger)
+          .set({
+            estado: isFullyPaid ? "conciliado" : "pago_parcial",
+            montoPagado: String(newMontoPagado),
+            ultimoPagoAt: fecha,
+            reciboNumero,
+            reciboEmitidoAt: now,
+            ...(isFullyPaid
+              ? { conciliadoAt: now, conciliadoPor: session.user.id }
+              : {}),
+            updatedAt: now,
+          })
+          .where(eq(tenantLedger.id, entry.id));
+      }
 
       // Agency income movement (total collected from tenant)
       const [movAgencia] = await tx
