@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp, PlusCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp, PlusCircle, AlertTriangle, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LedgerTable, type LedgerEntry } from "./ledger-table";
 import { CobroPanel } from "./cobro-panel";
@@ -74,6 +74,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(["overdue", "pending"]));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [montoOverrides, setMontoOverrides] = useState<Record<string, string>>({});
+  const [ajusteDismissed, setAjusteDismissed] = useState(false);
 
   // Emit dialog
   const [showEmit, setShowEmit] = useState(false);
@@ -444,16 +445,23 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       </div>
 
       {/* Próximo ajuste alert */}
-      {proximoAjuste && proximoAjuste.mesesRestantes !== null && (
+      {proximoAjuste && proximoAjuste.mesesRestantes !== null && !ajusteDismissed && (
         <div className="px-4">
-          <Alert variant="default" className="border-[var(--warning)] bg-[var(--warning-dim)]">
+          <Alert variant="default" className="relative border-[var(--warning)] bg-[var(--warning-dim)]">
             <AlertTriangle className="size-4 text-[var(--warning)]" />
-            <AlertTitle className="text-[var(--warning)] text-sm">
-              Ajuste de índice en {proximoAjuste.mesesRestantes} meses
+            <AlertTitle className="text-[var(--warning)] text-sm pr-6">
+              Ajuste de índice en {proximoAjuste.mesesRestantes} {proximoAjuste.mesesRestantes === 1 ? "mes" : "meses"}
             </AlertTitle>
             <AlertDescription className="text-xs text-muted-foreground">
               Período {proximoAjuste.period ? formatPeriod(proximoAjuste.period) : ""} — los montos a partir de ese mes están pendientes de revisión.
             </AlertDescription>
+            <button
+              onClick={() => setAjusteDismissed(true)}
+              className="absolute top-3 right-3 text-[var(--warning)] opacity-60 hover:opacity-100 transition-opacity"
+              aria-label="Cerrar aviso"
+            >
+              <X size={14} />
+            </button>
           </Alert>
         </div>
       )}
