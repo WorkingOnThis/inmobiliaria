@@ -34,6 +34,12 @@ const patchTenantSchema = z.object({
   addressZone: z.string().trim().max(100).optional().nullable(),
   addressCity: z.string().trim().max(100).optional().nullable(),
   addressProvince: z.string().trim().max(100).optional().nullable(),
+  emailDefault: z.boolean().optional(),
+  trustedEmails: z.array(z.object({
+    email: z.string().email(),
+    label: z.string().optional(),
+    sendDefault: z.boolean(),
+  })).optional(),
 });
 
 const CONTRACT_STATUS_PRIORITY: Record<string, number> = {
@@ -71,9 +77,11 @@ export async function PATCH(
     }
 
     const statusMap: Record<string, string> = { activo: "active", suspendido: "suspended", baja: "inactive" };
+    const { trustedEmails, ...rest } = result.data;
     const data = {
-      ...result.data,
-      ...(result.data.status ? { status: statusMap[result.data.status] ?? result.data.status } : {}),
+      ...rest,
+      ...(rest.status ? { status: statusMap[rest.status] ?? rest.status } : {}),
+      ...(trustedEmails !== undefined ? { trustedEmails: JSON.stringify(trustedEmails) } : {}),
     };
 
     const [updated] = await db

@@ -1,14 +1,23 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, Printer, ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Printer, ArrowLeft, Mail, Check } from "lucide-react";
+
+const PALETTE = {
+  bg: "#f7f5ef",
+  text: "#1a1614",
+  muted: "#5a514c",
+  border: "#d9d1c3",
+  mono: '"JetBrains Mono", ui-monospace, monospace',
+};
 
 function formatMonto(val: string | number) {
-  return "$" + Number(val).toLocaleString("es-AR", { minimumFractionDigits: 2 });
+  return "$ " + Number(val).toLocaleString("es-AR", { minimumFractionDigits: 2 });
 }
 
-function formatFecha(iso: string) {
+function formatFecha(iso: string | null | undefined) {
   if (!iso) return "—";
   const [year, month, day] = iso.split("-");
   return `${day}/${month}/${year}`;
@@ -22,7 +31,7 @@ function formatPeriodo(p: string | null) {
 }
 
 function montoEnLetras(monto: number): string {
-  // Implementación básica para montos típicos de alquiler
+  if (!isFinite(monto)) return "—";
   const enLetras = (n: number): string => {
     const unidades = ["","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte"];
     const decenas = ["","","veinti","treinta","cuarenta","cincuenta","sesenta","setenta","ochenta","noventa"];
@@ -57,50 +66,86 @@ function montoEnLetras(monto: number): string {
   return resultado;
 }
 
+type ReceiptData = {
+  movimiento: {
+    id: string;
+    reciboNumero: string;
+    date: string;
+    description: string;
+    amount: string;
+    categoria: string | null;
+    period: string | null;
+    note: string | null;
+  };
+  inquilino: {
+    firstName: string;
+    lastName: string | null;
+    dni: string | null;
+    email: string | null;
+    emailDefault: boolean;
+    trustedEmails: { email: string; label?: string; sendDefault: boolean }[];
+  } | null;
+  propiedad: {
+    address: string;
+    floorUnit: string | null;
+  } | null;
+  contrato: {
+    contractNumber: string;
+    paymentModality: string | null;
+  } | null;
+  serviceItems: {
+    id: string;
+    etiqueta: string;
+    period: string;
+    monto: string | null;
+    servicioId: string | null;
+  }[];
+  charges: {
+    id: string;
+    periodo: string | null;
+    categoria: string;
+    descripcion: string;
+    monto: string;
+  }[];
+  agency: {
+    name: string;
+    tradeName: string | null;
+    legalName: string | null;
+    cuit: string | null;
+    vatStatus: string | null;
+    grossIncome: string | null;
+    activityStart: string | null;
+    logoUrl: string | null;
+    fiscalAddress: string | null;
+    city: string | null;
+    zipCode: string | null;
+    province: string | null;
+    phone: string | null;
+    contactEmail: string | null;
+    website: string | null;
+    professionalAssociation: string | null;
+    licenseNumber: string | null;
+    signatory: string | null;
+    signatoryTitle: string | null;
+    signatureUrl: string | null;
+    receiptType: string | null;
+    invoicePoint: string | null;
+    bancoCBU: string | null;
+    bancoAlias: string | null;
+    clauses: { id: string; texto: string }[];
+  } | null;
+};
+
 export default function ReciboPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
-  const { data, isLoading, error } = useQuery<{
-    movimiento: {
-      id: string;
-      reciboNumero: string;
-      fecha: string;
-      descripcion: string;
-      monto: string;
-      categoria: string | null;
-      periodo: string | null;
-      nota: string | null;
-    };
-    inquilino: {
-      firstName: string;
-      lastName: string | null;
-      dni: string | null;
-      email: string | null;
-    } | null;
-    propiedad: {
-      address: string;
-      floorUnit: string | null;
-    } | null;
-    contrato: {
-      contractNumber: string;
-      paymentModality: string | null;
-    } | null;
-    serviceItems: {
-      id: string;
-      etiqueta: string;
-      period: string;
-      monto: string | null;
-      servicioId: string | null;
-    }[];
-    charges: {
-      id: string;
-      periodo: string | null;
-      categoria: string;
-      descripcion: string;
-      monto: string;
-    }[];
-  }>({
+  // All hooks before any early return
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
+  const [sendResult, setSendResult] = useState<{ sent: number; failed: string[] } | null>(null);
+
+  const { data, isLoading, error } = useQuery<ReceiptData>({
     queryKey: ["receipt", id],
     queryFn: async () => {
       const res = await fetch(`/api/receipts/${id}`);
@@ -110,6 +155,23 @@ export default function ReciboPage() {
       }
       return res.json();
     },
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/receipts/${id}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: [...selectedRecipients] }),
+      });
+      if (!res.ok) {
+        let errorMsg = "Error al enviar";
+        try { const d = await res.json(); errorMsg = d.error ?? errorMsg; } catch { errorMsg = await res.text().catch(() => errorMsg); }
+        throw new Error(errorMsg);
+      }
+      return res.json() as Promise<{ sent: number; failed: string[] }>;
+    },
+    onSuccess: (result) => setSendResult(result),
   });
 
   if (isLoading) {
@@ -131,13 +193,81 @@ export default function ReciboPage() {
     );
   }
 
-  const { movimiento, inquilino, propiedad, contrato, serviceItems = [], charges = [] } = data;
-  const montoNum = Number(movimiento.monto);
+  const { movimiento, inquilino, propiedad, contrato, serviceItems = [], charges = [], agency } = data;
+
+  // Build email recipient list from inquilino data (safe after early returns)
+  const allRecipients: { email: string; label: string; key: string }[] = [];
+  if (inquilino?.email) {
+    allRecipients.push({ email: inquilino.email, label: "Email principal", key: inquilino.email });
+  }
+  (inquilino?.trustedEmails ?? []).forEach((te) => {
+    if (te.email) allRecipients.push({ email: te.email, label: te.label || te.email, key: te.email });
+  });
+
+  function openEmailDialog() {
+    const defaults = new Set<string>(
+      allRecipients
+        .filter((r) => {
+          if (r.key === inquilino?.email) return inquilino?.emailDefault ?? true;
+          return (inquilino?.trustedEmails ?? []).find((te) => te.email === r.email)?.sendDefault ?? false;
+        })
+        .map((r) => r.email)
+    );
+    setSelectedRecipients(defaults);
+    setSendResult(null);
+    setShowEmailDialog(true);
+  }
+
+  function toggleRecipient(email: string) {
+    setSelectedRecipients((prev) => {
+      const next = new Set(prev);
+      if (next.has(email)) next.delete(email);
+      else next.add(email);
+      return next;
+    });
+  }
+
+  const agencyDisplayName = agency?.legalName || agency?.tradeName || agency?.name || "Arce Administración";
+  const agencyInitial = (agencyDisplayName[0] ?? "A").toUpperCase();
+  const cityLine = [agency?.fiscalAddress, agency?.city].filter(Boolean).join(", ");
+  const contactLine = [
+    agency?.phone ? `Tel. ${agency.phone}` : null,
+    agency?.contactEmail,
+  ].filter(Boolean).join(" · ");
+  const tipoRecibo = (agency?.receiptType || "Recibo X").toUpperCase();
+  const numeroRecibo = movimiento.reciboNumero;
+  const signatoryName = agency?.signatory;
+  const signatoryTitle = agency?.signatoryTitle || "Administrador";
+
+  const montoNum = Number(movimiento.amount);
+  const totalDisplay = isFinite(montoNum) ? formatMonto(montoNum) : "—";
+
   const nombreInquilino = inquilino
     ? inquilino.lastName
       ? `${inquilino.firstName} ${inquilino.lastName}`
       : inquilino.firstName
     : "—";
+
+  const periodoLabel = formatPeriodo(movimiento.period);
+  const direccionPropiedad = propiedad
+    ? `${propiedad.address}${propiedad.floorUnit ? ` ${propiedad.floorUnit}` : ""}`
+    : null;
+
+  const tableRows: { concepto: string; periodo: string | null; monto: string }[] =
+    charges.length > 0
+      ? charges.map((c) => ({
+          concepto: c.descripcion,
+          periodo: c.periodo,
+          monto: formatMonto(c.monto),
+        }))
+      : [{
+          concepto: movimiento.description,
+          periodo: movimiento.period,
+          monto: totalDisplay,
+        }];
+
+  const serviciosCobrados = serviceItems.filter((s) => s.monto != null && Number(s.monto) > 0);
+  const serviciosConstancia = serviceItems.filter((s) => s.monto == null || Number(s.monto) === 0);
 
   return (
     <div className="min-h-screen bg-bg">
@@ -149,179 +279,289 @@ export default function ReciboPage() {
         >
           <ArrowLeft size={13} /> Volver
         </button>
-        <button
-          onClick={() => window.print()}
-          className="flex items-center gap-2 bg-primary text-white text-[0.8rem] font-semibold px-4 py-2 rounded-[8px] hover:bg-primary/90 transition-colors"
-        >
-          <Printer size={14} /> Imprimir recibo
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={openEmailDialog}
+            disabled={allRecipients.length === 0}
+            className="flex items-center gap-2 text-[0.8rem] font-semibold px-4 py-2 rounded-[8px] transition-colors border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Mail size={14} /> Enviar por email
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 bg-primary text-white text-[0.8rem] font-semibold px-4 py-2 rounded-[8px] hover:bg-primary/90 transition-colors"
+          >
+            <Printer size={14} /> Imprimir recibo
+          </button>
+        </div>
       </div>
 
+      {/* Dialog — enviar por email */}
+      {showEmailDialog && (
+        <div className="print:hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-surface border border-border rounded-[12px] shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[0.95rem] font-semibold text-on-bg">Enviar recibo por email</h3>
+              <button onClick={() => setShowEmailDialog(false)} className="text-muted-foreground hover:text-on-bg">
+                ✕
+              </button>
+            </div>
+
+            {sendResult ? (
+              <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <div className="size-10 rounded-full bg-income-dim flex items-center justify-center">
+                  <Check size={20} className="text-income" />
+                </div>
+                <p className="text-[0.9rem] font-semibold text-on-bg">
+                  {sendResult.sent === 1 ? "Recibo enviado" : `${sendResult.sent} recibos enviados`}
+                </p>
+                {sendResult.failed.length > 0 && (
+                  <p className="text-[0.78rem] text-destructive">
+                    No se pudo enviar a: {sendResult.failed.join(", ")}
+                  </p>
+                )}
+                <button
+                  onClick={() => setShowEmailDialog(false)}
+                  className="mt-1 text-[0.8rem] text-primary hover:underline"
+                >
+                  Cerrar
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-[0.78rem] text-muted-foreground">Seleccioná los destinatarios:</p>
+                <div className="flex flex-col gap-2">
+                  {allRecipients.map((r) => (
+                    <label key={r.key} className="flex items-start gap-2.5 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={selectedRecipients.has(r.email)}
+                        onChange={() => toggleRecipient(r.email)}
+                        className="mt-0.5 accent-primary"
+                      />
+                      <div>
+                        <div className="text-[0.82rem] text-on-bg group-hover:text-primary transition-colors">{r.email}</div>
+                        <div className="text-[0.72rem] text-muted-foreground">{r.label}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                {sendMutation.isError && (
+                  <p className="text-[0.75rem] text-destructive">{(sendMutation.error as Error).message}</p>
+                )}
+                <div className="flex gap-2 justify-end mt-1">
+                  <button
+                    onClick={() => setShowEmailDialog(false)}
+                    className="text-[0.8rem] px-3 py-1.5 border border-border rounded-[6px] text-text-secondary hover:bg-muted/30"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => sendMutation.mutate()}
+                    disabled={selectedRecipients.size === 0 || sendMutation.isPending}
+                    className="flex items-center gap-1.5 text-[0.8rem] font-semibold px-4 py-1.5 rounded-[6px] bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Mail size={13} />
+                    {sendMutation.isPending
+                      ? "Enviando..."
+                      : `Enviar a ${selectedRecipients.size > 0 ? selectedRecipients.size : ""} destinatario${selectedRecipients.size !== 1 ? "s" : ""}`
+                    }
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Recibo — centrado en A4 */}
-      <div className="mx-auto max-w-[700px] p-8 print:p-0 print:max-w-none">
-        <div className="bg-white border border-border rounded-[12px] print:border-0 print:rounded-none overflow-hidden">
-          {/* Encabezado */}
-          <div className="bg-primary px-8 py-6 text-white print:bg-primary">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-[1.5rem] font-bold tracking-tight">ARCE ADMINISTRACIÓN</div>
-                <div className="text-[0.78rem] opacity-80 mt-0.5">Gestión Inmobiliaria</div>
+      <div className="mx-auto max-w-[760px] p-8 print:p-0 print:max-w-none">
+        <div
+          style={{
+            background: PALETTE.bg,
+            color: PALETTE.text,
+            fontFamily: "Inter, -apple-system, sans-serif",
+            padding: "44px 48px",
+            borderRadius: "8px",
+            fontSize: "13px",
+            lineHeight: 1.5,
+          }}
+          className="print:rounded-none print:shadow-none shadow-[0_8px_24px_rgba(0,0,0,.3)]"
+        >
+          {/* Header */}
+          <div style={{ display: "flex", gap: "20px", alignItems: "flex-start", paddingBottom: "18px", borderBottom: `1.5px solid ${PALETTE.text}` }}>
+            <div style={{
+              width: "64px", height: "64px", borderRadius: "12px", flexShrink: 0,
+              display: "grid", placeItems: "center", overflow: "hidden",
+              ...(agency?.logoUrl
+                ? {}
+                : { background: "linear-gradient(135deg, #e85a3c, #c03c1f)", color: "#fff", fontWeight: 700, fontSize: "26px" }),
+            }}>
+              {agency?.logoUrl
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={agency.logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                : agencyInitial
+              }
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "19px", fontWeight: 700, letterSpacing: "-.01em" }}>
+                {agencyDisplayName}
               </div>
-              <div className="text-right">
-                <div className="text-[0.7rem] opacity-70 uppercase tracking-wider">Recibo N°</div>
-                <div className="text-[1.8rem] font-bold leading-none">{movimiento.reciboNumero}</div>
-              </div>
+              {(agency?.cuit || agency?.vatStatus) && (
+                <div style={{ fontSize: "12px", color: PALETTE.muted }}>
+                  {agency?.cuit ? `CUIT ${agency.cuit}` : ""}
+                  {agency?.cuit && agency?.vatStatus ? " · " : ""}
+                  {agency?.vatStatus || ""}
+                </div>
+              )}
+              {cityLine && (
+                <div style={{ fontSize: "12px", color: PALETTE.muted }}>{cityLine}</div>
+              )}
+              {contactLine && (
+                <div style={{ fontSize: "12px", color: PALETTE.muted }}>{contactLine}</div>
+              )}
+            </div>
+            <div style={{ textAlign: "right", fontFamily: PALETTE.mono }}>
+              <div style={{ fontSize: "11px", color: PALETTE.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{tipoRecibo}</div>
+              <div style={{ fontSize: "16px", fontWeight: 600 }}>{numeroRecibo}</div>
+              {agency?.licenseNumber && (
+                <div style={{ fontSize: "11px", color: PALETTE.muted, marginTop: "4px" }}>Mat. {agency.licenseNumber}</div>
+              )}
             </div>
           </div>
 
-          {/* Cuerpo */}
-          <div className="px-8 py-6 space-y-6">
-            {/* Datos del recibo */}
-            <div className="grid grid-cols-2 gap-6 border-b border-border pb-6">
+          {/* Body */}
+          <div style={{ marginTop: "22px" }}>
+            {/* Recibí de + Fecha */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "18px" }}>
               <div>
-                <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-1">Fecha de emisión</div>
-                <div className="text-[0.9rem] font-semibold text-on-bg">{formatFecha(movimiento.fecha)}</div>
+                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: ".08em", color: PALETTE.muted, marginBottom: "4px" }}>Recibí de</div>
+                <div style={{ fontSize: "15px", fontWeight: 500 }}>{nombreInquilino}</div>
+                {inquilino?.dni && (
+                  <div style={{ fontSize: "12px", color: PALETTE.muted }}>DNI {inquilino.dni}</div>
+                )}
+                {direccionPropiedad && (
+                  <div style={{ fontSize: "12px", color: PALETTE.muted }}>{direccionPropiedad}</div>
+                )}
               </div>
-              {movimiento.periodo && (
-                <div>
-                  <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-1">Período</div>
-                  <div className="text-[0.9rem] font-semibold text-on-bg">{formatPeriodo(movimiento.periodo)}</div>
-                </div>
-              )}
-              {contrato && (
-                <div>
-                  <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-1">N° de contrato</div>
-                  <div className="text-[0.9rem] font-semibold text-on-bg">{contrato.contractNumber}</div>
-                </div>
-              )}
-              {contrato?.paymentModality && (
-                <div>
-                  <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-1">Modalidad de pago</div>
-                  <div className="text-[0.9rem] font-semibold text-on-bg">
-                    {contrato.paymentModality === "B"
-                      ? "B — Pago directo al propietario"
-                      : "A — Cobro por inmobiliaria"}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Datos del inquilino */}
-            <div className="border-b border-border pb-6">
-              <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-3">Recibido de</div>
-              <div className="text-[1.1rem] font-bold text-on-bg mb-1">{nombreInquilino}</div>
-              {inquilino?.dni && (
-                <div className="text-[0.8rem] text-text-secondary">DNI {inquilino.dni}</div>
-              )}
-              {propiedad && (
-                <div className="text-[0.8rem] text-text-secondary mt-1">
-                  {propiedad.address}{propiedad.floorUnit ? ` ${propiedad.floorUnit}` : ""}
-                </div>
-              )}
-            </div>
-
-            {/* Concepto y monto */}
-            <div className="border-b border-border pb-6">
-              <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-3">Concepto</div>
-              {charges.length > 0 ? (
-                <>
-                  <table className="w-full text-[0.82rem] mb-3">
-                    <thead>
-                      <tr className="border-b border-border/40">
-                        <th className="text-left py-1.5 text-[0.65rem] text-muted-foreground uppercase tracking-wider font-semibold">Descripción</th>
-                        <th className="text-left py-1.5 text-[0.65rem] text-muted-foreground uppercase tracking-wider font-semibold">Período</th>
-                        <th className="text-right py-1.5 text-[0.65rem] text-muted-foreground uppercase tracking-wider font-semibold">Monto</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {charges.map((c) => (
-                        <tr key={c.id} className="border-b border-border/30 last:border-0">
-                          <td className="py-1.5 text-on-bg">{c.descripcion}</td>
-                          <td className="py-1.5 text-muted-foreground text-[0.75rem]">{c.periodo ? formatPeriodo(c.periodo) : "—"}</td>
-                          <td className="py-1.5 text-right font-semibold text-on-bg">{formatMonto(c.monto)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[0.75rem] font-semibold text-muted-foreground uppercase tracking-wider">Total</span>
-                    <div className="text-[1.6rem] font-bold text-primary">{formatMonto(movimiento.monto)}</div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div className="flex-1">
-                    <div className="text-[0.9rem] text-on-bg">{movimiento.descripcion}</div>
-                    {movimiento.nota && (
-                      <div className="text-[0.75rem] text-muted-foreground mt-1">{movimiento.nota}</div>
-                    )}
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-[1.6rem] font-bold text-primary">{formatMonto(movimiento.monto)}</div>
-                  </div>
-                </div>
-              )}
-              <div className="text-[0.72rem] text-muted-foreground italic">
-                Son: {montoEnLetras(montoNum)}
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: ".08em", color: PALETTE.muted, marginBottom: "4px" }}>Fecha</div>
+                <div style={{ fontSize: "15px", fontWeight: 500 }}>{formatFecha(movimiento.date)}</div>
+                {periodoLabel && (
+                  <>
+                    <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: ".08em", color: PALETTE.muted, marginTop: "8px", marginBottom: "4px" }}>Período</div>
+                    <div style={{ fontSize: "15px", fontWeight: 500 }}>{periodoLabel}</div>
+                  </>
+                )}
+                {contrato && (
+                  <>
+                    <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: ".08em", color: PALETTE.muted, marginTop: "8px", marginBottom: "4px" }}>Contrato</div>
+                    <div style={{ fontSize: "13px", fontFamily: PALETTE.mono }}>{contrato.contractNumber}</div>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Service items */}
-            {serviceItems.length > 0 && (() => {
-              const aCobrar = serviceItems.filter((s) => s.monto != null && Number(s.monto) > 0);
-              const constancia = serviceItems.filter((s) => s.monto == null || Number(s.monto) === 0);
-              return (
-                <div className="border-b border-border pb-6 space-y-4">
-                  {aCobrar.length > 0 && (
-                    <div>
-                      <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-2">Servicios incluidos en el cobro</div>
-                      <table className="w-full text-[0.82rem]">
-                        <tbody>
-                          {aCobrar.map((s) => (
-                            <tr key={s.id} className="border-b border-border/30 last:border-0">
-                              <td className="py-1.5 text-on-bg">{s.etiqueta}</td>
-                              <td className="py-1.5 text-muted-foreground text-[0.75rem]">{formatPeriodo(s.period)}</td>
-                              <td className="py-1.5 text-right font-semibold text-on-bg">{formatMonto(s.monto!)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                  {constancia.length > 0 && (
-                    <div>
-                      <div className="text-[0.65rem] text-muted-foreground uppercase tracking-wider mb-2">Constancia de pago directo por el inquilino</div>
-                      <ul className="space-y-1">
-                        {constancia.map((s) => (
-                          <li key={s.id} className="flex items-center gap-2 text-[0.8rem] text-text-secondary">
-                            <span className="size-1.5 rounded-full bg-muted-foreground/50 flex-shrink-0" />
-                            {s.etiqueta} — {formatPeriodo(s.period)}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+            {/* Tabla concepto / importe */}
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "8px 6px", borderBottom: `1px solid ${PALETTE.text}`, fontSize: "11px", textTransform: "uppercase", letterSpacing: ".05em", color: PALETTE.muted, fontWeight: 600 }}>Concepto</th>
+                  <th style={{ textAlign: "right", padding: "8px 6px", borderBottom: `1px solid ${PALETTE.text}`, fontSize: "11px", textTransform: "uppercase", letterSpacing: ".05em", color: PALETTE.muted, fontWeight: 600 }}>Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableRows.map((row, i) => (
+                  <tr key={i}>
+                    <td style={{ padding: "9px 6px", borderBottom: `1px dashed ${PALETTE.border}`, fontFamily: PALETTE.mono }}>
+                      {row.concepto}
+                      {row.periodo && (
+                        <span style={{ color: PALETTE.muted, marginLeft: "6px" }}>· {formatPeriodo(row.periodo)}</span>
+                      )}
+                    </td>
+                    <td style={{ padding: "9px 6px", borderBottom: `1px dashed ${PALETTE.border}`, textAlign: "right", fontFamily: PALETTE.mono }}>
+                      {row.monto}
+                    </td>
+                  </tr>
+                ))}
+                {serviciosCobrados.map((s) => (
+                  <tr key={s.id}>
+                    <td style={{ padding: "9px 6px", borderBottom: `1px dashed ${PALETTE.border}`, fontFamily: PALETTE.mono }}>
+                      {s.etiqueta}
+                      <span style={{ color: PALETTE.muted, marginLeft: "6px" }}>· {formatPeriodo(s.period)}</span>
+                    </td>
+                    <td style={{ padding: "9px 6px", borderBottom: `1px dashed ${PALETTE.border}`, textAlign: "right", fontFamily: PALETTE.mono }}>
+                      {formatMonto(s.monto!)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Total */}
+            <div style={{
+              marginTop: "16px", textAlign: "right", fontSize: "15px", fontWeight: 700,
+              paddingTop: "10px", borderTop: `1.5px solid ${PALETTE.text}`, fontFamily: PALETTE.mono,
+            }}>
+              Total recibido: {totalDisplay}
+            </div>
+            <div style={{ textAlign: "right", marginTop: "4px", fontSize: "11px", fontStyle: "italic", color: PALETTE.muted }}>
+              Son: {montoEnLetras(montoNum)}
+            </div>
+
+            {/* Constancia de servicios pagados directo */}
+            {serviciosConstancia.length > 0 && (
+              <div style={{ marginTop: "20px", paddingTop: "12px", borderTop: `1px solid ${PALETTE.border}` }}>
+                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: ".05em", color: PALETTE.muted, marginBottom: "6px" }}>
+                  Constancia de servicios abonados directamente por el inquilino
                 </div>
-              );
-            })()}
+                <ul style={{ margin: 0, paddingLeft: "16px", fontSize: "12px", color: PALETTE.muted }}>
+                  {serviciosConstancia.map((s) => (
+                    <li key={s.id}>{s.etiqueta} — {formatPeriodo(s.period)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Datos bancarios */}
+            {(agency?.bancoCBU || agency?.bancoAlias) && (
+              <div style={{ marginTop: "16px", fontSize: "11px", color: PALETTE.muted }}>
+                {agency?.bancoCBU && <>CBU: <span style={{ fontFamily: PALETTE.mono }}>{agency.bancoCBU}</span></>}
+                {agency?.bancoCBU && agency?.bancoAlias && " · "}
+                {agency?.bancoAlias && <>Alias: <span style={{ fontFamily: PALETTE.mono }}>{agency.bancoAlias}</span></>}
+              </div>
+            )}
+
+            {/* Cláusulas */}
+            {agency?.clauses && agency.clauses.length > 0 && (
+              <div style={{ marginTop: "20px", fontSize: "11px", color: PALETTE.muted, borderTop: `1px solid ${PALETTE.border}`, paddingTop: "12px" }}>
+                <ol style={{ margin: 0, paddingLeft: "18px", lineHeight: 1.6 }}>
+                  {agency.clauses.map((c) => (
+                    <li key={c.id} style={{ marginBottom: "4px" }}>{c.texto}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
 
             {/* Firma */}
-            <div className="pt-2">
-              <div className="flex justify-end">
-                <div className="text-center">
-                  <div className="border-t border-border w-48 pt-2 mt-12">
-                    <div className="text-[0.72rem] text-muted-foreground">Firma y sello</div>
-                    <div className="text-[0.72rem] font-semibold text-on-bg mt-0.5">Arce Administración</div>
+            <div style={{ marginTop: "44px", display: "flex", justifyContent: "flex-end" }}>
+              <div style={{ width: "220px", textAlign: "center" }}>
+                {agency?.signatureUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={agency.signatureUrl} alt="Firma" style={{ height: "50px", objectFit: "contain", margin: "0 auto 6px" }} />
+                ) : signatoryName ? (
+                  <div style={{ fontFamily: '"Brush Script MT", cursive', fontSize: "22px", transform: "rotate(-3deg)", marginBottom: "6px" }}>
+                    {signatoryName}
                   </div>
+                ) : null}
+                <div style={{
+                  borderTop: `1px solid ${PALETTE.text}`, paddingTop: "6px",
+                  fontSize: "11px", color: PALETTE.muted,
+                  textTransform: "uppercase", letterSpacing: ".05em",
+                }}>
+                  {signatoryName ? `${signatoryName} · ${signatoryTitle}` : `${agencyDisplayName} · ${signatoryTitle}`}
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Pie */}
-          <div className="bg-surface-mid px-8 py-3 border-t border-border">
-            <div className="text-[0.65rem] text-muted-foreground text-center">
-              Este recibo es un comprobante válido de pago emitido por Arce Administración.
             </div>
           </div>
         </div>

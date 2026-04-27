@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Edit2, Save, X, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
+import { Edit2, Save, X, Loader2, AlertCircle, AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ZoneCombobox } from "@/components/ui/zone-combobox";
 import { CityCombobox } from "@/components/ui/city-combobox";
 import { ProvinceSelect } from "@/components/ui/province-select";
 import { TenantCompletenessBar } from "@/components/tenants/tenant-completeness-bar";
+
+type TrustedEmail = { email: string; label?: string; sendDefault: boolean };
 
 interface Tenant {
   id: string;
@@ -19,6 +21,8 @@ interface Tenant {
   cuit: string | null;
   phone: string | null;
   email: string | null;
+  emailDefault: boolean;
+  trustedEmails: string | null;
   address: string | null;
   addressStreet: string | null;
   addressNumber: string | null;
@@ -47,7 +51,10 @@ type EditableFields = Pick<
   | "address" | "addressStreet" | "addressNumber" | "addressZone" | "addressCity" | "addressProvince"
   | "birthDate" | "condicionFiscal" | "nationality"
   | "occupation" | "internalNotes"
->;
+> & {
+  emailDefault: boolean;
+  trustedEmails: TrustedEmail[];
+};
 
 // ── DataField ─────────────────────────────────────────────────
 function DataField({
@@ -156,6 +163,11 @@ export function TenantTabData({
   const [saving, setSaving] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState<"suspendido" | "baja" | null>(null);
 
+  function parseTrustedEmails(raw: string | null): TrustedEmail[] {
+    if (!raw) return [];
+    try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; }
+  }
+
   const [form, setForm] = useState<EditableFields>({
     firstName:       tenant.firstName,
     lastName:        tenant.lastName,
@@ -163,6 +175,8 @@ export function TenantTabData({
     cuit:            tenant.cuit,
     phone:           tenant.phone,
     email:           tenant.email,
+    emailDefault:    tenant.emailDefault,
+    trustedEmails:   parseTrustedEmails(tenant.trustedEmails),
     address:         tenant.address,
     addressStreet:   tenant.addressStreet,
     addressNumber:   tenant.addressNumber,
@@ -196,10 +210,12 @@ export function TenantTabData({
   const handleSave = async () => {
     setSaving(true);
     try {
+      const { trustedEmails, ...restForm } = form;
+      const validEmails = trustedEmails.filter((te) => te.email.trim() !== "");
       const res = await fetch(`/api/tenants/${tenant.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...restForm, trustedEmails: validEmails }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -223,6 +239,8 @@ export function TenantTabData({
       cuit:            tenant.cuit,
       phone:           tenant.phone,
       email:           tenant.email,
+      emailDefault:    tenant.emailDefault,
+      trustedEmails:   parseTrustedEmails(tenant.trustedEmails),
       address:         tenant.address,
       addressStreet:   tenant.addressStreet,
       addressNumber:   tenant.addressNumber,
@@ -349,7 +367,24 @@ export function TenantTabData({
           </div>
 
           <div className="border-t border-border" />
-          <DataField id="email" label="Email" value={form.email} editing={editing} onChange={setField("email")} type="email" placeholder="usuario@gmail.com" />
+
+          {/* Email principal + toggle para recibos */}
+          <div className="flex flex-col gap-2">
+            <DataField id="email" label="Email" value={form.email} editing={editing} onChange={setField("email")} type="email" placeholder="usuario@gmail.com" />
+            {form.email && (
+              <label className="flex items-center gap-2 text-[12px] text-muted-foreground select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.emailDefault}
+                  disabled={!editing}
+                  onChange={(e) => setForm((prev) => ({ ...prev, emailDefault: e.target.checked }))}
+                  className="accent-primary"
+                />
+                Incluir en envíos de recibos por defecto
+              </label>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <DataField id="phone"     label="Teléfono"            value={form.phone}     editing={editing} onChange={setField("phone")}     placeholder="351 612-4400" />
             <DataField id="birthDate" label="Fecha de nacimiento" value={form.birthDate} editing={editing} onChange={setField("birthDate")} type="date" mono />
@@ -389,6 +424,95 @@ export function TenantTabData({
                 )}
               </div>
             </div>
+        </div>
+      </SectionCard>
+
+      {/* Emails para recibos */}
+      <SectionCard title="Emails para recibos">
+        <div className="flex flex-col gap-3">
+          {/* Lista de emails de confianza */}
+          {form.trustedEmails.length === 0 && !editing && (
+            <p className="text-[12px] text-muted-foreground italic">
+              No hay emails adicionales configurados.
+            </p>
+          )}
+          {form.trustedEmails.map((te, i) => (
+            <div key={i} className="flex items-start gap-2 p-2.5 rounded-[7px] border border-border bg-surface-mid">
+              {editing ? (
+                <>
+                  <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                    <input
+                      type="email"
+                      value={te.email}
+                      onChange={(e) => {
+                        const updated = [...form.trustedEmails];
+                        updated[i] = { ...updated[i], email: e.target.value };
+                        setForm((prev) => ({ ...prev, trustedEmails: updated }));
+                      }}
+                      placeholder="email@ejemplo.com"
+                      className="w-full bg-surface border border-border rounded-[5px] text-on-surface text-[13px] px-2.5 py-1.5 outline-none focus:border-primary"
+                    />
+                    <input
+                      type="text"
+                      value={te.label ?? ""}
+                      onChange={(e) => {
+                        const updated = [...form.trustedEmails];
+                        updated[i] = { ...updated[i], label: e.target.value || undefined };
+                        setForm((prev) => ({ ...prev, trustedEmails: updated }));
+                      }}
+                      placeholder="Etiqueta (ej: Contador, Cónyuge)"
+                      className="w-full bg-surface border border-border rounded-[5px] text-on-surface text-[12px] px-2.5 py-1.5 outline-none focus:border-primary"
+                    />
+                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={te.sendDefault}
+                        onChange={(e) => {
+                          const updated = [...form.trustedEmails];
+                          updated[i] = { ...updated[i], sendDefault: e.target.checked };
+                          setForm((prev) => ({ ...prev, trustedEmails: updated }));
+                        }}
+                        className="accent-primary"
+                      />
+                      Incluir por defecto al enviar
+                    </label>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const updated = form.trustedEmails.filter((_, j) => j !== i);
+                      setForm((prev) => ({ ...prev, trustedEmails: updated }));
+                    }}
+                    className="mt-1 text-muted-foreground hover:text-destructive transition-colors"
+                    aria-label="Eliminar"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </>
+              ) : (
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] text-on-surface truncate">{te.email}</div>
+                  {te.label && <div className="text-[11px] text-muted-foreground">{te.label}</div>}
+                  <div className={cn("text-[11px] mt-0.5", te.sendDefault ? "text-income" : "text-muted-foreground")}>
+                    {te.sendDefault ? "Incluido por defecto" : "No incluido por defecto"}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {editing && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="self-start text-xs gap-1.5"
+              onClick={() => setForm((prev) => ({
+                ...prev,
+                trustedEmails: [...prev.trustedEmails, { email: "", sendDefault: true }],
+              }))}
+            >
+              <Plus size={13} /> Agregar email
+            </Button>
+          )}
         </div>
       </SectionCard>
 

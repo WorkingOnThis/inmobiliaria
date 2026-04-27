@@ -9,9 +9,9 @@ import { canManageClients } from "@/lib/permissions";
 import { eq, and, inArray, ne } from "drizzle-orm";
 
 /**
- * POST /api/receipts/[reciboNumero]/void
+ * POST /api/receipts/[id]/void
  *
- * Atomically voids a receipt:
+ * Atomically voids a receipt by reciboNumero string (e.g. "R-001"):
  * 1. Reverts each affected tenant_ledger entry (montoPagado, estado, reciboNumero)
  * 2. Deletes all caja_movimiento rows with this reciboNumero
  * 3. Deletes all receipt_allocation rows for this reciboNumero
@@ -21,7 +21,7 @@ import { eq, and, inArray, ne } from "drizzle-orm";
  */
 export async function POST(
   _req: NextRequest,
-  { params }: { params: Promise<{ reciboNumero: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
@@ -31,7 +31,7 @@ export async function POST(
     return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
   }
 
-  const { reciboNumero } = await params;
+  const { id: reciboNumero } = await params;
 
   try {
     const result = await db.transaction(async (tx) => {

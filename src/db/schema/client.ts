@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 
 /**
@@ -42,6 +42,10 @@ export const client = pgTable("client", {
   addressZone: text("addressZone"),   // barrio
   addressCity: text("addressCity"),
   addressProvince: text("addressProvince"),
+
+  // Emails para envío de recibos
+  emailDefault: boolean("emailDefault").notNull().default(true),
+  trustedEmails: text("trustedEmails"), // JSON: [{ email, label?, sendDefault }]
 
   // Persona de confianza
   confianzaNombre: text("confianzaNombre"),
