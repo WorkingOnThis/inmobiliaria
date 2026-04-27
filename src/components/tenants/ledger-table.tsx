@@ -46,6 +46,8 @@ const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
   pago_parcial:      { label: "Pago parcial",  className: "bg-[var(--warning-dim)] text-[var(--warning)] border-[var(--warning)]" },
 };
 
+const PENDING_STATES = ["pendiente", "registrado", "pendiente_revision", "pago_parcial"];
+
 function isSelectable(entry: LedgerEntry): boolean {
   return ["pendiente", "registrado", "pago_parcial"].includes(entry.estado);
 }
@@ -99,7 +101,6 @@ export function LedgerTable({
   }, []);
 
   const today = new Date().toISOString().slice(0, 10);
-  const PENDING_STATES = ["pendiente", "registrado", "pendiente_revision"];
 
   function matchesFilter(e: LedgerEntry): boolean {
     if (activeFilters.size === 0) return true;
