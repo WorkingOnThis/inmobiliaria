@@ -4,6 +4,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, Printer, ArrowLeft, Mail, Check } from "lucide-react";
+import type { ReceiptData } from "@/lib/receipts/load";
+import { formatMonto, formatFecha, formatPeriodo, montoEnLetras, agencyDisplayName } from "@/lib/receipts/format";
 
 const PALETTE = {
   bg: "#f7f5ef",
@@ -11,129 +13,6 @@ const PALETTE = {
   muted: "#5a514c",
   border: "#d9d1c3",
   mono: '"JetBrains Mono", ui-monospace, monospace',
-};
-
-function formatMonto(val: string | number) {
-  return "$ " + Number(val).toLocaleString("es-AR", { minimumFractionDigits: 2 });
-}
-
-function formatFecha(iso: string | null | undefined) {
-  if (!iso) return "—";
-  const [year, month, day] = iso.split("-");
-  return `${day}/${month}/${year}`;
-}
-
-function formatPeriodo(p: string | null) {
-  if (!p) return null;
-  const [year, month] = p.split("-");
-  const nombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  return `${nombres[parseInt(month) - 1]} ${year}`;
-}
-
-function montoEnLetras(monto: number): string {
-  if (!isFinite(monto)) return "—";
-  const enLetras = (n: number): string => {
-    const unidades = ["","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte"];
-    const decenas = ["","","veinti","treinta","cuarenta","cincuenta","sesenta","setenta","ochenta","noventa"];
-    const centenas = ["","ciento","doscientos","trescientos","cuatrocientos","quinientos","seiscientos","setecientos","ochocientos","novecientos"];
-    if (n === 0) return "cero";
-    if (n === 100) return "cien";
-    if (n <= 20) return unidades[n];
-    if (n < 100) {
-      const d = Math.floor(n / 10);
-      const u = n % 10;
-      if (d === 2 && u > 0) return `veinti${unidades[u]}`;
-      return u === 0 ? decenas[d] : `${decenas[d]} y ${unidades[u]}`;
-    }
-    if (n < 1000) {
-      const c = Math.floor(n / 100);
-      const rest = n % 100;
-      return rest === 0 ? centenas[c] : `${centenas[c]} ${enLetras(rest)}`;
-    }
-    if (n < 1000000) {
-      const miles = Math.floor(n / 1000);
-      const rest = n % 1000;
-      const milStr = miles === 1 ? "mil" : `${enLetras(miles)} mil`;
-      return rest === 0 ? milStr : `${milStr} ${enLetras(rest)}`;
-    }
-    return n.toString();
-  };
-
-  const entero = Math.floor(monto);
-  const centavos = Math.round((monto - entero) * 100);
-  let resultado = enLetras(entero).toUpperCase();
-  resultado += centavos > 0 ? ` CON ${String(centavos).padStart(2,"0")}/100 PESOS` : " PESOS";
-  return resultado;
-}
-
-type ReceiptData = {
-  movimiento: {
-    id: string;
-    reciboNumero: string;
-    date: string;
-    description: string;
-    amount: string;
-    categoria: string | null;
-    period: string | null;
-    note: string | null;
-  };
-  inquilino: {
-    firstName: string;
-    lastName: string | null;
-    dni: string | null;
-    email: string | null;
-    emailDefault: boolean;
-    trustedEmails: { email: string; label?: string; sendDefault: boolean }[];
-  } | null;
-  propiedad: {
-    address: string;
-    floorUnit: string | null;
-  } | null;
-  contrato: {
-    contractNumber: string;
-    paymentModality: string | null;
-  } | null;
-  serviceItems: {
-    id: string;
-    etiqueta: string;
-    period: string;
-    monto: string | null;
-    servicioId: string | null;
-  }[];
-  charges: {
-    id: string;
-    periodo: string | null;
-    categoria: string;
-    descripcion: string;
-    monto: string;
-  }[];
-  agency: {
-    name: string;
-    tradeName: string | null;
-    legalName: string | null;
-    cuit: string | null;
-    vatStatus: string | null;
-    grossIncome: string | null;
-    activityStart: string | null;
-    logoUrl: string | null;
-    fiscalAddress: string | null;
-    city: string | null;
-    zipCode: string | null;
-    province: string | null;
-    phone: string | null;
-    contactEmail: string | null;
-    website: string | null;
-    professionalAssociation: string | null;
-    licenseNumber: string | null;
-    signatory: string | null;
-    signatoryTitle: string | null;
-    signatureUrl: string | null;
-    receiptType: string | null;
-    invoicePoint: string | null;
-    bancoCBU: string | null;
-    bancoAlias: string | null;
-    clauses: { id: string; texto: string }[];
-  } | null;
 };
 
 export default function ReciboPage() {
@@ -227,8 +106,8 @@ export default function ReciboPage() {
     });
   }
 
-  const agencyDisplayName = agency?.legalName || agency?.tradeName || agency?.name || "Arce Administración";
-  const agencyInitial = (agencyDisplayName[0] ?? "A").toUpperCase();
+  const agencyName = agencyDisplayName(agency);
+  const agencyInitial = (agencyName[0] ?? "A").toUpperCase();
   const cityLine = [agency?.fiscalAddress, agency?.city].filter(Boolean).join(", ");
   const contactLine = [
     agency?.phone ? `Tel. ${agency.phone}` : null,
@@ -405,7 +284,7 @@ export default function ReciboPage() {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: "19px", fontWeight: 700, letterSpacing: "-.01em" }}>
-                {agencyDisplayName}
+                {agencyName}
               </div>
               {(agency?.cuit || agency?.vatStatus) && (
                 <div style={{ fontSize: "12px", color: PALETTE.muted }}>
@@ -559,7 +438,7 @@ export default function ReciboPage() {
                   fontSize: "11px", color: PALETTE.muted,
                   textTransform: "uppercase", letterSpacing: ".05em",
                 }}>
-                  {signatoryName ? `${signatoryName} · ${signatoryTitle}` : `${agencyDisplayName} · ${signatoryTitle}`}
+                  {signatoryName ? `${signatoryName} · ${signatoryTitle}` : `${agencyName} · ${signatoryTitle}`}
                 </div>
               </div>
             </div>

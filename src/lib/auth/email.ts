@@ -7,16 +7,15 @@ export interface EmailOptions {
   text?: string;
 }
 
-function getTransporter() {
+let _transporter: nodemailer.Transporter | null = null;
+
+function getTransporter(): nodemailer.Transporter | null {
+  if (_transporter) return _transporter;
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
-
   if (!user || !pass) return null;
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user, pass },
-  });
+  _transporter = nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
+  return _transporter;
 }
 
 export async function sendEmail(options: EmailOptions): Promise<void> {

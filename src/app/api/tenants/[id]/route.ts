@@ -185,27 +185,12 @@ export async function GET(
         (CONTRACT_STATUS_PRIORITY[b.status] ?? 99)
     )[0] ?? null;
 
-    // Property (from best contract)
-    let propiedad = null;
-    if (bestContract) {
-      const [prop] = await db
-        .select()
-        .from(property)
-        .where(eq(property.id, bestContract.propertyId))
-        .limit(1);
-      propiedad = prop ?? null;
-    }
-
-    // Owner (from best contract)
-    let propietario = null;
-    if (bestContract) {
-      const [owner] = await db
-        .select()
-        .from(client)
-        .where(eq(client.id, bestContract.ownerId))
-        .limit(1);
-      propietario = owner ?? null;
-    }
+    const [propiedad, propietario] = bestContract
+      ? await Promise.all([
+          db.select().from(property).where(eq(property.id, bestContract.propertyId)).limit(1).then((r) => r[0] ?? null),
+          db.select().from(client).where(eq(client.id, bestContract.ownerId)).limit(1).then((r) => r[0] ?? null),
+        ])
+      : [null, null];
 
     // Movements for this tenant (last 24)
     const movimientos = await db

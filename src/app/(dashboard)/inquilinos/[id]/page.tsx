@@ -41,6 +41,8 @@ interface Tenant {
   estado: string;
   diasMora: number;
   createdAt: string;
+  emailDefault: boolean;
+  trustedEmails: string | null;
 }
 
 interface Contrato {

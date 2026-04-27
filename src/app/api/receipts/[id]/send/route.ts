@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { loadReceiptData } from "@/lib/receipts/load";
 import { buildReceiptEmailHTML } from "@/lib/receipts/email-template";
+import { agencyDisplayName } from "@/lib/receipts/format";
 import { sendEmail } from "@/lib/auth/email";
 import { z } from "zod";
 
@@ -36,7 +37,7 @@ export async function POST(
       return NextResponse.json({ error: "Recibo no encontrado" }, { status: 404 });
     }
 
-    const agencyName = data.agency?.legalName || data.agency?.tradeName || data.agency?.name || "Arce Administración";
+    const agencyName = agencyDisplayName(data.agency);
     const subject = `Recibo ${data.movimiento.reciboNumero} — ${agencyName}`;
     const html = buildReceiptEmailHTML(data);
 
