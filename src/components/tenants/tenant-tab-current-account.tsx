@@ -50,8 +50,13 @@ function formatPeriod(period: string): string {
 }
 
 function getMonto(entry: LedgerEntry, overrides: Record<string, string>): number {
-  const raw = overrides[entry.id] ?? entry.monto;
-  return raw !== null ? Number(raw) : 0;
+  if (overrides[entry.id] !== undefined) {
+    return Number(overrides[entry.id]);
+  }
+  if (entry.estado === "pago_parcial" && entry.montoPagado !== null) {
+    return Math.max(0, Number(entry.monto ?? 0) - Number(entry.montoPagado));
+  }
+  return Number(entry.monto ?? 0);
 }
 
 const TIPOS_MANUAL = [
