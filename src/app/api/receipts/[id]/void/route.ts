@@ -5,7 +5,7 @@ import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { receiptAllocation } from "@/db/schema/receipt-allocation";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
-import { canManageClients } from "@/lib/permissions";
+import { canManageClients, canAnnulReceipts } from "@/lib/permissions";
 import { eq, and, inArray, ne } from "drizzle-orm";
 
 /**
@@ -27,7 +27,7 @@ export async function POST(
   if (!session?.user) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
-  if (!canManageClients(session.user.role)) {
+  if (!canAnnulReceipts(session.user.role)) {
     return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
   }
 

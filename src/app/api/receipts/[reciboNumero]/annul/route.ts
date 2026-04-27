@@ -124,7 +124,7 @@ export async function POST(
             montoPagado: String(montoPagado),
             estado,
             ...(estado !== "conciliado"
-              ? { conciliadoAt: null, conciliadoPor: null }
+              ? { conciliadoAt: null, conciliadoPor: null, reciboNumero: null, reciboEmitidoAt: null }
               : {}),
             updatedAt: now,
           })

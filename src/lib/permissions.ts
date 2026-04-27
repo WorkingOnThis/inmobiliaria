@@ -139,7 +139,7 @@ export function canManageDocumentTemplates(role: string | null | undefined): boo
  * @param role - El rol del usuario a verificar
  * @returns true si el rol tiene permisos, false en caso contrario
  */
-export function canAnnulReceipts(role: string | undefined): boolean {
+export function canAnnulReceipts(role: string | null | undefined): boolean {
   return role === "account_admin";
 }
 
