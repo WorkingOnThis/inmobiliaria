@@ -3,6 +3,9 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { useSession } from "@/lib/auth/hooks";
+import { AnnulReceiptModal } from "@/components/caja/annul-receipt-modal";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -28,6 +31,10 @@ interface Movimiento {
   inquilinoId: string | null;
   inquilinoNombre: string | null;
   creadoEn: string;
+  reciboNumero?: string | null;
+  liquidadoAt?: string | null;
+  anuladoAt?: string | null;
+  anulacionId?: string | null;
 }
 
 interface RespuestaMovimientos {
@@ -102,6 +109,14 @@ export function CajaGeneralClient() {
   const [movimientoEditando, setMovimientoEditando] = useState<Movimiento | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmandoBorrarVarios, setConfirmandoBorrarVarios] = useState(false);
+  const { session } = useSession();
+  const [annulTarget, setAnnulTarget] = useState<{
+    reciboNumero: string;
+    fecha: string;
+    monto: string;
+    inquilinoNombre?: string | null;
+    teniaPagosLiquidados: boolean;
+  } | null>(null);
 
   const queryClient = useQueryClient();
   const periodo = `${anio}-${String(mes + 1).padStart(2, "0")}`;
@@ -518,6 +533,8 @@ export function CajaGeneralClient() {
                       selected={selectedIds.has(m.id)}
                       onToggle={toggleSelect}
                       selectable={m.origen === "manual"}
+                      isAdmin={session?.user?.role === "account_admin"}
+                      onAnnul={setAnnulTarget}
                     />
                   ))}
                 </tbody>
@@ -582,6 +599,20 @@ export function CajaGeneralClient() {
         />
       )}
 
+      {annulTarget && (
+        <AnnulReceiptModal
+          open={annulTarget !== null}
+          onClose={() => setAnnulTarget(null)}
+          reciboNumero={annulTarget.reciboNumero}
+          fecha={annulTarget.fecha}
+          monto={annulTarget.monto}
+          inquilinoNombre={annulTarget.inquilinoNombre}
+          teniaPagosLiquidados={annulTarget.teniaPagosLiquidados}
+          queryKeysToInvalidate={[["movimientos"]]}
+          onSuccess={() => setAnnulTarget(null)}
+        />
+      )}
+
       <style>{`
         .campo-arce {
           font-family: var(--font-sans);
@@ -611,13 +642,15 @@ export function CajaGeneralClient() {
 
 // ─── FilaMovimiento ───────────────────────────────────────────────────────────
 
-function FilaMovimiento({ m, index, onClick, selected, onToggle, selectable }: {
+function FilaMovimiento({ m, index, onClick, selected, onToggle, selectable, isAdmin, onAnnul }: {
   m: Movimiento;
   index: number;
   onClick: () => void;
   selected: boolean;
   onToggle: (id: string) => void;
   selectable: boolean;
+  isAdmin: boolean;
+  onAnnul: (target: { reciboNumero: string; fecha: string; monto: string; inquilinoNombre?: string | null; teniaPagosLiquidados: boolean }) => void;
 }) {
   const bgBase = selected
     ? "var(--primary-subtle)"
@@ -644,6 +677,25 @@ function FilaMovimiento({ m, index, onClick, selected, onToggle, selectable }: {
             onChange={() => onToggle(m.id)}
             className="cursor-pointer"
           />
+        ) : isAdmin && m.reciboNumero && !m.anuladoAt ? (
+          <button
+            type="button"
+            title={`Anular recibo ${m.reciboNumero}`}
+            className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
+            style={{ fontSize: "11px", background: "none", border: "none", padding: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAnnul({
+                reciboNumero: m.reciboNumero!,
+                fecha: m.fecha,
+                monto: m.monto,
+                inquilinoNombre: m.inquilinoNombre,
+                teniaPagosLiquidados: m.liquidadoAt !== null && m.liquidadoAt !== undefined,
+              });
+            }}
+          >
+            🔒
+          </button>
         ) : (
           <span title="Generado automáticamente — no se puede eliminar" style={{ color: "var(--text-dim)", fontSize: "11px" }}>🔒</span>
         )}
@@ -652,7 +704,14 @@ function FilaMovimiento({ m, index, onClick, selected, onToggle, selectable }: {
         {m.fecha}
       </td>
       <td className="px-4 py-3">
-        <div className="font-medium" style={{ color: "var(--foreground)" }}>{m.descripcion}</div>
+        <div className={cn("font-medium", m.anuladoAt && "line-through opacity-40")} style={{ color: "var(--foreground)" }}>
+          {m.descripcion}
+          {m.anuladoAt && (
+            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-destructive/20 text-destructive border border-destructive/30 ml-1">
+              Anulado
+            </span>
+          )}
+        </div>
         {m.comprobante && (
           <div className="text-[11px] mt-0.5" style={{ color: "var(--text-dim)" }}>{m.comprobante}</div>
         )}
