@@ -4,6 +4,169 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## Sesión 2026-04-26 — Pagos parciales
+
+### Qué hice
+
+Implementé el sistema completo de pagos parciales en la cuenta corriente del inquilino, de punta a punta.
+
+1. **Diseño y spec primero** — Antes de tocar código, pasamos por brainstorming y documentamos las reglas de negocio: punitorios se cobran antes que capital, el saldo restante "reinicia el reloj" de punitorios, el monto original nunca se modifica, los pagos se acumulan.
+
+2. **Schema: dos columnas nuevas** en `tenant_ledger`:
+   - `montoPagado` — acumulado cobrado hasta ahora (null si nunca hubo pago parcial)
+   - `ultimoPagoAt` — fecha del último pago, nuevo "día 0" para calcular mora sobre el saldo restante
+   - Nuevo estado `"pago_parcial"` en el campo `estado`
+
+3. **UI del ledger** — El toggle "Pago parcial" aparece automáticamente cuando el staff edita el monto a menos del original. Muestra el saldo que quedaría pendiente. Post-recibo, la fila muestra badge ámbar con el detalle "Original: $X · Pagado: $Y" y el saldo restante en grande.
+
+4. **Popover de punitorio actualizado** — Ya recibía `montoPagado` y `ultimoPagoAt` como props. Ahora calcula sobre el saldo restante y usa `ultimoPagoAt` como punto de inicio en vez del `dueDate` original.
+
+5. **Endpoint de emisión de recibo** — Acepta `montoOverrides` (un mapa de id → monto). Por cada entrada, acumula `montoPagado` y actualiza `ultimoPagoAt`. Si `montoPagado >= monto` original → `"conciliado"`. Si no → `"pago_parcial"`. También valida que no se envíen montos negativos o cero.
+
+6. **Ruta de cuenta corriente** — La query de alquileres vencidos ahora incluye `"pago_parcial"` además de `"pendiente"`. Los punitorios automáticos se calculan sobre el saldo restante desde `ultimoPagoAt`. El KPI "Capital en mora" muestra el saldo restante, no el monto original.
+
+7. **Bug en `getMonto` descubierto en review final** — La función que calcula el total del recibo usaba `entry.monto` (monto original) en vez del saldo restante para entradas `pago_parcial`. Sin este fix, al seleccionar una entrada parcialmente pagada sin modificar el monto, el recibo hubiera cobrado el valor completo original. Se detectó y corrigió antes de hacer el PR.
+
+### Por qué lo hice así y no de otra forma
+
+- **`monto` original nunca se modifica** — es el dato del contrato. Si lo pisáramos con cada pago, perderíamos el historial. En cambio guardamos el acumulado cobrado (`montoPagado`) y siempre calculamos el saldo como `monto - montoPagado`. Así se puede reconstruir la historia.
+
+- **`ultimoPagoAt` como texto `YYYY-MM-DD`** — consistente con todos los demás campos de fecha del proyecto. No usamos timestamp porque la granularidad de día es suficiente para mora, y simplifica la visualización.
+
+- **Toggle solo aparece si override < saldo restante** — no si es menor al monto original. Esto es importante para el segundo pago parcial: si quedan $40.000 y el staff ingresa exactamente $40.000 (saldo completo), no debe marcarse como parcial aunque sea menos que el original de $100.000.
+
+- **Validación de cero/negativo en el backend** — no solo en UI. La UI puede tener bugs; la API es el último guardián.
+
+- **Side-effect en GET para punitorios automáticos** — igual que en la sesión anterior. La alternativa sería un cron job o un endpoint separado de sincronización, pero para este caso el GET con side-effect es lo más simple que funciona.
+
+### Conceptos que aparecieron
+
+- **Estado derivado vs. almacenado**: `saldoRestante` nunca se guarda en la DB — siempre se calcula como `monto - montoPagado`. Solo se almacena el mínimo necesario. Guardar el saldo en vez del acumulado sería un error: si alguna vez hay un bug y el dato queda mal, no podés reconstruirlo.
+- **Acumulador vs. snapshot**: `montoPagado` es un acumulador (va sumando pagos). La alternativa sería guardar cada pago individual en una tabla de historial. Para V1 el acumulador es suficiente y más simple.
+- **Inmutabilidad del dato de origen**: el `monto` del contrato es un hecho del pasado que no debe cambiar. Si el inquilino paga de a partes, ese hecho se registra aparte, no se modifica el original.
+- **Review de punta a punta**: además del review por tarea (spec + calidad), hicimos un review end-to-end de todo el feature junto. Fue ahí donde apareció el bug de `getMonto`. Los reviews por tarea no lo hubieran detectado porque ese bug surgía de la interacción entre dos archivos distintos.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué el campo `monto` original nunca debe modificarse? ¿Qué se rompería si lo pisáramos con el saldo restante después de cada pago?
+2. ¿Cuál es la diferencia entre guardar el acumulado (`montoPagado`) versus guardar cada pago individual? ¿En qué caso conviene cada uno?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Patrón**: dato de origen inmutable + acumulador separado (template: Patrón o Receta)
+- [ ] **Decisión técnica**: fecha como texto `YYYY-MM-DD` vs timestamp — cuándo alcanza con el día (template: Decisión técnica)
+- [ ] **Bug**: `getMonto` usaba monto original en vez de saldo restante — cómo un dato "cerca" oculta el dato correcto (template: Bug)
+
+---
+
+## Sesión 2026-04-26 — Punitorios automáticos
+
+### Qué hice
+
+Implementé el sistema completo de punitorios sobre alquileres vencidos, desde el cálculo hasta la auto-generación en base de datos.
+
+1. **Bug de comisión ya estaba corregido** — `flags.ts` tenía `incluirEnBaseComision: false` para `gasto` y `servicio`. Solo tachamos el ítem en PENDIENTES.md.
+
+2. **Tasa del punitorio viene del contrato** — El campo `lateInterestPct` ya existía en el schema de `contract`. Lo traemos por JOIN en la query de cuenta corriente para que cada entrada del ledger lleve la tasa de su propio contrato, no una global.
+
+3. **Popover de punitorio rediseñado** — Ahora tiene un selector de tipo:
+   - *Tasa del contrato*: usa `lateInterestPct`, calcula automático
+   - *TIM (BCRA)*: usa 4%/mes ÷ 30 como tasa diaria (placeholder hasta conectar API BCRA)
+   - *Manual*: campo de porcentaje diario que calcula el monto, y viceversa; muestra el equivalente en TNA
+
+4. **Fórmula corregida** — La tasa en el contrato es diaria (no mensual). El cálculo correcto es `alquiler × tasa_diaria × días_mora`, sin dividir por 30. Para TIM sí se divide porque TIM es mensual.
+
+5. **Auto-generación al abrir la cuenta corriente** — El endpoint `GET /api/tenants/[id]/cuenta-corriente` ahora, antes de devolver los datos:
+   - Busca alquileres vencidos con tasa > 0 configurada
+   - Si no existe punitorio `isAutoGenerated=true` vinculado → lo crea
+   - Si existe pero el monto cambió (más días de mora) → lo actualiza
+   - Si la tasa es `null` o `0` → no genera nada
+
+6. **Botón "+ Punitorio" eliminado** — Ya no tiene sentido crearlo a mano.
+
+7. **Comportamiento al borrar** — Si el punitorio se cancela sin emitir recibo, al volver a la pantalla el sistema lo regenera automáticamente.
+
+### Por qué lo hice así y no de otra forma
+
+- **JOIN en vez de query separada para la tasa**: cada entrada del ledger necesita la tasa de *su* contrato, no una tasa global. Si el inquilino tiene contratos con distintas tasas (histórico), cada punitorio calcula con la que corresponde.
+
+- **Tasa en el contrato = tasa diaria**: en alquileres argentinos los punitorios se expresan como porcentaje diario del alquiler. La TIM es mensual y se convierte. Tener criterios distintos por tipo evita que el staff tenga que hacer la conversión en la cabeza.
+
+- **Auto-generar en el GET y no con un cron job**: lo más simple que funciona. El punitorio siempre está actualizado cuando lo ves, sin necesidad de infraestructura de tareas programadas. La desventaja es que el GET tiene un side-effect (escribe en la DB), pero para este caso es aceptable.
+
+- **Regenerar si se borra**: el punitorio es una consecuencia matemática del contrato vencido. Si no se cobra (no se emite recibo), no desaparece. Si el propietario decide perdonarlo, el mecanismo correcto es cambiar la tasa en el contrato a 0.
+
+### Conceptos que aparecieron
+
+- **Side effect en un GET**: en teoría un GET no debería modificar datos (es "idempotente" — ejecutarlo mil veces da el mismo resultado). Acá lo violamos intencionalmente porque es lo más práctico. Hay sistemas que usan endpoints separados tipo `POST /sincronizar` para esto.
+- **Tasa diaria vs tasa mensual**: una tasa mensual se divide entre los días del mes para obtener la tasa diaria equivalente. No es lo mismo que la tasa diaria declarada directamente.
+- **TNA (Tasa Nominal Anual)**: la forma estándar de comparar tasas de distinta frecuencia. TNA = tasa_diaria × 365. No considera el efecto compuesto (eso sería la TEA).
+- **isAutoGenerated flag**: marca en la DB que distingue registros creados por el sistema de los creados por el usuario. Permite saber cuáles se pueden sobreescribir automáticamente sin perder datos que alguien cargó a mano.
+
+### Preguntas para reflexionar
+
+1. ¿Qué diferencia hay entre TNA y TEA? ¿Cuándo importa esa diferencia en la práctica?
+2. Si un inquilino tiene dos contratos activos con distintas tasas, ¿cómo sabría el sistema cuál tasa aplicar a cada alquiler? ¿Está resuelto hoy?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Concepto**: TNA vs TEA — qué son, cómo se calculan, cuándo importa la diferencia
+- [ ] **Patrón**: auto-generación en GET — cuándo es válido tener side-effects en un endpoint de lectura
+- [ ] **Concepto**: `isAutoGenerated` como flag de distinción sistema vs usuario en registros de DB
+- [ ] **Decisión técnica**: tasa del punitorio viene del contrato (no de la agencia) — por qué tiene sentido y cuándo cambiaría
+- [ ] **Bug**: fórmula de punitorio dividía por 30 una tasa que ya era diaria — cómo detectarlo: verificar la cuenta manualmente
+
+---
+
+## Sesión 2026-04-26 — KPIs de cuenta corriente del inquilino
+
+### Qué hice
+
+Trabajé sobre los tres KPI cards de la pestaña Cuenta Corriente del inquilino. Arreglé bugs, mejoré la información mostrada y corregí violaciones de diseño.
+
+1. **Bug: KPI "Próximo pago" mostraba "—"** — La query filtraba `period >= hoy`, descartando meses atrasados pendientes. Fix: eliminar el filtro de fecha y tomar el primer pendiente sin importar el período.
+
+2. **"Próximo pago" rediseñado para mostrar el mes que viene** — En vez del primer alquiler pendiente, ahora muestra la suma de todo lo pendiente del próximo mes calendario (alquiler + cargos extras). Si ese mes tiene ajuste de índice pendiente (`pendiente_revision`), muestra el monto mínimo conocido (`≥ $X`) con un badge "Ajuste" en naranja.
+
+3. **"Estado en mora" con desglose de deuda** — Cuando el inquilino está en mora, la card de Estado ahora muestra: `$X capital + $Y intereses = $Z deuda`. El capital son los alquileres vencidos no pagados; los intereses son los punitorios pendientes. Si no hay punitorios, se omite esa parte.
+
+4. **Nuevo KPI "Puntualidad"** (reemplazó "Cobrado 2026") — Muestra el promedio histórico de días de atraso calculado sobre todos los alquileres pagados: verde si paga en fecha o antes, naranja si paga hasta 7 días tarde, rojo si pasa los 7 días.
+
+5. **Sub-proyecto E agregado a PENDIENTES** — Anotamos el score de cliente completo (reclamos + calificación de humor del staff) como tarea de baja prioridad con los pasos de diseño de schema.
+
+6. **Corrección de style guide** — `text-amber-400` reemplazado por `text-warning` en todos los usos del módulo. Agregué `--color-warning` y `--color-warning-dim` al `globals.css` para que Tailwind v4 los exponga como clases utilitarias.
+
+### Por qué lo hice así y no de otra forma
+
+- **"Mes que viene" y no "próximo sin pagar"**: el KPI "Próximo pago" responde a la pregunta *¿cuánto tengo que cobrar la próxima vez que venga el vencimiento?*. La mora ya está cubierta por la card de Estado. Dos KPIs con propósitos distintos es mejor que uno que intente hacer las dos cosas.
+
+- **Monto mínimo con `≥`**: cuando el mes que viene tiene ajuste pendiente el monto es desconocido, pero sabemos que al menos va a ser igual al mes anterior. Mostrar un piso con el símbolo `≥` es más útil que "A confirmar" solo.
+
+- **Día promedio sin `font-mono` en texto descriptivo**: `font-mono` se reserva para montos en pesos porque garantiza alineación de dígitos en columnas. "En fecha" o "8 días antes" son texto descriptivo, no necesitan alineación tabular.
+
+- **`--color-warning` en globals.css en vez de `text-amber-400`**: Tailwind v4 expone variables CSS como clases si se declaran con el prefijo `--color-*`. Así `text-warning` funciona igual que `text-income`. Si mañana se quiere cambiar el tono ámbar de toda la app, se edita una sola línea en el CSS.
+
+### Conceptos que aparecieron
+
+- **`font-mono` para números**: en tipografía monoespaciada cada dígito tiene el mismo ancho. Cuando apilás números en columnas (tabla de montos) se alinean solos. Para texto libre no tiene sentido.
+- **`--color-*` en Tailwind v4**: el framework escanea las variables CSS con ese prefijo y genera clases utilitarias automáticamente (`text-income`, `bg-income-dim`, etc.). No hace falta declarar nada en `tailwind.config`.
+- **Tokens semánticos vs colores hardcodeados**: `text-warning` puede ser ámbar hoy y cambiar mañana sin tocar ningún componente. `text-amber-400` siempre va a ser ese ámbar específico, sin importar el contexto.
+- **Piso de estimación**: cuando un valor exacto no está disponible todavía (el ajuste no se aplicó), mostrar el mínimo conocido con `≥` es una práctica de UX que reduce incertidumbre sin prometer algo que no está confirmado.
+
+### Preguntas para reflexionar
+
+1. ¿Cuándo conviene mostrar "A confirmar" en lugar de un valor estimado? ¿Qué información necesitás para decidir si un piso es confiable?
+2. Si el promedio de días de pago fuera parte de un score más grande, ¿cómo pesarías los distintos factores? ¿Todos igual o algunos tienen más peso?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Concepto**: `font-mono` y tipografía tabular — cuándo usarla y por qué alinea números
+- [ ] **Patrón**: tokens semánticos en Tailwind v4 con `--color-*` — cómo se declaran y cómo se usan
+- [ ] **Decisión técnica**: separar KPIs por propósito (mora vs próximo pago) en lugar de combinar todo en uno
+- [ ] **Patrón**: mostrar valor mínimo estimado con `≥` cuando el dato exacto no está disponible todavía
+
+---
+
 ## Sesión 2026-04-26 — Bugs post-implementación + planificación de sub-proyectos
 
 ### Qué hice
