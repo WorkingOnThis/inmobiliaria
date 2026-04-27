@@ -6,10 +6,13 @@ import { toast } from "sonner";
 import { Edit2, Save, X, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ZoneCombobox } from "@/components/ui/zone-combobox";
 import { CityCombobox } from "@/components/ui/city-combobox";
 import { ProvinceSelect } from "@/components/ui/province-select";
 import { OwnerCompletenessBar } from "@/components/owners/owner-completeness-bar";
+
+const NONE_SENTINEL = "__none__";
 
 interface Owner {
   id: string;
@@ -85,7 +88,7 @@ function DataField({
         </span>
         {hint && (
           <span className="text-[10px] text-muted-foreground italic normal-case tracking-normal">
-            — {hint}
+            ({hint})
           </span>
         )}
       </div>
@@ -141,7 +144,7 @@ function TextareaField({
         </span>
         {hint && (
           <span className="text-[10px] text-muted-foreground italic normal-case tracking-normal">
-            — {hint}
+            ({hint})
           </span>
         )}
       </div>
@@ -306,7 +309,7 @@ export function OwnerTabData({
       if (!res.ok) throw new Error("Error al cambiar estado");
       await queryClient.invalidateQueries({ queryKey: ["propietario", owner.id] });
       await queryClient.invalidateQueries({ queryKey: ["owners"] });
-      toast.success(newStatus === "baja" ? "Owner dado de baja" : "Owner suspendido");
+      toast.success(newStatus === "baja" ? "Propietario dado de baja" : "Propietario suspendido");
       setConfirmStatus(null);
       onStatusChange();
     } catch (err) {
@@ -324,7 +327,7 @@ export function OwnerTabData({
       if (!res.ok) throw new Error("Error al reactivar");
       await queryClient.invalidateQueries({ queryKey: ["propietario", owner.id] });
       await queryClient.invalidateQueries({ queryKey: ["owners"] });
-      toast.success("Owner reactivado");
+      toast.success("Propietario reactivado");
       onStatusChange();
     } catch (err) {
       toast.error((err as Error).message);
@@ -385,17 +388,21 @@ export function OwnerTabData({
                 Condición fiscal
               </div>
               {editing ? (
-                <select
-                  value={form.condicionFiscal ?? ""}
-                  onChange={(e) => setForm((prev) => ({ ...prev, condicionFiscal: e.target.value || null }))}
-                  className="w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all"
+                <Select
+                  value={form.condicionFiscal ?? NONE_SENTINEL}
+                  onValueChange={(v) => setForm((prev) => ({ ...prev, condicionFiscal: v === NONE_SENTINEL ? null : v }))}
                 >
-                  <option value="">Sin especificar</option>
-                  <option value="responsable_inscripto">Responsable inscripto</option>
-                  <option value="monotributista">Monotributista</option>
-                  <option value="exento">Exento</option>
-                  <option value="consumidor_final">Consumidor final</option>
-                </select>
+                  <SelectTrigger className="h-[34px] text-[13.5px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE_SENTINEL}>Sin especificar</SelectItem>
+                    <SelectItem value="responsable_inscripto">Responsable inscripto</SelectItem>
+                    <SelectItem value="monotributista">Monotributista</SelectItem>
+                    <SelectItem value="exento">Exento</SelectItem>
+                    <SelectItem value="consumidor_final">Consumidor final</SelectItem>
+                  </SelectContent>
+                </Select>
               ) : (
                 <div className={cn("text-[13.5px]", !form.condicionFiscal ? "text-muted-foreground italic text-[12px]" : "text-on-surface")}>
                   {form.condicionFiscal === "responsable_inscripto" ? "Responsable inscripto"
@@ -412,7 +419,6 @@ export function OwnerTabData({
               <DataField id="phone"     label="Teléfono"            value={form.phone}     editing={editing} onChange={setField("phone")}     placeholder="351 612-4400" />
               <DataField id="birthDate" label="Fecha de nacimiento" value={form.birthDate} editing={editing} onChange={setField("birthDate")} type="date" mono />
             </div>
-            <DataField id="address" label="Domicilio completo" value={form.address} editing={editing} onChange={setField("address")} placeholder="Av. Colón 1234, Córdoba" />
             <div className="grid grid-cols-2 gap-4">
               <DataField id="addressStreet"   label="Calle"     value={form.addressStreet}   editing={editing} onChange={setField("addressStreet")}   placeholder="Av. Colón" />
               <DataField id="addressNumber"   label="Número"    value={form.addressNumber}   editing={editing} onChange={setField("addressNumber")}   placeholder="1234" />
@@ -463,15 +469,19 @@ export function OwnerTabData({
                 Tipo de cuenta
               </div>
               {editing ? (
-                <select
-                  value={form.accountType ?? ""}
-                  onChange={(e) => setForm((prev) => ({ ...prev, accountType: e.target.value || null }))}
-                  className="w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all"
+                <Select
+                  value={form.accountType ?? NONE_SENTINEL}
+                  onValueChange={(v) => setForm((prev) => ({ ...prev, accountType: v === NONE_SENTINEL ? null : v }))}
                 >
-                  <option value="">Sin especificar</option>
-                  <option value="caja_ahorro">Caja de ahorro</option>
-                  <option value="cuenta_corriente">Cuenta corriente</option>
-                </select>
+                  <SelectTrigger className="h-[34px] text-[13.5px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE_SENTINEL}>Sin especificar</SelectItem>
+                    <SelectItem value="caja_ahorro">Caja de ahorro</SelectItem>
+                    <SelectItem value="cuenta_corriente">Cuenta corriente</SelectItem>
+                  </SelectContent>
+                </Select>
               ) : (
                 <div className={cn("text-[13.5px]", !form.accountType ? "text-muted-foreground italic text-[12px]" : "text-on-surface")}>
                   {form.accountType === "caja_ahorro"
@@ -525,7 +535,7 @@ export function OwnerTabData({
       </SectionCard>
 
       {/* ── Estado del owner ── */}
-      <SectionCard title="Estado del owner">
+      <SectionCard title="Estado del propietario">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -545,24 +555,21 @@ export function OwnerTabData({
             </div>
             <div className="text-[12px] text-muted-foreground">
               {owner.status === "activo"
-                ? "El owner está activo y puede recibir liquidaciones."
+                ? "El propietario está activo y puede recibir liquidaciones."
                 : owner.status === "suspendido"
                 ? "Las liquidaciones están pausadas temporalmente."
-                : "El owner fue dado de baja del sistema."}
+                : "El propietario fue dado de baja del sistema."}
             </div>
           </div>
           {owner.status !== "activo" && (
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleReactivar}
-              className="flex-shrink-0 px-3.5 py-2 text-[12px] font-semibold rounded-[6px] transition-all border"
-              style={{
-                background: "var(--success-dim)",
-                color: "var(--success)",
-                borderColor: "color-mix(in srgb, var(--success) 20%, transparent)",
-              }}
+              className="flex-shrink-0 border-[color-mix(in_srgb,var(--success)_30%,transparent)] text-[var(--success)] hover:bg-[var(--success-dim)] hover:text-[var(--success)]"
             >
               Reactivar
-            </button>
+            </Button>
           )}
         </div>
       </SectionCard>
@@ -582,40 +589,32 @@ export function OwnerTabData({
                 <div className="text-[13px] text-on-surface">
                   ¿Estás seguro de que querés{" "}
                   <strong>{confirmStatus === "suspendido" ? "suspender" : "dar de baja"}</strong>{" "}
-                  a este owner?
+                  a este propietario?
                   {confirmStatus === "baja" && (
                     <span style={{ color: "var(--error)" }}> Esta acción es difícil de revertir.</span>
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setConfirmStatus(null)}
-                    className="px-3.5 py-2 text-[12px] font-semibold text-text-secondary bg-surface-high border border-border rounded-[6px] hover:bg-surface-highest transition-all"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setConfirmStatus(null)}>
                     Cancelar
-                  </button>
-                  <button
-                    onClick={() => handleStatusChange(confirmStatus)}
-                    className={cn(
-                      "px-3.5 py-2 text-[12px] font-semibold rounded-[6px] transition-all border btn-danger"
-                    )}
-                  >
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleStatusChange(confirmStatus)}>
                     Confirmar
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
               <div className="flex gap-4 flex-wrap">
                 <div>
-                  <button onClick={() => setConfirmStatus("suspendido")} className="btn btn-danger btn-sm">
+                  <Button variant="destructive" size="sm" onClick={() => setConfirmStatus("suspendido")}>
                     Suspender temporalmente
-                  </button>
+                  </Button>
                   <div className="text-[11px] text-muted-foreground mt-1.5">Pausa las liquidaciones, se puede revertir</div>
                 </div>
                 <div>
-                  <button onClick={() => setConfirmStatus("baja")} className="btn btn-danger btn-sm">
+                  <Button variant="destructive" size="sm" onClick={() => setConfirmStatus("baja")}>
                     Dar de baja
-                  </button>
+                  </Button>
                   <div className="text-[11px] text-muted-foreground mt-1.5">Cierra la relación comercial</div>
                 </div>
               </div>

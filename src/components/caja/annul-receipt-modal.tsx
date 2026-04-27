@@ -120,18 +120,21 @@ export function AnnulReceiptModal({
             />
           </div>
 
-          <div className="flex items-start gap-2">
+          <label
+            htmlFor="confirmed"
+            className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 cursor-pointer"
+          >
             <Checkbox
               id="confirmed"
               checked={confirmed}
               onCheckedChange={(v) => setConfirmed(v === true)}
               disabled={mutation.isPending}
-              className="mt-0.5"
+              className="mt-0.5 shrink-0 size-5 border-destructive/70 data-[state=checked]:bg-destructive data-[state=checked]:border-destructive"
             />
-            <label htmlFor="confirmed" className="text-muted-foreground text-xs cursor-pointer">
-              Entiendo que esta acción es irreversible. El recibo quedará marcado como anulado.
-            </label>
-          </div>
+            <span className="text-sm text-foreground leading-snug">
+              Entiendo que esta acción es <strong>irreversible</strong>. El recibo quedará marcado como anulado.
+            </span>
+          </label>
         </div>
 
         <DialogFooter>

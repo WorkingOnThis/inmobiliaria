@@ -97,7 +97,15 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(e['tag'], e['when']\\) for e in d['entries'][-5:]]\")",
       "Bash(gh pr create --title 'feat: pagos parciales en cuenta corriente del inquilino' --body ' *)",
       "Bash(bun scripts/backfill-receipt-allocations.ts --dry-run)",
-      "Bash(bun scripts/backfill-receipt-allocations.ts)"
+      "Bash(bun scripts/backfill-receipt-allocations.ts)",
+      "PowerShell(cd \"F:\\\\Documentos\\\\Proyectos\\\\inmobiliaria\"; git diff HEAD~3 HEAD -- src/lib/receipts/load.ts src/lib/receipts/email-template.ts src/lib/auth/email.ts src/app/api/receipts/[id]/send/route.ts src/app/api/receipts/[id]/route.ts src/db/schema/client.ts src/app/api/tenants/[id]/route.ts)",
+      "PowerShell(cd \"F:\\\\Documentos\\\\Proyectos\\\\inmobiliaria\"; git diff HEAD~3 HEAD -- \"src/app/\\(dashboard\\)/recibos/[id]/page.tsx\" src/components/tenants/tenant-tab-data.tsx | Select-String \"^\\(\\\\+|-\\)\" | Select-Object -First 300 | ForEach-Object { $_.Line })",
+      "mcp__neon__run_sql_transaction",
+      "Bash(grep -rn \"api/receipts.*void\\\\|fetch.*void\\\\|receipts/\\\\$\\\\|\\\\\"void\\\\\"\" \"F:\\\\Documentos\\\\Proyectos\\\\inmobiliaria\\\\src\" --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(git rm *)",
+      "Bash(grep -E \"\\\\.sql$\")",
+      "Bash(git branch *)",
+      "Bash(git *)"
     ]
   },
   "enableAllProjectMcpServers": true,
