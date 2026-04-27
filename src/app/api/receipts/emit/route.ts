@@ -76,6 +76,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate that all overrides are positive amounts
+    const invalidOverrides = entries.filter((e) => {
+      const override = montoOverrides[e.id];
+      if (override === undefined) return false;
+      const num = Number(override);
+      return isNaN(num) || num <= 0;
+    });
+    if (invalidOverrides.length > 0) {
+      return NextResponse.json(
+        { error: `Montos inválidos en los ítems: ${invalidOverrides.map((e) => e.descripcion).join(", ")}` },
+        { status: 400 }
+      );
+    }
+
     const contratoIds = new Set(entries.map((e) => e.contratoId));
     if (contratoIds.size > 1) {
       return NextResponse.json(
