@@ -50,6 +50,7 @@ export async function GET(
         dueDate: tenantLedger.dueDate,
         monto: tenantLedger.monto,
         montoPagado: tenantLedger.montoPagado,
+        estado: tenantLedger.estado,
         ultimoPagoAt: tenantLedger.ultimoPagoAt,
         lateInterestPct: contract.lateInterestPct,
       })
@@ -88,7 +89,9 @@ export async function GET(
 
         const baseAmount = alquiler.montoPagado !== null
           ? Math.max(0, Number(alquiler.monto) - Number(alquiler.montoPagado))
-          : Number(alquiler.monto);
+          : alquiler.estado === "pago_parcial"
+            ? 0  // data inconsistency — skip rather than use full amount
+            : Number(alquiler.monto);
         if (baseAmount <= 0) continue;
 
         const fechaBase = alquiler.ultimoPagoAt ?? alquiler.dueDate;
@@ -100,7 +103,7 @@ export async function GET(
 
         const existing = autoByParent.get(alquiler.id);
         if (existing) {
-          if (existing.monto !== monto) {
+          if (Number(existing.monto).toFixed(2) !== monto) {
             await db
               .update(tenantLedger)
               .set({ monto, descripcion, updatedAt: new Date() })
@@ -177,9 +180,14 @@ export async function GET(
     const hayMora = overdueAlquileres.length > 0;
 
     const capitalEnMora = overdueAlquileres.reduce((s, e) => {
-      const saldo = e.estado === "pago_parcial" && e.montoPagado !== null
-        ? Math.max(0, Number(e.monto ?? 0) - Number(e.montoPagado))
-        : Number(e.monto ?? 0);
+      let saldo: number;
+      if (e.estado === "pago_parcial") {
+        saldo = e.montoPagado !== null
+          ? Math.max(0, Number(e.monto ?? 0) - Number(e.montoPagado))
+          : 0;  // data inconsistency — exclude rather than overcount
+      } else {
+        saldo = Number(e.monto ?? 0);
+      }
       return s + saldo;
     }, 0);
     const interesesEnMora = entries
