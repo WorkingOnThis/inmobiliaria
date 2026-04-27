@@ -31,6 +31,7 @@ type Props = {
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onSelectMonth: (period: string) => void;
+  onDeselectMonth: (period: string) => void;
   onMontoChange: (id: string, value: string) => void;
   onCancelPunitorio: (id: string) => void;
   onAnularRecibo: (reciboNumero: string) => void;
@@ -99,6 +100,7 @@ export function LedgerTable({
   selectedIds,
   onToggleSelect,
   onSelectMonth,
+  onDeselectMonth,
   onMontoChange,
   onCancelPunitorio,
   onAnularRecibo,
@@ -153,6 +155,8 @@ export function LedgerTable({
         const current = isCurrent(period === "__no_period__" ? null : period);
         const future = !past && !current;
         const hasSelectable = periodEntries.some(isSelectable);
+        const selectableIds = periodEntries.filter(isSelectable).map((e) => e.id);
+        const isMonthSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));
 
         return (
           <div
@@ -179,10 +183,15 @@ export function LedgerTable({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 text-xs text-muted-foreground"
-                  onClick={() => onSelectMonth(period)}
+                  className={cn(
+                    "h-6 text-xs px-2.5 font-medium transition-colors",
+                    isMonthSelected
+                      ? "bg-primary/15 text-primary hover:bg-primary/10"
+                      : "bg-muted text-foreground/70 hover:text-foreground hover:bg-muted/70"
+                  )}
+                  onClick={() => isMonthSelected ? onDeselectMonth(period) : onSelectMonth(period)}
                 >
-                  Seleccionar mes
+                  {isMonthSelected ? "Deseleccionar" : "Seleccionar mes"}
                 </Button>
               )}
             </div>
@@ -216,7 +225,7 @@ export function LedgerTable({
                       <Checkbox
                         checked={selected}
                         onCheckedChange={() => onToggleSelect(entry.id)}
-                        className={isPunitorio ? "border-[var(--punitorio)]" : undefined}
+                        className={isPunitorio ? "border-[var(--punitorio)]" : "border-muted-foreground/60"}
                       />
                     ) : (
                       <div className="w-4 h-4" />

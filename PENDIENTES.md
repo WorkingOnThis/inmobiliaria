@@ -65,9 +65,9 @@ Un cliente puede ser propietario de una propiedad e inquilino de otra. Hoy `clie
 
 ## 🔧 Sub-proyecto D — Recibo en PDF y envío por mail
 
-- [ ] Generar PDF del recibo usando el generador de documentos existente
-- [ ] Enviar PDF por email al inquilino via Resend (`src/lib/auth/email.ts`)
-- [ ] Requiere tener una plantilla de recibo en el generador de documentos
+- [x] Enviar recibo por email al inquilino — implementado via Gmail SMTP (Nodemailer + App Password). Dialog con selección de destinatarios, emails de confianza por inquilino, HTML inline-styled compatible con Gmail/Outlook.
+- [ ] Generar PDF del recibo (pendiente — requiere librería tipo `@react-pdf/renderer` o similar)
+- [ ] Dominio verificado para enviar a cualquier destinatario (hoy funciona solo para `arce.guillermo.gaston@gmail.com`; resolver acceso a Cloudflare para `latellafrias.com.ar`)
 
 ---
 

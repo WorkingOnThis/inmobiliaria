@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -12,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp } from "lucide-react";
+import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp, PlusCircle } from "lucide-react";
 import { LedgerTable, type LedgerEntry } from "./ledger-table";
 import { CobroPanel } from "./cobro-panel";
 
@@ -245,6 +246,40 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
     setSelectedIds((prev) => new Set([...prev, ...cobrables]));
   }
 
+  function handleSelectAll() {
+    setSelectedIds((prev) => new Set([...prev, ...selectableEntries.map((e) => e.id)]));
+  }
+
+  function handleDeselectAll() {
+    const ids = selectableEntries.map((e) => e.id);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.delete(id));
+      return next;
+    });
+    setMontoOverrides((prev) => {
+      const next = { ...prev };
+      ids.forEach((id) => delete next[id]);
+      return next;
+    });
+  }
+
+  function handleDeselectMonth(period: string) {
+    const cobrables = (data?.ledgerEntries ?? [])
+      .filter((e) => e.period === period && (e.estado === "pendiente" || e.estado === "registrado" || e.estado === "pago_parcial") && e.monto !== null)
+      .map((e) => e.id);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      cobrables.forEach((id) => next.delete(id));
+      return next;
+    });
+    setMontoOverrides((prev) => {
+      const next = { ...prev };
+      cobrables.forEach((id) => delete next[id]);
+      return next;
+    });
+  }
+
   function handleMontoChange(id: string, value: string) {
     setMontoOverrides((prev) => ({ ...prev, [id]: value }));
   }
@@ -263,6 +298,11 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   const ownerNet = round2(receiptTotal - feesAmount);
 
   const hasContract = ledgerEntries.length > 0;
+
+  const selectableEntries = ledgerEntries.filter(
+    (e) => (e.estado === "pendiente" || e.estado === "registrado" || e.estado === "pago_parcial") && e.monto !== null
+  );
+  const isAllSelected = selectableEntries.length > 0 && selectableEntries.every((e) => selectedIds.has(e.id));
 
   return (
     <div className="flex flex-col gap-4 pt-4">
@@ -403,15 +443,32 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           <ToggleGroupItem value="paid" className="text-xs h-8 px-3">Pagados</ToggleGroupItem>
           <ToggleGroupItem value="future" className="text-xs h-8 px-3">Futuros</ToggleGroupItem>
         </ToggleGroup>
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-xs h-8"
-          disabled={!hasContract}
-          onClick={() => { setManualError(null); setShowManual(true); }}
-        >
-          + Cargo manual
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "text-xs h-8 px-3 font-medium transition-colors",
+              isAllSelected
+                ? "bg-primary/15 text-primary hover:bg-primary/10"
+                : "bg-muted text-foreground/70 hover:text-foreground hover:bg-muted/70"
+            )}
+            disabled={!hasContract || selectableEntries.length === 0}
+            onClick={() => isAllSelected ? handleDeselectAll() : handleSelectAll()}
+          >
+            {isAllSelected ? "Deseleccionar todo" : "Seleccionar todo"}
+          </Button>
+          <Button
+            variant="secondary"
+            size="default"
+            className="gap-2 font-semibold"
+            disabled={!hasContract}
+            onClick={() => { setManualError(null); setShowManual(true); }}
+          >
+            <PlusCircle size={15} />
+            Cargo manual
+          </Button>
+        </div>
       </div>
 
       {/* Scrollable ledger panel */}
@@ -425,6 +482,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           selectedIds={selectedIds}
           onToggleSelect={handleToggleSelect}
           onSelectMonth={handleSelectMonth}
+          onDeselectMonth={handleDeselectMonth}
           onMontoChange={handleMontoChange}
           onCancelPunitorio={(id) => cancelPunitorio.mutate(id)}
           onAnularRecibo={(reciboNumero) => { setVoidError(null); setVoidConfirm({ reciboNumero }); }}
