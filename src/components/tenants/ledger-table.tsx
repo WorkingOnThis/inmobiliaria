@@ -67,7 +67,10 @@ function isPartialOverride(entry: LedgerEntry, overrides: Record<string, string>
   if (entry.monto === null) return false;
   const override = overrides[entry.id];
   if (override === undefined) return false;
-  return Number(override) < Number(entry.monto);
+  const remaining = entry.montoPagado !== null
+    ? Math.max(0, Number(entry.monto) - Number(entry.montoPagado))
+    : Number(entry.monto);
+  return Number(override) < remaining;
 }
 
 function formatPeriod(period: string): string {
@@ -187,7 +190,10 @@ export function LedgerTable({
               const selectable = isSelectable(entry);
               const selected = selectedIds.has(entry.id);
               const isPunitorio = entry.tipo === "punitorio";
-              const displayMonto = montoOverrides[entry.id] ?? entry.monto;
+              const defaultMonto = entry.estado === "pago_parcial" && entry.montoPagado !== null
+                ? String(Math.max(0, Number(entry.monto) - Number(entry.montoPagado)))
+                : entry.monto;
+              const displayMonto = montoOverrides[entry.id] ?? defaultMonto;
               const badge = ESTADO_BADGE[entry.estado] ?? ESTADO_BADGE.pendiente;
 
               return (

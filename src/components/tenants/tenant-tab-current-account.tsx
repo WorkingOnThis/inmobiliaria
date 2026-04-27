@@ -208,7 +208,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
 
   function handleSelectMonth(period: string) {
     const cobrables = (data?.ledgerEntries ?? [])
-      .filter((e) => e.period === period && (e.estado === "pendiente" || e.estado === "registrado") && e.monto !== null)
+      .filter((e) => e.period === period && (e.estado === "pendiente" || e.estado === "registrado" || e.estado === "pago_parcial") && e.monto !== null)
       .map((e) => e.id);
     setSelectedIds((prev) => new Set([...prev, ...cobrables]));
   }
