@@ -37,6 +37,13 @@ export const tenantLedger = pgTable("tenant_ledger", {
   // null = amount not yet determined (post-adjustment or variable service)
   monto: decimal("monto", { precision: 15, scale: 2 }),
 
+  // Pago parcial — acumulado cobrado. null si nunca hubo pago parcial.
+  montoPagado: decimal("montoPagado", { precision: 15, scale: 2 }),
+
+  // Fecha del último pago parcial (YYYY-MM-DD, solo almacenamiento).
+  // Es el nuevo "día 0" para calcular punitorios sobre el saldo restante.
+  ultimoPagoAt: text("ultimoPagoAt"),
+
   // Accounting flags
   impactaPropietario: boolean("impactaPropietario").notNull().default(true),
   incluirEnBaseComision: boolean("incluirEnBaseComision").notNull().default(true),
