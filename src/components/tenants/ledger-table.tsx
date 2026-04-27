@@ -62,6 +62,14 @@ function isCurrent(period: string | null): boolean {
   return period === new Date().toISOString().slice(0, 7);
 }
 
+function isPartialOverride(entry: LedgerEntry, overrides: Record<string, string>): boolean {
+  if (entry.tipo === "punitorio") return false;
+  if (entry.monto === null) return false;
+  const override = overrides[entry.id];
+  if (override === undefined) return false;
+  return Number(override) < Number(entry.monto);
+}
+
 function formatPeriod(period: string): string {
   const [year, month] = period.split("-");
   return `${month}/${year}`;
@@ -208,14 +216,38 @@ export function LedgerTable({
                   </div>
 
                   {/* Descripcion */}
-                  <span className={cn(
-                    "truncate",
-                    isPunitorio && "text-punitorio italic text-xs",
-                    entry.monto === null && "text-[var(--warning)]"
-                  )}>
-                    {isPunitorio && "↳ "}
-                    {formatDescription(entry.descripcion)}
-                  </span>
+                  <div>
+                    <span className={cn(
+                      "truncate",
+                      isPunitorio && "text-punitorio italic text-xs",
+                      entry.monto === null && "text-[var(--warning)]"
+                    )}>
+                      {isPunitorio && "↳ "}
+                      {formatDescription(entry.descripcion)}
+                    </span>
+                    {/* Subtext: aparece cuando ya hubo un pago parcial anterior (estado pago_parcial en DB) */}
+                    {entry.estado === "pago_parcial" && entry.montoPagado !== null && (
+                      <div className="flex gap-3 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground">
+                          Original: ${Number(entry.monto).toLocaleString("es-AR")}
+                        </span>
+                        <span className="text-[10px] text-income">
+                          Pagado: ${Number(entry.montoPagado).toLocaleString("es-AR")}
+                        </span>
+                      </div>
+                    )}
+                    {/* Toggle pago parcial: aparece solo cuando el staff edita el monto a menos del original */}
+                    {isPartialOverride(entry, montoOverrides) && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-[10px] font-semibold text-[var(--warning)]">
+                          Pago parcial
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          · Saldo: ${(Number(entry.monto) - Number(montoOverrides[entry.id])).toLocaleString("es-AR")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Tipo badge */}
                   <span className="text-xs text-muted-foreground truncate">{entry.tipo}</span>
