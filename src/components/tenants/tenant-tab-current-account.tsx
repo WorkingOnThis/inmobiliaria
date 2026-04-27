@@ -13,7 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp, PlusCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp, PlusCircle, AlertTriangle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { LedgerTable, type LedgerEntry } from "./ledger-table";
 import { CobroPanel } from "./cobro-panel";
 
@@ -120,6 +121,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       return response.json();
     },
     onSuccess: (result: { reciboNumero: string; movimientoAgenciaId: string }) => {
+      setShowEmit(false);
       setSelectedIds(new Set());
       setMontoOverrides({});
       setObservations("");
@@ -284,7 +286,31 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
     setMontoOverrides((prev) => ({ ...prev, [id]: value }));
   }
 
-  if (isLoading) return <div className="p-4 text-sm text-muted-foreground">Cargando cuenta corriente...</div>;
+  if (isLoading) return (
+    <div className="flex flex-col gap-4 pt-4">
+      <div className="grid grid-cols-3 gap-3 px-4">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="rounded-xl border border-border p-4 flex flex-col gap-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 px-4">
+        <Skeleton className="h-8 w-72" />
+        <div className="ml-auto flex gap-2">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-8 w-32" />
+        </div>
+      </div>
+      <div className="border-t border-b border-border px-4 py-6 flex flex-col gap-3">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-10 w-full" />
+        ))}
+      </div>
+    </div>
+  );
   if (isError || !data) return <div className="p-4 text-sm text-destructive">Error al cargar la cuenta corriente.</div>;
 
   const { kpis, ledgerEntries = [], proximoAjuste } = data;
@@ -421,8 +447,9 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       {proximoAjuste && proximoAjuste.mesesRestantes !== null && (
         <div className="px-4">
           <Alert variant="default" className="border-[var(--warning)] bg-[var(--warning-dim)]">
+            <AlertTriangle className="size-4 text-[var(--warning)]" />
             <AlertTitle className="text-[var(--warning)] text-sm">
-              ⚠ Ajuste de índice en {proximoAjuste.mesesRestantes} meses
+              Ajuste de índice en {proximoAjuste.mesesRestantes} meses
             </AlertTitle>
             <AlertDescription className="text-xs text-muted-foreground">
               Período {proximoAjuste.period ? formatPeriod(proximoAjuste.period) : ""} — los montos a partir de ese mes están pendientes de revisión.
@@ -460,12 +487,12 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           </Button>
           <Button
             variant="secondary"
-            size="default"
-            className="gap-2 font-semibold"
+            size="sm"
+            className="gap-1.5 font-semibold"
             disabled={!hasContract}
             onClick={() => { setManualError(null); setShowManual(true); }}
           >
-            <PlusCircle size={15} />
+            <PlusCircle size={14} />
             Cargo manual
           </Button>
         </div>
@@ -511,7 +538,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       </div>
 
       {/* ── Emit receipt dialog ── */}
-      <Dialog open={showEmit} onOpenChange={setShowEmit}>
+      <Dialog open={showEmit} onOpenChange={(open) => { if (!open && !emitirMutation.isPending) { setShowEmit(false); setEmitError(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmar recibo</DialogTitle>
@@ -554,14 +581,16 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
                 className="text-sm resize-none"
               />
             </div>
+            {emitError && (
+              <p className="text-xs text-destructive">{emitError}</p>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEmit(false)}>Cancelar</Button>
-            <Button
-              onClick={() => { setShowEmit(false); emitirMutation.mutate(); }}
-              disabled={emitirMutation.isPending}
-            >
-              Confirmar y emitir
+            <Button variant="outline" onClick={() => { setShowEmit(false); setEmitError(null); }} disabled={emitirMutation.isPending}>
+              Cancelar
+            </Button>
+            <Button onClick={() => emitirMutation.mutate()} disabled={emitirMutation.isPending}>
+              {emitirMutation.isPending ? "Emitiendo..." : "Confirmar y emitir"}
             </Button>
           </DialogFooter>
         </DialogContent>
