@@ -5,6 +5,7 @@ import { agency } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { ensureDefaultTemplate } from "@/lib/document-templates/default-template";
 
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -97,12 +98,14 @@ export async function PATCH(request: NextRequest) {
   if (existing) {
     await db.update(agency).set(data).where(eq(agency.ownerId, session.user.id));
   } else {
+    const newAgencyId = randomUUID();
     await db.insert(agency).values({
-      id:      randomUUID(),
+      id:      newAgencyId,
       name:    body.legalName ?? "Arce Administración",
       ownerId: session.user.id,
       ...data,
     });
+    await ensureDefaultTemplate(newAgencyId);
   }
 
   const [result] = await db
