@@ -16,7 +16,7 @@ const annulSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ reciboNumero: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -27,7 +27,7 @@ export async function POST(
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
-    const { reciboNumero } = await params;
+    const { id: reciboNumero } = await params;
 
     const body = await request.json();
     const parsed = annulSchema.safeParse(body);
@@ -140,7 +140,7 @@ export async function POST(
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    console.error("Error POST /api/receipts/[reciboNumero]/annul:", error);
+    console.error("Error POST /api/receipts/[id]/annul:", error);
     return NextResponse.json({ error: "Error al anular el recibo" }, { status: 500 });
   }
 }
