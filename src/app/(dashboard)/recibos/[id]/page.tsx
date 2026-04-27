@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Loader2, Printer, ArrowLeft, Mail, Check } from "lucide-react";
 import type { ReceiptData } from "@/lib/receipts/load";
 import { formatMonto, formatFecha, formatPeriodo, montoEnLetras, agencyDisplayName } from "@/lib/receipts/format";
+import { useSession } from "@/lib/auth/hooks";
+import { AnnulReceiptModal } from "@/components/caja/annul-receipt-modal";
 
 const PALETTE = {
   bg: "#f7f5ef",
@@ -20,6 +22,8 @@ export default function ReciboPage() {
   const router = useRouter();
 
   // All hooks before any early return
+  const { session } = useSession();
+  const [showAnnulModal, setShowAnnulModal] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
   const [sendResult, setSendResult] = useState<{ sent: number; failed: string[] } | null>(null);
@@ -172,6 +176,18 @@ export default function ReciboPage() {
           >
             <Printer size={14} /> Imprimir recibo
           </button>
+          {movimiento.anuladoAt ? (
+            <span className="text-xs text-destructive border border-destructive/30 rounded px-2 py-1 bg-destructive/10">
+              Recibo anulado
+            </span>
+          ) : session?.user?.role === "account_admin" ? (
+            <button
+              onClick={() => setShowAnnulModal(true)}
+              className="text-[0.72rem] text-destructive hover:underline flex items-center gap-1"
+            >
+              Anular recibo
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -251,6 +267,25 @@ export default function ReciboPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Modal de anulación */}
+      {data && showAnnulModal && (
+        <AnnulReceiptModal
+          open
+          onClose={() => setShowAnnulModal(false)}
+          reciboNumero={movimiento.reciboNumero ?? ""}
+          fecha={movimiento.date}
+          monto={movimiento.amount}
+          inquilinoNombre={
+            inquilino
+              ? [inquilino.firstName, inquilino.lastName].filter(Boolean).join(" ")
+              : null
+          }
+          teniaPagosLiquidados={movimiento.settledAt !== null}
+          queryKeysToInvalidate={[["receipt", id]]}
+          onSuccess={() => router.push("/caja")}
+        />
       )}
 
       {/* Recibo — centrado en A4 */}
