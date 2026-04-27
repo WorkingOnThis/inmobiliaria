@@ -49,7 +49,7 @@ export const tenantLedger = pgTable("tenant_ledger", {
   incluirEnBaseComision: boolean("incluirEnBaseComision").notNull().default(true),
   impactaCaja: boolean("impactaCaja").notNull().default(false),
 
-  // "proyectado" | "pendiente_revision" | "pendiente" | "registrado" | "conciliado" | "cancelado"
+  // "proyectado" | "pendiente_revision" | "pendiente" | "registrado" | "conciliado" | "cancelado" | "pago_parcial"
   estado: text("estado").notNull().default("proyectado"),
 
   reciboNumero: text("reciboNumero"),

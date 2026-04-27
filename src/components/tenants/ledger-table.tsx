@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { PunitorioPopover } from "./punitorio-popover";
 
 export type LedgerEntry = {
   id: string;
+  contratoId: string;
+  propietarioId: string;
+  propiedadId: string;
   period: string | null;
   dueDate: string | null;
   tipo: string;
@@ -18,6 +20,9 @@ export type LedgerEntry = {
   estado: string;
   installmentOf: string | null;
   reciboNumero: string | null;
+  lateInterestPct: string | null;
+  montoPagado: string | null;
+  ultimoPagoAt: string | null;
 };
 
 type Props = {
@@ -27,22 +32,22 @@ type Props = {
   onToggleSelect: (id: string) => void;
   onSelectMonth: (period: string) => void;
   onMontoChange: (id: string, value: string) => void;
-  onAddPunitorio: (parentId: string, monto: number, descripcion: string) => void;
   onCancelPunitorio: (id: string) => void;
-  viewMode: "completa" | "historial";
+  activeFilters: Set<string>;
 };
 
 const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
-  conciliado:        { label: "Pagado",     className: "bg-green-900/40 text-green-400 border-green-900" },
-  registrado:        { label: "Registrado", className: "bg-amber-900/40 text-amber-400 border-amber-900" },
-  pendiente:         { label: "Pendiente",  className: "bg-primary/10 text-primary border-primary/30" },
-  proyectado:        { label: "Proyectado", className: "bg-transparent text-muted-foreground border-border" },
-  pendiente_revision:{ label: "Revisar",    className: "bg-amber-950/30 text-amber-300 border-amber-800 border-dashed" },
-  cancelado:         { label: "Cancelado",  className: "bg-muted text-muted-foreground border-border" },
+  conciliado:        { label: "Pagado",        className: "bg-income-dim text-income border-[var(--income)]" },
+  registrado:        { label: "Registrado",    className: "bg-[var(--warning-dim)] text-[var(--warning)] border-[var(--warning)]" },
+  pendiente:         { label: "Pendiente",     className: "bg-primary/10 text-primary border-primary/30" },
+  proyectado:        { label: "Proyectado",    className: "bg-transparent text-muted-foreground border-border" },
+  pendiente_revision:{ label: "Revisar",       className: "bg-[var(--warning-dim)] text-[var(--warning)] border-[var(--warning)] border-dashed" },
+  cancelado:         { label: "Cancelado",     className: "bg-muted text-muted-foreground border-border" },
+  pago_parcial:      { label: "Pago parcial",  className: "bg-[var(--warning-dim)] text-[var(--warning)] border-[var(--warning)]" },
 };
 
 function isSelectable(entry: LedgerEntry): boolean {
-  return entry.estado === "pendiente" || entry.estado === "registrado";
+  return ["pendiente", "registrado", "pago_parcial"].includes(entry.estado);
 }
 
 function isPast(period: string | null): boolean {
@@ -53,6 +58,15 @@ function isPast(period: string | null): boolean {
 function isCurrent(period: string | null): boolean {
   if (!period) return false;
   return period === new Date().toISOString().slice(0, 7);
+}
+
+function formatPeriod(period: string): string {
+  const [year, month] = period.split("-");
+  return `${month}/${year}`;
+}
+
+function formatDescription(desc: string): string {
+  return desc.replace(/\b(\d{4})-(\d{2})\b/g, "$2/$1");
 }
 
 function groupByPeriod(entries: LedgerEntry[]): Map<string, LedgerEntry[]> {
@@ -72,15 +86,35 @@ export function LedgerTable({
   onToggleSelect,
   onSelectMonth,
   onMontoChange,
-  onAddPunitorio,
   onCancelPunitorio,
-  viewMode,
+  activeFilters,
 }: Props) {
   const todayPeriod = new Date().toISOString().slice(0, 7);
+  const currentRef = useRef<HTMLDivElement>(null);
 
-  const filtered = viewMode === "historial"
-    ? entries.filter((e) => (e.period ?? "") <= todayPeriod)
-    : entries;
+  useEffect(() => {
+    if (currentRef.current) {
+      currentRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const PENDING_STATES = ["pendiente", "registrado", "pendiente_revision"];
+
+  function matchesFilter(e: LedgerEntry): boolean {
+    if (activeFilters.size === 0) return true;
+    const isFuture = (e.period ?? "") > todayPeriod;
+    const isPendingState = PENDING_STATES.includes(e.estado);
+    const isOverdue = !isFuture && isPendingState && e.dueDate !== null && e.dueDate < today;
+    const isPending = !isFuture && isPendingState && (e.dueDate === null || e.dueDate >= today);
+    if (activeFilters.has("overdue") && isOverdue) return true;
+    if (activeFilters.has("pending") && isPending) return true;
+    if (activeFilters.has("paid") && e.estado === "conciliado") return true;
+    if (activeFilters.has("future") && isFuture) return true;
+    return false;
+  }
+
+  const filtered = entries.filter(matchesFilter);
 
   const topLevel = filtered.filter((e) => !e.installmentOf || e.tipo === "punitorio");
 
@@ -89,19 +123,31 @@ export function LedgerTable({
 
   return (
     <div className="w-full">
+      {/* Column headers — sticky so they stay visible while scrolling */}
+      <div className="sticky top-0 z-10 grid items-center gap-2 px-4 py-1.5 bg-muted/80 backdrop-blur-sm border-b border-border grid-cols-[28px_1fr_80px_110px_90px_60px]">
+        <div />
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Concepto</span>
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tipo</span>
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Monto</span>
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Estado</span>
+        <div />
+      </div>
+
       {periods.map((period) => {
         const periodEntries = grouped.get(period) ?? [];
         const past = isPast(period === "__no_period__" ? null : period);
         const current = isCurrent(period === "__no_period__" ? null : period);
         const future = !past && !current;
+        const hasSelectable = periodEntries.some(isSelectable);
 
         return (
           <div
             key={period}
+            ref={current ? currentRef : undefined}
             className={cn(
               "border-b border-border",
-              past && "opacity-40",
-              future && "opacity-45",
+              past && "opacity-60",
+              future && "opacity-50",
               current && "border-l-2 border-l-primary bg-primary/5"
             )}
           >
@@ -112,17 +158,17 @@ export function LedgerTable({
                 current ? "text-primary" : "text-muted-foreground"
               )}>
                 {current && "● "}
-                {period === "__no_period__" ? "Sin período" : period}
+                {period === "__no_period__" ? "Sin período" : formatPeriod(period)}
                 {current && " — hoy"}
               </span>
-              {current && (
+              {hasSelectable && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-6 text-xs text-muted-foreground"
                   onClick={() => onSelectMonth(period)}
                 >
-                  Seleccionar todo el mes
+                  Seleccionar mes
                 </Button>
               )}
             </div>
@@ -138,11 +184,13 @@ export function LedgerTable({
               return (
                 <div
                   key={entry.id}
+                  onClick={() => selectable && onToggleSelect(entry.id)}
                   className={cn(
                     "grid items-center gap-2 px-4 py-2 text-sm",
                     "grid-cols-[28px_1fr_80px_110px_90px_60px]",
-                    isPunitorio && "pl-10 bg-purple-950/20 border-t border-purple-900/30",
-                    selected && "bg-primary/10"
+                    isPunitorio && "pl-10 bg-punitorio-dim border-t border-[var(--punitorio)]/30",
+                    selectable && "cursor-pointer hover:bg-muted/40",
+                    selected && "bg-primary/10 hover:bg-primary/15"
                   )}
                 >
                   {/* Checkbox */}
@@ -151,7 +199,7 @@ export function LedgerTable({
                       <Checkbox
                         checked={selected}
                         onCheckedChange={() => onToggleSelect(entry.id)}
-                        className={isPunitorio ? "border-purple-500" : undefined}
+                        className={isPunitorio ? "border-[var(--punitorio)]" : undefined}
                       />
                     ) : (
                       <div className="w-4 h-4" />
@@ -161,20 +209,20 @@ export function LedgerTable({
                   {/* Descripcion */}
                   <span className={cn(
                     "truncate",
-                    isPunitorio && "text-purple-300 italic text-xs",
-                    entry.monto === null && "text-amber-400"
+                    isPunitorio && "text-punitorio italic text-xs",
+                    entry.monto === null && "text-[var(--warning)]"
                   )}>
                     {isPunitorio && "↳ "}
-                    {entry.descripcion}
+                    {formatDescription(entry.descripcion)}
                   </span>
 
                   {/* Tipo badge */}
                   <span className="text-xs text-muted-foreground truncate">{entry.tipo}</span>
 
                   {/* Monto */}
-                  <div className="flex items-center gap-1 justify-end">
+                  <div className="flex items-center gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
                     {entry.monto === null ? (
-                      <span className="text-amber-400 font-mono text-xs">$???</span>
+                      <span className="text-[var(--warning)] font-mono text-xs">$???</span>
                     ) : selected ? (
                       <Input
                         value={displayMonto ?? ""}
@@ -198,23 +246,17 @@ export function LedgerTable({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-end">
-                    {entry.tipo === "alquiler" && selectable && !isPunitorio && (
-                      <PunitorioPopover
-                        parentId={entry.id}
-                        alquilerMonto={Number(entry.monto ?? 0)}
-                        dueDate={entry.dueDate}
-                        onConfirm={(monto, desc) => onAddPunitorio(entry.id, monto, desc)}
-                      />
-                    )}
+                  <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
                     {isPunitorio && entry.estado !== "conciliado" && (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => onCancelPunitorio(entry.id)}
                         aria-label="Cancelar punitorio"
-                        className="text-xs text-muted-foreground hover:text-destructive"
+                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
                       >
                         ✕
-                      </button>
+                      </Button>
                     )}
                     {entry.reciboNumero && (
                       <span className="text-xs text-muted-foreground">{entry.reciboNumero}</span>
