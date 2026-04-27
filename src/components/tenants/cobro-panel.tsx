@@ -36,12 +36,12 @@ export function CobroPanel({
     .filter((e) => e.tipo !== "punitorio" && e.tipo !== "descuento")
     .reduce((s, e) => s + getMonto(e, montoOverrides), 0);
 
-  const totalRecibo = round2(selectedEntries.reduce((s, e) => s + getMonto(e, montoOverrides), 0));
-  const honorarios = round2(baseComision * (honorariosPct / 100));
-  const netoPropietario = round2(totalRecibo - honorarios);
+  const receiptTotal = round2(selectedEntries.reduce((s, e) => s + getMonto(e, montoOverrides), 0));
+  const feesAmount = round2(baseComision * (honorariosPct / 100));
+  const ownerNet = round2(receiptTotal - feesAmount);
 
   return (
-    <div className="sticky bottom-0 z-10 border-t-2 border-primary bg-background">
+    <div className="border-t-2 border-primary bg-background">
       <div className="px-4 py-3">
         <div className="flex items-start justify-between gap-6">
           {/* Breakdown */}
@@ -62,11 +62,11 @@ export function CobroPanel({
             <Separator className="my-2" />
             <div className="flex justify-between text-xs text-primary">
               <span>Honorarios ({honorariosPct}%)</span>
-              <span className="font-mono">${honorarios.toLocaleString("es-AR")}</span>
+              <span className="font-mono">${feesAmount.toLocaleString("es-AR")}</span>
             </div>
-            <div className="flex justify-between text-xs text-green-400">
+            <div className="flex justify-between text-xs text-[var(--income)]">
               <span>Propietario recibe</span>
-              <span className="font-mono">${netoPropietario.toLocaleString("es-AR")}</span>
+              <span className="font-mono">${ownerNet.toLocaleString("es-AR")}</span>
             </div>
           </div>
 
@@ -75,7 +75,7 @@ export function CobroPanel({
             <div className="text-right">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Total a cobrar</p>
               <p className="text-2xl font-bold font-mono">
-                ${totalRecibo.toLocaleString("es-AR")}
+                ${receiptTotal.toLocaleString("es-AR")}
               </p>
             </div>
             <div className="flex gap-2">

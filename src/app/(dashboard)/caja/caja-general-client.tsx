@@ -100,6 +100,8 @@ export function CajaGeneralClient() {
   const [tipoFondo, setTipoFondo] = useState<"all" | "agencia" | "propietario" | "inquilino">("all");
   const [showModalCrear, setShowModalCrear] = useState(false);
   const [movimientoEditando, setMovimientoEditando] = useState<Movimiento | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmandoBorrarVarios, setConfirmandoBorrarVarios] = useState(false);
 
   const queryClient = useQueryClient();
   const periodo = `${anio}-${String(mes + 1).padStart(2, "0")}`;
@@ -235,6 +237,23 @@ export function CajaGeneralClient() {
     onSuccess: () => { invalidarPeriodo(); setMovimientoEditando(null); },
   });
 
+  const eliminarVarios = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const res = await fetch("/api/cash/movimientos", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? "Error al eliminar"); }
+      return res.json();
+    },
+    onSuccess: () => {
+      setSelectedIds(new Set());
+      setConfirmandoBorrarVarios(false);
+      invalidarPeriodo();
+    },
+  });
+
   function avanzarMes(dir: 1 | -1) {
     let nuevoMes = mes + dir;
     let nuevoAnio = anio;
@@ -242,6 +261,8 @@ export function CajaGeneralClient() {
     if (nuevoMes < 0) { nuevoMes = 11; nuevoAnio--; }
     setMes(nuevoMes);
     setAnio(nuevoAnio);
+    setSelectedIds(new Set());
+    setConfirmandoBorrarVarios(false);
   }
 
   const movimientos = data?.movimientos ?? [];
@@ -252,6 +273,30 @@ export function CajaGeneralClient() {
     if (tipoFondo !== "all" && m.tipoFondo !== tipoFondo) return false;
     return true;
   });
+
+  const manualesEnVista = movFiltrados.filter((m) => m.origen === "manual").map((m) => m.id);
+  const todosSeleccionados = manualesEnVista.length > 0 && manualesEnVista.every((id) => selectedIds.has(id));
+  const algunoSeleccionado = manualesEnVista.some((id) => selectedIds.has(id));
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (todosSeleccionados) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        manualesEnVista.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => new Set([...prev, ...manualesEnVista]));
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6 p-7 min-h-screen" style={S.bg}>
@@ -357,13 +402,60 @@ export function CajaGeneralClient() {
               </button>
             ))}
           </div>
-          <button
-            className="ml-auto px-2.5 py-1 text-[10px] font-bold rounded-lg"
-            style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
-            onClick={() => setShowModalCrear(true)}
-          >
-            + Nuevo
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            {selectedIds.size > 0 && (
+              confirmandoBorrarVarios ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px]" style={{ color: "var(--destructive)" }}>
+                    ¿Eliminar {selectedIds.size} movimiento{selectedIds.size !== 1 ? "s" : ""}?
+                  </span>
+                  <button
+                    className="px-2.5 py-1 text-[10px] font-bold rounded-lg disabled:opacity-50"
+                    style={{ background: "var(--destructive)", color: "var(--primary-foreground)" }}
+                    onClick={() => eliminarVarios.mutate([...selectedIds])}
+                    disabled={eliminarVarios.isPending}
+                  >
+                    {eliminarVarios.isPending ? "Eliminando..." : "Sí, eliminar"}
+                  </button>
+                  <button
+                    className="px-2.5 py-1 text-[10px] font-bold rounded-lg"
+                    style={{ background: "var(--secondary)", border: S.border, color: "var(--muted-foreground)" }}
+                    onClick={() => setConfirmandoBorrarVarios(false)}
+                    disabled={eliminarVarios.isPending}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                    {selectedIds.size} seleccionado{selectedIds.size !== 1 ? "s" : ""}
+                  </span>
+                  <button
+                    className="px-2.5 py-1 text-[10px] font-bold rounded-lg"
+                    style={{ border: "1px solid var(--destructive-dim)", color: "var(--destructive)", background: "transparent" }}
+                    onClick={() => setConfirmandoBorrarVarios(true)}
+                  >
+                    Eliminar seleccionados
+                  </button>
+                  <button
+                    className="px-2.5 py-1 text-[10px] font-bold rounded-lg"
+                    style={{ background: "var(--secondary)", border: S.border, color: "var(--muted-foreground)" }}
+                    onClick={() => setSelectedIds(new Set())}
+                  >
+                    Deseleccionar
+                  </button>
+                </div>
+              )
+            )}
+            <button
+              className="px-2.5 py-1 text-[10px] font-bold rounded-lg"
+              style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
+              onClick={() => setShowModalCrear(true)}
+            >
+              + Nuevo
+            </button>
+          </div>
         </div>
 
         {isLoading && (
@@ -393,6 +485,18 @@ export function CajaGeneralClient() {
               <table className="w-full" style={{ borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
                   <tr style={{ background: "var(--card)" }}>
+                    <th className="px-4 py-2.5 w-8">
+                      {manualesEnVista.length > 0 && (
+                        <input
+                          type="checkbox"
+                          checked={todosSeleccionados}
+                          ref={(el) => { if (el) el.indeterminate = algunoSeleccionado && !todosSeleccionados; }}
+                          onChange={toggleSelectAll}
+                          className="cursor-pointer"
+                          title="Seleccionar todos los manuales"
+                        />
+                      )}
+                    </th>
                     {["Fecha", "Descripción", "Categoría", "Vinculado a", "Tipo", "Monto"].map((h) => (
                       <th
                         key={h}
@@ -411,6 +515,9 @@ export function CajaGeneralClient() {
                       m={m}
                       index={i}
                       onClick={() => setMovimientoEditando(m)}
+                      selected={selectedIds.has(m.id)}
+                      onToggle={toggleSelect}
+                      selectable={m.origen === "manual"}
                     />
                   ))}
                 </tbody>
@@ -504,12 +611,17 @@ export function CajaGeneralClient() {
 
 // ─── FilaMovimiento ───────────────────────────────────────────────────────────
 
-function FilaMovimiento({ m, index, onClick }: {
+function FilaMovimiento({ m, index, onClick, selected, onToggle, selectable }: {
   m: Movimiento;
   index: number;
   onClick: () => void;
+  selected: boolean;
+  onToggle: (id: string) => void;
+  selectable: boolean;
 }) {
-  const bgBase = index % 2 === 0 ? "transparent" : "var(--border-subtle)";
+  const bgBase = selected
+    ? "var(--primary-subtle)"
+    : index % 2 === 0 ? "transparent" : "var(--border-subtle)";
 
   const tieneVinculos = m.contratoId || m.propiedadId || m.propietarioId || m.inquilinoId;
 
@@ -518,9 +630,24 @@ function FilaMovimiento({ m, index, onClick }: {
       className="transition-colors cursor-pointer"
       style={{ background: bgBase }}
       onClick={onClick}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--primary-subtle)"; }}
+      onMouseEnter={(e) => { if (!selected) (e.currentTarget as HTMLElement).style.background = "var(--primary-subtle)"; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = bgBase; }}
     >
+      <td
+        className="px-4 py-3 w-8"
+        onClick={(e) => { e.stopPropagation(); if (selectable) onToggle(m.id); }}
+      >
+        {selectable ? (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggle(m.id)}
+            className="cursor-pointer"
+          />
+        ) : (
+          <span title="Generado automáticamente — no se puede eliminar" style={{ color: "var(--text-dim)", fontSize: "11px" }}>🔒</span>
+        )}
+      </td>
       <td className="px-4 py-3 text-[12px] whitespace-nowrap" style={{ color: "var(--text-dim)" }}>
         {m.fecha}
       </td>
@@ -1008,14 +1135,20 @@ function ModalMovimiento({
           {/* Botón eliminar — solo en modo editar y antes de confirmar */}
           <div>
             {modo === "editar" && !confirmandoEliminar && (
-              <button
-                className="px-3.5 py-1.5 text-[11px] font-bold rounded-xl"
-                style={{ background: "transparent", border: "1px solid var(--destructive-dim)", color: "var(--destructive)" }}
-                onClick={() => setConfirmandoEliminar(true)}
-                disabled={ocupado}
-              >
-                Eliminar
-              </button>
+              movimiento?.origen === "manual" ? (
+                <button
+                  className="px-3.5 py-1.5 text-[11px] font-bold rounded-xl"
+                  style={{ background: "transparent", border: "1px solid var(--destructive-dim)", color: "var(--destructive)" }}
+                  onClick={() => setConfirmandoEliminar(true)}
+                  disabled={ocupado}
+                >
+                  Eliminar
+                </button>
+              ) : (
+                <span className="text-[10px]" style={{ color: "var(--text-dim)" }}>
+                  🔒 Generado automáticamente
+                </span>
+              )
             )}
           </div>
 

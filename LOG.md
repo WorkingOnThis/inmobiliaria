@@ -4,6 +4,44 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## Sesión 2026-04-27 — Envío de recibos por email
+
+### Qué hice
+
+- Configuré Resend como servicio de envío de emails (cuenta gratuita)
+- Corregí un conflicto de rutas en Next.js: `[reciboNumero]` y `[id]` coexistían en el mismo nivel bajo `/api/receipts/`, lo que rompía el servidor. Lo resolví renombrando la carpeta a `[id]` y ajustando el parámetro dentro del código
+- Guié la configuración de dominio en Resend con `latellafrias.com.ar`, que usa Cloudflare como DNS (pendiente de acceso a Cloudflare para cargar los registros)
+- Mejoré el manejo de errores en el cliente para que los mensajes de Resend sean legibles en lugar de explotar con "invalid JSON"
+
+### Por qué lo hice así y no de otra forma
+
+**Conflicto de rutas**: Next.js trata los segmentos dinámicos como patrones — si en el mismo nivel tenés `[id]` y `[reciboNumero]`, no sabe cuál usar y tira error al arrancar. La solución es que todos los segmentos dinámicos del mismo nivel usen el mismo nombre. Es como tener dos cajones numerados con etiquetas distintas: el armario se confunde. La solución es ponerles la misma etiqueta y distinguirlos por el contenido adentro.
+
+**Resend en lugar de Gmail SMTP**: Gmail SMTP tiene límites bajos (500/día) y los términos de Google prohíben usarlo para envíos de negocio. Resend es un servicio diseñado para emails transaccionales (recibos, confirmaciones), tiene plan gratuito real y escala bien.
+
+**Dominio propio vs. email verificado**: Resend en modo test solo permite mandar al email registrado en la cuenta. Para mandar a clientes reales (inquilinos) necesitás un dominio verificado. Es una medida antispam: cualquiera podría registrarse y spamear si no hubiera esta restricción.
+
+### Conceptos que aparecieron
+
+- **DNS**: sistema que traduce nombres de dominio (`latellafrias.com.ar`) a direcciones técnicas. Es como una guía telefónica de internet. Cloudflare y NIC.ar son "el local donde está guardada esa guía" — si el dominio apunta a Cloudflare, los cambios hay que hacerlos ahí.
+- **Registros DNS (TXT, MX, DKIM, SPF)**: instrucciones que le dicen a internet cómo manejar los emails de un dominio. TXT verifica que el dominio te pertenece, MX dice adónde van los rebotes, SPF y DKIM prueban que el email no es spam.
+- **Nameservers / Delegaciones**: le dicen a NIC.ar "el DNS de este dominio lo maneja Cloudflare". Por eso los cambios DNS hay que hacerlos en Cloudflare, no en NIC.ar.
+- **Email transaccional vs. masivo**: los recibos son "transaccionales" (uno por evento, para una persona específica). Distinto del email masivo (newsletters). Resend está diseñado para el primero.
+- **`Promise.allSettled`**: manda emails a todos los destinatarios en paralelo y reporta cuáles fallaron sin cancelar los demás. Como mandar cartas por correo: si una se pierde, las otras llegan igual.
+
+### Preguntas para reflexionar
+
+1. ¿Qué pasa si el inquilino tiene varios emails y uno falla? ¿Le mostramos el error parcial o lo ocultamos?
+2. ¿Tiene sentido guardar un registro de "recibo enviado por email" en la base de datos para auditoría?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: DNS y registros (TXT, MX, SPF, DKIM) — qué son y para qué sirve cada uno
+- [ ] Decisión técnica: por qué Resend en lugar de Gmail SMTP para emails transaccionales
+- [ ] Bug: conflicto de rutas dinámicas en Next.js (`[id]` vs `[reciboNumero]` en el mismo nivel)
+
+---
+
 ## Sesión 2026-04-26 — Pagos parciales
 
 ### Qué hice
