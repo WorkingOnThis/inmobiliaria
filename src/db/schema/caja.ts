@@ -75,6 +75,12 @@ export const cajaMovimiento = pgTable("cash_movement", {
   // Quién registró el movimiento
   createdBy: text("createdBy").references(() => user.id, { onDelete: "set null" }),
 
+  // Anulación — solo para movimientos con source="contract"
+  anuladoAt: timestamp("anulado_at"),
+  anuladoPor: text("anulado_por").references(() => user.id, { onDelete: "set null" }),
+  annulmentId: text("annulment_id"),
+  // Sin FK para evitar import circular. La integridad se mantiene en la transacción de anulación.
+
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
