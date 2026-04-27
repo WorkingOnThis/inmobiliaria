@@ -63,7 +63,38 @@
       "Bash(bun test *)",
       "Bash(python -c \"import sys,json; p=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in p.items\\(\\) if k in ['main','module','exports','types']}, indent=2\\)\\)\")",
       "PowerShell(bun run *)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(node --input-type=module)",
+      "mcp__neon__list_projects",
+      "mcp__neon__run_sql",
+      "Skill(impeccable)",
+      "Bash(node *)",
+      "mcp__shadcn__search_items_in_registries",
+      "mcp__shadcn__view_items_in_registries",
+      "mcp__shadcn__get_item_examples_from_registries",
+      "Bash(bash *)",
+      "Bash(python3 -c \"import sys,json; j=json.load\\(sys.stdin\\); [print\\(e['tag']\\) for e in j['entries']]\")",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('drizzle/meta/0006_snapshot.json'\\)\\); t=d['tables'].get\\('public.cash_movement',{}\\); print\\(json.dumps\\(list\\(t.get\\('columns',{}\\).keys\\(\\)\\), indent=2\\)\\)\")",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('drizzle/meta/0006_snapshot.json'\\)\\); t=d['tables'].get\\('public.cash_movement',{}\\); cols=t.get\\('columns',{}\\); [print\\(k, '->', cols[k].get\\('name'\\)\\) for k in cols]\")",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(npx drizzle-kit *)",
+      "Bash(python -c \"import sys,json; j=json.load\\(sys.stdin\\); [print\\(e['idx'], e['tag'], e['when']\\) for e in j['entries']]\")",
+      "Bash(git -C F:/Documentos/Proyectos/inmobiliaria show d1777ea --stat)",
+      "Bash(npx shadcn@latest add toggle-group)",
+      "Bash(npx shadcn@latest add popover)",
+      "Bash(npx shadcn@latest add alert-dialog)",
+      "Bash(npx shadcn@latest add alert)",
+      "Bash(grep -v \"Use \\\\`node\")",
+      "Bash(bun -e \"import { db } from './src/db'; import { contract } from './src/db/schema/contract'; import { contractTenant } from './src/db/schema/contract-tenant'; import { client } from './src/db/schema/client'; import { eq } from 'drizzle-orm'; const rows = await db.select\\({ id: contract.id, start: contract.startDate, end: contract.endDate, monto: contract.monthlyAmount, nombre: client.firstName, apellido: client.lastName }\\).from\\(contract\\).innerJoin\\(contractTenant, eq\\(contractTenant.contractId, contract.id\\)\\).innerJoin\\(client, eq\\(client.id, contractTenant.clientId\\)\\).limit\\(10\\); rows.forEach\\(r => console.log\\(r.id, r.nombre, r.apellido, r.start, r.end, r.monto\\)\\); process.exit\\(0\\);\")",
+      "Bash(bun scripts/check-and-generate-ledger.ts)",
+      "Bash(grep -v \"Warning\\\\|next major\\\\|pg-connection\\\\|sslmode\\\\|uselibpqcompat\\\\|postgresql.org\\\\|deprecatedSsl\\\\|injecting\\\\|Use \\\\`node\\\\| at \")",
+      "Bash(grep -v \"Warning\\\\|next major\\\\|pg-connection\\\\|sslmode\\\\|uselibpqcompat\\\\|postgresql.org\\\\|deprecatedSsl\\\\|injecting\\\\|Use \\\\`node\\\\| at \\\\| resolve\\\\| reject\\\\| res =\\\\| rej =\")",
+      "Bash(bun scripts/fix-and-generate.ts)",
+      "Bash(grep -v \"Warning\\\\|next major\\\\|pg-connection\\\\|sslmode\\\\|uselibpqcompat\\\\|postgresql.org\\\\|deprecatedSsl\\\\|injecting\\\\|Use \\\\`node\\\\| at resolve\\\\| at reject\\\\| res =\\\\| rej =\")"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "shadcn"
+  ]
 }

@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { canManageServices } from "@/lib/permissions";
 import { servicio, servicioComprobante, servicioOmision, property, contract, contractTenant, client } from "@/db/schema";
-import { eq, and, desc, sql, inArray, or } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, or, ilike } from "drizzle-orm";
 import { z } from "zod";
 import { calculateServiceStatus, getPeriodDays } from "@/lib/services/constants";
 
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const propertyId = searchParams.get("propertyId");
+  const addressSearch = searchParams.get("address") ?? "";
   const estado = searchParams.get("estado");
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(50, parseInt(searchParams.get("limit") ?? "20", 10));
@@ -40,7 +41,10 @@ export async function GET(request: NextRequest) {
 
   const { daysElapsed: diasTranscurridos } = getPeriodDays(periodo);
 
-  const conditions = propertyId ? [eq(servicio.propertyId, propertyId)] : [];
+  const conditions = [
+    propertyId ? eq(servicio.propertyId, propertyId) : null,
+    addressSearch ? ilike(property.address, `%${addressSearch}%`) : null,
+  ].filter(Boolean) as ReturnType<typeof eq>[];
 
   const servicios = await db
     .select({
@@ -161,6 +165,7 @@ export async function GET(request: NextRequest) {
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(servicio)
+    .leftJoin(property, eq(servicio.propertyId, property.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined);
 
   return NextResponse.json({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import {
   SERVICE_TYPE_LABELS,
   SERVICE_TYPE_ICONS,
@@ -110,7 +111,7 @@ function ServicioChip({
 
   const clases: Record<ServiceStatus, string> = {
     current: "bg-income-dim text-income",
-    pending: "bg-muted text-muted-foreground",
+    pending: "bg-neutral-dim text-neutral",
     alert: "bg-mustard-dim text-mustard",
     blocked: "bg-destructive-dim text-destructive",
   };
@@ -119,7 +120,7 @@ function ServicioChip({
     <span
       onClick={onClick}
       title={onClick ? `Ver detalle de ${label}` : undefined}
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.63rem] font-bold transition-all ${clases[estado]} ${onClick ? "cursor-pointer ring-1 ring-transparent hover:ring-current/30 hover:scale-105 active:scale-95" : ""}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.7rem] font-bold transition-[ring-color,box-shadow] ${clases[estado]} ${onClick ? "cursor-pointer ring-1 ring-transparent hover:ring-current/30" : ""}`}
     >
       <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
       {label}
@@ -157,8 +158,17 @@ export function ServicesControlPanel() {
   const [period, setPeriod] = useState(currentPeriod);
   const [filter, setFilter] = useState<"todos" | ServiceStatus>("todos");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const limit = 15;
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [search]);
 
   const { data: resumen } = useQuery({
     queryKey: ["servicios-resumen", period],
@@ -170,11 +180,12 @@ export function ServicesControlPanel() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["servicios", period, page, filter],
+    queryKey: ["servicios", period, page, filter, debouncedSearch],
     queryFn: async () => {
       const estadoParam = filter !== "todos" ? `&estado=${filter}` : "";
+      const addressParam = debouncedSearch.trim() ? `&address=${encodeURIComponent(debouncedSearch.trim())}` : "";
       const res = await fetch(
-        `/api/services?period=${period}&page=${page}&limit=${limit}${estadoParam}`
+        `/api/services?period=${period}&page=${page}&limit=${limit}${estadoParam}${addressParam}`
       );
       if (!res.ok) throw new Error("Error al cargar servicios");
       return res.json() as Promise<{
@@ -236,11 +247,7 @@ export function ServicesControlPanel() {
     }
   }
 
-  const propiedadesFiltradas = search.trim()
-    ? propiedades.filter((p) =>
-        p.propertyAddress?.toLowerCase().includes(search.toLowerCase())
-      )
-    : propiedades;
+  const propiedadesFiltradas = propiedades;
 
   const kpis = resumen?.kpis;
   const pagination = data?.pagination;
@@ -264,8 +271,8 @@ export function ServicesControlPanel() {
           >
             Control de Servicios
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Estado de comprobantes por propiedad en el período actual
+          <p className="mt-0.5 text-sm text-text-muted">
+            Estado de comprobantes por propiedad en el período seleccionado
           </p>
         </div>
 
@@ -279,7 +286,7 @@ export function ServicesControlPanel() {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="min-w-[148px] rounded-xl border border-border bg-surface-mid px-4 py-1.5 text-center text-sm font-semibold capitalize">
+          <div className="min-w-[148px] rounded-lg border border-border bg-surface-mid px-4 py-1.5 text-center text-sm font-semibold capitalize">
             {periodLabel(period)}
           </div>
           <Button
@@ -297,18 +304,18 @@ export function ServicesControlPanel() {
       <div className="flex flex-col gap-6 p-6">
         {/* KPI cards */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-border bg-surface p-5">
-            <p className="mb-2 text-[0.62rem] font-bold uppercase tracking-widest text-muted-foreground">
+          <div className="rounded-lg border border-border bg-surface p-5">
+            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-text-muted">
               Propiedades
             </p>
             <p className="font-headline text-3xl font-bold tracking-tight text-on-bg">
               {kpis?.totalProperties ?? "—"}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">Con servicios activos</p>
+            <p className="mt-1 text-xs text-text-muted">Con servicios activos</p>
           </div>
 
-          <div className="rounded-2xl border border-income/20 bg-income-dim p-5">
-            <p className="mb-2 text-[0.62rem] font-bold uppercase tracking-widest text-income/70">
+          <div className="rounded-lg border border-income/20 bg-income-dim p-5">
+            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-income/70">
               Al día
             </p>
             <p className="font-headline text-3xl font-bold tracking-tight text-income">
@@ -317,8 +324,8 @@ export function ServicesControlPanel() {
             <p className="mt-1 text-xs text-income/60">Comprobantes al corriente</p>
           </div>
 
-          <div className="rounded-2xl border border-mustard/20 bg-mustard-dim p-5">
-            <p className="mb-2 flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-widest text-mustard/70">
+          <div className="rounded-lg border border-mustard/20 bg-mustard-dim p-5">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-mustard/70">
               <AlertTriangle className="h-3 w-3" />
               En alerta
             </p>
@@ -328,22 +335,22 @@ export function ServicesControlPanel() {
             <p className="mt-1 text-xs text-mustard/60">30+ días sin comprobante</p>
           </div>
 
-          <div className="rounded-2xl border border-destructive/20 bg-destructive-dim p-5">
-            <p className="mb-2 flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-widest text-destructive/70">
+          <div className="rounded-lg border border-destructive/20 bg-destructive-dim p-5">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-destructive/70">
               <Lock className="h-3 w-3" />
               Bloqueados
             </p>
             <p className="font-headline text-3xl font-bold tracking-tight text-destructive">
               {kpis?.blocked ?? "—"}
             </p>
-            <p className="mt-1 text-xs text-destructive/60">Alquiler retenido — requiere acción</p>
+            <p className="mt-1 text-xs text-destructive/60">Alquiler retenido; requiere acción</p>
           </div>
         </div>
 
         {/* Toolbar */}
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
             <Input
               placeholder="Buscar por dirección…"
               value={search}
@@ -353,50 +360,48 @@ export function ServicesControlPanel() {
           </div>
           <div className="flex gap-1.5">
             {filters.map(({ key, label }) => (
-              <button
+              <Button
                 key={key}
+                size="sm"
+                variant="outline"
                 onClick={() => { setFilter(key); setPage(1); }}
-                className={`rounded-full border px-3 py-1.5 text-[0.68rem] font-semibold transition-colors ${
-                  filter === key
-                    ? key === "alert"
-                      ? "border-mustard/25 bg-mustard-dim text-mustard"
-                      : key === "blocked"
-                        ? "border-destructive/25 bg-destructive-dim text-destructive"
-                        : key === "current"
-                          ? "border-income/25 bg-income-dim text-income"
-                          : "border-primary/30 bg-primary/10 text-primary"
-                    : "border-border bg-transparent text-muted-foreground hover:border-border/80 hover:text-on-bg"
-                }`}
+                className={cn(
+                  "rounded-full text-[0.7rem]",
+                  filter === key && key === "alert" && "border-mustard/25 bg-mustard-dim text-mustard hover:bg-mustard-dim hover:text-mustard",
+                  filter === key && key === "blocked" && "border-destructive/25 bg-destructive-dim text-destructive hover:bg-destructive-dim hover:text-destructive",
+                  filter === key && key === "current" && "border-income/25 bg-income-dim text-income hover:bg-income-dim hover:text-income",
+                  filter === key && (key === "todos" || key === "pending") && "border-primary/30 bg-primary-dim text-primary hover:bg-primary-dim hover:text-primary",
+                )}
               >
                 {label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
 
         {/* Tabla */}
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <span className="text-xs font-bold uppercase tracking-widest text-text-muted">
               Propiedades
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-text-muted">
               {propiedadesFiltradas.length}{" "}
               {propiedadesFiltradas.length === 1 ? "propiedad" : "propiedades"}
             </span>
           </div>
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center py-16 text-sm text-text-muted">
               Cargando…
             </div>
           ) : propiedadesFiltradas.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-16">
-              <Zap className="h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">
+              <Zap className="h-8 w-8 text-text-muted/40" />
+              <p className="text-sm text-text-muted">
                 No hay propiedades con servicios configurados
               </p>
-              <p className="text-xs text-muted-foreground/60">
+              <p className="text-xs text-text-muted/60">
                 Ingresá a una propiedad y agregá servicios desde el tab "Servicios"
               </p>
             </div>
@@ -407,7 +412,7 @@ export function ServicesControlPanel() {
                   {["Propiedad", "Inquilino", "Servicios del período", "Alertas", ""].map((h) => (
                     <th
                       key={h}
-                      className="border-b border-border bg-surface-mid px-3.5 py-2.5 text-left text-[0.67rem] font-bold uppercase tracking-widest text-muted-foreground"
+                      className="border-b border-border bg-surface-mid px-3.5 py-2.5 text-left text-xs font-bold uppercase tracking-widest text-text-muted"
                     >
                       {h}
                     </th>
@@ -432,22 +437,24 @@ export function ServicesControlPanel() {
                         {prop.propertyAddress ?? "Sin dirección"}
                       </span>
                     </td>
-                    <td
-                      className="border-b border-border px-3.5 py-3"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <td className="border-b border-border px-3.5 py-3">
                       {prop.inquilinoNombre && prop.inquilinoId ? (
-                        <button
-                          onClick={() => router.push(`/inquilinos/${prop.inquilinoId}`)}
-                          className="group/inq flex items-center gap-1 text-sm text-primary underline-offset-2 hover:underline"
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/inquilinos/${prop.inquilinoId}`);
+                          }}
+                          className="group/inq h-auto gap-1 p-0"
                         >
                           {prop.inquilinoNombre}
                           <ArrowRight className="h-3 w-3 opacity-0 transition-opacity group-hover/inq:opacity-100" />
-                        </button>
+                        </Button>
                       ) : prop.inquilinoNombre ? (
                         <span className="text-sm text-on-bg">{prop.inquilinoNombre}</span>
                       ) : (
-                        <span className="text-[0.75rem] italic text-muted-foreground">
+                        <span className="text-xs italic text-text-muted">
                           Sin inquilino
                         </span>
                       )}
@@ -476,24 +483,25 @@ export function ServicesControlPanel() {
                       <AlertasBadge estado={prop.peorEstado} count={prop.alertasCount} />
                     </td>
                     <td className="border-b border-border px-3.5 py-3">
-                      <div className="flex justify-end opacity-0 transition-opacity group-hover:opacity-100">
-                        <button
+                      <div className="flex justify-end opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+                        <Button
+                          size="sm"
+                          variant={prop.peorEstado === "blocked" ? "outline" : "ghost"}
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(`/propiedades/${prop.propertyId}`);
                           }}
-                          className={`rounded-md border px-2.5 py-1 text-[0.67rem] font-semibold transition-colors ${
-                            prop.peorEstado === "blocked"
-                              ? "border-destructive/30 text-destructive hover:bg-destructive-dim"
-                              : "border-border text-muted-foreground hover:text-on-bg"
-                          }`}
+                          className={cn(
+                            "text-[0.7rem]",
+                            prop.peorEstado === "blocked" && "border-destructive/30 text-destructive hover:bg-destructive-dim hover:text-destructive",
+                          )}
                         >
                           {prop.peorEstado === "blocked"
                             ? "Resolver"
                             : prop.peorEstado === "alert"
                               ? "Gestionar"
                               : "Ver detalle"}
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -505,7 +513,7 @@ export function ServicesControlPanel() {
           {/* Paginación */}
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between border-t border-border px-4 py-3">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-text-muted">
                 Mostrando {(page - 1) * limit + 1}–
                 {Math.min(page * limit, pagination.total)} de {pagination.total} propiedades
               </span>
@@ -523,17 +531,18 @@ export function ServicesControlPanel() {
                   { length: Math.min(pagination.totalPages, 5) },
                   (_, i) => i + 1
                 ).map((p) => (
-                  <button
+                  <Button
                     key={p}
+                    size="icon"
+                    variant="outline"
                     onClick={() => setPage(p)}
-                    className={`flex h-7 w-7 items-center justify-center rounded-md border text-xs font-semibold transition-colors ${
-                      p === page
-                        ? "border-primary/30 bg-primary/10 text-primary"
-                        : "border-border bg-surface-mid text-muted-foreground hover:bg-surface-high"
-                    }`}
+                    className={cn(
+                      "size-7 text-xs",
+                      p === page && "border-primary/30 bg-primary-dim text-primary hover:bg-primary-dim hover:text-primary",
+                    )}
                   >
                     {p}
-                  </button>
+                  </Button>
                 ))}
                 <Button
                   variant="outline"

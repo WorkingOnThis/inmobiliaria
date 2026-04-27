@@ -91,14 +91,20 @@ export async function DELETE(
 
   const { id } = await params;
 
-  const [eliminado] = await db
-    .delete(cajaMovimiento)
+  const [mov] = await db
+    .select({ source: cajaMovimiento.source })
+    .from(cajaMovimiento)
     .where(eq(cajaMovimiento.id, id))
-    .returning({ id: cajaMovimiento.id });
+    .limit(1);
 
-  if (!eliminado) {
+  if (!mov) {
     return NextResponse.json({ error: "Movimiento no encontrado" }, { status: 404 });
   }
+  if (mov.source !== "manual") {
+    return NextResponse.json({ error: "Solo se pueden eliminar movimientos manuales" }, { status: 422 });
+  }
+
+  await db.delete(cajaMovimiento).where(eq(cajaMovimiento.id, id));
 
   return NextResponse.json({ ok: true });
 }

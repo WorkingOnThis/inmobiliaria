@@ -16,6 +16,7 @@ import { TenantTabProperty } from "@/components/tenants/tenant-tab-property";
 import { TenantTabCurrentAccount } from "@/components/tenants/tenant-tab-current-account";
 import { TenantTabDocuments } from "@/components/tenants/tenant-tab-documents";
 import { ClientRolesBadges } from "@/components/clients/client-roles-badges";
+import { RoleToggle } from "@/components/clients/role-toggle";
 
 interface Tenant {
   id: string;
@@ -231,6 +232,7 @@ export default function TenantDetailPage() {
                       </span>
                     )}
                     <ClientRolesBadges clientId={tenant.id} currentRole="tenant" />
+                    <RoleToggle clientId={tenant.id} currentRole="inquilino" />
                   </div>
                 </div>
               </div>
@@ -336,17 +338,7 @@ export default function TenantDetailPage() {
             )}
             {activeTab === "cuenta-corriente" && (
               <TenantTabCurrentAccount
-                tenantId={tenant.id}
-                tenantName={
-                  tenant.lastName
-                    ? `${tenant.firstName} ${tenant.lastName}`
-                    : tenant.firstName
-                }
-                estado={tenant.estado}
-                diasMora={tenant.diasMora}
-                contrato={data?.contrato ?? null}
-                contratos={data?.contratos ?? []}
-                propertyId={data?.property?.id ?? null}
+                inquilinoId={tenant.id}
               />
             )}
             {activeTab === "documentos" && (

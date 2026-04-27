@@ -1,0 +1,182 @@
+<h2>Cuenta corriente — Tab de proyección del contrato</h2>
+<p class="subtitle">Así quedaría la tabla principal. ¿Refleja lo que tenías en mente?</p>
+
+<div class="mockup">
+  <div class="mockup-header">Ficha de inquilino · Tab "Cuenta corriente" · Modo Inquilino</div>
+  <div class="mockup-body" style="padding:0; background:#0d0d0d;">
+
+    <!-- KPIs -->
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:16px; border-bottom:1px solid #1a1a1a;">
+      <div style="background:#111; border:1px solid #222; border-radius:8px; padding:12px;">
+        <div style="font-size:9px; color:#666; text-transform:uppercase; letter-spacing:.08em;">Estado de cuenta</div>
+        <div style="font-size:18px; font-weight:700; color:#4ade80; margin-top:4px;">Al día</div>
+      </div>
+      <div style="background:#111; border:1px solid #222; border-radius:8px; padding:12px;">
+        <div style="font-size:9px; color:#666; text-transform:uppercase; letter-spacing:.08em;">Próximo pago</div>
+        <div style="font-size:18px; font-weight:700; color:#e0e0e0; margin-top:4px;">$245.000</div>
+        <div style="font-size:9px; color:#555; margin-top:2px;">Vence 10 may 2026</div>
+      </div>
+      <div style="background:#111; border:1px solid #1a3a1a; border-radius:8px; padding:12px;">
+        <div style="font-size:9px; color:#666; text-transform:uppercase; letter-spacing:.08em;">Cobrado 2026</div>
+        <div style="font-size:18px; font-weight:700; color:#4ade80; margin-top:4px;">$980.000</div>
+        <div style="font-size:9px; color:#555; margin-top:2px;">4 pagos registrados</div>
+      </div>
+    </div>
+
+    <!-- Alerta ajuste próximo -->
+    <div style="margin:12px 16px; background:#1f1500; border:1px solid #f59e0b33; border-left:3px solid #f59e0b; border-radius:8px; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+      <span style="font-size:16px;">⚠</span>
+      <div>
+        <span style="font-size:11px; font-weight:600; color:#f59e0b;">Ajuste ICL en 2 meses</span>
+        <span style="font-size:10px; color:#8a7440; margin-left:8px;">Los montos desde Jul 2026 requieren revisión antes de emitir recibo.</span>
+      </div>
+    </div>
+
+    <!-- Tabla de proyección -->
+    <div style="margin:0 16px 16px; border:1px solid #1a1a1a; border-radius:8px; overflow:hidden;">
+
+      <!-- Header con controles -->
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#111; border-bottom:1px solid #1a1a1a;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:11px; font-weight:600; color:#e0e0e0;">Proyección del contrato</span>
+          <span style="font-size:9px; color:#555;">CON-0042 · Ene 2026 – Dic 2027</span>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <!-- filtro estados -->
+          <div style="display:flex; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:5px; padding:2px; gap:1px;">
+            <div style="padding:3px 8px; background:#2a2a2a; border-radius:3px; font-size:9px; color:#e0e0e0;">Todos</div>
+            <div style="padding:3px 8px; font-size:9px; color:#555;">Pendientes</div>
+            <div style="padding:3px 8px; font-size:9px; color:#555;">Pagados</div>
+          </div>
+          <div style="background:#6366f1; color:white; font-size:9px; font-weight:600; padding:4px 10px; border-radius:5px; cursor:pointer;">+ Cargo manual</div>
+        </div>
+      </div>
+
+      <!-- Columnas -->
+      <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; background:#111; border-bottom:1px solid #222; padding:6px 14px; gap:8px;">
+        <div style="font-size:8px; font-weight:600; color:#555; text-transform:uppercase; letter-spacing:.1em;">Período</div>
+        <div style="font-size:8px; font-weight:600; color:#555; text-transform:uppercase; letter-spacing:.1em;">Concepto</div>
+        <div style="font-size:8px; font-weight:600; color:#555; text-transform:uppercase; letter-spacing:.1em;">Tipo</div>
+        <div style="font-size:8px; font-weight:600; color:#555; text-transform:uppercase; letter-spacing:.1em; text-align:right;">Monto</div>
+        <div style="font-size:8px; font-weight:600; color:#555; text-transform:uppercase; letter-spacing:.1em; text-align:center;">Estado</div>
+        <div style="font-size:8px; font-weight:600; color:#555; text-transform:uppercase; letter-spacing:.1em;"></div>
+      </div>
+
+      <!-- Filas PAGADAS (apagadas) -->
+      <div style="opacity:.45;">
+        <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; padding:7px 14px; gap:8px; border-bottom:1px solid #151515; align-items:center;">
+          <div style="font-size:10px; color:#777;">Ene 2026</div>
+          <div style="font-size:10px; color:#888;">Alquiler</div>
+          <div style="font-size:9px; color:#555;">alquiler</div>
+          <div style="font-size:10px; color:#777; text-align:right;">$200.000</div>
+          <div style="text-align:center;"><span style="font-size:8px; background:#1a3a1a; color:#4ade80; padding:2px 6px; border-radius:3px;">Pagado</span></div>
+          <div style="font-size:9px; color:#444; text-align:right;">Rec #001</div>
+        </div>
+        <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; padding:7px 14px; gap:8px; border-bottom:1px solid #151515; align-items:center;">
+          <div style="font-size:10px; color:#777;">Feb 2026</div>
+          <div style="font-size:10px; color:#888;">Alquiler</div>
+          <div style="font-size:9px; color:#555;">alquiler</div>
+          <div style="font-size:10px; color:#777; text-align:right;">$200.000</div>
+          <div style="text-align:center;"><span style="font-size:8px; background:#1a3a1a; color:#4ade80; padding:2px 6px; border-radius:3px;">Pagado</span></div>
+          <div style="font-size:9px; color:#444; text-align:right;">Rec #002</div>
+        </div>
+        <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; padding:7px 14px; gap:8px; border-bottom:1px solid #151515; align-items:center;">
+          <div style="font-size:10px; color:#777;">Feb 2026</div>
+          <div style="font-size:10px; color:#888; font-style:italic;">Municipalidad (prop. pagó)</div>
+          <div style="font-size:9px; color:#555;">servicio</div>
+          <div style="font-size:10px; color:#777; text-align:right;">$3.700</div>
+          <div style="text-align:center;"><span style="font-size:8px; background:#1a3a1a; color:#4ade80; padding:2px 6px; border-radius:3px;">Pagado</span></div>
+          <div style="font-size:9px; color:#444; text-align:right;">Rec #002</div>
+        </div>
+        <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; padding:7px 14px; gap:8px; border-bottom:1px solid #1a1a1a; align-items:center;">
+          <div style="font-size:10px; color:#777;">Mar 2026</div>
+          <div style="font-size:10px; color:#888;">Alquiler + Bonif. días ocupados</div>
+          <div style="font-size:9px; color:#555;">bonificacion</div>
+          <div style="font-size:10px; color:#777; text-align:right;">$200.000<br/><span style="color:#555; font-size:9px;">-$45.000</span></div>
+          <div style="text-align:center;"><span style="font-size:8px; background:#1a3a1a; color:#4ade80; padding:2px 6px; border-radius:3px;">Pagado</span></div>
+          <div style="font-size:9px; color:#444; text-align:right;">Rec #003</div>
+        </div>
+      </div>
+
+      <!-- MES ACTUAL — destacado -->
+      <div style="background:#13131f; border-left:3px solid #6366f1; border-top:1px solid #2a2a4a; border-bottom:1px solid #2a2a4a;">
+        <div style="padding:4px 14px 2px; display:flex; align-items:center; gap:6px;">
+          <span style="font-size:8px; font-weight:700; color:#818cf8; text-transform:uppercase; letter-spacing:.1em;">● Abril 2026 — mes en curso</span>
+        </div>
+        <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; padding:7px 14px; gap:8px; align-items:center;">
+          <div style="font-size:10px; color:#c0c0e0; font-weight:600;">Abr 2026</div>
+          <div style="font-size:10px; color:#d0d0f0; font-weight:500;">Alquiler</div>
+          <div style="font-size:9px; color:#818cf8;">alquiler</div>
+          <div style="font-size:11px; color:#e0e0ff; font-weight:700; text-align:right;">$245.000</div>
+          <div style="text-align:center;"><span style="font-size:8px; background:#1a1a3a; color:#f59e0b; padding:2px 6px; border-radius:3px; border:1px solid #f59e0b44;">Registrado</span></div>
+          <div style="font-size:9px; color:#818cf8; text-align:right; cursor:pointer;">Conciliar →</div>
+        </div>
+        <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; padding:7px 14px 10px; gap:8px; align-items:center;">
+          <div style="font-size:10px; color:#c0c0e0;">Abr 2026</div>
+          <div style="font-size:10px; color:#d0d0f0;">Municipalidad</div>
+          <div style="font-size:9px; color:#818cf8;">servicio</div>
+          <div style="font-size:11px; color:#e0e0ff; font-weight:700; text-align:right;">$3.700</div>
+          <div style="text-align:center;"><span style="font-size:8px; background:#1a1a2e; color:#818cf8; padding:2px 6px; border-radius:3px;">Pendiente</span></div>
+          <div style="font-size:9px; color:#818cf8; text-align:right; cursor:pointer;">Registrar →</div>
+        </div>
+      </div>
+
+      <!-- MESES FUTUROS NORMALES -->
+      <div style="opacity:.5;">
+        <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; padding:7px 14px; gap:8px; border-bottom:1px solid #151515; align-items:center;">
+          <div style="font-size:10px; color:#666;">May 2026</div>
+          <div style="font-size:10px; color:#666;">Alquiler</div>
+          <div style="font-size:9px; color:#444;">alquiler</div>
+          <div style="font-size:10px; color:#666; text-align:right;">$245.000</div>
+          <div style="text-align:center;"><span style="font-size:8px; border:1px solid #333; color:#555; padding:2px 6px; border-radius:3px;">Proyectado</span></div>
+          <div></div>
+        </div>
+        <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; padding:7px 14px; gap:8px; border-bottom:1px solid #151515; align-items:center;">
+          <div style="font-size:10px; color:#666;">Jun 2026</div>
+          <div style="font-size:10px; color:#666;">Alquiler</div>
+          <div style="font-size:9px; color:#444;">alquiler</div>
+          <div style="font-size:10px; color:#666; text-align:right;">$245.000</div>
+          <div style="text-align:center;"><span style="font-size:8px; border:1px solid #333; color:#555; padding:2px 6px; border-radius:3px;">Proyectado</span></div>
+          <div></div>
+        </div>
+      </div>
+
+      <!-- SEPARADOR AJUSTE -->
+      <div style="display:flex; align-items:center; gap:8px; padding:6px 14px; background:#1a1100; border-top:1px solid #f59e0b22; border-bottom:1px solid #f59e0b22;">
+        <div style="flex:1; height:1px; background:#f59e0b33;"></div>
+        <div style="font-size:9px; font-weight:600; color:#f59e0b; white-space:nowrap;">⚠ Ajuste ICL · Jul 2026 — montos a revisar</div>
+        <div style="flex:1; height:1px; background:#f59e0b33;"></div>
+      </div>
+
+      <!-- MESES POST-AJUSTE (pendiente_revision) -->
+      <div style="opacity:.65;">
+        <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; padding:7px 14px; gap:8px; border-bottom:1px solid #1a1500; align-items:center; background:#100e00;">
+          <div style="font-size:10px; color:#a08040;">Jul 2026</div>
+          <div style="font-size:10px; color:#a08040;">Alquiler</div>
+          <div style="font-size:9px; color:#806030;">alquiler</div>
+          <div style="font-size:10px; color:#f59e0b; text-align:right; font-style:italic;">$???</div>
+          <div style="text-align:center;"><span style="font-size:8px; background:#1f1500; color:#f59e0b; padding:2px 6px; border-radius:3px; border:1px dashed #f59e0b55;">Revisar</span></div>
+          <div style="font-size:9px; color:#806030; text-align:right; cursor:pointer;">Actualizar →</div>
+        </div>
+        <div style="display:grid; grid-template-columns:90px 1fr 80px 90px 90px 70px; padding:7px 14px; gap:8px; border-bottom:1px solid #1a1500; align-items:center; background:#100e00;">
+          <div style="font-size:10px; color:#a08040;">Ago 2026</div>
+          <div style="font-size:10px; color:#a08040;">Alquiler</div>
+          <div style="font-size:9px; color:#806030;">alquiler</div>
+          <div style="font-size:10px; color:#f59e0b; text-align:right; font-style:italic;">$???</div>
+          <div style="text-align:center;"><span style="font-size:8px; background:#1f1500; color:#f59e0b; padding:2px 6px; border-radius:3px; border:1px dashed #f59e0b55;">Revisar</span></div>
+          <div></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding:8px 14px; background:#111; border-top:1px solid #1a1a1a; display:flex; justify-content:flex-end; gap:16px;">
+        <div style="font-size:9px; color:#666;">Pendientes <span style="color:#f59e0b; font-weight:600;">$248.700</span></div>
+        <div style="font-size:9px; color:#666;">Registrados <span style="color:#818cf8; font-weight:600;">$245.000</span></div>
+        <div style="font-size:9px; color:#666;">Cobrado total <span style="color:#4ade80; font-weight:600;">$603.700</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Esta es la estructura propuesta. Todos los ítems del contrato en una sola tabla — pasados, presente y proyectados — con la línea de ajuste separando los tramos.</p>

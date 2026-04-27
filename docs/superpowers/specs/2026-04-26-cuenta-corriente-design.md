@@ -1,0 +1,352 @@
+# Diseño: Módulo de Cuenta Corriente (v2)
+
+**Fecha:** 2026-04-26  
+**Alcance:** Rediseño completo del módulo de cuenta corriente de inquilinos, con impacto en la cuenta corriente de propietarios, la caja general y la UI de clientes con doble rol.  
+**Prioridad de implementación:** A → D → C → B (funcionalidad nueva primero, refactor después)
+
+---
+
+## 1. Contexto y motivación
+
+El módulo actual tiene dos tablas separadas (`tenant_charge` para cargos pendientes y `cash_movement` para movimientos registrados) que no capturan la complejidad contable real del negocio. En particular:
+
+- No hay distinción entre tipos de reducción de alquiler con tratamientos de comisión diferentes
+- No hay proyección futura del contrato (el staff carga cargos manualmente cada mes)
+- No hay integración entre los servicios de la propiedad y los cargos del inquilino
+- La caja general mezcla fondos propios de la agencia con fondos en tránsito de propietarios e inquilinos
+- Los clientes con doble rol (inquilino + propietario) no tienen una UX unificada
+
+---
+
+## 2. Modelo de datos
+
+### 2.1 Nueva tabla: `tenant_ledger`
+
+Reemplaza completamente a `tenant_charge`. Es el registro central de todo ítem financiero de un inquilino dentro de un contrato.
+
+```typescript
+// src/db/schema/tenant-ledger.ts
+export const tenantLedger = pgTable("tenant_ledger", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+
+  // Contexto del contrato (siempre requerido)
+  contratoId:    text("contratoId").notNull().references(() => contract.id, { onDelete: "restrict" }),
+  inquilinoId:   text("inquilinoId").notNull().references(() => client.id, { onDelete: "restrict" }),
+  propietarioId: text("propietarioId").notNull().references(() => client.id, { onDelete: "restrict" }),
+  propiedadId:   text("propiedadId").notNull().references(() => property.id, { onDelete: "restrict" }),
+
+  // Período (null para ítems no periódicos como depósito de garantía)
+  period:   text("period"),    // "YYYY-MM"
+  dueDate:  text("dueDate"),   // "YYYY-MM-DD" — fecha de vencimiento
+
+  // Clasificación del ítem
+  tipo: text("tipo").notNull(),
+  // "alquiler" | "servicio" | "bonificacion" | "descuento" | "gasto"
+  // | "punitorio" | "deposito" | "ajuste_indice"
+
+  descripcion: text("descripcion").notNull(),
+
+  // Monto — null significa "a determinar" (ej: meses post-ajuste de índice)
+  monto: decimal("monto", { precision: 15, scale: 2 }),
+
+  // ── Flags contables ───────────────────────────────────────────────────
+  // impactaPropietario: ¿este ítem reduce lo que recibe el propietario?
+  impactaPropietario: boolean("impactaPropietario").notNull().default(true),
+
+  // incluirEnBaseComision: ¿este monto entra en la base de cálculo de honorarios?
+  // false para "descuento por reparación" (propietario cobra menos pero
+  // la inmobiliaria igual cobra comisión sobre el alquiler original)
+  incluirEnBaseComision: boolean("incluirEnBaseComision").notNull().default(true),
+
+  // impactaCaja: ¿este ítem genera un movimiento en cash_movement?
+  impactaCaja: boolean("impactaCaja").notNull().default(false),
+
+  // ── Estado del ítem ───────────────────────────────────────────────────
+  estado: text("estado").notNull().default("proyectado"),
+  // "proyectado"         — generado automáticamente, mes futuro, sin acción aún
+  // "pendiente_revision" — generado, pero monto=null (post-ajuste o servicio variable)
+  // "pendiente"          — activo, esperando pago del inquilino
+  // "registrado"         — inquilino dice que pagó (pendiente conciliación)
+  // "conciliado"         — confirmado que la plata llegó
+  // "cancelado"          — dado de baja
+
+  // ── Recibo ────────────────────────────────────────────────────────────
+  reciboNumero:    text("reciboNumero"),
+  reciboEmitidoAt: timestamp("reciboEmitidoAt"),
+
+  // ── Conciliación ──────────────────────────────────────────────────────
+  conciliadoAt:  timestamp("conciliadoAt"),
+  conciliadoPor: text("conciliadoPor").references(() => user.id, { onDelete: "set null" }),
+
+  // ── Cuotas ────────────────────────────────────────────────────────────
+  // installmentOf: apunta al tenant_ledger padre (el cargo original)
+  installmentOf:     text("installmentOf"),   // self-reference, nullable
+  installmentNumber: integer("installmentNumber"),  // 1, 2, 3...
+  installmentTotal:  integer("installmentTotal"),   // total de cuotas del plan
+
+  // ── Servicio vinculado ────────────────────────────────────────────────
+  servicioId: text("servicioId").references(() => servicio.id, { onDelete: "set null" }),
+
+  // ── Caja ──────────────────────────────────────────────────────────────
+  // Cuando impactaCaja=true y el ítem se confirma, se crea un cash_movement
+  // y se guarda el link acá
+  cajaMovimientoId: text("cajaMovimientoId").references(() => cajaMovimiento.id, { onDelete: "set null" }),
+
+  // ── Metadata ──────────────────────────────────────────────────────────
+  isAutoGenerated: boolean("isAutoGenerated").notNull().default(false),
+  createdBy: text("createdBy").references(() => user.id, { onDelete: "set null" }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+```
+
+### 2.2 Referencia de flags contables por tipo de ítem
+
+| tipo | impactaPropietario | incluirEnBaseComision | impactaCaja | Descripción |
+|---|---|---|---|---|
+| `alquiler` | true | true | true | Cobro de alquiler mensual |
+| `bonificacion` | true | **true** | false | Ej: días ocupados — reduce alquiler Y base de comisión |
+| `descuento` | true | **false** | false | Ej: reparación del propietario — reduce lo del dueño pero NO la comisión |
+| `servicio` (comp. requerido) | false | false | false | Solo tracking, no genera movimiento de caja |
+| `servicio` (agencia paga) | false | false | **true** | La agencia pagó y recupera del inquilino |
+| `servicio` (prop. pagó, recuperar) | **true** | false | **true** | Prop. pagó → cobrar al inquilino → devolver al propietario |
+| `gasto` | false | false | true | Gasto que pagó la agencia y carga al inquilino |
+| `punitorio` | false | false | true | Interés por mora (TIM BCRA × multiplicador) |
+| `deposito` | false | false | true | Depósito de garantía |
+
+### 2.3 Cuotas
+
+Un cargo en cuotas se modela como:
+- Un ítem padre con `tipo` del concepto original, `installmentTotal=N`, `installmentOf=null`
+- N ítems hijos con `installmentOf=<padre.id>`, `installmentNumber=1..N`, `monto=monto_cuota`
+
+MVP: cuotas con monto fijo (el staff ingresa el monto de cada cuota manualmente, o define un total y el sistema lo divide en partes iguales).
+
+### 2.4 Migración de `tenant_charge`
+
+`tenant_charge` se elimina. Sus datos se migran a `tenant_ledger` mapeando:
+- `estado: "pendiente"` → `estado: "pendiente"` en tenant_ledger
+- `estado: "pagado"` → `estado: "conciliado"` (ya pasó por caja)
+- `estado: "cancelado"` → `estado: "cancelado"`
+- `categoria` → `tipo` (ajustar valores al nuevo enum)
+- `reciboNumero` → `reciboNumero`
+
+Los `cash_movement` existentes que ya tienen `inquilinoId` no van a tener `ledgerEntryId` (son anteriores al nuevo schema). Se dejan con `ledgerEntryId=null` — son historial válido y no necesitan ser retroactivamente linkeados. El campo `tipoFondo` en los registros históricos se setea a `"agencia"` como valor por defecto seguro; el staff puede corregirlos manualmente si fuera necesario.
+
+**Nota sobre `installmentOf`**: es una auto-referencia en la misma tabla. En Drizzle ORM, las foreign keys circulares requieren definición explícita con `relations()` en un archivo separado, no inline con `.references()`. El campo se define como `text("installmentOf")` sin FK declarada en el schema, y la relación se documenta en `src/db/schema/relations.ts`.
+
+### 2.5 Extensión de `cash_movement`
+
+Se agregan dos campos:
+
+```typescript
+// En cajaMovimiento:
+tipoFondo: text("tipoFondo").notNull().default("agencia"),
+// "agencia"     — plata que pertenece a la inmobiliaria (honorarios, comisiones)
+// "propietario" — plata en tránsito de un dueño (alquiler cobrado a liquidar)
+// "inquilino"   — plata en tránsito de un inquilino (depósito, adelantos)
+
+ledgerEntryId: text("ledgerEntryId").references(() => tenantLedger.id, { onDelete: "set null" }),
+```
+
+Esto permite tres vistas de la caja general:
+- **Balance real de la agencia**: `tipoFondo = "agencia"`
+- **Fondos en tránsito**: `tipoFondo IN ("propietario", "inquilino")`
+- **Caja total**: sin filtro
+
+### 2.6 Extensión del schema de servicios
+
+```typescript
+// En servicio:
+propietarioResponsable: boolean("propietarioResponsable").notNull().default(false),
+// Solo los servicios donde propietarioResponsable=true
+// generan ítems en tenant_ledger
+
+tipoGestion: text("tipoGestion").notNull().default("comprobante"),
+// "comprobante"             — requiere subir comprobante; si falta y triggersBlock=true, bloquea el cobro
+// "pago_agencia"            — la agencia paga el servicio y lo cobra al inquilino
+// "pago_propietario_recuperar" — el propietario ya pagó; la agencia cobra al inquilino y le devuelve al dueño
+```
+
+---
+
+## 3. Lógica de generación automática
+
+Al activar un contrato (`status → "active"`), el sistema genera automáticamente todos los `tenant_ledger` del contrato:
+
+### Estado inicial de cada mes generado
+
+```
+período < hoy              → estado: "pendiente"   (ya deberían haberse cobrado)
+período = mes actual       → estado: "pendiente"
+período > hoy
+  && dentro del tramo actual de precio → estado: "proyectado",  monto = monthlyAmount
+  && después del próximo ajuste        → estado: "pendiente_revision", monto = null
+```
+
+El tramo de ajuste se calcula con `contract.adjustmentFrequency` (en meses) a partir de `contract.startDate`.
+
+### Servicios en la generación
+
+Por cada período generado, si la propiedad tiene servicios con `propietarioResponsable=true`, se genera también un `tenant_ledger` de `tipo="servicio"` por cada uno:
+- `tipoGestion="comprobante"` → `monto=null`, `estado="pendiente_revision"` (esperando el monto del comprobante)
+- `tipoGestion="pago_agencia"` o `"pago_propietario_recuperar"` → `monto=null`, `estado="pendiente_revision"`
+
+### Alerta de próximo ajuste
+
+La API de `GET /api/tenants/:id/cuenta-corriente` calcula cuántos meses faltan para el primer `estado="pendiente_revision"` y lo devuelve como `proximoAjuste: { period, mesesRestantes }` en los KPIs.
+
+---
+
+## 4. UI — Tab "Cuenta corriente"
+
+### 4.1 Estructura general
+
+Vive en el tab "Cuenta corriente" existente dentro de `TenantTabCurrentAccount`. Se reorganiza completamente:
+
+```
+┌─ KPI cards (3 columnas, shadcn Card) ────────────────────────────┐
+│  Estado de cuenta │ Próximo pago + vencimiento │ Cobrado YTD     │
+└──────────────────────────────────────────────────────────────────┘
+
+┌─ Alerta de próximo ajuste (condicional, shadcn Alert) ───────────┐
+│  ⚠ Ajuste ICL en N meses · Jul 2026 — montos a revisar          │
+└──────────────────────────────────────────────────────────────────┘
+
+┌─ Tabla de proyección ────────────────────────────────────────────┐
+│  [toolbar: toggle vista | + Cargo manual]                         │
+│  ─────────────────────────────────────────────────────────────── │
+│  Filas pasadas (opacidad 40%)                                     │
+│  ─── Mes actual (destacado, borde izquierdo primary) ──────────── │
+│  │  [Seleccionar todo el mes]                                     │
+│  │  ☑ Alquiler         $245.000 [editable]      [+ Punitorio]    │
+│  │    ↳ Punitorio      $8.900                   [✕]              │
+│  │  ☐ Municipalidad    $3.700                                     │
+│  ─────────────────────────────────────────────────────────────── │
+│  Filas futuras (opacidad 45%)                                     │
+│  ─── ⚠ Ajuste ICL · Jul 2026 ─────────────────────────────────── │
+│  Filas post-ajuste (fondo ámbar sutil, monto $???)               │
+└──────────────────────────────────────────────────────────────────┘
+
+┌─ Panel sticky de cobro (aparece al seleccionar ítems) ───────────┐
+│  Desglose: concepto + punitorios + honorarios + neto propietario  │
+│  Total a cobrar: $253.900          [Limpiar] [Emitir recibo →]   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Toggle de vista
+
+Componente segmentado (shadcn `ToggleGroup` o botones con variante `outline`):
+- **Completa**: muestra desde inicio del contrato → presente → futuro. El presente queda en la parte superior visible; se scrollea hacia arriba para ver pasado, hacia abajo para ver futuro.
+- **Solo historial**: muestra solo desde el mes actual hacia atrás. No hay filas futuras.
+
+En ambos modos, el mes actual es siempre el primero visible al cargar.
+
+### 4.3 Estados visuales de las filas
+
+| estado | visual |
+|---|---|
+| `pagado` / `conciliado` (pasado) | opacidad 40%, texto gris |
+| `registrado` | badge ámbar "Registrado", acción "Conciliar →" |
+| `pendiente` (mes actual) | fondo primary sutil, borde izquierdo primary, texto claro |
+| `proyectado` (futuro) | opacidad 45%, badge outline gris "Proyectado", checkbox disabled |
+| `pendiente_revision` | fondo ámbar muy sutil, monto `$???` en ámbar, badge "Revisar" con borde dashed |
+
+### 4.4 Workspace de cobro (selección de ítems)
+
+- Solo los ítems con `estado IN ("pendiente", "registrado")` tienen checkbox activo
+- Al seleccionar un ítem, el monto se vuelve editable inline (`Input` de shadcn) para pagos parciales
+- Botón **"Seleccionar todo el mes"** en el header del mes actual → selecciona todos los ítems del período corriente que estén en estado cobrable
+- Acción **"+ Punitorio"** por ítem de tipo `alquiler`: abre un popover (shadcn `Popover`) donde el staff puede ver el cálculo sugerido (TIM × días mora × monto) y confirmarlo o ajustarlo. Se agrega como subítem indentado.
+- El punitorio generado tiene `tipo="punitorio"`, `installmentOf=null`, y hereda el `period` del ítem padre
+
+### 4.5 Panel sticky de cobro
+
+Aparece (shadcn `Card` sticky en bottom) en cuanto hay al menos un ítem seleccionado.
+
+Muestra:
+1. Lista de ítems seleccionados con sus montos
+2. Honorarios de la inmobiliaria (% sobre la base de comisión)
+3. Neto que recibe el propietario
+4. **Total a cobrar** (lo que paga el inquilino)
+5. Botones: "Limpiar selección" y "Emitir recibo →"
+
+Al emitir, se llama a `POST /api/receipts/emit` con `ledgerEntryIds[]`, `fecha`, `honorariosPct`, `trasladarAlPropietario`. El endpoint crea el recibo, actualiza los estados de los ítems seleccionados a `"conciliado"`, y genera los `cash_movement` correspondientes.
+
+---
+
+## 5. UI — Clientes con doble rol
+
+### 5.1 Toggle de rol en el header de la ficha
+
+Cuando un `client` tiene más de un rol activo (inquilino + propietario, o inquilino de dos propiedades), el header de la ficha muestra un selector segmentado (shadcn `ToggleGroup`) a la derecha del nombre:
+
+```
+[Inquilino]  [Propietario]  [Resumen]
+```
+
+- **Inquilino**: muestra las tabs y KPIs del inquilino. Si tiene contratos en múltiples propiedades, un `Select` filtra por propiedad/contrato.
+- **Propietario**: muestra las tabs y KPIs del propietario (cuenta corriente de propietario, liquidaciones).
+- **Resumen**: vista combinada de recibos emitidos + liquidaciones recibidas, con totales por año.
+
+El modo activo se persiste en el query param `?rol=inquilino|propietario|resumen` para poder compartir la URL.
+
+---
+
+## 6. API
+
+### Endpoints nuevos o modificados
+
+| método | ruta | descripción |
+|---|---|---|
+| `GET` | `/api/tenants/:id/cuenta-corriente` | Devuelve `{ kpis, ledgerEntries[], proximoAjuste }` |
+| `POST` | `/api/tenants/:id/ledger` | Crea un ítem manual (cargo, bonificación, cuota, etc.) |
+| `PATCH` | `/api/tenants/:id/ledger/:entryId` | Edita monto, descripción, estado |
+| `DELETE` | `/api/tenants/:id/ledger/:entryId` | Solo para ítems `isAutoGenerated=false` y `estado != "conciliado"` |
+| `POST` | `/api/tenants/:id/ledger/:entryId/punitorio` | Agrega un punitorio hijo al ítem |
+| `POST` | `/api/tenants/:id/ledger/:entryId/conciliar` | Cambia estado a "conciliado", crea `cash_movement` si `impactaCaja=true` |
+| `POST` | `/api/contracts/:id/generate-ledger` | Genera todos los ítems proyectados de un contrato |
+| `GET` | `/api/cash/movimientos` | Acepta `?tipoFondo=agencia|propietario|inquilino` para filtrar |
+
+### Validaciones clave
+
+- No se puede eliminar un ítem con `estado="conciliado"` (ya impactó en caja)
+- No se puede emitir recibo si algún ítem seleccionado tiene `monto=null`
+- No se puede emitir recibo si la propiedad tiene un servicio con `triggersBlock=true` y comprobante faltante
+- Al actualizar el monto de un ítem `pendiente_revision`, el sistema actualiza todos los ítems del mismo tramo que también estén en `pendiente_revision` (si el usuario lo confirma)
+
+---
+
+## 7. Componentes shadcn/ui a usar
+
+| componente | uso |
+|---|---|
+| `Card`, `CardHeader`, `CardContent` | KPI cards, tabla de proyección, panel sticky |
+| `Table`, `TableRow`, `TableCell` | Filas de la tabla de proyección |
+| `ToggleGroup`, `ToggleGroupItem` | Toggle "Completa / Solo historial" y toggle de rol (Inquilino/Propietario/Resumen) |
+| `Alert`, `AlertTitle`, `AlertDescription` | Alerta de próximo ajuste de índice |
+| `Input` | Monto editable inline para pagos parciales |
+| `Popover`, `PopoverContent` | Panel de cálculo de punitorio |
+| `Badge` | Estados de cada ítem (Pagado, Pendiente, Revisar, etc.) |
+| `Select` | Filtro por contrato/propiedad en cliente con múltiples contratos |
+| `AlertDialog` | Confirmación antes de emitir recibo |
+| `Checkbox` | Selección de ítems para cobro |
+| `Tooltip` | Explicaciones sobre flags contables, estados |
+
+---
+
+## 8. Orden de implementación (PRs sugeridos)
+
+1. **PR 1 — Schema**: nueva tabla `tenant_ledger`, extensión de `cash_movement` (campo `tipoFondo` + `ledgerEntryId`), extensión de `servicio` (`propietarioResponsable`, `tipoGestion`). Migración de `tenant_charge` → `tenant_ledger`. Sin UI.
+
+2. **PR 2 — Generación automática**: endpoint `POST /api/contracts/:id/generate-ledger`. Hook al activar un contrato. Sin UI aún (se puede testear con Drizzle Studio).
+
+3. **PR 3 — API de cuenta corriente**: refactor de `GET /api/tenants/:id/cuenta-corriente` para leer de `tenant_ledger`. Endpoints de creación, edición, conciliación y punitorio.
+
+4. **PR 4 — UI tabla de proyección**: reescritura de `TenantTabCurrentAccount` usando los nuevos endpoints. Toggle de vistas, workspace de cobro, panel sticky.
+
+5. **PR 5 — Caja con segregación de fondos**: filtros `tipoFondo` en la UI de caja general.
+
+6. **PR 6 — Doble rol**: toggle Inquilino/Propietario/Resumen en el header de la ficha de cliente.
+
+7. **PR 7 — Cuenta corriente del propietario**: rediseño de `OwnerTabCurrentAccount` usando la misma lógica.

@@ -39,6 +39,10 @@
   --color-mustard-dim: var(--mustard-dim);
   --color-income: var(--income);
   --color-income-dim: var(--income-dim);
+  --color-warning: var(--warning);
+  --color-warning-dim: var(--warning-dim);
+  --color-punitorio: var(--punitorio);
+  --color-punitorio-dim: var(--punitorio-dim);
   --color-neutral: var(--neutral);
   --color-neutral-dim: var(--neutral-dim);
   --color-border-accent: var(--border-accent);
@@ -183,6 +187,8 @@
   --mustard-dim: rgba(253, 222, 168, 0.15);
   --income: #6ee7a0;
   --income-dim: rgba(110, 231, 160, 0.12);
+  --punitorio: #a78bfa;
+  --punitorio-dim: rgba(167, 139, 250, 0.12);
   --expense: var(--destructive);
   --neutral: #8899ee;
   --neutral-dim: rgba(100, 130, 220, 0.12);
@@ -297,6 +303,8 @@
   --warning-dim: oklch(0.80 0.13 85 / 0.14);
   --income: oklch(0.74 0.14 155);
   --income-dim: oklch(0.74 0.14 155 / 0.12);
+  --punitorio: oklch(0.68 0.20 295);
+  --punitorio-dim: oklch(0.68 0.20 295 / 0.14);
   --border-accent: oklch(0.585 0.135 32 / 0.25);
 
   /* --- Tokens Arce: estado y semántica visual (sin cambio) --- */

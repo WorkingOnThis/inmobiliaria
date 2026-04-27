@@ -6,7 +6,7 @@ import { client } from "@/db/schema/client";
 import { contract } from "@/db/schema/contract";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 /**
@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
       origen: cajaMovimiento.source,
       comprobante: cajaMovimiento.comprobante,
       nota: cajaMovimiento.note,
+      tipoFondo: cajaMovimiento.tipoFondo,
       creadoEn: cajaMovimiento.createdAt,
       // Contrato vinculado
       contratoId: cajaMovimiento.contratoId,
@@ -175,4 +176,37 @@ export async function POST(request: NextRequest) {
     .returning();
 
   return NextResponse.json({ movimiento: nuevo }, { status: 201 });
+}
+
+/**
+ * DELETE /api/cash/movimientos
+ *
+ * Elimina varios movimientos manuales en una sola operación.
+ * Body: { ids: string[] }
+ * Solo elimina los que tengan source="manual"; ignora el resto silenciosamente.
+ */
+export async function DELETE(request: NextRequest) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+
+  let body: { ids: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Body inválido" }, { status: 400 });
+  }
+
+  const { ids } = body;
+  if (!Array.isArray(ids) || ids.length === 0 || !ids.every((id) => typeof id === "string")) {
+    return NextResponse.json({ error: "ids debe ser un array de strings no vacío" }, { status: 400 });
+  }
+
+  const eliminados = await db
+    .delete(cajaMovimiento)
+    .where(and(inArray(cajaMovimiento.id, ids as string[]), eq(cajaMovimiento.source, "manual")))
+    .returning({ id: cajaMovimiento.id });
+
+  return NextResponse.json({ eliminados: eliminados.length });
 }

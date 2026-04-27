@@ -26,6 +26,8 @@ export * from "./property-room";
 export * from "./property-to-feature";
 export * from "./receipt-service-item";
 export * from "./tenant-charge";
+export * from "./tenant-ledger";
+export * from "./receipt-allocation";
 export * from "./servicio";
 export * from "./zone";
 export * from "./tarea";
