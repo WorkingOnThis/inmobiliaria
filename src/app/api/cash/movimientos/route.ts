@@ -50,6 +50,10 @@ export async function GET(request: NextRequest) {
       nota: cajaMovimiento.note,
       tipoFondo: cajaMovimiento.tipoFondo,
       creadoEn: cajaMovimiento.createdAt,
+      reciboNumero: cajaMovimiento.reciboNumero,
+      settledAt: cajaMovimiento.settledAt,
+      anuladoAt: cajaMovimiento.anuladoAt,
+      annulmentId: cajaMovimiento.annulmentId,
       // Contrato vinculado
       contratoId: cajaMovimiento.contratoId,
       contratoNumero: contract.contractNumber,
@@ -87,11 +91,13 @@ export async function GET(request: NextRequest) {
     .orderBy(sql`${cajaMovimiento.date} DESC, ${cajaMovimiento.createdAt} DESC`);
 
   // Calcular totales del período
-  const totalIngresos = movimientos
+  const movimientosActivos = movimientos.filter((m) => m.anuladoAt === null);
+
+  const totalIngresos = movimientosActivos
     .filter((m) => m.tipo === "income")
     .reduce((acc, m) => acc + parseFloat(m.monto ?? "0"), 0);
 
-  const totalEgresos = movimientos
+  const totalEgresos = movimientosActivos
     .filter((m) => m.tipo === "expense")
     .reduce((acc, m) => acc + parseFloat(m.monto ?? "0"), 0);
 
