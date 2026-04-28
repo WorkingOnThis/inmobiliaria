@@ -180,7 +180,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       setVoidConfirm(null);
       setVoidError(null);
       queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
-      queryClient.invalidateQueries({ queryKey: ["caja-movimientos"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-movements"] });
     },
     onError: (error: Error) => {
       setVoidError(error.message);
@@ -326,6 +326,23 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
 
   const hasContract = ledgerEntries.length > 0;
 
+  const pendingEntries = ledgerEntries.filter((e) => e.estado === "pendiente" || e.estado === "pago_parcial");
+
+  function pendingAmount(e: LedgerEntry): number {
+    if (e.estado === "pago_parcial" && e.montoPagado !== null) {
+      return Math.max(0, Number(e.monto ?? 0) - Number(e.montoPagado));
+    }
+    return Number(e.monto ?? 0);
+  }
+
+  const totalPendiente = round2(pendingEntries.reduce((s, e) => s + pendingAmount(e), 0));
+  const totalCapital   = round2(pendingEntries.filter((e) => e.tipo !== "punitorio").reduce((s, e) => s + pendingAmount(e), 0));
+  const totalIntereses = round2(pendingEntries.filter((e) => e.tipo === "punitorio").reduce((s, e) => s + pendingAmount(e), 0));
+
+  const totalRegistrado = round2(ledgerEntries
+    .filter((e) => e.estado === "registrado")
+    .reduce((s, e) => s + Number(e.monto ?? 0), 0));
+
   const selectableEntries = ledgerEntries.filter(
     (e) => (e.estado === "pendiente" || e.estado === "registrado" || e.estado === "pago_parcial") && e.monto !== null
   );
@@ -336,7 +353,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       {/* KPI Cards */}
       <div className="grid grid-cols-3 gap-3 px-4">
         {/* Estado */}
-        <Card className="rounded-xl border py-0 gap-0">
+        <Card className="rounded-[var(--radius-lg)] border py-0 gap-0">
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div>
@@ -361,7 +378,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
         </Card>
 
         {/* Próximo pago */}
-        <Card className="rounded-xl border py-0 gap-0">
+        <Card className="rounded-[var(--radius-lg)] border py-0 gap-0">
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div>
@@ -374,10 +391,10 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
                       ) : kpis.proximoPago.montoMinimo !== null ? (
                         <p className="text-2xl font-bold font-mono">≥&nbsp;${kpis.proximoPago.montoMinimo.toLocaleString("es-AR")}</p>
                       ) : (
-                        <p className="text-2xl font-bold text-[var(--warning)]">A confirmar</p>
+                        <p className="text-2xl font-bold text-warning">A confirmar</p>
                       )}
                       {kpis.proximoPago.tieneAjuste && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-[var(--warning)] text-[var(--warning)]">
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-warning text-warning">
                           Ajuste
                         </Badge>
                       )}
@@ -399,7 +416,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
         </Card>
 
         {/* Día promedio de pago */}
-        <Card className="rounded-xl border py-0 gap-0">
+        <Card className="rounded-[var(--radius-lg)] border py-0 gap-0">
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div>
@@ -447,21 +464,23 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       {/* Próximo ajuste alert */}
       {proximoAjuste && proximoAjuste.mesesRestantes !== null && !ajusteDismissed && (
         <div className="px-4">
-          <Alert variant="default" className="relative border-[var(--warning)] bg-[var(--warning-dim)]">
-            <AlertTriangle className="size-4 text-[var(--warning)]" />
-            <AlertTitle className="text-[var(--warning)] text-sm pr-6">
+          <Alert variant="default" className="relative border-warning bg-warning-dim">
+            <AlertTriangle className="size-4 text-warning" />
+            <AlertTitle className="text-warning text-sm pr-6">
               Ajuste de índice en {proximoAjuste.mesesRestantes} {proximoAjuste.mesesRestantes === 1 ? "mes" : "meses"}
             </AlertTitle>
             <AlertDescription className="text-xs text-muted-foreground">
               Período {proximoAjuste.period ? formatPeriod(proximoAjuste.period) : ""} — los montos a partir de ese mes están pendientes de revisión.
             </AlertDescription>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setAjusteDismissed(true)}
-              className="absolute top-3 right-3 text-[var(--warning)] opacity-60 hover:opacity-100 transition-opacity"
+              className="absolute top-3 right-3 h-6 w-6 text-warning opacity-60 hover:opacity-100"
               aria-label="Cerrar aviso"
             >
               <X size={14} />
-            </button>
+            </Button>
           </Alert>
         </div>
       )}
@@ -525,6 +544,14 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
         />
       </div>
 
+      {/* Ledger totals footer */}
+      <div className="flex items-center justify-end gap-6 px-4 py-2 border-b border-border text-xs text-muted-foreground">
+        <span>Capital <span className="font-semibold text-foreground font-mono">${totalCapital.toLocaleString("es-AR")}</span></span>
+        <span>Intereses <span className="font-semibold text-destructive font-mono">${totalIntereses.toLocaleString("es-AR")}</span></span>
+        <span className="border-l border-border pl-6">Pendientes <span className="font-semibold text-warning font-mono">${totalPendiente.toLocaleString("es-AR")}</span></span>
+        <span>Registrados <span className="font-semibold text-primary font-mono">${totalRegistrado.toLocaleString("es-AR")}</span></span>
+      </div>
+
       {/* Bottom action bar */}
       <div className="px-4 pb-4 space-y-3">
         <CobroPanel
@@ -571,7 +598,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
                 <span>Honorarios ({honorariosPct}%)</span>
                 <span className="font-mono">${feesAmount.toLocaleString("es-AR")}</span>
               </div>
-              <div className="flex justify-between text-xs text-[var(--income)]">
+              <div className="flex justify-between text-xs text-income">
                 <span>Propietario recibe</span>
                 <span className="font-mono">${ownerNet.toLocaleString("es-AR")}</span>
               </div>

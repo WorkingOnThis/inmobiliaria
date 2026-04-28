@@ -124,7 +124,7 @@ export function CajaGeneralClient() {
 
   // ── Fetch movimientos del período ──
   const { data, isLoading, isError } = useQuery<RespuestaMovimientos>({
-    queryKey: ["caja-movimientos", periodo],
+    queryKey: ["cash-movements", periodo],
     queryFn: async () => {
       const res = await fetch(`/api/cash/movimientos?periodo=${periodo}`);
       if (!res.ok) throw new Error("Error al cargar movimientos");
@@ -215,7 +215,7 @@ export function CajaGeneralClient() {
 
   // ── Mutaciones ──
   const invalidarPeriodo = () =>
-    queryClient.invalidateQueries({ queryKey: ["caja-movimientos", periodo] });
+    queryClient.invalidateQueries({ queryKey: ["cash-movements", periodo] });
 
   const crear = useMutation({
     mutationFn: async (body: Record<string, string>) => {
@@ -608,7 +608,7 @@ export function CajaGeneralClient() {
           monto={annulTarget.monto}
           inquilinoNombre={annulTarget.inquilinoNombre}
           teniaPagosLiquidados={annulTarget.teniaPagosLiquidados}
-          queryKeysToInvalidate={[["caja-movimientos"]]}
+          queryKeysToInvalidate={[["cash-movements"]]}
           onSuccess={() => setAnnulTarget(null)}
         />
       )}

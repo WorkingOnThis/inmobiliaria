@@ -39,13 +39,13 @@ type Props = {
 };
 
 const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
-  conciliado:        { label: "Pagado",        className: "bg-income-dim text-income border-[var(--income)]" },
-  registrado:        { label: "Registrado",    className: "bg-[var(--warning-dim)] text-[var(--warning)] border-[var(--warning)]" },
+  conciliado:        { label: "Pagado",        className: "bg-income-dim text-income border-income" },
+  registrado:        { label: "Registrado",    className: "bg-warning-dim text-warning border-warning" },
   pendiente:         { label: "Pendiente",     className: "bg-primary/10 text-primary border-primary/30" },
   proyectado:        { label: "Proyectado",    className: "bg-transparent text-muted-foreground border-border" },
-  pendiente_revision:{ label: "Revisar",       className: "bg-[var(--warning-dim)] text-[var(--warning)] border-[var(--warning)] border-dashed" },
+  pendiente_revision:{ label: "Revisar",       className: "bg-warning-dim text-warning border-warning border-dashed" },
   cancelado:         { label: "Cancelado",     className: "bg-muted text-muted-foreground border-border" },
-  pago_parcial:      { label: "Pago parcial",  className: "bg-[var(--warning-dim)] text-[var(--warning)] border-[var(--warning)]" },
+  pago_parcial:      { label: "Pago parcial",  className: "bg-warning-dim text-warning border-warning" },
 };
 
 const PENDING_STATES = ["pendiente", "registrado", "pendiente_revision", "pago_parcial"];
@@ -140,7 +140,7 @@ export function LedgerTable({
   return (
     <div className="w-full">
       {/* Column headers — sticky so they stay visible while scrolling */}
-      <div className="sticky top-0 z-10 grid items-center gap-2 px-4 py-1.5 bg-muted/80 backdrop-blur-sm border-b border-border grid-cols-[28px_1fr_80px_110px_90px_60px]">
+      <div className="sticky top-0 z-10 grid items-center gap-2 px-4 py-1.5 bg-muted/80 backdrop-blur-sm border-b border-border grid-cols-[28px_1fr_80px_110px_110px_90px]">
         <div />
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Concepto</span>
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tipo</span>
@@ -213,8 +213,8 @@ export function LedgerTable({
                   onClick={() => selectable && onToggleSelect(entry.id)}
                   className={cn(
                     "grid items-center gap-2 px-4 py-2 text-sm",
-                    "grid-cols-[28px_1fr_80px_110px_90px_60px]",
-                    isPunitorio && "pl-10 bg-punitorio-dim border-t border-[var(--punitorio)]/30",
+                    "grid-cols-[28px_1fr_80px_110px_110px_90px]",
+                    isPunitorio && "pl-10 bg-punitorio-dim border-t border-punitorio/30",
                     selectable && "cursor-pointer hover:bg-muted/40",
                     selected && "bg-primary/10 hover:bg-primary/15"
                   )}
@@ -225,7 +225,7 @@ export function LedgerTable({
                       <Checkbox
                         checked={selected}
                         onCheckedChange={() => onToggleSelect(entry.id)}
-                        className={isPunitorio ? "border-[var(--punitorio)]" : "border-muted-foreground/60"}
+                        className={isPunitorio ? "border-punitorio" : "border-muted-foreground/60"}
                       />
                     ) : (
                       <div className="w-4 h-4" />
@@ -237,7 +237,7 @@ export function LedgerTable({
                     <span className={cn(
                       "truncate",
                       isPunitorio && "text-punitorio italic text-xs",
-                      entry.monto === null && "text-[var(--warning)]"
+                      entry.monto === null && "text-warning"
                     )}>
                       {isPunitorio && "↳ "}
                       {formatDescription(entry.descripcion)}
@@ -254,7 +254,7 @@ export function LedgerTable({
                       </div>
                     ) : isPartialOverride(entry, montoOverrides) ? (
                       <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-[10px] font-semibold text-[var(--warning)]">
+                        <span className="text-[10px] font-semibold text-warning">
                           Pago parcial
                         </span>
                         <span className="text-[10px] text-muted-foreground">
@@ -270,7 +270,7 @@ export function LedgerTable({
                   {/* Monto */}
                   <div className="flex items-center gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
                     {entry.monto === null ? (
-                      <span className="text-[var(--warning)] font-mono text-xs">$???</span>
+                      <span className="text-warning font-mono text-xs">$???</span>
                     ) : selected ? (
                       <Input
                         value={displayMonto ?? ""}
