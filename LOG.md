@@ -4,6 +4,48 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## Sesión 2026-04-28
+
+### Qué hice
+
+- Auditoría visual del wireframe `cuenta-corriente-tabla.html` contra la app real
+- Confirmé que el mes actual ya estaba destacado (punto 3 del wireframe — ya implementado)
+- Agregué footer de totales bajo el ledger: **Capital**, **Intereses**, **Pendientes**, **Registrados**
+- Corregí overflow del badge "PAGO PARCIAL" ampliando columnas Estado (90→110px) y Acciones (60→90px)
+- Pasé el equipo `arce-dev-team`: style-guard + language-guard sobre los archivos modificados
+- Corregí todas las violaciones del design system: `[var(--token)]` → clases Tailwind, `<button>` nativo → `<Button>` shadcn, `rounded-xl` → `rounded-[var(--radius-lg)]`
+- Renombré query key `"caja-movimientos"` → `"cash-movements"` en 2 archivos (violación alta de language-guard)
+
+### Por qué lo hice así y no de otra forma
+
+**Footer de totales fuera del LedgerTable**: el footer muestra el estado real completo del contrato, independiente de qué filtro esté activo. Si lo hubiera puesto adentro del componente de tabla, el número cambiaría al filtrar por "Pagados" o "Futuros", lo cual sería confuso. Afuera siempre refleja la realidad.
+
+**Capital e Intereses = desglose de Pendientes**: los punitorios (`tipo === "punitorio"`) son intereses de mora. Todo lo demás es capital. Así Capital + Intereses = Pendientes siempre.
+
+**Query keys en inglés**: las query keys son identificadores internos del sistema de caché de TanStack Query. Si dos componentes usan keys distintas para el mismo dato, uno invalida y el otro no se entera — bug silencioso. Por eso language-guard lo marca como severidad alta.
+
+**`[var(--token)]` vs clase Tailwind**: en Tailwind v4 los tokens del design system están mapeados en `@theme inline`. Eso significa que existen clases directas como `text-warning`, `border-income`, etc. Usar `text-[var(--warning)]` es un bypass que no genera las variantes de hover ni dark mode correctamente, y rompe la consistencia del sistema.
+
+### Conceptos que aparecieron
+
+- **gitignore**: le dice a Git qué archivos ignorar — no los borra, solo los excluye del tracking. Los archivos igualmente viven en tu computadora.
+- **query key**: identificador único que TanStack Query usa para cachear y sincronizar datos entre componentes. Si dos componentes usan la misma key, comparten caché y se invalidan juntos.
+- **design token**: variable CSS que representa un valor semántico del sistema visual (color, radio, tipografía). Usarlos directamente (en vez de valores hardcodeados) garantiza consistencia y permite cambiar el tema desde un solo lugar.
+- **severidad alta en language-guard**: solo se activa para query keys en español, porque generan bugs silenciosos de sincronización de caché.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué conviene que Capital + Intereses = Pendientes en vez de mostrarlos como totales independientes?
+2. Si un componente invalida `"cash-movements"` y otro escucha `"caja-movimientos"`, ¿qué pasa en la UI cuando se emite un recibo?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Concepto**: Query keys en TanStack Query — qué son, por qué deben estar en inglés, qué pasa si dos keys nombran el mismo recurso distinto
+- [ ] **Bug**: `[var(--token)]` vs clase Tailwind — por qué bypasear el sistema de tokens rompe hover/dark mode
+- [ ] **Patrón**: Footer de totales fuera del componente de tabla — separar resumen global de vista filtrada
+
+---
+
 ## Sesión 2026-04-27 — Envío de recibos por email
 
 ### Qué hice

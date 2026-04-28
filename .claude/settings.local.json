@@ -105,7 +105,21 @@
       "Bash(git rm *)",
       "Bash(grep -E \"\\\\.sql$\")",
       "Bash(git branch *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(scripts/start-server.sh *)",
+      "Bash(C:/Users/guill/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh *)",
+      "Bash(grep -E \"^\\(Error|error TS|F:\\\\\\\\\\\\\\\\Documentos\\)\")",
+      "Bash(xargs -I{} git show {}:src/db/schema/agency.ts)",
+      "Bash(mkdir -p \"F:\\\\Documentos\\\\Proyectos\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\contracts\\\\[id]\\\\documents\\\\[documentType]\\\\clauses\\\\[clauseId]\")",
+      "Bash(mkdir -p \"F:\\\\Documentos\\\\Proyectos\\\\inmobiliaria\\\\src\\\\app\\\\api\\\\contracts\\\\[id]\\\\documents\\\\[documentType]\\\\clauses\\\\reorder\")",
+      "Bash(npx shadcn@latest add switch --yes)",
+      "Bash(grep -v \"^\\\\s*$\")",
+      "Bash(rm \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/documents/[documentId]/route.ts\")",
+      "Bash(rmdir \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/documents/[documentId]\")",
+      "Bash(mkdir -p \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/documents/files/[fileId]\")",
+      "Bash(mv \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/documents/[fileId]/route.ts\" \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/documents/files/[fileId]/route.ts\")",
+      "Bash(rmdir \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/documents/[fileId]\")",
+      "Bash(sort -t- -k2 -n)"
     ]
   },
   "enableAllProjectMcpServers": true,
