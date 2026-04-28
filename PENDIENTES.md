@@ -5,6 +5,24 @@ Trabajar de arriba hacia abajo. Tachar con `[x]` cuando esté listo.
 
 ---
 
+## 🏗 Sub-proyecto F — Motor de documentos en el contrato
+
+**Spec:** `docs/superpowers/specs/2026-04-28-contract-document-engine-design.md`
+**Plan:** `docs/superpowers/plans/2026-04-28-contract-document-engine.md` ← a generar
+
+El motor del generador de documentos se integra dentro de la ficha del contrato. Las cláusulas pasan a ser propias de cada contrato (editables, reordenables, activables). El mismo sistema sirve para múltiples tipos de documento (contrato, acta de entrega, etc.).
+
+Piezas a implementar en orden:
+
+- [ ] **DB:** Migración — nueva tabla `contract_clause`, nueva tabla `contract_document_config`, campo `isDefault` en `documentTemplate`
+- [ ] **API:** Routes `/api/contracts/[id]/documents/[documentType]/` — apply, clauses CRUD, reorder
+- [ ] **UI — Lista de cláusulas:** Sección en ficha del contrato, drag & drop, toggle activa/inactiva, numeración automática, lock según estado
+- [ ] **UI — Modal de edición:** Título + textarea con highlighting + preview compacto + popover Ctrl+Click integrado
+- [ ] **UI — Print/preview:** Botón "Vista previa / Imprimir" con numeración ordinal ("CLÁUSULA PRIMERA")
+- [ ] **Acta de entrega (documentType `delivery_act`):** Misma UI, diferente plantilla, paso 04 del stepper
+
+---
+
 ## 🐛 Bugs conocidos (empezar acá — son rápidos)
 
 - [x] **KPI "Próximo pago" muestra "—"** — la query filtra `period >= hoy` entonces los meses atrasados pendientes no aparecen. Fix: quitar el filtro de fecha, ordenar por `period ASC` y tomar el primero pendiente sin importar si es pasado o futuro.
