@@ -139,8 +139,10 @@ function VariablePopover({
   });
 
   const POPOVER_HEIGHT_ESTIMATE = 220;
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const left = Math.max(8, Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - 8));
+  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1280;
+  const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 800;
+  const spaceBelow = viewportHeight - rect.bottom;
+  const left = Math.max(8, Math.min(rect.left, viewportWidth - POPOVER_WIDTH - 8));
   const top =
     spaceBelow >= POPOVER_HEIGHT_ESTIMATE + 6
       ? rect.bottom + 6
@@ -1367,7 +1369,7 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
                         freeTextValues,
                         lists,
                         overrides,
-                        handleVarClick
+                        hasContract ? handleVarClick : undefined
                       )}
                     </div>
                   </div>
