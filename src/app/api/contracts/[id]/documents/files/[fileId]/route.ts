@@ -10,7 +10,7 @@ import path from "path";
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string; documentId: string }> }
+  { params }: { params: Promise<{ id: string; fileId: string }> }
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -21,14 +21,14 @@ export async function DELETE(
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
-    const { id, documentId } = await params;
+    const { id, fileId } = await params;
 
     const [existing] = await db
       .select({ id: contractDocument.id, url: contractDocument.url })
       .from(contractDocument)
       .where(
         and(
-          eq(contractDocument.id, documentId),
+          eq(contractDocument.id, fileId),
           eq(contractDocument.contractId, id)
         )
       )
@@ -40,7 +40,7 @@ export async function DELETE(
 
     await db
       .delete(contractDocument)
-      .where(eq(contractDocument.id, documentId));
+      .where(eq(contractDocument.id, fileId));
 
     // Best-effort file deletion — don't fail the request if the file is missing
     try {

@@ -53,7 +53,7 @@ export function ContractTabDocuments({ contractId, documents }: Props) {
   const deleteMutation = useMutation({
     mutationFn: async (documentId: string) => {
       const res = await fetch(
-        `/api/contracts/${contractId}/documents/${documentId}`,
+        `/api/contracts/${contractId}/documents/files/${documentId}`,
         { method: "DELETE" }
       );
       if (!res.ok) {
