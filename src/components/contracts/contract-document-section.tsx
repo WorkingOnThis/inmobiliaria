@@ -458,7 +458,7 @@ export function ContractDocumentSection({
       behavior: "smooth",
     });
     // Scroll the window so the preview panel is positioned below the sticky headers
-    const STICKY_OFFSET = 130; // nav bar (64px) + section header (~66px)
+    const STICKY_OFFSET = 180; // nav bar (64px) + tab bar (~48px) + section header (~68px)
     const containerDocumentTop = containerRect.top + window.scrollY;
     window.scrollTo({ top: containerDocumentTop - STICKY_OFFSET, behavior: "smooth" });
   }
