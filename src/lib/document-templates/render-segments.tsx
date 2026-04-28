@@ -42,7 +42,9 @@ function renderInline(
   resolved: Record<string, string | null>,
   hasContract: boolean,
   freeTextValues: Record<string, string>,
-  kp: string
+  kp: string,
+  overrides: Record<string, string> = {},
+  onVarClick?: (path: string, rect: DOMRect) => void
 ): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   let last = 0;
@@ -60,42 +62,69 @@ function renderInline(
     if (bold !== undefined) {
       nodes.push(
         <strong key={`${kp}-${ki++}`}>
-          {renderInline(bold, resolved, hasContract, freeTextValues, `${kp}-bi${ki}`)}
+          {renderInline(bold, resolved, hasContract, freeTextValues, `${kp}-bi${ki}`, overrides, onVarClick)}
         </strong>
       );
     } else if (italic !== undefined) {
       nodes.push(
         <em key={`${kp}-${ki++}`}>
-          {renderInline(italic, resolved, hasContract, freeTextValues, `${kp}-ii${ki}`)}
+          {renderInline(italic, resolved, hasContract, freeTextValues, `${kp}-ii${ki}`, overrides, onVarClick)}
         </em>
       );
     } else if (underline !== undefined) {
       nodes.push(
         <u key={`${kp}-${ki++}`}>
-          {renderInline(underline, resolved, hasContract, freeTextValues, `${kp}-ui${ki}`)}
+          {renderInline(underline, resolved, hasContract, freeTextValues, `${kp}-ui${ki}`, overrides, onVarClick)}
         </u>
       );
     } else if (varPath !== undefined) {
       const path = varPath.trim();
+      const isControlMarker =
+        path.startsWith("if:") || path.startsWith("for:") ||
+        path === "/if" || path === "/for";
+
+      const clickHandler =
+        !isControlMarker && onVarClick
+          ? (e: React.MouseEvent<HTMLSpanElement>) => {
+              if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                onVarClick(path, (e.currentTarget as HTMLElement).getBoundingClientRect());
+              }
+            }
+          : undefined;
+
+      const interactive = clickHandler
+        ? { onClick: clickHandler, style: { cursor: "pointer" } as React.CSSProperties }
+        : {};
+
       if (!hasContract) {
         nodes.push(
-          <span key={`${kp}-${ki++}`} className="text-primary">
+          <span key={`${kp}-${ki++}`} className="text-primary" {...interactive}>
             {full}
           </span>
         );
       } else {
-        const val = resolved[path];
-        nodes.push(
-          val !== null && val !== undefined ? (
-            <span key={`${kp}-${ki++}`} className="text-emerald-500 font-medium">
-              {val}
+        const override = overrides[path];
+        if (override !== undefined && !isControlMarker) {
+          nodes.push(
+            <span key={`${kp}-${ki++}`} className="text-amber-400 font-medium" {...interactive}>
+              {override}
             </span>
-          ) : (
-            <span key={`${kp}-${ki++}`} className="text-destructive font-bold">
-              {full}
-            </span>
-          )
-        );
+          );
+        } else {
+          const val = resolved[path];
+          nodes.push(
+            val !== null && val !== undefined ? (
+              <span key={`${kp}-${ki++}`} className="text-emerald-500 font-medium" {...interactive}>
+                {val}
+              </span>
+            ) : (
+              <span key={`${kp}-${ki++}`} className="text-destructive font-bold" {...interactive}>
+                {full}
+              </span>
+            )
+          );
+        }
       }
     } else if (freeVarName !== undefined) {
       const provided = freeTextValues[freeVarName];
@@ -155,7 +184,9 @@ export function renderClauseBody(
   resolved: Record<string, string | null>,
   hasContract: boolean,
   freeTextValues: Record<string, string> = {},
-  lists: Record<string, Record<string, string | null>[]> = {}
+  lists: Record<string, Record<string, string | null>[]> = {},
+  overrides: Record<string, string> = {},
+  onVarClick?: (path: string, rect: DOMRect) => void
 ): React.ReactNode {
   // Pass 0 — expand [[for:entidad]]...[[/for]] blocks
   const withForExpanded = expandForBlocks(body, lists);
@@ -181,7 +212,7 @@ export function renderClauseBody(
         key={`p-${bk++}`}
         style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}
       >
-        {renderInline(txt, resolved, hasContract, freeTextValues, `p${bk}`)}
+        {renderInline(txt, resolved, hasContract, freeTextValues, `p${bk}`, overrides, onVarClick)}
       </p>
     );
     pending.length = 0;
@@ -203,7 +234,7 @@ export function renderClauseBody(
             marginBottom: "0.3em",
           }}
         >
-          {renderInline(content, resolved, hasContract, freeTextValues, `h${bk}`)}
+          {renderInline(content, resolved, hasContract, freeTextValues, `h${bk}`, overrides, onVarClick)}
         </Tag>
       );
     } else if (line.trim() === "") {
