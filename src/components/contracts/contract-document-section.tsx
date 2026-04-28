@@ -155,7 +155,7 @@ function SortableClauseRow({
           {/* Compact preview for variable override via Ctrl+Click */}
           <div className="rounded border border-border/50 bg-muted/20 p-3 text-xs leading-relaxed">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
-              Preview — Ctrl+Click en una variable para sobreescribir
+              Preview — Click en una variable para sobreescribir
             </p>
             <div className="text-foreground/80">
               {renderClauseBody(editBody, resolved, true, {}, {}, editOverrides, onPopoverOpen)}
@@ -419,9 +419,15 @@ export function ContractDocumentSection({
 
   function scrollToClause(clauseId: string) {
     setPreviewFocusId(clauseId);
-    document
-      .getElementById(`clause-preview-${clauseId}`)
-      ?.scrollIntoView({ behavior: "smooth" });
+    const container = previewRef.current;
+    const target = document.getElementById(`clause-preview-${clauseId}`);
+    if (!container || !target) return;
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    container.scrollTo({
+      top: container.scrollTop + targetRect.top - containerRect.top - 24,
+      behavior: "smooth",
+    });
   }
 
   if (isLoading) {
@@ -435,8 +441,8 @@ export function ContractDocumentSection({
   return (
     <>
       <div className="flex flex-col gap-4">
-        {/* Section header */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
+        {/* Section header — sticky below the nav bar */}
+        <div className="flex items-center justify-between flex-wrap gap-2 sticky top-16 z-10 bg-background/95 backdrop-blur-sm py-2 -my-2 border-b border-border/50">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold">Cláusulas del contrato</h3>
             {data?.config?.templateName && (

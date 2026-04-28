@@ -86,15 +86,18 @@ function renderInline(
       const clickHandler =
         !isControlMarker && onVarClick
           ? (e: React.MouseEvent<HTMLSpanElement>) => {
-              if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
-                onVarClick(path, (e.currentTarget as HTMLElement).getBoundingClientRect());
-              }
+              e.preventDefault();
+              e.stopPropagation();
+              onVarClick(path, (e.currentTarget as HTMLElement).getBoundingClientRect());
             }
           : undefined;
 
       const interactive = clickHandler
-        ? { onClick: clickHandler, style: { cursor: "pointer" } as React.CSSProperties }
+        ? {
+            onClick: clickHandler,
+            title: "Clic para sobreescribir",
+            style: { cursor: "pointer" } as React.CSSProperties,
+          }
         : {};
 
       if (!hasContract) {
