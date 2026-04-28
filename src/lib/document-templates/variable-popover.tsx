@@ -54,6 +54,10 @@ export function VariablePopover({
     setSaveMode("local");
   }, [path]);
 
+  useEffect(() => {
+    setInputValue(currentOverride ?? "");
+  }, [path]);
+
   const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1280;
   const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 800;
   const spaceBelow = viewportHeight - rect.bottom;

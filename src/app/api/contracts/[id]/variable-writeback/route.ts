@@ -9,7 +9,7 @@ import { contractParticipant } from "@/db/schema/contract-participant";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
 import { WRITEBACK_MAP } from "@/lib/document-templates/writeback-map";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { z } from "zod";
 
 const bodySchema = z.object({
@@ -130,6 +130,7 @@ export async function PATCH(
             eq(contractParticipant.role, "tenant")
           )
         )
+        .orderBy(asc(contractParticipant.createdAt))
         .limit(1);
 
       if (!tenantRow) {
