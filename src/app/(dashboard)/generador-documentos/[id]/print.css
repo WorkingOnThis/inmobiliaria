@@ -105,6 +105,12 @@
     font-weight: bold;
   }
 
+  /* Override values (amber): print in black */
+  #print-preview .text-amber-400 {
+    color: #000 !important;
+    font-weight: bold;
+  }
+
   /* Markdown inline: negrita, cursiva, subrayado */
   #print-preview strong { font-weight: bold; }
   #print-preview em { font-style: italic; }
