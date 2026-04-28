@@ -133,15 +133,25 @@ function VariablePopover({
   const catalogEntry = VARIABLES_CATALOG.find((v) => v.path === path);
   const hasOverride = currentOverride !== undefined;
 
-  const left = Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - 8);
-  const top = rect.bottom + 6;
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  const POPOVER_HEIGHT_ESTIMATE = 220;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const left = Math.max(8, Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - 8));
+  const top =
+    spaceBelow >= POPOVER_HEIGHT_ESTIMATE + 6
+      ? rect.bottom + 6
+      : rect.top - POPOVER_HEIGHT_ESTIMATE - 6;
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     }
     function onMouseDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      if (ref.current && !ref.current.contains(e.target as Node)) onCloseRef.current();
     }
     document.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onMouseDown);
@@ -149,7 +159,7 @@ function VariablePopover({
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onMouseDown);
     };
-  }, [onClose]);
+  }, []); // empty — intentional: register once, read current onClose via ref
 
   const pathColor = hasOverride
     ? "text-amber-400"
