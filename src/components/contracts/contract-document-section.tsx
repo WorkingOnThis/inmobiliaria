@@ -19,11 +19,19 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HighlightedBodyTextarea } from "@/lib/document-templates/highlighted-body-textarea";
-import { VariablePopover, type PopoverState } from "@/lib/document-templates/variable-popover";
+import { VariablePopover } from "@/lib/document-templates/variable-popover";
 import { clauseHeading } from "@/lib/document-templates/ordinal-clause";
 import { renderClauseBody } from "@/lib/document-templates/render-segments";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ContractClause } from "@/db/schema/contract-clause";
+
+type ActivePopover = {
+  path: string;
+  rect: DOMRect;
+  resolvedValue: string | null;
+  previewClauseId?: string;
+  previewCurrentOverrides?: Record<string, string>;
+};
 
 type ClauseListResponse = {
   clauses: ContractClause[];
@@ -227,7 +235,7 @@ export function ContractDocumentSection({
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
   const [editOverrides, setEditOverrides] = useState<Record<string, string>>({});
-  const [popoverState, setPopoverState] = useState<PopoverState | null>(null);
+  const [popoverState, setPopoverState] = useState<ActivePopover | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFocusId, setPreviewFocusId] = useState<string | null>(null);
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
@@ -332,6 +340,26 @@ export function ContractDocumentSection({
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const { mutate: patchOverride } = useMutation({
+    mutationFn: async ({ clauseId, fieldOverrides }: { clauseId: string; fieldOverrides: Record<string, string> }) => {
+      const res = await fetch(
+        `/api/contracts/${contractId}/documents/${documentType}/clauses/${clauseId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fieldOverrides }),
+        }
+      );
+      if (!res.ok) throw new Error((await res.json()).error ?? "Error al guardar");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contract-clauses", contractId, documentType] });
+      setPopoverState(null);
+      toast.success("Override guardado");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const orderedClauses = (() => {
     if (!data?.clauses) return [];
     if (!localOrder) return data.clauses;
@@ -424,10 +452,15 @@ export function ContractDocumentSection({
     if (!container || !target) return;
     const containerRect = container.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
+    // Scroll within the preview panel to show the clause at its top
     container.scrollTo({
       top: container.scrollTop + targetRect.top - containerRect.top - 24,
       behavior: "smooth",
     });
+    // Scroll the window so the preview panel is positioned below the sticky headers
+    const STICKY_OFFSET = 130; // nav bar (64px) + section header (~66px)
+    const containerDocumentTop = containerRect.top + window.scrollY;
+    window.scrollTo({ top: containerDocumentTop - STICKY_OFFSET, behavior: "smooth" });
   }
 
   if (isLoading) {
@@ -588,7 +621,16 @@ export function ContractDocumentSection({
                       true,
                       {},
                       {},
-                      clause.fieldOverrides as Record<string, string>
+                      clause.fieldOverrides as Record<string, string>,
+                      (path, rect) =>
+                        setPopoverState({
+                          path,
+                          rect,
+                          resolvedValue: resolved[path] ?? null,
+                          previewClauseId: clause.id,
+                          previewCurrentOverrides:
+                            (clause.fieldOverrides as Record<string, string>) ?? {},
+                        })
                     )}
                   </div>
                 </div>
@@ -654,17 +696,34 @@ export function ContractDocumentSection({
           path={popoverState.path}
           rect={popoverState.rect}
           resolvedValue={popoverState.resolvedValue}
-          currentOverride={editOverrides[popoverState.path]}
-          onApply={(path, value) =>
-            setEditOverrides((prev) => ({ ...prev, [path]: value }))
+          currentOverride={
+            popoverState.previewClauseId
+              ? popoverState.previewCurrentOverrides?.[popoverState.path]
+              : editOverrides[popoverState.path]
           }
-          onClear={(path) =>
-            setEditOverrides((prev) => {
-              const next = { ...prev };
+          onApply={(path, value) => {
+            if (popoverState.previewClauseId) {
+              patchOverride({
+                clauseId: popoverState.previewClauseId,
+                fieldOverrides: { ...popoverState.previewCurrentOverrides, [path]: value },
+              });
+            } else {
+              setEditOverrides((prev) => ({ ...prev, [path]: value }));
+            }
+          }}
+          onClear={(path) => {
+            if (popoverState.previewClauseId) {
+              const next = { ...(popoverState.previewCurrentOverrides ?? {}) };
               delete next[path];
-              return next;
-            })
-          }
+              patchOverride({ clauseId: popoverState.previewClauseId, fieldOverrides: next });
+            } else {
+              setEditOverrides((prev) => {
+                const next = { ...prev };
+                delete next[path];
+                return next;
+              });
+            }
+          }}
           onClose={() => setPopoverState(null)}
         />
       )}
