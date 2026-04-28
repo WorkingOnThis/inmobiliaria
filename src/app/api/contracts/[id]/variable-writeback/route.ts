@@ -5,7 +5,7 @@ import { contract } from "@/db/schema/contract";
 import { client } from "@/db/schema/client";
 import { property } from "@/db/schema/property";
 import { propertyCoOwner } from "@/db/schema/property-co-owner";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
 import { WRITEBACK_MAP } from "@/lib/document-templates/writeback-map";
@@ -96,18 +96,21 @@ export async function PATCH(
         .where(eq(property.id, contractRow.propertyId));
     } else if (entry.entity === "owner") {
       // Resolve the legal owner (same logic as document-templates/resolve)
-      const [propertyRow] = await db
-        .select({ ownerRole: property.ownerRole })
-        .from(property)
-        .where(eq(property.id, contractRow.propertyId))
-        .limit(1);
+      const [[propertyRow], coOwners] = await Promise.all([
+        db
+          .select({ ownerRole: property.ownerRole })
+          .from(property)
+          .where(eq(property.id, contractRow.propertyId))
+          .limit(1)
+          .then((r) => r),
+        db
+          .select({ clientId: propertyCoOwner.clientId, role: propertyCoOwner.role })
+          .from(propertyCoOwner)
+          .where(eq(propertyCoOwner.propertyId, contractRow.propertyId)),
+      ]);
 
       let legalOwnerId = contractRow.ownerId;
       if (propertyRow && !isLegalRole(propertyRow.ownerRole)) {
-        const coOwners = await db
-          .select({ clientId: propertyCoOwner.clientId, role: propertyCoOwner.role })
-          .from(propertyCoOwner)
-          .where(eq(propertyCoOwner.propertyId, contractRow.propertyId));
         const legal = coOwners.find((co) => isLegalRole(co.role));
         if (legal) legalOwnerId = legal.clientId;
       }
@@ -119,12 +122,12 @@ export async function PATCH(
         .where(eq(client.id, legalOwnerId));
     } else if (entry.entity === "tenant_0") {
       const [tenantRow] = await db
-        .select({ clientId: contractTenant.clientId })
-        .from(contractTenant)
+        .select({ clientId: contractParticipant.clientId })
+        .from(contractParticipant)
         .where(
           and(
-            eq(contractTenant.contractId, contractId),
-            eq(contractTenant.role, "primary")
+            eq(contractParticipant.contractId, contractId),
+            eq(contractParticipant.role, "tenant")
           )
         )
         .limit(1);
