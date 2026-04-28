@@ -40,6 +40,7 @@ export async function GET(_request: NextRequest) {
       .select({
         id: documentTemplate.id,
         name: documentTemplate.name,
+        isDefault: documentTemplate.isDefault,
         createdAt: documentTemplate.createdAt,
         updatedAt: documentTemplate.updatedAt,
         clauseCount: count(documentTemplateClause.id),

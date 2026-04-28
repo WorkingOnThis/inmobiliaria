@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContractTabParties } from "./contract-tab-parties";
 import { ContractTabDocuments } from "./contract-tab-documents";
 import { ContractTabDocumentData } from "./contract-tab-document-data";
+import { ContractDocumentSection } from "./contract-document-section";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -313,6 +314,20 @@ export function ContractDetail({ id }: { id: string }) {
     },
   });
   const customIndexes: { code: string; label: string }[] = customIndexesData?.indexes ?? [];
+
+  const { data: resolvedData } = useQuery<{ resolved: Record<string, string | null> }>({
+    queryKey: ["contract-resolved", id],
+    queryFn: () =>
+      fetch(`/api/document-templates/resolve?contractId=${id}`).then((r) => r.json()),
+    enabled: !!id,
+  });
+  const resolved = resolvedData?.resolved ?? {};
+
+  const { data: templatesData } = useQuery<{ templates: { id: string; name: string; isDefault: boolean }[] }>({
+    queryKey: ["document-templates"],
+    queryFn: () => fetch("/api/document-templates").then((r) => r.json()),
+  });
+  const defaultTemplateId = templatesData?.templates.find((t) => t.isDefault)?.id;
 
   const { data: servicesData } = useQuery({
     queryKey: ["services", data?.propertyId],
@@ -860,7 +875,17 @@ export function ContractDetail({ id }: { id: string }) {
 
         {/* ── Tab: Documentos ─────────────────────────────── */}
         {activeTab === "documentos" && (
-          <ContractTabDocuments contractId={id} documents={data.documents} />
+          <div className="flex flex-col gap-4">
+            <div className="rounded-lg border border-border p-4">
+              <ContractDocumentSection
+                contractId={id}
+                documentType="contract"
+                resolved={resolved}
+                defaultTemplateId={defaultTemplateId}
+              />
+            </div>
+            <ContractTabDocuments contractId={id} documents={data.documents} />
+          </div>
         )}
 
         {/* ── Tab: Datos para documentos ─────────────────── */}
