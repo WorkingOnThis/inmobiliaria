@@ -8,6 +8,7 @@ export const documentTemplate = pgTable("documentTemplate", {
     .references(() => agency.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   source: text("source").notNull().default("custom"),
+  isDefault: boolean("isDefault").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

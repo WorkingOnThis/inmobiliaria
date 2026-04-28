@@ -32,3 +32,5 @@ export * from "./receipt-allocation";
 export * from "./servicio";
 export * from "./zone";
 export * from "./tarea";
+export * from "./contract-clause";
+export * from "./contract-document-config";
