@@ -38,6 +38,7 @@ export const WRITEBACK_MAP: Record<string, WritebackEntry> = {
   destino_propiedad:              { entity: "property", dbField: "destino",       label: "Destino del inmueble",            inputType: "text" },
 
   // ── Locador / Propietario ─────────────────────────────────────────────────
+  // nombre_completo_locador is intentionally absent: it's derived from firstName + lastName (two fields)
   nombres_locador:          { entity: "owner", dbField: "firstName",     label: "Nombres del locador",           inputType: "text" },
   apellido_locador:         { entity: "owner", dbField: "lastName",      label: "Apellido del locador",          inputType: "text" },
   dni_locador:              { entity: "owner", dbField: "dni",           label: "DNI del locador",               inputType: "text" },
@@ -52,6 +53,7 @@ export const WRITEBACK_MAP: Record<string, WritebackEntry> = {
   domicilio_locador_provincia: { entity: "owner", dbField: "addressProvince", label: "Provincia del locador",   inputType: "text" },
 
   // ── Locatario / Inquilino ─────────────────────────────────────────────────
+  // nombre_completo_locatario is intentionally absent: derived from firstName + lastName (two fields)
   nombres_locatario:          { entity: "tenant_0", dbField: "firstName",     label: "Nombres del locatario",            inputType: "text" },
   apellido_locatario:         { entity: "tenant_0", dbField: "lastName",      label: "Apellido del locatario",           inputType: "text" },
   dni_locatario:              { entity: "tenant_0", dbField: "dni",           label: "DNI del locatario",                inputType: "text" },
