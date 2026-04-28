@@ -974,6 +974,8 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
   const [selectedContractId, setSelectedContractId] = useState("");
   const [freeTextValues, setFreeTextValues] = useState<Record<string, string>>({});
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [popoverState, setPopoverState] = useState<PopoverState | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -1034,6 +1036,33 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
   const lists = resolvedData?.lists ?? {};
   const hasContract = !!selectedContractId && !!resolvedData;
   const contracts = contractsData?.contracts ?? [];
+
+  const handleVarClick = useCallback(
+    (path: string, rect: DOMRect) => {
+      setPopoverState({ path, rect, resolvedValue: resolved[path] ?? null });
+    },
+    [resolved]
+  );
+
+  function handleOverrideApply(path: string, value: string) {
+    setOverrides((prev) => {
+      if (!value.trim()) {
+        const next = { ...prev };
+        delete next[path];
+        return next;
+      }
+      return { ...prev, [path]: value.trim() };
+    });
+    setPopoverState(null);
+  }
+
+  function handleOverrideClear(path: string) {
+    setOverrides((prev) => {
+      const next = { ...prev };
+      delete next[path];
+      return next;
+    });
+  }
 
   const saveName = useCallback(
     async (newName: string) => {
@@ -1331,7 +1360,15 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
                       <h3 className="preview-clause-title">{clause.title}</h3>
                     )}
                     <div className="preview-clause-body">
-                      {renderClauseBody(clause.body, resolved, hasContract, freeTextValues, lists)}
+                      {renderClauseBody(
+                        clause.body,
+                        resolved,
+                        hasContract,
+                        freeTextValues,
+                        lists,
+                        overrides,
+                        handleVarClick
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1351,6 +1388,18 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
           )}
         </div>
       </div>
+
+      {popoverState && (
+        <VariablePopover
+          path={popoverState.path}
+          rect={popoverState.rect}
+          resolvedValue={popoverState.resolvedValue}
+          currentOverride={overrides[popoverState.path]}
+          onApply={handleOverrideApply}
+          onClear={handleOverrideClear}
+          onClose={() => setPopoverState(null)}
+        />
+      )}
     </>
   );
 }
