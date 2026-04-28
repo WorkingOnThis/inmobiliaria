@@ -341,7 +341,7 @@ export function ContractDocumentSection({
   });
 
   const { mutate: patchOverride } = useMutation({
-    mutationFn: async ({ clauseId, fieldOverrides }: { clauseId: string; fieldOverrides: Record<string, string> }) => {
+    mutationFn: async ({ clauseId, fieldOverrides }: { clauseId: string; fieldOverrides: Record<string, string>; silent?: boolean }) => {
       const res = await fetch(
         `/api/contracts/${contractId}/documents/${documentType}/clauses/${clauseId}`,
         {
@@ -352,10 +352,12 @@ export function ContractDocumentSection({
       );
       if (!res.ok) throw new Error((await res.json()).error ?? "Error al guardar");
     },
-    onSuccess: () => {
+    onSuccess: (_, { silent }) => {
       queryClient.invalidateQueries({ queryKey: ["contract-clauses", contractId, documentType] });
-      setPopoverState(null);
-      toast.success("Override guardado");
+      if (!silent) {
+        setPopoverState(null);
+        toast.success("Override guardado");
+      }
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -391,7 +393,7 @@ export function ContractDocumentSection({
       if (previewClauseId && previewCurrentOverrides?.[path] !== undefined) {
         const next = { ...previewCurrentOverrides };
         delete next[path];
-        patchOverride({ clauseId: previewClauseId, fieldOverrides: next });
+        patchOverride({ clauseId: previewClauseId, fieldOverrides: next, silent: true });
       }
       queryClient.invalidateQueries({ queryKey: ["contract-resolved", contractId] });
       setPopoverState(null);
