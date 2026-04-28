@@ -50,6 +50,10 @@ export function VariablePopover({
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; });
 
+  useEffect(() => {
+    setSaveMode("local");
+  }, [path]);
+
   const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1280;
   const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 800;
   const spaceBelow = viewportHeight - rect.bottom;
@@ -78,7 +82,7 @@ export function VariablePopover({
     if (!inputValue.trim()) return;
     if (saveMode === "db" && onWriteback) {
       onWriteback(path, inputValue.trim());
-      onClose();
+      // popover is closed by the mutation's onSuccess in ContractDocumentSection
     } else {
       onApply(path, inputValue.trim());
       onClose();
@@ -114,7 +118,7 @@ export function VariablePopover({
       </div>
 
       {/* Agency link */}
-      {isAgency && writebackEntry.entity === "agency" && (
+      {isAgency && (
         <div className="border-t border-border/50 pt-2">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
             Este dato se edita en la agencia
