@@ -13,11 +13,9 @@ Trabajar de arriba hacia abajo. Tachar con `[x]` cuando esté listo.
 - [x] **Comisión se calcula sobre gastos manuales** — `incluirEnBaseComision` está en `true` para tipos `gasto` y `servicio` cuando debería ser `false`.
   - Archivo: `src/lib/ledger/flags.ts`
 
-- [ ] **`db:migrate` falla** — historial de `__drizzle_migrations` desincronizado con `db:push`. Workaround actual: seguir usando `db:push` en dev. Investigar si conviene limpiar el historial o dejarlo así hasta producción.
+- [x] **Contrato `6965ecee` sin inquilino vinculado** — Matias Konstantinides vinculado como `primary` en `contract_tenant`.
 
-- [ ] **Contrato `6965ecee` sin inquilino vinculado** — falta vincular el inquilino en `contract_tenant` para que el ledger se pueda generar.
-
-- [ ] **Modalidad de pago no se guarda en el movimiento de caja** — el recibo muestra la modalidad del contrato al momento de consultarlo, no la que tenía cuando se emitió. Si el contrato cambia de modalidad, los recibos viejos mostrarán la nueva.
+- [x] **Modalidad de pago no se guarda en el movimiento de caja** — el recibo muestra la modalidad del contrato al momento de consultarlo, no la que tenía cuando se emitió. Si el contrato cambia de modalidad, los recibos viejos mostrarán la nueva.
   - Archivos: `src/app/api/receipts/emit/route.ts`, `src/db/schema/caja.ts`
   - Fix: agregar columna `paymentModality` a `cajaMovimiento` y guardarla al emitir.
 
@@ -85,4 +83,5 @@ Métrica que refleja qué tanto trabajo da un inquilino a la administración.
 
 ## 📋 Deuda técnica
 
+- [ ] **`db:migrate` falla** — historial de `__drizzle_migrations` desincronizado con `db:push`. Workaround: seguir usando `db:push` en dev. Revisar antes de ir a producción.
 - [ ] Eliminar tabla `tenant_charge` de la DB — todavía existe, pendiente de confirmar que nada la usa en producción antes de borrar

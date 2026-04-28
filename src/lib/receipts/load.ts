@@ -127,7 +127,13 @@ export async function loadReceiptData(
     : null;
 
   const propiedad: ReceiptData["propiedad"] = propRow[0] ?? null;
-  const contrato: ReceiptData["contrato"] = contratoRow[0] ?? null;
+  const contratoBase = contratoRow[0] ?? null;
+  const contrato: ReceiptData["contrato"] = contratoBase
+    ? {
+        contractNumber: contratoBase.contractNumber,
+        paymentModality: movimiento.paymentModality ?? contratoBase.paymentModality,
+      }
+    : null;
   const agencyRow0 = agencyRow[0] ?? null;
 
   const agencyData: ReceiptData["agency"] = agencyRow0

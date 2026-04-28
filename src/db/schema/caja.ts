@@ -59,6 +59,9 @@ export const cajaMovimiento = pgTable("cash_movement", {
   // Número correlativo de recibo (solo para ingresos formales de alquiler)
   reciboNumero: text("reciboNumero"),
 
+  // Modalidad de pago al momento de emitir el recibo ("A" | "B") — congelada para no depender del contrato vivo
+  paymentModality: text("paymentModality"),
+
   // Período de alquiler al que corresponde el pago, formato "YYYY-MM"
   period: text("period"),
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { cajaMovimiento } from "@/db/schema/caja";
+import { contract } from "@/db/schema/contract";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { receiptAllocation } from "@/db/schema/receipt-allocation";
 import { client } from "@/db/schema/client";
@@ -101,6 +102,13 @@ export async function POST(request: NextRequest) {
 
     const first = entries[0];
     const contratoId = first.contratoId;
+
+    const [contratoRow] = await db
+      .select({ paymentModality: contract.paymentModality })
+      .from(contract)
+      .where(eq(contract.id, contratoId))
+      .limit(1);
+    const paymentModality = contratoRow?.paymentModality ?? null;
     const inquilinoId = first.inquilinoId;
     const propietarioId = first.propietarioId;
     const propiedadId = first.propiedadId;
@@ -172,6 +180,7 @@ export async function POST(request: NextRequest) {
           propiedadId,
           tipoFondo: "agencia",
           source: "contract",
+          paymentModality,
           createdBy: session.user.id,
         })
         .returning();
@@ -190,6 +199,7 @@ export async function POST(request: NextRequest) {
           propiedadId,
           tipoFondo: "propietario",
           source: "contract",
+          paymentModality,
           createdBy: session.user.id,
         });
 
@@ -207,6 +217,7 @@ export async function POST(request: NextRequest) {
             propiedadId,
             tipoFondo: "agencia",
             source: "contract",
+            paymentModality,
             createdBy: session.user.id,
           });
         }
