@@ -360,6 +360,46 @@ export function ContractDocumentSection({
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const { mutate: patchWriteback } = useMutation({
+    mutationFn: async ({
+      path,
+      value,
+    }: {
+      path: string;
+      value: string;
+      previewClauseId?: string;
+      previewCurrentOverrides?: Record<string, string>;
+    }) => {
+      const res = await fetch(
+        `/api/contracts/${contractId}/variable-writeback`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path, value }),
+        }
+      );
+      if (!res.ok) throw new Error((await res.json()).error ?? "Error al guardar");
+    },
+    onSuccess: (_, { path, previewClauseId, previewCurrentOverrides }) => {
+      // Clear override in edit mode
+      setEditOverrides((prev) => {
+        const next = { ...prev };
+        delete next[path];
+        return next;
+      });
+      // Clear override in preview mode if this path was overridden in the clause
+      if (previewClauseId && previewCurrentOverrides?.[path] !== undefined) {
+        const next = { ...previewCurrentOverrides };
+        delete next[path];
+        patchOverride({ clauseId: previewClauseId, fieldOverrides: next });
+      }
+      queryClient.invalidateQueries({ queryKey: ["contract-resolved", contractId] });
+      setPopoverState(null);
+      toast.success("Campo actualizado");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const orderedClauses = (() => {
     if (!data?.clauses) return [];
     if (!localOrder) return data.clauses;
@@ -723,6 +763,14 @@ export function ContractDocumentSection({
                 return next;
               });
             }
+          }}
+          onWriteback={(path, value) => {
+            patchWriteback({
+              path,
+              value,
+              previewClauseId: popoverState.previewClauseId,
+              previewCurrentOverrides: popoverState.previewCurrentOverrides,
+            });
           }}
           onClose={() => setPopoverState(null)}
         />
