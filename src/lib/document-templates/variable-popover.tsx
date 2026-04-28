@@ -3,10 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { ExternalLink } from "lucide-react";
 import { VARIABLES_CATALOG } from "@/lib/document-templates/variables-catalog";
+import { WRITEBACK_MAP } from "@/lib/document-templates/writeback-map";
 
-export const POPOVER_WIDTH = 264;
-const POPOVER_HEIGHT_ESTIMATE = 220;
+export const POPOVER_WIDTH = 280;
+const POPOVER_HEIGHT_ESTIMATE = 300;
 
 export type PopoverState = {
   path: string;
@@ -21,6 +25,7 @@ export function VariablePopover({
   currentOverride,
   onApply,
   onClear,
+  onWriteback,
   onClose,
 }: {
   path: string;
@@ -29,12 +34,18 @@ export function VariablePopover({
   currentOverride: string | undefined;
   onApply: (path: string, value: string) => void;
   onClear: (path: string) => void;
+  onWriteback?: (path: string, value: string) => void;
   onClose: () => void;
 }) {
   const [inputValue, setInputValue] = useState(currentOverride ?? "");
+  const [saveMode, setSaveMode] = useState<"local" | "db">("local");
   const ref = useRef<HTMLDivElement>(null);
+
   const catalogEntry = VARIABLES_CATALOG.find((v) => v.path === path);
+  const writebackEntry = WRITEBACK_MAP[path];
   const hasOverride = currentOverride !== undefined;
+  const isWritable = writebackEntry && writebackEntry.entity !== "agency";
+  const isAgency = writebackEntry?.entity === "agency";
 
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; });
@@ -63,18 +74,34 @@ export function VariablePopover({
     };
   }, []);
 
+  function handleApply() {
+    if (!inputValue.trim()) return;
+    if (saveMode === "db" && onWriteback) {
+      onWriteback(path, inputValue.trim());
+      onClose();
+    } else {
+      onApply(path, inputValue.trim());
+      onClose();
+    }
+  }
+
+  const buttonLabel = saveMode === "db" ? "Guardar en DB" : hasOverride ? "Actualizar" : "Aplicar";
+
   return (
     <div
       ref={ref}
       className="fixed z-50 bg-popover border border-border rounded-lg shadow-xl p-3 flex flex-col gap-2.5"
       style={{ left, top, width: POPOVER_WIDTH }}
     >
+      {/* Variable info */}
       <div>
         <code className={`text-xs font-mono ${pathColor}`}>[[{path}]]</code>
         {catalogEntry && (
           <p className="text-xs text-muted-foreground mt-0.5">{catalogEntry.label}</p>
         )}
       </div>
+
+      {/* Resolved value */}
       <div>
         <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
           Valor del contrato
@@ -85,39 +112,118 @@ export function VariablePopover({
           {resolvedValue ?? "Sin datos"}
         </p>
       </div>
-      <div>
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
-          {hasOverride ? "Override activo" : "Sobreescribir valor"}
-        </p>
-        <Input
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Valor personalizado..."
-          className="h-7 text-xs"
-        />
-      </div>
-      <div className="flex gap-1.5 justify-end">
-        <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={onClose}>
-          Cancelar
-        </Button>
-        {hasOverride && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-xs px-2 text-destructive hover:text-destructive"
-            onClick={() => { onClear(path); onClose(); }}
+
+      {/* Agency link */}
+      {isAgency && writebackEntry.entity === "agency" && (
+        <div className="border-t border-border/50 pt-2">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
+            Este dato se edita en la agencia
+          </p>
+          <a
+            href={writebackEntry.settingsPath}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
           >
-            Limpiar
+            Ir a configuración de agencia
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      )}
+
+      {/* Radio + input (non-agency variables) */}
+      {!isAgency && (
+        <>
+          {/* Save mode radio — only shown when write-back is available */}
+          {isWritable && onWriteback && (
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
+                Guardar como
+              </p>
+              <RadioGroup
+                value={saveMode}
+                onValueChange={(v) => setSaveMode(v as "local" | "db")}
+                className="gap-1.5"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="local" id={`${path}-local`} className="h-3 w-3" />
+                  <Label htmlFor={`${path}-local`} className="text-xs font-normal cursor-pointer">
+                    Solo esta cláusula
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="db" id={`${path}-db`} className="h-3 w-3" />
+                  <Label htmlFor={`${path}-db`} className="text-xs font-normal cursor-pointer">
+                    En la base de datos
+                  </Label>
+                </div>
+              </RadioGroup>
+              {saveMode === "db" && isWritable && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Actualizará: {writebackEntry.label}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Input */}
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
+              {saveMode === "db" ? "Nuevo valor" : hasOverride ? "Override activo" : "Sobreescribir valor"}
+            </p>
+            <Input
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleApply(); }}
+              placeholder={saveMode === "db" ? "Valor a guardar en DB..." : "Valor personalizado..."}
+              className="h-7 text-xs"
+              type={
+                isWritable && writebackEntry.inputType === "number"
+                  ? "number"
+                  : isWritable && writebackEntry.inputType === "integer"
+                  ? "number"
+                  : isWritable && writebackEntry.inputType === "date"
+                  ? "date"
+                  : "text"
+              }
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-1.5 justify-end">
+            <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={onClose}>
+              Cancelar
+            </Button>
+            {saveMode === "local" && hasOverride && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs px-2 text-destructive hover:text-destructive"
+                onClick={() => { onClear(path); onClose(); }}
+              >
+                Limpiar
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="h-6 text-xs px-2"
+              onClick={handleApply}
+              disabled={!inputValue.trim()}
+            >
+              {buttonLabel}
+            </Button>
+          </div>
+        </>
+      )}
+
+      {/* Agency: just a close button */}
+      {isAgency && (
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={onClose}>
+            Cerrar
           </Button>
-        )}
-        <Button
-          size="sm"
-          className="h-6 text-xs px-2"
-          onClick={() => { if (inputValue.trim()) { onApply(path, inputValue.trim()); onClose(); } }}
-        >
-          {hasOverride ? "Actualizar" : "Aplicar"}
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
