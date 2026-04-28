@@ -164,9 +164,9 @@ function VariablePopover({
   }, []); // empty — intentional: register once, read current onClose via ref
 
   const pathColor = hasOverride
-    ? "text-amber-400"
+    ? "text-mustard"
     : resolvedValue !== null
-    ? "text-emerald-500"
+    ? "text-green"
     : "text-destructive";
 
   return (
@@ -188,7 +188,7 @@ function VariablePopover({
         <p
           className={`text-xs font-medium px-2 py-1 rounded ${
             resolvedValue !== null
-              ? "bg-emerald-500/10 text-emerald-500"
+              ? "bg-green-dim text-green"
               : "bg-destructive/10 text-destructive"
           }`}
         >
@@ -261,7 +261,7 @@ function getHighlightedHTML(
     const trimmed = inner.trim();
 
     if (trimmed.startsWith("if:") || trimmed === "/if" || trimmed.startsWith("for:") || trimmed === "/for") {
-      return `<span style="color:#94a3b8">${match}</span>`;
+      return `<span style="color:var(--muted-foreground)">${match}</span>`;
     }
 
     if (!hasContract) {
@@ -271,14 +271,14 @@ function getHighlightedHTML(
     const val = resolved[trimmed];
     const color =
       val !== null && val !== undefined
-        ? "#4ade80"
+        ? "var(--green)"
         : "hsl(var(--destructive))";
     return `<span style="color:${color}">${match}</span>`;
   });
 
-  // Highlight {{free text variables}} in amber
+  // Highlight {{free text variables}} in mustard
   return withSysVars.replace(/\{\{(\w+)(?:\s+\[[^\]]*\])?\}\}/g, (match) => {
-    return `<span style="color:#fbbf24">${match}</span>`;
+    return `<span style="color:var(--mustard)">${match}</span>`;
   });
 }
 
@@ -313,7 +313,7 @@ function HighlightedBodyTextarea({
   const highlighted = getHighlightedHTML(value, resolved, hasContract);
 
   const sharedStyle: React.CSSProperties = {
-    fontFamily: "ui-monospace, monospace",
+    fontFamily: "var(--font-mono)",
     fontSize: "0.875rem",
     lineHeight: "1.5rem",
     padding: "8px 12px",
@@ -337,7 +337,7 @@ function HighlightedBodyTextarea({
         ref={backdropRef}
         aria-hidden="true"
         className="absolute inset-0 overflow-hidden pointer-events-none"
-        style={{ ...sharedStyle, color: "hsl(var(--foreground))" }}
+        style={{ ...sharedStyle, color: "var(--foreground)" }}
         dangerouslySetInnerHTML={{ __html: highlighted }}
       />
 
@@ -353,7 +353,7 @@ function HighlightedBodyTextarea({
         style={{
           ...sharedStyle,
           color: "transparent",
-          caretColor: "hsl(var(--foreground))",
+          caretColor: "var(--foreground)",
         }}
       />
     </div>
@@ -393,29 +393,29 @@ function FreeTextVarsPanel({
   onChange: (name: string, value: string) => void;
 }) {
   return (
-    <div className="rounded-lg border-2 border-amber-400/60 bg-amber-400/5 p-4 flex flex-col gap-3">
+    <div className="rounded-lg border-2 border-mustard/60 bg-mustard-dim p-4 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <div className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
-        <p className="text-sm font-semibold text-amber-400">
+        <div className="h-2 w-2 rounded-full bg-mustard shrink-0" />
+        <p className="text-sm font-semibold text-mustard">
           Variables a completar antes de imprimir
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {vars.map((v) => (
           <div key={v.name} className="flex flex-col gap-1">
-            <Label className="text-xs text-amber-400/80 font-medium">
+            <Label className="text-xs text-mustard/80 font-medium">
               {v.name}
             </Label>
             <Input
               value={values[v.name] ?? ""}
               onChange={(e) => onChange(v.name, e.target.value)}
               placeholder={v.defaultVal || `Ingresá ${v.name}...`}
-              className="h-8 text-sm border-amber-400/30 focus-visible:ring-amber-400/50"
+              className="h-8 text-sm border-mustard/30 focus-visible:ring-mustard/50"
             />
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-amber-400/60 leading-tight">
+      <p className="text-[10px] text-mustard/60 leading-tight">
         Estos valores sólo se usan en la previsualización e impresión. No se guardan en la plantilla.
       </p>
     </div>
@@ -782,7 +782,7 @@ function InlineClauseEditor({
           <p className="text-[9px] text-muted-foreground/70 px-2 pt-0.5 leading-tight border-t border-border/40 mt-1">
             <span className="font-mono text-primary/80">[[variable]]</span> → dato del contrato
             <br />
-            <span className="font-mono text-amber-400/80">{"{{campo [default]}}"}</span> → input libre
+            <span className="font-mono text-mustard/80">{"{{campo [default]}}"}</span> → input libre
           </p>
           <IterationSection />
         </div>
@@ -1381,11 +1381,11 @@ export function DocumentTemplateEditor({ templateId }: { templateId: string }) {
           {selectedContractId && (
             <p className="text-xs text-muted-foreground">
               Variables en{" "}
-              <span className="text-emerald-500 font-medium">verde</span> se
+              <span className="text-green font-medium">verde</span> se
               resuelven correctamente.{" "}
               <span className="text-destructive font-bold">Rojo</span> = sin
               datos.{" "}
-              <span className="text-amber-400 font-medium">Naranja</span> = texto libre.
+              <span className="text-mustard font-medium">Ámbar</span> = texto libre.
             </p>
           )}
         </div>

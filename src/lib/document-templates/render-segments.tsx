@@ -107,7 +107,7 @@ function renderInline(
         const override = overrides[path];
         if (override !== undefined && !isControlMarker) {
           nodes.push(
-            <span key={`${kp}-${ki++}`} className="text-amber-400 font-medium" {...interactive}>
+            <span key={`${kp}-${ki++}`} className="text-mustard font-medium" {...interactive}>
               {override}
             </span>
           );
@@ -115,7 +115,7 @@ function renderInline(
           const val = resolved[path];
           nodes.push(
             val !== null && val !== undefined ? (
-              <span key={`${kp}-${ki++}`} className="text-emerald-500 font-medium" {...interactive}>
+              <span key={`${kp}-${ki++}`} className="text-green font-medium" {...interactive}>
                 {val}
               </span>
             ) : (
@@ -130,19 +130,19 @@ function renderInline(
       const provided = freeTextValues[freeVarName];
       if (provided !== undefined && provided !== "") {
         nodes.push(
-          <span key={`${kp}-${ki++}`} className="text-amber-400 font-medium">
+          <span key={`${kp}-${ki++}`} className="text-mustard font-medium">
             {provided}
           </span>
         );
       } else if (freeVarDefault) {
         nodes.push(
-          <span key={`${kp}-${ki++}`} className="text-amber-300/80 italic">
+          <span key={`${kp}-${ki++}`} className="text-mustard/60 italic">
             {freeVarDefault}
           </span>
         );
       } else {
         nodes.push(
-          <span key={`${kp}-${ki++}`} className="text-amber-400 font-bold">
+          <span key={`${kp}-${ki++}`} className="text-mustard font-bold">
             {full}
           </span>
         );

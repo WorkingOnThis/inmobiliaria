@@ -105,8 +105,8 @@
     font-weight: bold;
   }
 
-  /* Override values (amber): print in black */
-  #print-preview .text-amber-400 {
+  /* Override values (mustard): print in black */
+  #print-preview .text-mustard {
     color: #000 !important;
     font-weight: bold;
   }
