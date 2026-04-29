@@ -24,6 +24,7 @@ import { ZoneCombobox } from "@/components/ui/zone-combobox";
 import { CityCombobox } from "@/components/ui/city-combobox";
 import { ProvinceSelect } from "@/components/ui/province-select";
 import { FeatureCombobox } from "@/components/ui/feature-combobox";
+import { AnnotatableField } from "@/components/ui/annotatable-field";
 import {
   Select,
   SelectContent,
@@ -1910,27 +1911,33 @@ function PropiedadFichaContent() {
                     </SectionLabel>
                     <div className="grid grid-cols-3 gap-2.5">
                       <div className="col-span-2">
-                        <DatoItem label="Dirección" value={prop.address} />
+                        <AnnotatableField label="Dirección" value={prop.address} fieldName="address" entityType="property" entityId={prop.id} />
                       </div>
-                      <DatoItem label="Piso / Unidad" value={prop.floorUnit} />
-                      <DatoItem label="Calle" value={prop.addressStreet} />
-                      <DatoItem label="Número" value={prop.addressNumber} />
-                      <DatoItem label="Barrio / Zona" value={prop.zone} />
-                      <DatoItem label="Ciudad" value={prop.city} />
-                      <DatoItem label="Provincia" value={prop.province} />
-                      <DatoItem label="Tipo" value={TYPE_LABEL[prop.type] ?? prop.type} />
-                      <DatoItem label="Destino" value={prop.destino ?? null} />
-                      <DatoItem label="Estado alquiler" value={RENTAL_STATUS_LABELS[prop.rentalStatus as keyof typeof RENTAL_STATUS_LABELS] ?? prop.rentalStatus} />
-                      <DatoItem label="Estado venta" value={prop.saleStatus ? (SALE_STATUS_LABELS[prop.saleStatus as keyof typeof SALE_STATUS_LABELS] ?? prop.saleStatus) : null} />
-                      <DatoItem
+                      <AnnotatableField label="Piso / Unidad" value={prop.floorUnit} fieldName="floorUnit" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Calle" value={prop.addressStreet} fieldName="addressStreet" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Número" value={prop.addressNumber} fieldName="addressNumber" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Barrio / Zona" value={prop.zone} fieldName="zone" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Ciudad" value={prop.city} fieldName="city" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Provincia" value={prop.province} fieldName="province" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Tipo" value={TYPE_LABEL[prop.type] ?? prop.type} fieldName="type" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Destino" value={prop.destino ?? null} fieldName="destino" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Estado alquiler" value={RENTAL_STATUS_LABELS[prop.rentalStatus as keyof typeof RENTAL_STATUS_LABELS] ?? prop.rentalStatus} fieldName="rentalStatus" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Estado venta" value={prop.saleStatus ? (SALE_STATUS_LABELS[prop.saleStatus as keyof typeof SALE_STATUS_LABELS] ?? prop.saleStatus) : null} fieldName="saleStatus" entityType="property" entityId={prop.id} />
+                      <AnnotatableField
                         label="Precio alquiler"
                         value={prop.rentalPrice ? `${prop.rentalPriceCurrency === "USD" ? "US$ " : "$ "}${Number(prop.rentalPrice).toLocaleString("es-AR")}` : null}
                         highlight={!!prop.rentalPrice}
+                        fieldName="rentalPrice"
+                        entityType="property"
+                        entityId={prop.id}
                       />
-                      <DatoItem
+                      <AnnotatableField
                         label="Precio venta"
                         value={prop.salePrice ? `${prop.salePriceCurrency === "USD" ? "US$ " : "$ "}${Number(prop.salePrice).toLocaleString("es-AR")}` : null}
                         highlight={!!prop.salePrice}
+                        fieldName="salePrice"
+                        entityType="property"
+                        entityId={prop.id}
                       />
                     </div>
                   </div>
@@ -1940,15 +1947,15 @@ function PropiedadFichaContent() {
                       Características físicas
                     </SectionLabel>
                     <div className="grid grid-cols-3 gap-2.5">
-                      <DatoItem label="Superficie total" value={formatSurface(prop.surface)} />
-                      <DatoItem label="M² construidos" value={formatSurface(prop.surfaceBuilt)} />
-                      <DatoItem label="M² terreno" value={formatSurface(prop.surfaceLand)} />
-                      <DatoItem label="Ambientes" value={prop.rooms} />
-                      <DatoItem label="Dormitorios" value={prop.bedrooms} />
-                      <DatoItem label="Baños" value={prop.bathrooms} />
-                      <DatoItem label="Año construcción" value={prop.yearBuilt} />
-                      <DatoItem label="Condición" value={prop.condition ? CONDITION_LABEL[prop.condition] : null} />
-                      <DatoItem label="Llaves" value={prop.keys ? KEYS_LABEL[prop.keys] : null} />
+                      <AnnotatableField label="Superficie total" value={formatSurface(prop.surface)} fieldName="surface" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="M² construidos" value={formatSurface(prop.surfaceBuilt)} fieldName="surfaceBuilt" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="M² terreno" value={formatSurface(prop.surfaceLand)} fieldName="surfaceLand" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Ambientes" value={prop.rooms} fieldName="rooms" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Dormitorios" value={prop.bedrooms} fieldName="bedrooms" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Baños" value={prop.bathrooms} fieldName="bathrooms" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Año construcción" value={prop.yearBuilt} fieldName="yearBuilt" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Condición" value={prop.condition ? CONDITION_LABEL[prop.condition] : null} fieldName="condition" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Llaves" value={prop.keys ? KEYS_LABEL[prop.keys] : null} fieldName="keys" entityType="property" entityId={prop.id} />
                     </div>
                   </div>
 
@@ -1975,13 +1982,13 @@ function PropiedadFichaContent() {
                       Responsabilidad de servicios
                     </SectionLabel>
                     <div className="grid grid-cols-3 gap-2.5">
-                      <DatoItem label="Luz" value={SERVICIO_LABEL[prop.serviceElectricity]} />
-                      <DatoItem label="Gas" value={SERVICIO_LABEL[prop.serviceGas]} />
-                      <DatoItem label="Agua" value={SERVICIO_LABEL[prop.serviceWater]} />
-                      <DatoItem label="Municipalidad" value={SERVICIO_LABEL[prop.serviceCouncil]} />
-                      <DatoItem label="Rentas" value={SERVICIO_LABEL[prop.serviceStateTax]} />
-                      <DatoItem label="Expensas (responsable)" value={SERVICIO_LABEL[prop.serviceHoa]} />
-                      <DatoItem label="Tiene expensas" value={prop.tieneExpensas ? "Sí" : "No"} />
+                      <AnnotatableField label="Luz" value={SERVICIO_LABEL[prop.serviceElectricity]} fieldName="serviceElectricity" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Gas" value={SERVICIO_LABEL[prop.serviceGas]} fieldName="serviceGas" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Agua" value={SERVICIO_LABEL[prop.serviceWater]} fieldName="serviceWater" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Municipalidad" value={SERVICIO_LABEL[prop.serviceCouncil]} fieldName="serviceCouncil" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Rentas" value={SERVICIO_LABEL[prop.serviceStateTax]} fieldName="serviceStateTax" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Expensas (responsable)" value={SERVICIO_LABEL[prop.serviceHoa]} fieldName="serviceHoa" entityType="property" entityId={prop.id} />
+                      <AnnotatableField label="Tiene expensas" value={prop.tieneExpensas ? "Sí" : "No"} fieldName="tieneExpensas" entityType="property" entityId={prop.id} />
                     </div>
                   </div>
 
@@ -1989,10 +1996,10 @@ function PropiedadFichaContent() {
                     <div>
                       <SectionLabel className="mb-3">Confección</SectionLabel>
                       <div className="grid grid-cols-1 gap-2.5">
-                        {prop.floors > 1 && <DatoItem label="Número de plantas" value={String(prop.floors)} />}
-                        {prop.plantaPB && <DatoItem label="Planta baja" value={prop.plantaPB} />}
-                        {prop.plantaPA && <DatoItem label="Planta alta" value={prop.plantaPA} />}
-                        {prop.observacionesConfeccion && <DatoItem label="Observaciones" value={prop.observacionesConfeccion} />}
+                        {prop.floors > 1 && <AnnotatableField label="Número de plantas" value={String(prop.floors)} fieldName="floors" entityType="property" entityId={prop.id} />}
+                        {prop.plantaPB && <AnnotatableField label="Planta baja" value={prop.plantaPB} fieldName="plantaPB" entityType="property" entityId={prop.id} />}
+                        {prop.plantaPA && <AnnotatableField label="Planta alta" value={prop.plantaPA} fieldName="plantaPA" entityType="property" entityId={prop.id} />}
+                        {prop.observacionesConfeccion && <AnnotatableField label="Observaciones" value={prop.observacionesConfeccion} fieldName="observacionesConfeccion" entityType="property" entityId={prop.id} />}
                       </div>
                     </div>
                   )}
@@ -2001,8 +2008,8 @@ function PropiedadFichaContent() {
                     <div>
                       <SectionLabel className="mb-3">Datos registrales</SectionLabel>
                       <div className="grid grid-cols-2 gap-2.5">
-                        <DatoItem label="Matrícula" value={prop.registryNumber} />
-                        <DatoItem label="Catastro" value={prop.cadastralRef} />
+                        <AnnotatableField label="Matrícula" value={prop.registryNumber} fieldName="registryNumber" entityType="property" entityId={prop.id} />
+                        <AnnotatableField label="Catastro" value={prop.cadastralRef} fieldName="cadastralRef" entityType="property" entityId={prop.id} />
                       </div>
                     </div>
                   )}
