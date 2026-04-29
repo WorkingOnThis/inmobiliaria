@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, X, Save, ExternalLink, PlusCircle, Plus, Trash2, ChevronDown, RotateCcw } from "lucide-react";
+import { ArrowLeft, Loader2, X, Save, ExternalLink, PlusCircle, Plus, Trash2, ChevronDown, RotateCcw, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
@@ -1220,9 +1220,6 @@ function PropiedadFichaContent() {
     setEditing(true);
   };
 
-  // Auto-init form when datos tab loads or after a save (prop.updatedAt changes)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (activeTab === "datos" && prop) startEdit(); }, [activeTab, prop?.id, prop?.updatedAt]);
 
   const isDirty = JSON.stringify(form) !== JSON.stringify(savedForm) || formTieneExpensas !== savedTieneExpensas;
 
@@ -1291,6 +1288,7 @@ function PropiedadFichaContent() {
 
       await queryClient.invalidateQueries({ queryKey: ["property", id] });
       queryClient.invalidateQueries({ queryKey: ["properties"] });
+      setEditing(false);
     } catch (e) {
       setEditError((e as Error).message);
     } finally {
@@ -1905,6 +1903,12 @@ function PropiedadFichaContent() {
                 /* ── View mode ── */
                 <div className="flex flex-col gap-6">
 
+                  <div className="flex justify-end">
+                    <Button variant="outline" size="sm" onClick={startEdit} className="h-7 gap-1.5 text-[0.72rem]">
+                      <Pencil size={11} /> Editar datos
+                    </Button>
+                  </div>
+
                   <div>
                     <SectionLabel className="mb-3">
                       Identificación y ubicación
@@ -2123,7 +2127,7 @@ function PropiedadFichaContent() {
                 </span>
                 <div className="flex items-center gap-2">
                   {isDirty && (
-                    <Button variant="outline" size="sm" onClick={startEdit} disabled={saving} className="h-7 gap-1.5 text-[0.72rem]">
+                    <Button variant="outline" size="sm" onClick={() => setEditing(false)} disabled={saving} className="h-7 gap-1.5 text-[0.72rem]">
                       <RotateCcw size={11} /> Descartar
                     </Button>
                   )}
