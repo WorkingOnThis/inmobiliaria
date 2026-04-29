@@ -119,7 +119,10 @@
       "Bash(mkdir -p \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/documents/files/[fileId]\")",
       "Bash(mv \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/documents/[fileId]/route.ts\" \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/documents/files/[fileId]/route.ts\")",
       "Bash(rmdir \"F:/Documentos/Proyectos/inmobiliaria/src/app/api/contracts/[id]/documents/[fileId]\")",
-      "Bash(sort -t- -k2 -n)"
+      "Bash(sort -t- -k2 -n)",
+      "Bash(npx shadcn@latest add radio-group --yes)",
+      "Bash(python -c \"import sys,json; j=json.load\\(sys.stdin\\); [print\\(e['tag'], e['when']\\) for e in j['entries'][-3:]]\")",
+      "Bash(python -c \"import sys,json; j=json.load\\(sys.stdin\\); e=j['entries'][-1]; print\\(e\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,

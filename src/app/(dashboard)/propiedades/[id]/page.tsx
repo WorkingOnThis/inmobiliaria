@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Pencil, X, Save, ExternalLink, PlusCircle, Plus, Trash2, ChevronDown } from "lucide-react";
+import { ArrowLeft, Loader2, X, Save, ExternalLink, PlusCircle, Plus, Trash2, ChevronDown, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
@@ -66,6 +66,7 @@ interface PropertyRoom {
   name: string;
   description: string;
   position: number;
+  floor: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -109,6 +110,7 @@ interface PropertyDetail {
   rooms: number | null;
   bedrooms: number | null;
   bathrooms: number | null;
+  floors: number;
   surface: string | null;
   surfaceBuilt: string | null;
   surfaceLand: string | null;
@@ -968,6 +970,15 @@ function OwnersSection({
   );
 }
 
+// ── Floor label helper ────────────────────────────────────────────────────────
+
+function getFloorLabel(floor: number, totalFloors: number): string {
+  if (floor === 1) return "Planta Baja";
+  if (floor === 2 && totalFloors === 2) return "Planta Alta";
+  const ordinals = ["Primer", "Segundo", "Tercer", "Cuarto", "Quinto", "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo"];
+  return `${ordinals[floor - 2] ?? `${floor - 1}°`} Piso`;
+}
+
 // ── Room card ─────────────────────────────────────────────────────────────────
 
 function RoomCard({
@@ -1122,6 +1133,16 @@ function PropiedadFichaContent() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [savedForm, setSavedForm] = useState({
+    address: "", type: "", rentalStatus: "", saleStatus: "",
+    rentalPrice: "", rentalPriceCurrency: "ARS", salePrice: "", salePriceCurrency: "USD",
+    zone: "", floorUnit: "", rooms: "", bedrooms: "", bathrooms: "", floors: "",
+    surface: "", surfaceBuilt: "", surfaceLand: "", yearBuilt: "",
+    condition: "", keys: "", addressStreet: "", addressNumber: "", city: "",
+    province: "", destino: "", plantaPB: "", plantaPA: "",
+    observacionesConfeccion: "", registryNumber: "", cadastralRef: "",
+  });
+  const [savedTieneExpensas, setSavedTieneExpensas] = useState(false);
   const [form, setForm] = useState({
     address: "",
     type: "",
@@ -1136,6 +1157,7 @@ function PropiedadFichaContent() {
     rooms: "",
     bedrooms: "",
     bathrooms: "",
+    floors: "",
     surface: "",
     surfaceBuilt: "",
     surfaceLand: "",
@@ -1157,7 +1179,7 @@ function PropiedadFichaContent() {
 
   const startEdit = () => {
     if (!prop) return;
-    setForm({
+    const newForm = {
       address: prop.address,
       type: prop.type,
       rentalStatus: prop.rentalStatus,
@@ -1171,6 +1193,7 @@ function PropiedadFichaContent() {
       rooms: prop.rooms != null ? String(prop.rooms) : "",
       bedrooms: prop.bedrooms != null ? String(prop.bedrooms) : "",
       bathrooms: prop.bathrooms != null ? String(prop.bathrooms) : "",
+      floors: String(prop.floors ?? 1),
       surface: prop.surface != null ? String(parseFloat(prop.surface)) : "",
       surfaceBuilt: prop.surfaceBuilt != null ? String(parseFloat(prop.surfaceBuilt)) : "",
       surfaceLand: prop.surfaceLand != null ? String(parseFloat(prop.surfaceLand)) : "",
@@ -1187,16 +1210,20 @@ function PropiedadFichaContent() {
       observacionesConfeccion: prop.observacionesConfeccion ?? "",
       registryNumber: prop.registryNumber ?? "",
       cadastralRef: prop.cadastralRef ?? "",
-    });
+    };
+    setForm(newForm);
+    setSavedForm(newForm);
     setFormTieneExpensas(prop.tieneExpensas ?? false);
+    setSavedTieneExpensas(prop.tieneExpensas ?? false);
     setEditError(null);
     setEditing(true);
   };
 
-  const cancelEdit = () => {
-    setEditing(false);
-    setEditError(null);
-  };
+  // Auto-init form when datos tab loads or after a save (prop.updatedAt changes)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (activeTab === "datos" && prop) startEdit(); }, [activeTab, prop?.id, prop?.updatedAt]);
+
+  const isDirty = JSON.stringify(form) !== JSON.stringify(savedForm) || formTieneExpensas !== savedTieneExpensas;
 
   const saveEdit = async () => {
     setSaving(true);
@@ -1219,6 +1246,7 @@ function PropiedadFichaContent() {
           rooms: form.rooms ? Number(form.rooms) : null,
           bedrooms: form.bedrooms ? Number(form.bedrooms) : null,
           bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
+          floors: form.floors ? Number(form.floors) : 1,
           surface: form.surface ? Number(form.surface) : null,
           surfaceBuilt: form.surfaceBuilt ? Number(form.surfaceBuilt) : null,
           surfaceLand: form.surfaceLand ? Number(form.surfaceLand) : null,
@@ -1242,9 +1270,10 @@ function PropiedadFichaContent() {
         const d = await res.json().catch(() => ({}));
         throw new Error(d.error || "Error al guardar");
       }
+      setSavedForm({ ...form });
+      setSavedTieneExpensas(formTieneExpensas);
       await queryClient.invalidateQueries({ queryKey: ["property", id] });
       queryClient.invalidateQueries({ queryKey: ["properties"] });
-      setEditing(false);
     } catch (e) {
       setEditError((e as Error).message);
     } finally {
@@ -1275,19 +1304,19 @@ function PropiedadFichaContent() {
 
   // ── Rooms (ambientes) state ──────────────────────────────────────────────────
   const [roomsOpen, setRoomsOpen] = useState(false);
-  const [addingRoom, setAddingRoom] = useState(false);
+  const [addingRoomFloor, setAddingRoomFloor] = useState<number | null>(null);
   const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
   const [savingRoomId, setSavingRoomId] = useState<string | null>(null);
 
   const rooms = roomsData?.rooms ?? [];
 
-  const handleAddRoom = async () => {
-    setAddingRoom(true);
+  const handleAddRoom = async (floor: number = 1) => {
+    setAddingRoomFloor(floor);
     try {
       const res = await fetch(`/api/properties/${id}/rooms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "", description: "" }),
+        body: JSON.stringify({ name: "", description: "", floor }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -1298,7 +1327,7 @@ function PropiedadFichaContent() {
     } catch {
       toast.error("Error de conexión al agregar ambiente");
     } finally {
-      setAddingRoom(false);
+      setAddingRoomFloor(null);
     }
   };
 
@@ -1434,22 +1463,6 @@ function PropiedadFichaContent() {
 
             {/* Topbar actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              {activeTab === "datos" && !editing && (
-                <Button variant="outline" size="sm" onClick={startEdit}>
-                  <Pencil size={12} /> Editar
-                </Button>
-              )}
-              {activeTab === "datos" && editing && (
-                <>
-                  <Button variant="outline" size="sm" onClick={cancelEdit}>
-                    <X size={12} /> Cancelar
-                  </Button>
-                  <Button size="sm" onClick={saveEdit} disabled={saving}>
-                    {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                    {saving ? "Guardando…" : "Guardar"}
-                  </Button>
-                </>
-              )}
             </div>
           </div>
 
@@ -1841,6 +1854,7 @@ function PropiedadFichaContent() {
                       Confección
                     </SectionLabel>
                     <div className="grid grid-cols-1 gap-3">
+                      <EditInput label="Número de plantas" value={form.floors} onChange={set("floors")} type="number" placeholder="1" />
                       <EditTextarea label="Planta baja" value={form.plantaPB} onChange={set("plantaPB")} placeholder="Descripción de planta baja…" />
                       <EditTextarea label="Planta alta" value={form.plantaPA} onChange={set("plantaPA")} placeholder="Descripción de planta alta…" />
                       <EditTextarea label="Observaciones generales" value={form.observacionesConfeccion} onChange={set("observacionesConfeccion")} placeholder="Observaciones de la confección…" rows={2} />
@@ -1955,10 +1969,11 @@ function PropiedadFichaContent() {
                     </div>
                   </div>
 
-                  {(prop.plantaPB || prop.plantaPA || prop.observacionesConfeccion) && (
+                  {(prop.floors > 1 || prop.plantaPB || prop.plantaPA || prop.observacionesConfeccion) && (
                     <div>
                       <SectionLabel className="mb-3">Confección</SectionLabel>
                       <div className="grid grid-cols-1 gap-2.5">
+                        {prop.floors > 1 && <DatoItem label="Número de plantas" value={String(prop.floors)} />}
                         {prop.plantaPB && <DatoItem label="Planta baja" value={prop.plantaPB} />}
                         {prop.plantaPA && <DatoItem label="Planta alta" value={prop.plantaPA} />}
                         {prop.observacionesConfeccion && <DatoItem label="Observaciones" value={prop.observacionesConfeccion} />}
@@ -1996,41 +2011,105 @@ function PropiedadFichaContent() {
                   )}
                 </CollapsibleTrigger>
 
-                <CollapsibleContent className="flex flex-col gap-3 mt-3">
-                  {rooms.map((room) => (
-                    <RoomCard
-                      key={room.id}
-                      room={room}
-                      saving={savingRoomId === room.id}
-                      onSave={(name, description) => handleSaveRoom(room.id, name, description)}
-                      onDelete={() => setDeletingRoomId(room.id)}
-                    />
-                  ))}
+                <CollapsibleContent className="flex flex-col gap-4 mt-3">
+                  {(() => {
+                    const totalFloors = Number(form.floors) || 1;
+                    const AddRoomButton = ({ floor }: { floor: number }) => (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleAddRoom(floor)}
+                        disabled={addingRoomFloor === floor}
+                        className="w-full justify-start gap-2 border-dashed border-border bg-card py-3 h-auto text-[0.78rem] font-medium text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                      >
+                        {addingRoomFloor === floor ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <Plus size={13} />
+                        )}
+                        Agregar ambiente
+                      </Button>
+                    );
 
-                  {rooms.length === 0 && (
-                    <div className="flex items-center justify-center rounded-[12px] border border-dashed border-border bg-card px-4 py-6 text-center">
-                      <span className="text-[0.78rem] text-muted-foreground">
-                        Sin ambientes cargados. Usá el botón para agregar.
-                      </span>
-                    </div>
-                  )}
+                    if (totalFloors <= 1) {
+                      return (
+                        <>
+                          {rooms.length === 0 && (
+                            <div className="flex items-center justify-center rounded-[12px] border border-dashed border-border bg-card px-4 py-6 text-center">
+                              <span className="text-[0.78rem] text-muted-foreground">
+                                Sin ambientes cargados. Usá el botón para agregar.
+                              </span>
+                            </div>
+                          )}
+                          {rooms.map((room) => (
+                            <RoomCard
+                              key={room.id}
+                              room={room}
+                              saving={savingRoomId === room.id}
+                              onSave={(name, description) => handleSaveRoom(room.id, name, description)}
+                              onDelete={() => setDeletingRoomId(room.id)}
+                            />
+                          ))}
+                          <AddRoomButton floor={1} />
+                        </>
+                      );
+                    }
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleAddRoom}
-                    disabled={addingRoom}
-                    className="w-full justify-start gap-2 border-dashed border-border bg-card py-3 h-auto text-[0.78rem] font-medium text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                  >
-                    {addingRoom ? (
-                      <Loader2 size={13} className="animate-spin" />
-                    ) : (
-                      <Plus size={13} />
-                    )}
-                    Agregar ambiente
-                  </Button>
+                    return (
+                      <>
+                        {Array.from({ length: totalFloors }, (_, i) => i + 1).map((floorNum) => {
+                          const floorRooms = rooms.filter((r) => r.floor === floorNum);
+                          return (
+                            <div key={floorNum} className="flex flex-col gap-3">
+                              <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground">
+                                {getFloorLabel(floorNum, totalFloors)}
+                              </p>
+                              {floorRooms.length === 0 && (
+                                <div className="flex items-center justify-center rounded-[12px] border border-dashed border-border bg-card px-4 py-4 text-center">
+                                  <span className="text-[0.78rem] text-muted-foreground">
+                                    Sin ambientes en esta planta.
+                                  </span>
+                                </div>
+                              )}
+                              {floorRooms.map((room) => (
+                                <RoomCard
+                                  key={room.id}
+                                  room={room}
+                                  saving={savingRoomId === room.id}
+                                  onSave={(name, description) => handleSaveRoom(room.id, name, description)}
+                                  onDelete={() => setDeletingRoomId(room.id)}
+                                />
+                              ))}
+                              <AddRoomButton floor={floorNum} />
+                            </div>
+                          );
+                        })}
+                      </>
+                    );
+                  })()}
                 </CollapsibleContent>
               </Collapsible>
+
+              {/* ── Sticky save bar ── */}
+              <div className={cn(
+                "sticky bottom-0 -mx-7 mt-6 px-7 py-3 border-t border-border flex items-center justify-between gap-4 transition-colors duration-150",
+                isDirty ? "bg-card/95 backdrop-blur-sm" : "bg-card/60 backdrop-blur-sm"
+              )}>
+                <span className={cn("text-[0.75rem]", isDirty ? "text-muted-foreground" : "text-muted-foreground/40")}>
+                  {isDirty ? "Hay cambios sin guardar" : "Sin cambios pendientes"}
+                </span>
+                <div className="flex items-center gap-2">
+                  {isDirty && (
+                    <Button variant="outline" size="sm" onClick={startEdit} disabled={saving} className="h-7 gap-1.5 text-[0.72rem]">
+                      <RotateCcw size={11} /> Descartar
+                    </Button>
+                  )}
+                  <Button size="sm" onClick={saveEdit} disabled={!isDirty || saving} className="h-7 gap-1.5 text-[0.72rem]">
+                    {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                    {saving ? "Guardando…" : "Guardar cambios"}
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 

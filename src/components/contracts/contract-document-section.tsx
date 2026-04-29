@@ -93,18 +93,17 @@ function SortableClauseRow({
     >
       {/* Row header — always visible, click to expand/collapse */}
       <div
-        className="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none"
+        {...(isEditable ? attributes : {})}
+        {...(isEditable ? listeners : {})}
+        className={`flex items-center gap-2 px-3 py-2.5 select-none ${
+          isEditable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+        }`}
         onClick={() => (isExpanded ? onCollapse() : onExpand())}
       >
         {isEditable && (
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab text-muted-foreground/40 hover:text-muted-foreground shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="text-muted-foreground/40 shrink-0">
             <GripVertical className="h-4 w-4" />
-          </button>
+          </div>
         )}
         <span className="text-xs text-muted-foreground w-5 shrink-0 font-mono text-right">
           {activeNumber ?? "—"}
@@ -272,9 +271,23 @@ export function ContractDocumentSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive }),
       }).then((r) => r.json()),
-    onSuccess: () =>
+    onMutate: async ({ id, isActive }) => {
+      await queryClient.cancelQueries({ queryKey: ["contract-clauses", contractId, documentType] });
+      const previous = queryClient.getQueryData<ClauseListResponse>(["contract-clauses", contractId, documentType]);
+      queryClient.setQueryData<ClauseListResponse>(["contract-clauses", contractId, documentType], (old) => {
+        if (!old) return old;
+        return { ...old, clauses: old.clauses.map((c) => c.id === id ? { ...c, isActive } : c) };
+      });
+      return { previous };
+    },
+    onError: (_, __, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["contract-clauses", contractId, documentType], context.previous);
+      }
+      toast.error("Error al actualizar");
+    },
+    onSettled: () =>
       queryClient.invalidateQueries({ queryKey: ["contract-clauses", contractId, documentType] }),
-    onError: () => toast.error("Error al actualizar"),
   });
 
   const { mutate: deleteClause } = useMutation({

@@ -615,15 +615,14 @@ function SortableClauseCard({
         !clause.isActive ? "opacity-40" : ""
       }`}
     >
-      <button className="w-full text-left px-3 pt-3 pb-2" onClick={onExpand}>
+      <button
+        {...attributes}
+        {...listeners}
+        className="w-full text-left px-3 pt-3 pb-2 cursor-grab active:cursor-grabbing"
+        onClick={onExpand}
+      >
         <div className="flex items-start gap-2">
-          <div
-            {...attributes}
-            {...listeners}
-            className="flex items-center text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing shrink-0 mt-0.5"
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Arrastrar para reordenar"
-          >
+          <div className="flex items-center text-muted-foreground shrink-0 mt-0.5">
             <GripVertical className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">

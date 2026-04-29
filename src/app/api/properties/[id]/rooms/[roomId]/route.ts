@@ -11,6 +11,7 @@ const updateRoomSchema = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
   position: z.number().int().min(0).optional(),
+  floor: z.number().int().min(1).optional(),
 });
 
 export async function PATCH(
@@ -38,6 +39,7 @@ export async function PATCH(
     if (result.data.name !== undefined) updateData.name = result.data.name;
     if (result.data.description !== undefined) updateData.description = result.data.description;
     if (result.data.position !== undefined) updateData.position = result.data.position;
+    if (result.data.floor !== undefined) updateData.floor = result.data.floor;
 
     const [updated] = await db
       .update(propertyRoom)

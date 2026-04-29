@@ -27,6 +27,7 @@ const updatePropertySchema = z.object({
   rooms: z.coerce.number().int().min(0).optional().nullable(),
   bedrooms: z.coerce.number().int().min(0).optional().nullable(),
   bathrooms: z.coerce.number().int().min(0).optional().nullable(),
+  floors: z.coerce.number().int().min(1).max(20).optional().nullable(),
   surface: z.coerce.number().optional().nullable(),
   surfaceBuilt: z.coerce.number().optional().nullable(),
   surfaceLand: z.coerce.number().optional().nullable(),
@@ -83,6 +84,7 @@ export async function GET(
           rooms: property.rooms,
           bedrooms: property.bedrooms,
           bathrooms: property.bathrooms,
+          floors: property.floors,
           surface: property.surface,
           surfaceBuilt: property.surfaceBuilt,
           surfaceLand: property.surfaceLand,
@@ -202,6 +204,7 @@ export async function PATCH(
     if (data.rooms !== undefined) updateData.rooms = data.rooms;
     if (data.bedrooms !== undefined) updateData.bedrooms = data.bedrooms;
     if (data.bathrooms !== undefined) updateData.bathrooms = data.bathrooms;
+    if (data.floors !== undefined) updateData.floors = data.floors;
     if (data.surface !== undefined) updateData.surface = data.surface != null ? String(data.surface) : null;
     if (data.surfaceBuilt !== undefined) updateData.surfaceBuilt = data.surfaceBuilt != null ? String(data.surfaceBuilt) : null;
     if (data.surfaceLand !== undefined) updateData.surfaceLand = data.surfaceLand != null ? String(data.surfaceLand) : null;

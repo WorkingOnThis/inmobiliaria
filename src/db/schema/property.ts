@@ -23,6 +23,7 @@ export const property = pgTable("property", {
   rooms: integer("rooms"),
   bedrooms: integer("bedrooms"),
   bathrooms: integer("bathrooms"),
+  floors: integer("floors").notNull().default(1),
   surface: decimal("surface", { precision: 10, scale: 2 }),
   surfaceBuilt: decimal("surfaceBuilt", { precision: 10, scale: 2 }),
   surfaceLand: decimal("surfaceLand", { precision: 10, scale: 2 }),

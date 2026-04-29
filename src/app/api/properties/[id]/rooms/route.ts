@@ -12,6 +12,7 @@ const createRoomSchema = z.object({
   name: z.string().default(""),
   description: z.string().default(""),
   position: z.number().int().min(0).optional(),
+  floor: z.number().int().min(1).optional(),
 });
 
 export async function GET(
@@ -83,6 +84,7 @@ export async function POST(
         name: result.data.name,
         description: result.data.description,
         position,
+        floor: result.data.floor ?? 1,
       })
       .returning();
 

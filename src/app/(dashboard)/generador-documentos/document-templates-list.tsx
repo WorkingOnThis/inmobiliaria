@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -24,7 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { FilePlus, Pencil, Trash2, FileText } from "lucide-react";
+import { FilePlus, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 type DocumentTemplate = {
@@ -36,6 +37,7 @@ type DocumentTemplate = {
 };
 
 export function DocumentTemplatesList() {
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery<{ templates: DocumentTemplate[] }>({
@@ -101,7 +103,11 @@ export function DocumentTemplatesList() {
             </TableHeader>
             <TableBody>
               {templates.map((t) => (
-                <TableRow key={t.id}>
+                <TableRow
+                  key={t.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/generador-documentos/${t.id}`)}
+                >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -119,13 +125,10 @@ export function DocumentTemplatesList() {
                     })}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/generador-documentos/${t.id}`}>
-                          <Pencil className="h-4 w-4" />
-                          <span className="sr-only">Editar</span>
-                        </Link>
-                      </Button>
+                    <div
+                      className="flex items-center justify-end gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button

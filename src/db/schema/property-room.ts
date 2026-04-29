@@ -11,6 +11,7 @@ export const propertyRoom = pgTable("property_room", {
   name: text("name").notNull().default(""),
   description: text("description").notNull().default(""),
   position: integer("position").notNull().default(0),
+  floor: integer("floor").notNull().default(1),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
