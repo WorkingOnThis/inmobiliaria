@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { PopoverContent } from "@/components/ui/popover";
@@ -20,7 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pencil, Trash2, MessageSquarePlus } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
 import { formatDistanceToNow } from "date-fns";
@@ -68,10 +68,8 @@ export function AnnotatableField({
   const canWrite = role === "agent" || role === "account_admin";
 
   const queryClient = useQueryClient();
-  const cardRef = useRef<HTMLDivElement>(null);
 
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [bubbleVisible, setBubbleVisible] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
   const [newNoteText, setNewNoteText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -100,6 +98,7 @@ export function AnnotatableField({
   const hasNotes = fieldNotes.length > 0;
   const myNote = fieldNotes.find((n) => n.authorId === currentUserId);
   const canAdd = canWrite && !myNote;
+  const isInteractive = hasNotes || canWrite;
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
@@ -116,7 +115,6 @@ export function AnnotatableField({
       invalidate();
       setNewNoteText("");
       setAddingNote(false);
-      setBubbleVisible(false);
     },
   });
 
@@ -148,29 +146,7 @@ export function AnnotatableField({
     },
   });
 
-  useEffect(() => {
-    const onMouseUp = () => {
-      if (!canAdd) return;
-      const selection = window.getSelection();
-      if (!selection || selection.isCollapsed) {
-        setBubbleVisible(false);
-        return;
-      }
-      const range = selection.getRangeAt(0);
-      if (!cardRef.current?.contains(range.commonAncestorContainer)) {
-        setBubbleVisible(false);
-        return;
-      }
-      setBubbleVisible(true);
-    };
-
-    document.addEventListener("mouseup", onMouseUp);
-    return () => document.removeEventListener("mouseup", onMouseUp);
-  }, [canAdd]);
-
   const openPopover = (withAdd = false) => {
-    window.getSelection()?.removeAllRanges();
-    setBubbleVisible(false);
     if (withAdd) setAddingNote(true);
     setPopoverOpen(true);
   };
@@ -207,22 +183,36 @@ export function AnnotatableField({
         }}
       >
         <PopoverPrimitive.Anchor asChild>
-          <div
-            ref={cardRef}
-            className="relative rounded-md border border-border bg-card px-3.5 py-3"
-          >
-            {/* Label */}
-            {hasNotes ? (
+          <div className="rounded-md border border-border bg-card px-3.5 py-3">
+            {/* Label — hover muestra ✦, click abre el popover */}
+            {isInteractive ? (
               <div
-                className="mb-1 inline-flex cursor-pointer select-none items-center gap-1 text-[0.6rem] font-bold uppercase tracking-[0.09em]"
-                style={{
-                  color: "var(--mustard)",
-                  borderBottom: "1.5px solid var(--mustard)",
-                  paddingBottom: "1px",
-                }}
-                onClick={() => openPopover()}
+                className="group mb-1 inline-flex cursor-pointer select-none items-center gap-1"
+                onClick={() => openPopover(canAdd && !hasNotes)}
               >
-                {label} <span className="text-[8px]">✦</span>
+                <span
+                  className="text-[0.6rem] font-bold uppercase tracking-[0.09em]"
+                  style={{
+                    color: hasNotes ? "var(--mustard)" : "var(--muted-foreground)",
+                    borderBottom: hasNotes ? "1.5px solid var(--mustard)" : undefined,
+                    paddingBottom: hasNotes ? "1px" : undefined,
+                  }}
+                >
+                  {label}
+                </span>
+                <span
+                  className={cn(
+                    "text-[8px] transition-opacity",
+                    hasNotes
+                      ? "opacity-100"
+                      : "opacity-0 group-hover:opacity-50"
+                  )}
+                  style={{
+                    color: hasNotes ? "var(--mustard)" : "var(--muted-foreground)",
+                  }}
+                >
+                  ✦
+                </span>
               </div>
             ) : (
               <div className="mb-1 text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
@@ -243,30 +233,10 @@ export function AnnotatableField({
             >
               {value ?? "—"}
             </div>
-
-            {/* Bubble flotante */}
-            {bubbleVisible && canAdd && (
-              <div
-                className="absolute -top-8 left-3 z-50 flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-lg transition-colors hover:border-[var(--mustard)]"
-                onClick={() => openPopover(true)}
-              >
-                <MessageSquarePlus size={10} style={{ color: "var(--mustard)" }} />
-                <span
-                  className="text-[10px] font-bold"
-                  style={{ color: "var(--mustard)" }}
-                >
-                  Comentar este campo
-                </span>
-              </div>
-            )}
           </div>
         </PopoverPrimitive.Anchor>
 
-        <PopoverContent
-          side="right"
-          align="start"
-          className="w-72 space-y-3 p-3"
-        >
+        <PopoverContent side="right" align="start" className="w-72 space-y-3 p-3">
           {/* Notas existentes */}
           {fieldNotes.map((note) => (
             <div
@@ -275,7 +245,7 @@ export function AnnotatableField({
               onMouseEnter={() => setHoveredId(note.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
-              {/* Botones de acción (solo nota propia y no en edición) */}
+              {/* Botones de acción (solo nota propia, no en modo edición) */}
               {hoveredId === note.id &&
                 note.authorId === currentUserId &&
                 editingId !== note.id && (
@@ -377,11 +347,7 @@ export function AnnotatableField({
                     placeholder="Escribí tu aclaración..."
                     onChange={(e) => setNewNoteText(e.target.value)}
                     onKeyDown={(e) => {
-                      if (
-                        e.key === "Enter" &&
-                        !e.shiftKey &&
-                        newNoteText.trim()
-                      ) {
+                      if (e.key === "Enter" && !e.shiftKey && newNoteText.trim()) {
                         e.preventDefault();
                         createNote.mutate(newNoteText.trim());
                       }
@@ -404,9 +370,7 @@ export function AnnotatableField({
                     <button
                       className="text-[9px] font-bold disabled:opacity-40"
                       style={{ color: "var(--mustard)" }}
-                      disabled={
-                        !newNoteText.trim() || createNote.isPending
-                      }
+                      disabled={!newNoteText.trim() || createNote.isPending}
                       onClick={() => createNote.mutate(newNoteText.trim())}
                     >
                       Guardar
@@ -480,10 +444,7 @@ export function AnnotatableField({
             <AlertDialogAction
               onClick={() =>
                 saveConfirm &&
-                updateNote.mutate({
-                  id: saveConfirm.id,
-                  comment: saveConfirm.text,
-                })
+                updateNote.mutate({ id: saveConfirm.id, comment: saveConfirm.text })
               }
             >
               Guardar
