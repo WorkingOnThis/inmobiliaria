@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { PopoverContent } from "@/components/ui/popover";
@@ -148,7 +148,7 @@ export function AnnotatableField({
     },
   });
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = () => {
     if (!canAdd) return;
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) {
@@ -161,7 +161,7 @@ export function AnnotatableField({
       return;
     }
     setBubbleVisible(true);
-  }, [canAdd]);
+  };
 
   const openPopover = (withAdd = false) => {
     window.getSelection()?.removeAllRanges();
@@ -184,6 +184,7 @@ export function AnnotatableField({
   };
 
   const handleEditBlur = (id: string, original: string) => {
+    if (saveConfirm) return;
     const trimmed = editText.trim();
     if (trimmed && trimmed !== original) {
       setSaveConfirm({ id, text: trimmed });
@@ -240,7 +241,7 @@ export function AnnotatableField({
             </div>
 
             {/* Bubble flotante */}
-            {bubbleVisible && (
+            {bubbleVisible && canAdd && (
               <div
                 className="absolute -top-8 left-3 z-50 flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 shadow-lg transition-colors hover:border-[var(--mustard)]"
                 onClick={() => openPopover(true)}
