@@ -122,7 +122,12 @@
       "Bash(sort -t- -k2 -n)",
       "Bash(npx shadcn@latest add radio-group --yes)",
       "Bash(python -c \"import sys,json; j=json.load\\(sys.stdin\\); [print\\(e['tag'], e['when']\\) for e in j['entries'][-3:]]\")",
-      "Bash(python -c \"import sys,json; j=json.load\\(sys.stdin\\); e=j['entries'][-1]; print\\(e\\)\")"
+      "Bash(python -c \"import sys,json; j=json.load\\(sys.stdin\\); e=j['entries'][-1]; print\\(e\\)\")",
+      "Bash(obsidian help *)",
+      "Bash(where obsidian *)",
+      "Bash(Get-Command obsidian *)",
+      "Read(//usr/local/**)",
+      "PowerShell(Get-Command *)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -1272,6 +1272,22 @@ function PropiedadFichaContent() {
       }
       setSavedForm({ ...form });
       setSavedTieneExpensas(formTieneExpensas);
+
+      // Reassign rooms whose floor exceeds the new floor count
+      const newFloors = Number(form.floors) || 1;
+      const orphanedRooms = rooms.filter((r) => r.floor > newFloors);
+      if (orphanedRooms.length > 0) {
+        await Promise.all(
+          orphanedRooms.map((r) =>
+            fetch(`/api/properties/${id}/rooms/${r.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ floor: newFloors }),
+            })
+          )
+        );
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["property", id] });
       queryClient.invalidateQueries({ queryKey: ["properties"] });
     } catch (e) {
@@ -2058,7 +2074,7 @@ function PropiedadFichaContent() {
                     return (
                       <>
                         {Array.from({ length: totalFloors }, (_, i) => i + 1).map((floorNum) => {
-                          const floorRooms = rooms.filter((r) => r.floor === floorNum);
+                          const floorRooms = rooms.filter((r) => Math.min(r.floor, totalFloors) === floorNum);
                           return (
                             <div key={floorNum} className="flex flex-col gap-3">
                               <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-muted-foreground">

@@ -39,6 +39,41 @@ type ClauseListResponse = {
   isEditable: boolean;
 };
 
+function SortablePreviewItem({
+  clause,
+  activeNumber,
+  isFocused,
+  onScrollTo,
+}: {
+  clause: ContractClause;
+  activeNumber: number | null;
+  isFocused: boolean;
+  onScrollTo: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: clause.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      {...attributes}
+      {...listeners}
+      className={`text-left text-xs px-2 py-1.5 rounded truncate transition-colors cursor-grab active:cursor-grabbing ${
+        clause.isActive
+          ? isFocused
+            ? "bg-primary/20 text-primary font-medium"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          : "text-muted-foreground/40 line-through"
+      }`}
+      onClick={() => clause.isActive && onScrollTo()}
+    >
+      {clause.isActive ? `${activeNumber}. ` : "— "}
+      {clause.title || "Sin título"}
+    </div>
+  );
+}
+
 function SortableClauseRow({
   clause,
   activeNumber,
@@ -641,23 +676,26 @@ export function ContractDocumentSection({
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide px-2 mb-1">
                 Cláusulas
               </p>
-              {orderedClauses.map((clause) => (
-                <button
-                  key={clause.id}
-                  disabled={!clause.isActive}
-                  className={`text-left text-xs px-2 py-1.5 rounded truncate transition-colors ${
-                    clause.isActive
-                      ? previewFocusId === clause.id
-                        ? "bg-primary/20 text-primary font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      : "text-muted-foreground/40 line-through cursor-default"
-                  }`}
-                  onClick={() => clause.isActive && scrollToClause(clause.id)}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={orderedClauses.map((c) => c.id)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  {clause.isActive ? `${numberMap.get(clause.id)}. ` : "— "}
-                  {clause.title || "Sin título"}
-                </button>
-              ))}
+                  {orderedClauses.map((clause) => (
+                    <SortablePreviewItem
+                      key={clause.id}
+                      clause={clause}
+                      activeNumber={numberMap.get(clause.id) ?? null}
+                      isFocused={previewFocusId === clause.id}
+                      onScrollTo={() => scrollToClause(clause.id)}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
 
             <div

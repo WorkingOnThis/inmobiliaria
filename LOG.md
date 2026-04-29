@@ -4,6 +4,54 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## Sesión 2026-04-29 — Plantas y ambientes + formulario siempre editable
+
+### Qué hice
+
+- Agregué columna `floors` (integer, default 1) a la tabla `property` — cuántas plantas tiene el inmueble
+- Agregué columna `floor` (integer, default 1) a `property_room` — a qué planta pertenece cada ambiente
+- Generé la migración 0014 con Drizzle, pero fallaba porque incluía tablas (`contract_clause`, `contract_document_config`) que ya existían desde un `db:push` anterior
+- Resolví aplicando los dos `ALTER TABLE` directamente con Neon MCP e insertando el hash SHA-256 de la migración en `drizzle.__drizzle_migrations` para que Drizzle la considere aplicada
+- Actualicé los API routes de property y rooms para aceptar/devolver `floors` y `floor`
+- Implementé agrupación de ambientes por planta con etiquetas automáticas: "Planta Baja", "Planta Alta" (si hay 2), "Primer Piso", "Segundo Piso"… (convención argentina)
+- Eliminé el botón de "Editar datos" de la ficha: ahora siempre editable
+- Agregué una barra sticky al pie de la sección de datos que muestra "Guardar cambios" / "Descartar" solo cuando hay cambios reales (`isDirty`)
+- Corregí el bug de plantas huérfanas: cuando se reduce el número de plantas, los ambientes fuera de rango ahora se muestran en la última planta disponible (display: `Math.min`) y se actualizan en la DB al guardar (`Promise.all`)
+- La sección de ambientes reacciona al número de plantas en tiempo real (usa `form.floors`, no el valor guardado) — no hay que guardar para ver la agrupación
+
+### Por qué lo hice así y no de otra forma
+
+**Migración manual con Neon MCP en vez de editar el archivo**: Drizzle genera un solo archivo con todos los cambios acumulados desde el último snapshot. Incluía tablas que ya existían (creadas con `db:push`), lo que rompía el `migrate`. En lugar de modificar el archivo generado (mala práctica que desincroniza snapshots), apliqué solo los dos `ALTER TABLE` nuevos directamente y registré la migración en la tabla de control con su hash real. El historial queda intacto.
+
+**Siempre editable en vez de modo edición/vista**: el ciclo Editar → cambiar → Guardar es un obstáculo innecesario. El patrón `isDirty` + barra sticky reemplaza ese flujo: el usuario cambia lo que quiere y la barra aparece sola cuando hay algo para guardar. Si no cambió nada, el botón está deshabilitado y la barra tiene bajo contraste para no distraer.
+
+**`Math.min(r.floor, totalFloors)` para el display**: cuando bajás de 4 a 3 plantas, el ambiente del piso 4 "baja" visualmente al piso 3. La alternativa de ocultarlo parece un borrado. Con `Math.min` se mantiene visible en la última planta disponible, que es la expectativa natural.
+
+**`Promise.all` para actualizar rooms huérfanas**: en vez de patchear una por una en un loop, mandamos todas las actualizaciones en paralelo. Si hay 5 rooms en la planta eliminada, se resuelven todas al mismo tiempo.
+
+**`useEffect` con `[activeTab, prop?.id, prop?.updatedAt]`**: el formulario se reinicializa en dos momentos concretos — cuando cargás la propiedad por primera vez y cuando `prop.updatedAt` cambia (post-guardado). Usar `prop?.updatedAt` como dependencia evita reinicializaciones innecesarias si cambia cualquier otra parte del objeto.
+
+### Conceptos que aparecieron
+
+- **`db:push` vs `db:migrate`**: `db:push` aplica el schema directamente a la DB sin dejar registro — ideal para desarrollo rápido. `db:migrate` aplica archivos de migración en orden y los registra en `drizzle.__drizzle_migrations`. Mezclarlos genera inconsistencias entre el estado real de la DB y el historial de Drizzle
+- **Tabla de control de migraciones**: Drizzle guarda en `drizzle.__drizzle_migrations` un hash SHA-256 de cada archivo de migración aplicado. `db:migrate` compara ese registro contra los archivos en `drizzle/` y solo aplica los que faltan
+- **`sticky` CSS**: posicionamiento que "pega" un elemento al borde visible cuando el usuario scrollea. A diferencia de `fixed`, el elemento sigue en el flujo del documento (no flota sobre todo). Solo se activa al llegar al borde especificado (`bottom-0`)
+- **isDirty**: patrón que compara el estado actual del formulario con el estado guardado (snapshot). Si difieren, hay cambios pendientes. Se implementa calculándolo en cada render — aquí con `JSON.stringify` de ambos objetos
+- **`Math.min` para clampear**: limitar un valor a un máximo. `Math.min(r.floor, totalFloors)` garantiza que ningún ambiente aparezca en una planta inexistente
+
+### Preguntas para reflexionar
+
+1. Si el usuario reduce plantas de 4 a 2 (y la DB actualiza todos los rooms huérfanos al piso 2) y después vuelve a 4, ¿qué pasa con los ambientes que estaban en pisos 3 y 4? ¿Es eso lo que esperaba?
+2. ¿Hay algún caso en el que `JSON.stringify` no sea suficiente para comparar dos estados de formulario?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Bug**: Ambientes que desaparecen al reducir plantas — causa (filter exacto) y fix (`Math.min` en display + PATCH en DB)
+- [ ] **Patrón**: Formulario siempre editable con barra sticky + isDirty
+- [ ] **Concepto**: `db:push` vs `db:migrate` — qué pasa cuando se mezclan y cómo resolverlo
+
+---
+
 ## Sesión 2026-04-28
 
 ### Qué hice
