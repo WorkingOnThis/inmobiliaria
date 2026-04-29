@@ -31,6 +31,7 @@ const createContractSchema = z.object({
   paymentModality: z.enum(["A", "B"]).default("A"),
   adjustmentIndex: z.string().min(1).default("none"),
   adjustmentFrequency: z.coerce.number().int().min(1).max(12).default(12),
+  isImported: z.boolean().optional().default(false),
 });
 
 export async function GET(request: NextRequest) {
@@ -245,7 +246,7 @@ export async function POST(request: NextRequest) {
           contractNumber,
           propertyId: data.propertyId,
           ownerId: data.ownerId,
-          status: "draft",
+          status: data.isImported ? "active" : "draft",
           contractType: data.contractType,
           startDate: data.startDate,
           endDate: data.endDate,

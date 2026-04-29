@@ -62,6 +62,7 @@ export function ContractForm() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
+  const [isImported, setIsImported] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [tenantSearchOpen, setTenantSearchOpen] = useState(false);
   const [tenantSearch, setTenantSearch] = useState("");
@@ -274,6 +275,7 @@ export function ContractForm() {
           paymentModality: step2.paymentModality,
           adjustmentIndex: step2.adjustmentIndex,
           adjustmentFrequency: parseInt(step2.adjustmentFrequency),
+          isImported,
         }),
       });
       if (!response.ok) {
@@ -395,6 +397,21 @@ export function ContractForm() {
       {step === 1 && (
         <div className="space-y-6">
           <h2 className="text-lg font-semibold">Partes del contrato</h2>
+
+          <label className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${isImported ? "border-amber-500/40 bg-amber-500/5" : "border-border hover:border-border/80"}`}>
+            <Checkbox
+              checked={isImported}
+              onCheckedChange={(v) => setIsImported(!!v)}
+              className="mt-0.5"
+            />
+            <div>
+              <p className="text-sm font-medium leading-tight">Contrato ya vigente</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Activá esto si el contrato ya está en curso (firma previa al sistema o viene de otra administración). Se creará directo en estado <strong>Activo</strong>.
+              </p>
+            </div>
+          </label>
+
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>
@@ -1099,10 +1116,19 @@ export function ContractForm() {
             </div>
           </div>
 
-          <p className="text-sm text-muted-foreground">
-            El contrato se creará en estado <strong>Borrador</strong>. Podés
-            actualizarlo más adelante.
-          </p>
+          {isImported ? (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm">
+              <p className="font-medium text-amber-600 dark:text-amber-400">Contrato importado</p>
+              <p className="text-muted-foreground mt-0.5">
+                Se creará directo en estado <strong>Activo</strong>. La firma es anterior a este sistema.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              El contrato se creará en estado <strong>Borrador</strong>. Podés
+              actualizarlo más adelante.
+            </p>
+          )}
 
           <div className="flex justify-between gap-3">
             <Button
