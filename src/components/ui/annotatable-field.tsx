@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { PopoverContent } from "@/components/ui/popover";
@@ -148,20 +148,25 @@ export function AnnotatableField({
     },
   });
 
-  const handleMouseUp = () => {
-    if (!canAdd) return;
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) {
-      setBubbleVisible(false);
-      return;
-    }
-    const range = selection.getRangeAt(0);
-    if (!cardRef.current?.contains(range.commonAncestorContainer)) {
-      setBubbleVisible(false);
-      return;
-    }
-    setBubbleVisible(true);
-  };
+  useEffect(() => {
+    const onMouseUp = () => {
+      if (!canAdd) return;
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) {
+        setBubbleVisible(false);
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      if (!cardRef.current?.contains(range.commonAncestorContainer)) {
+        setBubbleVisible(false);
+        return;
+      }
+      setBubbleVisible(true);
+    };
+
+    document.addEventListener("mouseup", onMouseUp);
+    return () => document.removeEventListener("mouseup", onMouseUp);
+  }, [canAdd]);
 
   const openPopover = (withAdd = false) => {
     window.getSelection()?.removeAllRanges();
@@ -205,7 +210,6 @@ export function AnnotatableField({
           <div
             ref={cardRef}
             className="relative rounded-md border border-border bg-card px-3.5 py-3"
-            onMouseUp={handleMouseUp}
           >
             {/* Label */}
             {hasNotes ? (
