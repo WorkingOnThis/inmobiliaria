@@ -8,6 +8,7 @@ import { ContractTabParties } from "./contract-tab-parties";
 import { ContractTabDocuments } from "./contract-tab-documents";
 import { ContractTabDocumentData } from "./contract-tab-document-data";
 import { ContractDocumentSection } from "./contract-document-section";
+import { ContractTabAmendments } from "./contract-tab-amendments";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -272,7 +273,7 @@ function getStepStates(status: string): Array<"done" | "active" | "pending"> {
    COMPONENT
    ────────────────────────────────────────────────────────── */
 
-type ContractTab = "partes" | "operativo" | "documentos" | "datos";
+type ContractTab = "partes" | "operativo" | "instrumentos" | "documentos" | "datos";
 
 export function ContractDetail({ id }: { id: string }) {
   const router = useRouter();
@@ -322,6 +323,19 @@ export function ContractDetail({ id }: { id: string }) {
     enabled: !!id,
   });
   const resolved = resolvedData?.resolved ?? {};
+
+  const { data: amendmentsData } = useQuery<{ amendments: { type: string; status: string }[] }>({
+    queryKey: ["amendments", id],
+    queryFn: () => fetch(`/api/contracts/${id}/amendments`).then((r) => r.json()),
+    enabled: !!id,
+  });
+  const amendments = amendmentsData?.amendments ?? [];
+  const errata = amendments.filter((a) => a.type === "erratum");
+  const modifications = amendments.filter((a) =>
+    ["modification", "extension", "termination", "guarantee_substitution", "index_change"].includes(a.type)
+  );
+  const hasUnsignedErrata = errata.some((a) => a.status !== "signed");
+  const hasUnsignedMods = modifications.some((a) => a.status !== "signed");
 
   const { data: templatesData } = useQuery<{ templates: { id: string; name: string; isDefault: boolean }[] }>({
     queryKey: ["document-templates"],
@@ -688,6 +702,28 @@ export function ContractDetail({ id }: { id: string }) {
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusDotClass(data.status)}`} />
               {statusLabel}
             </span>
+            {errata.length > 0 && (
+              <span
+                onClick={() => setTab("instrumentos")}
+                className={`inline-flex items-center gap-[5px] px-[9px] py-[3px] rounded-full text-[0.67rem] font-bold tracking-[0.02em] whitespace-nowrap cursor-pointer transition-opacity hover:opacity-80
+                  ${hasUnsignedErrata
+                    ? "border border-dashed border-mustard/60 text-mustard bg-mustard-dim"
+                    : "border border-green/30 text-green bg-green-dim"}`}
+              >
+                {errata.length} salvedad{errata.length !== 1 ? "es" : ""}
+              </span>
+            )}
+            {modifications.length > 0 && (
+              <span
+                onClick={() => setTab("instrumentos")}
+                className={`inline-flex items-center gap-[5px] px-[9px] py-[3px] rounded-full text-[0.67rem] font-bold tracking-[0.02em] whitespace-nowrap cursor-pointer transition-opacity hover:opacity-80
+                  ${hasUnsignedMods
+                    ? "border border-dashed border-mustard/60 text-mustard bg-mustard-dim"
+                    : "border border-green/30 text-green bg-green-dim"}`}
+              >
+                {modifications.length} modificación{modifications.length !== 1 ? "es" : ""}
+              </span>
+            )}
           </div>
           <p className="text-[0.78rem] text-muted-foreground">
             {data.propertyAddress || "Sin dirección"}
@@ -851,13 +887,17 @@ export function ContractDetail({ id }: { id: string }) {
             variant="line"
             className="w-full justify-start h-auto rounded-none bg-transparent p-0 gap-0 border-b border-border -mb-5"
           >
-            {(["partes", "operativo", "documentos", "datos"] as const).map((tab) => (
+            {(["partes", "operativo", "instrumentos", "documentos", "datos"] as const).map((tab) => (
               <TabsTrigger
                 key={tab}
                 value={tab}
                 className="px-4 py-3 text-[0.8rem] gap-2 rounded-none flex-none after:bg-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
               >
-                {tab === "partes" ? "Partes" : tab === "operativo" ? "Operativo" : tab === "documentos" ? "Documentos" : "Datos para documentos"}
+                {tab === "partes" ? "Partes"
+                  : tab === "operativo" ? "Operativo"
+                  : tab === "instrumentos" ? "Instrumentos"
+                  : tab === "documentos" ? "Documentos"
+                  : "Datos para documentos"}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -871,6 +911,11 @@ export function ContractDetail({ id }: { id: string }) {
             participants={data.participants}
             guarantees={data.guarantees}
           />
+        )}
+
+        {/* ── Tab: Instrumentos ───────────────────────────── */}
+        {activeTab === "instrumentos" && (
+          <ContractTabAmendments contractId={id} />
         )}
 
         {/* ── Tab: Documentos ─────────────────────────────── */}

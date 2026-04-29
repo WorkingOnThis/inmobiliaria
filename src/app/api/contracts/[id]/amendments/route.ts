@@ -174,7 +174,7 @@ export async function POST(
           status: "registered",
           title,
           description: description ?? null,
-          fieldsChanged,
+          fieldsChanged: fieldsChanged as Record<string, { before: unknown; after: unknown }>,
           contractSnapshot: currentContract as unknown as Record<string, unknown>,
           effectiveDate: effectiveDate ?? null,
           createdBy: session.user.id,
