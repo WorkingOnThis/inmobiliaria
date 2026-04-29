@@ -183,13 +183,16 @@ export function AnnotatableField({
         }}
       >
         <PopoverPrimitive.Anchor asChild>
-          <div className="rounded-md border border-border bg-card px-3.5 py-3">
-            {/* Label — hover muestra ✦, click abre el popover */}
+          <div
+            className={cn(
+              "rounded-md border border-border bg-card px-3.5 py-3",
+              isInteractive && "group cursor-pointer select-none"
+            )}
+            onClick={isInteractive && !popoverOpen ? () => openPopover(canAdd && !hasNotes) : undefined}
+          >
+            {/* Label */}
             {isInteractive ? (
-              <div
-                className="group mb-1 inline-flex cursor-pointer select-none items-center gap-1"
-                onClick={() => openPopover(canAdd && !hasNotes)}
-              >
+              <div className="mb-1 inline-flex items-center gap-1">
                 <span
                   className="text-[0.6rem] font-bold uppercase tracking-[0.09em]"
                   style={{
@@ -205,7 +208,7 @@ export function AnnotatableField({
                     "text-[8px] transition-opacity",
                     hasNotes
                       ? "opacity-100"
-                      : "opacity-0 group-hover:opacity-50"
+                      : "opacity-0 group-hover:opacity-70"
                   )}
                   style={{
                     color: hasNotes ? "var(--mustard)" : "var(--muted-foreground)",
