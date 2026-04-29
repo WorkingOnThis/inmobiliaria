@@ -35,3 +35,4 @@ export * from "./tarea";
 export * from "./contract-clause";
 export * from "./contract-document-config";
 export * from "./contract-amendment";
+export * from "./field-note";
