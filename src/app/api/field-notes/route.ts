@@ -54,54 +54,59 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
-  const role = session.user.role as string;
-  if (role !== "agent" && role !== "account_admin") {
-    return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
-  }
+    const role = session.user.role as string;
+    if (role !== "agent" && role !== "account_admin") {
+      return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+    }
 
-  const agencyId = await getAgencyId(session.user.id);
-  if (!agencyId) return NextResponse.json({ error: "Agencia no encontrada" }, { status: 400 });
+    const agencyId = await getAgencyId(session.user.id);
+    if (!agencyId) return NextResponse.json({ error: "Agencia no encontrada" }, { status: 400 });
 
-  const body = await request.json();
-  const { entityType, entityId, fieldName, comment } = body;
+    const body = await request.json();
+    const { entityType, entityId, fieldName, comment } = body;
 
-  if (!entityType || !entityId || !fieldName || !comment?.trim()) {
-    return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 });
-  }
+    if (!entityType || !entityId || !fieldName || !comment?.trim()) {
+      return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 });
+    }
 
-  const [existing] = await db
-    .select({ id: fieldNote.id })
-    .from(fieldNote)
-    .where(
-      and(
-        eq(fieldNote.agencyId, agencyId),
-        eq(fieldNote.entityType, entityType),
-        eq(fieldNote.entityId, entityId),
-        eq(fieldNote.fieldName, fieldName),
-        eq(fieldNote.authorId, session.user.id)
+    const [existing] = await db
+      .select({ id: fieldNote.id })
+      .from(fieldNote)
+      .where(
+        and(
+          eq(fieldNote.agencyId, agencyId),
+          eq(fieldNote.entityType, entityType),
+          eq(fieldNote.entityId, entityId),
+          eq(fieldNote.fieldName, fieldName),
+          eq(fieldNote.authorId, session.user.id)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  if (existing) {
-    return NextResponse.json({ error: "Ya existe una nota tuya para este campo" }, { status: 409 });
+    if (existing) {
+      return NextResponse.json({ error: "Ya existe una nota tuya para este campo" }, { status: 409 });
+    }
+
+    const [created] = await db
+      .insert(fieldNote)
+      .values({
+        id: crypto.randomUUID(),
+        agencyId,
+        entityType,
+        entityId,
+        fieldName,
+        comment: comment.trim(),
+        authorId: session.user.id,
+      })
+      .returning();
+
+    return NextResponse.json(created, { status: 201 });
+  } catch (error) {
+    console.error("Error creating field note:", error);
+    return NextResponse.json({ error: "Error al crear nota" }, { status: 500 });
   }
-
-  const [created] = await db
-    .insert(fieldNote)
-    .values({
-      id: crypto.randomUUID(),
-      agencyId,
-      entityType,
-      entityId,
-      fieldName,
-      comment: comment.trim(),
-      authorId: session.user.id,
-    })
-    .returning();
-
-  return NextResponse.json(created, { status: 201 });
 }
