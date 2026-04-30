@@ -88,7 +88,12 @@ export async function GET(
           .where(inArray(contract.id, tenantContractIds)),
 
         db
-          .select()
+          .select({
+            contratoId: tenantLedger.contratoId,
+            period: tenantLedger.period,
+            monto: tenantLedger.monto,
+            estado: tenantLedger.estado,
+          })
           .from(tenantLedger)
           .where(
             and(
@@ -163,7 +168,12 @@ export async function GET(
 
       const [ledgerEntries, tenantRows] = await Promise.all([
         db
-          .select()
+          .select({
+            contratoId: tenantLedger.contratoId,
+            period: tenantLedger.period,
+            monto: tenantLedger.monto,
+            estado: tenantLedger.estado,
+          })
           .from(tenantLedger)
           .where(
             and(
@@ -230,7 +240,7 @@ export async function GET(
 
     const net =
       asTenant !== null && asOwner !== null
-        ? (asOwner?.total ?? 0) - (asTenant?.total ?? 0)
+        ? asOwner.total - asTenant.total
         : null;
 
     return NextResponse.json({ client: clientRow, from, to, asTenant, asOwner, net });
