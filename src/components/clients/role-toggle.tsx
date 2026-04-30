@@ -47,6 +47,7 @@ export function RoleToggle({ clientId, currentRole }: Props) {
   if (hasOwner) availableRoles.push("propietario");
   if (hasMultipleRoles) availableRoles.push("resumen");
 
+  if (availableRoles.length === 0) return null;
   if (availableRoles.length <= 1 && currentRole !== "resumen") return null;
 
   return (
