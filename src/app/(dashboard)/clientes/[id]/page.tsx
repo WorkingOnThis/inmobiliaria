@@ -262,8 +262,7 @@ export default function ClientResumenPage() {
                   : client.firstName}
               </h1>
               <div className="flex items-center gap-2 mt-1">
-                {/* TODO (Task 3): RoleToggle will accept "resumen" as a valid role value */}
-                <RoleToggle clientId={id} currentRole={"resumen" as "inquilino"} />
+                <RoleToggle clientId={id} currentRole="resumen" />
               </div>
             </div>
           </div>
