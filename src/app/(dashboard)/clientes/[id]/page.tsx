@@ -231,8 +231,9 @@ export default function ClientResumenPage() {
     );
   }
 
-  const { client, asTenant, asOwner, net } = data;
+  const { client, asTenant, asOwner } = data;
   const hasMultipleRoles = asTenant !== null && asOwner !== null;
+  const net = hasMultipleRoles ? asOwner!.total - asTenant!.total : null;
 
   return (
     <div className="flex flex-col min-h-full">
