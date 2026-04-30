@@ -9,8 +9,6 @@
 
 Sistema de gestión inmobiliaria llamado **Arce Administración**.
 Agencia argentina. Stack definido por el programador principal — no modificar sin consultar.
-Rama de trabajo: `gaston/mvp-semana`
-
 ### MVP de esta semana (en orden)
 1. Módulo Caja — registrar ingresos y egresos
 2. ABM — propietarios, inquilinos y propiedades con datos básicos
@@ -118,5 +116,3 @@ git add .
 git commit -m "descripción breve de lo que hice"
 git push
 ```
-
-Siempre trabajar en `gaston/mvp-semana`. Nunca commitear directo a `main`.
