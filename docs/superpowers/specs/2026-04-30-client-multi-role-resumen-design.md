@@ -78,7 +78,7 @@ Si solo tiene un rol, se muestra igual — sin total neto (no tiene sentido comb
 ### Datos por período dentro de cada contrato
 
 - **Como inquilino**: filas del `tenant_ledger` donde `period` está dentro del rango seleccionado. Cada fila muestra: período, estado (pagado / pendiente / en mora), monto.
-- **Como propietario**: entradas del ledger de propietario (`owner_ledger` o equivalente) filtradas por período. Cada fila muestra: período, estado (liquidado / pendiente), monto neto al propietario.
+- **Como propietario**: filas de `tenant_ledger` donde `propietarioId = id` e `impactaPropietario = true`, filtradas por período. Cada fila muestra: período, estado (liquidado / pendiente), monto neto al propietario.
 
 ---
 
@@ -121,7 +121,7 @@ Respuesta:
     }>,
     total: number,
   } | null,
-  net: number | null,             // asOwner.total - asTenant.total; null si solo hay un rol
+  net: number | null,             // asOwner.total - asTenant.total; positivo = recibió más de lo que debe; null si solo hay un rol
 }
 ```
 
