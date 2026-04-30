@@ -110,12 +110,12 @@ export function ContractForm() {
     },
   });
 
-  // Cargar inquilinos (ambos valores de type: español heredado e inglés nuevo)
+  // Buscar cualquier cliente como inquilino (el rol surge del contrato, no del type)
   const { data: tenantsData } = useQuery({
-    queryKey: ["clients", "tenant", "select"],
+    queryKey: ["clients", "all", "select"],
     queryFn: async () => {
-      const res = await fetch("/api/clients?type=inquilino,tenant&limit=100");
-      if (!res.ok) throw new Error("Error cargando inquilinos");
+      const res = await fetch("/api/clients?limit=200");
+      if (!res.ok) throw new Error("Error cargando clientes");
       return res.json();
     },
   });
