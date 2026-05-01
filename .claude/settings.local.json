@@ -130,7 +130,10 @@
       "PowerShell(Get-Command *)",
       "Bash(ls -d .worktrees)",
       "Bash(ls -d worktrees)",
-      "Bash(bun -e \"import { createAuthClient } from 'better-auth/react'; const c = createAuthClient\\({}\\); console.log\\(Object.keys\\(c\\).join\\('\\\\n'\\)\\)\")"
+      "Bash(bun -e \"import { createAuthClient } from 'better-auth/react'; const c = createAuthClient\\({}\\); console.log\\(Object.keys\\(c\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(npx shadcn@latest add calendar field --yes)",
+      "Bash(npx shadcn@latest add calendar --yes)",
+      "Bash(npx shadcn@latest add field)"
     ]
   },
   "enableAllProjectMcpServers": true,

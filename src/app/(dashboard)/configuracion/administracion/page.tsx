@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { SignaturePad } from "@/components/agency/signature-pad";
 import {
@@ -697,7 +698,7 @@ export default function AdministracionPage() {
                     <input type="text" value={form.grossIncome} onChange={(e) => setField("grossIncome", e.target.value)} placeholder="901-123456-7" className={cn(inputCls, "font-mono")} />
                   </Field>
                   <Field label="Inicio de actividades">
-                    <input type="date" value={form.activityStart} onChange={(e) => setField("activityStart", e.target.value)} className={inputCls} />
+                    <DatePicker value={form.activityStart} onChange={(v) => setField("activityStart", v)} />
                   </Field>
                 </div>
               </SectionCard>

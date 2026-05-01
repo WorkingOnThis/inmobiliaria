@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
@@ -694,11 +695,9 @@ function SidePanel({
               {/* Fecha */}
               <div className="p-[14px_20px] border-b border-border">
                 <SectionTitle>Fecha límite</SectionTitle>
-                <input
-                  type="date"
-                  defaultValue={t.dueDate ? t.dueDate.substring(0, 10) : ""}
-                  onChange={e => onUpdate(t.id, { dueDate: e.target.value || null })}
-                  className="w-full text-[0.78rem] bg-surface-high border border-border rounded-lg px-3 py-[7px] text-on-surface outline-none focus:border-primary transition-colors"
+                <DatePicker
+                  value={t.dueDate ? t.dueDate.substring(0, 10) : ""}
+                  onChange={(v) => onUpdate(t.id, { dueDate: v || null })}
                 />
                 {t.dueDate && (
                   <p className={`text-[0.65rem] mt-[5px] font-semibold ${formatDate(t.dueDate).colorClass}`}>
@@ -1081,10 +1080,9 @@ function NewTaskModal({
               <label className="text-[0.62rem] font-bold uppercase tracking-[0.1em] text-muted-foreground">
                 Fecha límite
               </label>
-              <Input
-                type="date"
+              <DatePicker
                 value={form.dueDate}
-                onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
+                onChange={(v) => setForm(f => ({ ...f, dueDate: v }))}
               />
             </div>
           </div>

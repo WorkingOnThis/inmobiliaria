@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Edit2, Save, X, Loader2, AlertCircle, AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { ZoneCombobox } from "@/components/ui/zone-combobox";
 import { CityCombobox } from "@/components/ui/city-combobox";
 import { ProvinceSelect } from "@/components/ui/province-select";
@@ -78,16 +79,20 @@ function DataField({
         )}
       </div>
       {editing ? (
-        <input
-          type={type}
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder || "Sin cargar"}
-          className={cn(
-            "w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all placeholder:text-muted-foreground",
-            mono && "font-mono text-[12.5px]"
-          )}
-        />
+        type === "date" ? (
+          <DatePicker value={value ?? ""} onChange={onChange} />
+        ) : (
+          <input
+            type={type}
+            value={value ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder || "Sin cargar"}
+            className={cn(
+              "w-full bg-surface-mid border border-border rounded-[6px] text-on-surface text-[13.5px] px-3 py-[7px] outline-none focus:border-primary transition-all placeholder:text-muted-foreground",
+              mono && "font-mono text-[12.5px]"
+            )}
+          />
+        )
       ) : value ? (
         <div className={cn("text-[13.5px] text-on-surface", mono && "font-mono text-[12.5px]")}>
           {value}

@@ -18,6 +18,13 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { HighlightedBodyTextarea } from "@/lib/document-templates/highlighted-body-textarea";
 import { VariablePopover } from "@/lib/document-templates/variable-popover";
 import { clauseHeading } from "@/lib/document-templates/ordinal-clause";
@@ -254,6 +261,8 @@ type Props = {
   documentType?: string;
   resolved: Record<string, string | null>;
   defaultTemplateId?: string;
+  allTemplates?: { id: string; name: string }[];
+  title?: string;
 };
 
 export function ContractDocumentSection({
@@ -261,6 +270,8 @@ export function ContractDocumentSection({
   documentType = "contract",
   resolved,
   defaultTemplateId,
+  allTemplates,
+  title = "Cláusulas del contrato",
 }: Props) {
   const queryClient = useQueryClient();
   const previewRef = useRef<HTMLDivElement>(null);
@@ -273,6 +284,7 @@ export function ContractDocumentSection({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewFocusId, setPreviewFocusId] = useState<string | null>(null);
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -567,7 +579,7 @@ export function ContractDocumentSection({
         {/* Section header — sticky below the nav bar */}
         <div className="flex items-center justify-between flex-wrap gap-2 sticky top-16 z-10 bg-background/95 backdrop-blur-sm py-2 -my-2 border-b border-border/50">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold">Cláusulas del contrato</h3>
+            <h3 className="text-sm font-semibold">{title}</h3>
             {data?.config?.templateName && (
               <Badge variant="outline" className="text-xs">
                 {data.config.templateName}
@@ -661,7 +673,31 @@ export function ContractDocumentSection({
                 {isApplying ? "Aplicando..." : "Aplicar plantilla estándar"}
               </Button>
             )}
-            {isEditable && !defaultTemplateId && (
+            {isEditable && !defaultTemplateId && allTemplates && allTemplates.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                  <SelectTrigger className="h-8 text-xs w-52">
+                    <SelectValue placeholder="Elegir plantilla…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allTemplates.map((t) => (
+                      <SelectItem key={t.id} value={t.id} className="text-xs">
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={!selectedTemplateId || isApplying}
+                  onClick={() => selectedTemplateId && applyTemplate(selectedTemplateId)}
+                >
+                  {isApplying ? "Aplicando..." : "Aplicar"}
+                </Button>
+              </div>
+            )}
+            {isEditable && !defaultTemplateId && (!allTemplates || allTemplates.length === 0) && (
               <p className="text-xs text-muted-foreground">
                 Configurá una plantilla por defecto en el Generador de documentos primero.
               </p>

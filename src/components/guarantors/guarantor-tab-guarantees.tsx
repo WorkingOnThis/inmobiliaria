@@ -6,6 +6,7 @@ import Link from "next/link";
 import { FileText, User, ChevronRight, Save, X, Loader2, Edit2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { GUARANTEE_KIND_LABELS, type GuaranteeKind } from "@/lib/guarantees/constants";
 
@@ -183,7 +184,7 @@ function SalaryInfoSection({
             </div>
             <div className="flex flex-col gap-1">
               <label className={labelCls}>Fecha de ingreso</label>
-              <input className={cn(inputCls, "font-mono text-[12px]")} type="date" value={form.jobStartDate} onChange={setField("jobStartDate")} />
+              <DatePicker value={form.jobStartDate} onChange={(v) => setForm((prev) => ({ ...prev, jobStartDate: v }))} />
             </div>
           </div>
           <div className="flex flex-col gap-1">

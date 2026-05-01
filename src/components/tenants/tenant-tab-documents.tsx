@@ -5,6 +5,7 @@ import { FileText, Upload, X, Plus, FileImage, File } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface TenantTabDocumentsProps {
   tenantId: string;
@@ -200,7 +201,7 @@ export function TenantTabDocuments({ tenantName }: TenantTabDocumentsProps) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Vigencia hasta (opcional)</label>
-                  <input type="date" value={form.vigenciaHasta} onChange={(e) => setForm((f) => ({ ...f, vigenciaHasta: e.target.value }))} className={inputCls} />
+                  <DatePicker value={form.vigenciaHasta} onChange={(v) => setForm((f) => ({ ...f, vigenciaHasta: v }))} />
                 </div>
                 <div>
                   <label className={labelCls}>Visible para</label>

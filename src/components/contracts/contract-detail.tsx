@@ -36,6 +36,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { format, differenceInCalendarMonths } from "date-fns";
+import { DatePicker } from "@/components/ui/date-picker";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import {
@@ -927,6 +928,17 @@ export function ContractDetail({ id }: { id: string }) {
                 documentType="contract"
                 resolved={resolved}
                 defaultTemplateId={defaultTemplateId}
+                allTemplates={templatesData?.templates}
+                title="Cláusulas del contrato"
+              />
+            </div>
+            <div className="rounded-lg border border-border p-4">
+              <ContractDocumentSection
+                contractId={id}
+                documentType="delivery_act"
+                resolved={resolved}
+                allTemplates={templatesData?.templates}
+                title="Acta de entrega"
               />
             </div>
             <ContractTabDocuments contractId={id} documents={data.documents} />
@@ -963,13 +975,13 @@ export function ContractDetail({ id }: { id: string }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs">Inicio</Label>
-                    <Input type="date" value={editValues.startDate}
-                      onChange={(e) => setEditValues((v) => v && { ...v, startDate: e.target.value })} />
+                    <DatePicker value={editValues.startDate}
+                      onChange={(v) => setEditValues((ev) => ev && { ...ev, startDate: v })} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Fin</Label>
-                    <Input type="date" value={editValues.endDate}
-                      onChange={(e) => setEditValues((v) => v && { ...v, endDate: e.target.value })} />
+                    <DatePicker value={editValues.endDate}
+                      onChange={(v) => setEditValues((ev) => ev && { ...ev, endDate: v })} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Monto mensual ($)</Label>

@@ -14,12 +14,12 @@ El motor del generador de documentos se integra dentro de la ficha del contrato.
 
 Piezas a implementar en orden:
 
-- [ ] **DB:** Migración — nueva tabla `contract_clause`, nueva tabla `contract_document_config`, campo `isDefault` en `documentTemplate`
-- [ ] **API:** Routes `/api/contracts/[id]/documents/[documentType]/` — apply, clauses CRUD, reorder
-- [ ] **UI — Lista de cláusulas:** Sección en ficha del contrato, drag & drop, toggle activa/inactiva, numeración automática, lock según estado
-- [ ] **UI — Modal de edición:** Título + textarea con highlighting + preview compacto + popover Ctrl+Click integrado
-- [ ] **UI — Print/preview:** Botón "Vista previa / Imprimir" con numeración ordinal ("CLÁUSULA PRIMERA")
-- [ ] **Acta de entrega (documentType `delivery_act`):** Misma UI, diferente plantilla, paso 04 del stepper
+- [x] **DB:** Migración — nueva tabla `contract_clause`, nueva tabla `contract_document_config`, campo `isDefault` en `documentTemplate`
+- [x] **API:** Routes `/api/contracts/[id]/documents/[documentType]/` — apply, clauses CRUD, reorder
+- [x] **UI — Lista de cláusulas:** Sección en ficha del contrato, drag & drop, toggle activa/inactiva, numeración automática, lock según estado
+- [x] **UI — Modal de edición:** Título + textarea con highlighting + preview compacto + popover Ctrl+Click integrado (implementado como expand inline, no modal)
+- [x] **UI — Print/preview:** Botón "Vista previa / Imprimir" con numeración ordinal ("CLÁUSULA PRIMERA")
+- [x] **Acta de entrega (documentType `delivery_act`):** Misma UI, diferente plantilla, paso 04 del stepper
 
 ---
 

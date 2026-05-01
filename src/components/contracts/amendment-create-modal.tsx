@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -166,10 +167,9 @@ export function AmendmentCreateModal({ contractId, open, onClose }: Props) {
                 <Label className="text-xs">
                   Fecha efectiva <span className="text-error">*</span>
                 </Label>
-                <Input
-                  type="date"
+                <DatePicker
                   value={effectiveDate}
-                  onChange={(e) => setEffectiveDate(e.target.value)}
+                  onChange={setEffectiveDate}
                 />
               </div>
             )}

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { MoneyInput } from "@/components/ui/money-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import { X, Users, Search, Plus, Loader2 as Spin, Shield } from "lucide-react";
 import {
@@ -33,6 +34,10 @@ import { CreateOwnerPopup } from "@/components/properties/create-owner-popup";
 interface SelectOption {
   id: string;
   label: string;
+}
+
+interface PropertyOption extends SelectOption {
+  ownerId: string | null;
 }
 
 // Paso 1 — Partes del contrato
@@ -83,8 +88,13 @@ export function ContractForm() {
     contractType: "",
   });
 
+  const defaultStartDate = (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  })();
+
   const [step2, setStep2] = useState<Step2Data>({
-    startDate: "",
+    startDate: defaultStartDate,
     endDate: "",
     monthlyAmount: "",
     depositAmount: "",
@@ -203,11 +213,12 @@ export function ContractForm() {
     ...customIndexes.map((c) => ({ value: c.code, label: c.label })),
   ];
 
-  const properties: SelectOption[] =
+  const properties: PropertyOption[] =
     propertiesData?.properties?.map(
-      (p: { id: string; address: string }) => ({
+      (p: { id: string; address: string; ownerId: string | null }) => ({
         id: p.id,
         label: p.address,
+        ownerId: p.ownerId ?? null,
       })
     ) ?? [];
 
@@ -421,7 +432,12 @@ export function ContractForm() {
                 options={properties.map((p) => ({ value: p.id, label: p.label }))}
                 value={step1.propertyId}
                 onValueChange={(v) => {
-                  setStep1((s) => ({ ...s, propertyId: v }));
+                  const prop = properties.find((p) => p.id === v);
+                  setStep1((s) => ({
+                    ...s,
+                    propertyId: v,
+                    ownerId: prop?.ownerId && !s.ownerId ? prop.ownerId : s.ownerId,
+                  }));
                   if (v) setFieldErrors((e) => ({ ...e, propertyId: "" }));
                 }}
                 placeholder="Seleccionar propiedad..."
@@ -718,14 +734,12 @@ export function ContractForm() {
               <Label>
                 Fecha de inicio <span className="text-destructive">*</span>
               </Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={step2.startDate}
-                onChange={(e) => {
-                  const newStart = e.target.value;
+                onChange={(newStart) => {
                   const months = parseInt(durationMonths);
                   if (newStart && months >= 1) {
-                    const d = new Date(newStart);
+                    const d = new Date(newStart + "T12:00:00");
                     d.setMonth(d.getMonth() + months);
                     d.setDate(d.getDate() - 1);
                     const newEnd = d.toISOString().slice(0, 10);
@@ -764,15 +778,13 @@ export function ContractForm() {
               <Label>
                 Fecha de fin <span className="text-destructive">*</span>
               </Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={step2.endDate}
-                onChange={(e) => {
-                  const newEnd = e.target.value;
+                onChange={(newEnd) => {
                   setStep2((s) => ({ ...s, endDate: newEnd }));
                   if (step2.startDate && newEnd) {
-                    const start = new Date(step2.startDate);
-                    const end = new Date(newEnd);
+                    const start = new Date(step2.startDate + "T12:00:00");
+                    const end = new Date(newEnd + "T12:00:00");
                     const months =
                       (end.getFullYear() - start.getFullYear()) * 12 +
                       (end.getMonth() - start.getMonth());

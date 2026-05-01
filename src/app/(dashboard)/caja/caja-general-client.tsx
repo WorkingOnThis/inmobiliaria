@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { DatePicker } from "@/components/ui/date-picker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -1055,7 +1056,7 @@ function ModalMovimiento({
 
           {/* Fecha */}
           <Campo label="Fecha">
-            <input className="campo-arce" type="date" {...campo("fecha")} disabled={ocupado} />
+            <DatePicker value={form.fecha} onChange={(v) => setForm((prev) => ({ ...prev, fecha: v }))} disabled={ocupado} />
           </Campo>
 
           {/* Categoría + chips */}
