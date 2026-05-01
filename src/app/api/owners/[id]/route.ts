@@ -58,7 +58,7 @@ export async function GET(
     const [propietario] = await db
       .select()
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "owner")))
+      .where(eq(client.id, id))
       .limit(1);
 
     if (!propietario) {
@@ -106,7 +106,7 @@ export async function PATCH(
     const [existing] = await db
       .select({ id: client.id })
       .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "owner")))
+      .where(eq(client.id, id))
       .limit(1);
 
     if (!existing) {

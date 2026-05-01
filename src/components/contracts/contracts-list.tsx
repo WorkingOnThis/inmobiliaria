@@ -8,6 +8,7 @@ import Link from "next/link";
 import { differenceInDays, format } from "date-fns";
 import { ClientPagination } from "@/components/clients/client-pagination";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 /* ──────────────────────────────────────────────────────────
    HELPERS
@@ -237,54 +238,55 @@ export function ContractsList() {
 
         {/* ── KPI Grid ─────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {/* Vigentes — accent */}
-          <div className="rounded-[18px] border p-4 px-[18px]"
-            style={{ borderColor: "var(--border-accent)", background: "linear-gradient(135deg, var(--surface) 0%, rgba(107,23,2,0.08) 100%)" }}>
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Vigentes</p>
-            <p className="font-headline text-[1.6rem] font-bold text-primary leading-none">
-              {isLoading ? "—" : counts.active ?? 0}
-            </p>
-            <p className="text-[0.68rem] text-muted-foreground mt-1.5">contratos activos</p>
-          </div>
+          <Card className="rounded-xl border py-0 gap-0" style={{ borderColor: "var(--border-accent)", background: "linear-gradient(135deg, var(--surface) 0%, rgba(107,23,2,0.08) 100%)" }}>
+            <CardContent className="p-4 px-[18px]">
+              <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Vigentes</p>
+              <p className="font-headline text-[1.6rem] font-bold text-primary leading-none">
+                {isLoading ? "—" : counts.active ?? 0}
+              </p>
+              <p className="text-[0.68rem] text-muted-foreground mt-1.5">contratos activos</p>
+            </CardContent>
+          </Card>
 
-          {/* Por vencer — warn */}
-          <div className="rounded-[18px] border p-4 px-[18px]"
-            style={{ borderColor: "rgba(253,222,168,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--mustard-dim) 100%)" }}>
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Por vencer</p>
-            <p className="font-headline text-[1.6rem] font-bold text-mustard leading-none">
-              {isLoading ? "—" : counts.expiring_soon ?? 0}
-            </p>
-            <p className="text-[0.68rem] text-muted-foreground mt-1.5">vencen en ≤ 60 días</p>
-          </div>
+          <Card className="rounded-xl border py-0 gap-0" style={{ borderColor: "rgba(253,222,168,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--mustard-dim) 100%)" }}>
+            <CardContent className="p-4 px-[18px]">
+              <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Por vencer</p>
+              <p className="font-headline text-[1.6rem] font-bold text-mustard leading-none">
+                {isLoading ? "—" : counts.expiring_soon ?? 0}
+              </p>
+              <p className="text-[0.68rem] text-muted-foreground mt-1.5">vencen en ≤ 60 días</p>
+            </CardContent>
+          </Card>
 
-          {/* En redacción — draft/info */}
-          <div className="rounded-[18px] border p-4 px-[18px]"
-            style={{ borderColor: "rgba(147,197,253,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--info-dim) 100%)" }}>
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">En redacción</p>
-            <p className="font-headline text-[1.6rem] font-bold text-info leading-none">
-              {isLoading ? "—" : counts.draft ?? 0}
-            </p>
-            <p className="text-[0.68rem] text-muted-foreground mt-1.5">borradores activos</p>
-          </div>
+          <Card className="rounded-xl border py-0 gap-0" style={{ borderColor: "rgba(147,197,253,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--info-dim) 100%)" }}>
+            <CardContent className="p-4 px-[18px]">
+              <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">En redacción</p>
+              <p className="font-headline text-[1.6rem] font-bold text-info leading-none">
+                {isLoading ? "—" : counts.draft ?? 0}
+              </p>
+              <p className="text-[0.68rem] text-muted-foreground mt-1.5">borradores activos</p>
+            </CardContent>
+          </Card>
 
-          {/* Pend. de firma */}
-          <div className="rounded-[18px] border border-border p-4 px-[18px] bg-surface">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Pend. de firma</p>
-            <p className="font-headline text-[1.6rem] font-bold text-on-bg leading-none">
-              {isLoading ? "—" : counts.pending_signature ?? 0}
-            </p>
-            <p className="text-[0.68rem] text-muted-foreground mt-1.5">esperando firmas</p>
-          </div>
+          <Card className="rounded-xl border py-0 gap-0">
+            <CardContent className="p-4 px-[18px]">
+              <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Pend. de firma</p>
+              <p className="font-headline text-[1.6rem] font-bold text-on-bg leading-none">
+                {isLoading ? "—" : counts.pending_signature ?? 0}
+              </p>
+              <p className="text-[0.68rem] text-muted-foreground mt-1.5">esperando firmas</p>
+            </CardContent>
+          </Card>
 
-          {/* Vencidos — err */}
-          <div className="rounded-[18px] border p-4 px-[18px]"
-            style={{ borderColor: "rgba(255,180,171,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--error-dim) 100%)" }}>
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Vencidos</p>
-            <p className="font-headline text-[1.6rem] font-bold text-error leading-none">
-              {isLoading ? "—" : counts.expired ?? 0}
-            </p>
-            <p className="text-[0.68rem] text-muted-foreground mt-1.5">sin renovar ni rescindir</p>
-          </div>
+          <Card className="rounded-xl border py-0 gap-0" style={{ borderColor: "rgba(255,180,171,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--error-dim) 100%)" }}>
+            <CardContent className="p-4 px-[18px]">
+              <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Vencidos</p>
+              <p className="font-headline text-[1.6rem] font-bold text-error leading-none">
+                {isLoading ? "—" : counts.expired ?? 0}
+              </p>
+              <p className="text-[0.68rem] text-muted-foreground mt-1.5">sin renovar ni rescindir</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* ── Toolbar ───────────────────────────────────── */}

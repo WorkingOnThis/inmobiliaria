@@ -244,11 +244,13 @@ export default function TenantDetailPage() {
                 <Button variant="ghost" size="icon" className="size-8">
                   <MoreHorizontal size={15} />
                 </Button>
-                <Button variant="outline" size="sm" className="gap-1.5" asChild>
-                  <Link href={`/contratos/nuevo?tenantId=${tenant.id}`}>
-                    <PlusCircle size={13} /> Agregar contrato
-                  </Link>
-                </Button>
+                {tenant.estado === "sin_contrato" && (
+                  <Button variant="outline" size="sm" className="gap-1.5" asChild>
+                    <Link href={`/contratos/nuevo?tenantId=${tenant.id}`}>
+                      <PlusCircle size={13} /> Agregar contrato
+                    </Link>
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" className="gap-1.5">
                   <Bell size={13} /> Notificar
                 </Button>

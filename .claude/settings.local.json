@@ -133,7 +133,18 @@
       "Bash(bun -e \"import { createAuthClient } from 'better-auth/react'; const c = createAuthClient\\({}\\); console.log\\(Object.keys\\(c\\).join\\('\\\\n'\\)\\)\")",
       "Bash(npx shadcn@latest add calendar field --yes)",
       "Bash(npx shadcn@latest add calendar --yes)",
-      "Bash(npx shadcn@latest add field)"
+      "Bash(npx shadcn@latest add field)",
+      "Bash(gh repo *)",
+      "Bash(corepack --version)",
+      "Read(//f/Documentos/Proyectos/Claude-Design/**)",
+      "Bash(corepack enable *)",
+      "Bash(corepack install *)",
+      "Bash(pnpm install *)",
+      "Bash(npm config *)",
+      "PowerShell(pnpm install *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(& \"C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\Installer\\\\vswhere.exe\" -all -prerelease -format json 2>&1)",
+      "Bash(npx impeccable *)"
     ]
   },
   "enableAllProjectMcpServers": true,

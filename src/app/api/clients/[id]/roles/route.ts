@@ -23,13 +23,13 @@ export async function GET(
 
     const { id } = await params;
 
-    const [exists] = await db
-      .select({ id: client.id })
+    const [existing] = await db
+      .select({ id: client.id, type: client.type })
       .from(client)
       .where(eq(client.id, id))
       .limit(1);
 
-    if (!exists) {
+    if (!existing) {
       return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 });
     }
 
@@ -54,8 +54,8 @@ export async function GET(
       .where(and(eq(guarantee.personClientId, id), isNotNull(guarantee.personClientId)));
 
     const roles: string[] = [];
-    if ((tenantCount?.count ?? 0) > 0) roles.push("tenant");
-    if ((ownerContractCount?.count ?? 0) > 0 || (ownerPropertyCount?.count ?? 0) > 0) roles.push("owner");
+    if ((tenantCount?.count ?? 0) > 0 || existing.type === "tenant") roles.push("tenant");
+    if ((ownerContractCount?.count ?? 0) > 0 || (ownerPropertyCount?.count ?? 0) > 0 || existing.type === "owner") roles.push("owner");
     if ((guarantorCount?.count ?? 0) > 0) roles.push("guarantor");
 
     return NextResponse.json({

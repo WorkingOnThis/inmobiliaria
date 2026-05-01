@@ -128,7 +128,7 @@ function EstadoBadge({
   if (estado === "historico") {
     return <StatusBadge variant="draft">Histórico</StatusBadge>;
   }
-  return <StatusBadge variant="draft">Sin contrato</StatusBadge>;
+  return <StatusBadge variant="draft">Postulante</StatusBadge>;
 }
 
 function ProgressBar({ value }: { value: number }) {
@@ -177,7 +177,7 @@ function exportarCSV(inquilinos: TenantRow[]) {
     activo: "Activo",
     en_mora: "En mora",
     por_vencer: "Por vencer",
-    sin_contrato: "Sin contrato",
+    sin_contrato: "Postulante",
     pendiente_firma: "Por firmar",
     historico: "Histórico",
   };

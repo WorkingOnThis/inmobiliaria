@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
   SERVICE_TYPE_LABELS,
@@ -304,47 +305,55 @@ export function ServicesControlPanel() {
       <div className="flex flex-col gap-6 p-6">
         {/* KPI cards */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-lg border border-border bg-surface p-5">
-            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-text-muted">
-              Propiedades
-            </p>
-            <p className="font-headline text-3xl font-bold tracking-tight text-on-bg">
-              {kpis?.totalProperties ?? "—"}
-            </p>
-            <p className="mt-1 text-xs text-text-muted">Con servicios activos</p>
-          </div>
+          <Card className="rounded-xl border py-0 gap-0">
+            <CardContent className="p-5">
+              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-text-muted">
+                Propiedades
+              </p>
+              <p className="font-headline text-3xl font-bold tracking-tight text-on-bg">
+                {kpis?.totalProperties ?? "—"}
+              </p>
+              <p className="mt-1 text-xs text-text-muted">Con servicios activos</p>
+            </CardContent>
+          </Card>
 
-          <div className="rounded-lg border border-income/20 bg-income-dim p-5">
-            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-income/70">
-              Al día
-            </p>
-            <p className="font-headline text-3xl font-bold tracking-tight text-income">
-              {kpis?.current ?? "—"}
-            </p>
-            <p className="mt-1 text-xs text-income/60">Comprobantes al corriente</p>
-          </div>
+          <Card className="rounded-xl border border-income/20 bg-income-dim py-0 gap-0">
+            <CardContent className="p-5">
+              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-income/70">
+                Al día
+              </p>
+              <p className="font-headline text-3xl font-bold tracking-tight text-income">
+                {kpis?.current ?? "—"}
+              </p>
+              <p className="mt-1 text-xs text-income/60">Comprobantes al corriente</p>
+            </CardContent>
+          </Card>
 
-          <div className="rounded-lg border border-mustard/20 bg-mustard-dim p-5">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-mustard/70">
-              <AlertTriangle className="h-3 w-3" />
-              En alerta
-            </p>
-            <p className="font-headline text-3xl font-bold tracking-tight text-mustard">
-              {kpis?.alert ?? "—"}
-            </p>
-            <p className="mt-1 text-xs text-mustard/60">30+ días sin comprobante</p>
-          </div>
+          <Card className="rounded-xl border border-mustard/20 bg-mustard-dim py-0 gap-0">
+            <CardContent className="p-5">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-mustard/70">
+                <AlertTriangle className="h-3 w-3" />
+                En alerta
+              </p>
+              <p className="font-headline text-3xl font-bold tracking-tight text-mustard">
+                {kpis?.alert ?? "—"}
+              </p>
+              <p className="mt-1 text-xs text-mustard/60">30+ días sin comprobante</p>
+            </CardContent>
+          </Card>
 
-          <div className="rounded-lg border border-destructive/20 bg-destructive-dim p-5">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-destructive/70">
-              <Lock className="h-3 w-3" />
-              Bloqueados
-            </p>
-            <p className="font-headline text-3xl font-bold tracking-tight text-destructive">
-              {kpis?.blocked ?? "—"}
-            </p>
-            <p className="mt-1 text-xs text-destructive/60">Alquiler retenido; requiere acción</p>
-          </div>
+          <Card className="rounded-xl border border-destructive/20 bg-destructive-dim py-0 gap-0">
+            <CardContent className="p-5">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-destructive/70">
+                <Lock className="h-3 w-3" />
+                Bloqueados
+              </p>
+              <p className="font-headline text-3xl font-bold tracking-tight text-destructive">
+                {kpis?.blocked ?? "—"}
+              </p>
+              <p className="mt-1 text-xs text-destructive/60">Alquiler retenido; requiere acción</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Toolbar */}
