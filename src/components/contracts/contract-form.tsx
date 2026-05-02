@@ -820,25 +820,25 @@ export function ContractForm() {
               </div>
             </div>
 
-          {startDateIsOld && (
-            <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
-              <div>
-                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
-                  El contrato empieza en el pasado
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  ¿Desde qué mes generamos los cobros? Por defecto arranca desde la fecha de inicio.
-                </p>
+            {startDateIsOld && (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                    El contrato empieza en el pasado
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    ¿Desde qué mes generamos los cobros? Por defecto arranca desde la fecha de inicio.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Primer mes a cobrar</Label>
+                  <DatePicker
+                    value={ledgerStartDate || step2.startDate}
+                    onChange={(v) => setLedgerStartDate(v)}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Primer mes a cobrar</Label>
-                <DatePicker
-                  value={ledgerStartDate || step2.startDate}
-                  onChange={(v) => setLedgerStartDate(v)}
-                />
-              </div>
-            </div>
-          )}
+            )}
           </div>
 
           {/* Montos */}
