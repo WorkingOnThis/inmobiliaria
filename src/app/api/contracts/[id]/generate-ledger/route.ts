@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { servicio } from "@/db/schema/servicio";
 import { auth } from "@/lib/auth";
@@ -72,12 +72,12 @@ export async function POST(
     }
 
     const [primaryTenant] = await db
-      .select({ clientId: contractTenant.clientId })
-      .from(contractTenant)
+      .select({ clientId: contractParticipant.clientId })
+      .from(contractParticipant)
       .where(
         and(
-          eq(contractTenant.contractId, contractId),
-          eq(contractTenant.role, "primary")
+          eq(contractParticipant.contractId, contractId),
+          eq(contractParticipant.role, "tenant")
         )
       )
       .limit(1);
