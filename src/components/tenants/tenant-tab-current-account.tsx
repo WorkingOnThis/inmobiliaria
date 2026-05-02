@@ -321,6 +321,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   }
 
   function handleCancelEntry(entry: LedgerEntry) {
+    setCancelEntryError(null);
     setCancelConfirm(entry);
   }
 
