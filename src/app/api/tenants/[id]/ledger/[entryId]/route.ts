@@ -12,6 +12,7 @@ const patchSchema = z.object({
   descripcion: z.string().min(1).optional(),
   estado: z.enum(["pendiente", "registrado", "cancelado"]).optional(),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  cancellationReason: z.string().optional(),
 });
 
 export async function PATCH(
@@ -49,10 +50,22 @@ export async function PATCH(
         ...(data.descripcion !== undefined && { descripcion: data.descripcion }),
         ...(data.estado !== undefined && { estado: data.estado }),
         ...(data.dueDate !== undefined && { dueDate: data.dueDate }),
+        ...(data.cancellationReason !== undefined && { cancellationReason: data.cancellationReason }),
         updatedAt: new Date(),
       })
       .where(and(eq(tenantLedger.id, entryId), eq(tenantLedger.inquilinoId, inquilinoId)))
       .returning();
+
+    if (data.estado === "cancelado") {
+      await db
+        .update(tenantLedger)
+        .set({
+          estado: "cancelado",
+          cancellationReason: data.cancellationReason ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(tenantLedger.installmentOf, entryId));
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
