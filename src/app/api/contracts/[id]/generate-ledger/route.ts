@@ -60,6 +60,15 @@ export async function POST(
           .delete(tenantLedger)
           .where(inArray(tenantLedger.id, deletableIds));
       }
+
+      // If force=true but every existing entry was cobrado, nothing was deleted.
+      // Re-generating would create duplicates — abort safely.
+      if (deletableIds.length === 0) {
+        return NextResponse.json(
+          { error: "Todas las entradas ya están cobradas. No se puede regenerar.", inserted: 0 },
+          { status: 409 }
+        );
+      }
     }
 
     const [primaryTenant] = await db
