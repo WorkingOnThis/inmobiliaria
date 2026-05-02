@@ -5,6 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type LedgerEntry = {
@@ -35,6 +42,7 @@ type Props = {
   onMontoChange: (id: string, value: string) => void;
   onCancelPunitorio: (id: string) => void;
   onAnularRecibo: (reciboNumero: string) => void;
+  onCancelEntry: (entry: LedgerEntry) => void;
   activeFilters: Set<string>;
 };
 
@@ -52,6 +60,12 @@ const PENDING_STATES = ["pendiente", "registrado", "pendiente_revision", "pago_p
 
 function isSelectable(entry: LedgerEntry): boolean {
   return ["pendiente", "registrado", "pago_parcial"].includes(entry.estado);
+}
+
+const CANCELABLE_STATES = ["pendiente", "registrado", "pendiente_revision", "pago_parcial"];
+
+function isCancelable(entry: LedgerEntry): boolean {
+  return CANCELABLE_STATES.includes(entry.estado);
 }
 
 function isPast(period: string | null): boolean {
@@ -104,6 +118,7 @@ export function LedgerTable({
   onMontoChange,
   onCancelPunitorio,
   onAnularRecibo,
+  onCancelEntry,
   activeFilters,
 }: Props) {
   const todayPeriod = new Date().toISOString().slice(0, 7);
@@ -305,6 +320,28 @@ export function LedgerTable({
                       >
                         ✕
                       </Button>
+                    )}
+                    {!isPunitorio && isCancelable(entry) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                            aria-label="Acciones"
+                          >
+                            <MoreHorizontal size={14} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onCancelEntry(entry)}
+                          >
+                            Cancelar movimiento
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                     {entry.reciboNumero && (
                       <div className="flex items-center gap-0.5">
