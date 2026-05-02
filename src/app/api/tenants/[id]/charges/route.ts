@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { client } from "@/db/schema/client";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { property } from "@/db/schema/property";
 import { tenantCharge } from "@/db/schema/tenant-charge";
@@ -115,17 +114,12 @@ export async function POST(
     const { contratoId, categoria, descripcion, period, monto } = result.data;
 
     // Validate contratoId belongs to this tenant
-    const [fromTenant, fromParticipant] = await Promise.all([
-      db.select({ contractId: contractTenant.contractId })
-        .from(contractTenant)
-        .where(eq(contractTenant.clientId, id))
-        .then((rows) => rows.map((r) => r.contractId)),
-      db.select({ contractId: contractParticipant.contractId })
-        .from(contractParticipant)
-        .where(eq(contractParticipant.clientId, id))
-        .then((rows) => rows.map((r) => r.contractId)),
-    ]);
-    const allowed = new Set([...fromTenant, ...fromParticipant]);
+    const contractIds = await db
+      .select({ contractId: contractParticipant.contractId })
+      .from(contractParticipant)
+      .where(and(eq(contractParticipant.clientId, id), eq(contractParticipant.role, "tenant")))
+      .then((rows) => rows.map((r) => r.contractId));
+    const allowed = new Set(contractIds);
     if (!allowed.has(contratoId)) {
       return NextResponse.json(
         { error: "El contrato no pertenece a este inquilino" },

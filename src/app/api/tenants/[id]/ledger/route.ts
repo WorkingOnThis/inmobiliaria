@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { defaultFlagsForTipo } from "@/lib/ledger/flags";
@@ -50,11 +50,12 @@ export async function POST(
     const [contractRow] = await db
       .select({ id: contract.id })
       .from(contract)
-      .innerJoin(contractTenant, eq(contractTenant.contractId, contract.id))
+      .innerJoin(contractParticipant, eq(contractParticipant.contractId, contract.id))
       .where(
         and(
           eq(contract.id, data.contratoId),
-          eq(contractTenant.clientId, inquilinoId)
+          eq(contractParticipant.clientId, inquilinoId),
+          eq(contractParticipant.role, "tenant")
         )
       )
       .limit(1);

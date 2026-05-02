@@ -6,8 +6,7 @@ import { cajaMovimiento } from "@/db/schema/caja";
 import { receiptServiceItem } from "@/db/schema/receipt-service-item";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
-import { eq } from "drizzle-orm";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { and, eq } from "drizzle-orm";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { nextReciboNumero } from "@/lib/receipts/numbering";
 
@@ -67,17 +66,12 @@ export async function POST(
 
     // Validate contratoId belongs to this tenant
     if (contratoId) {
-      const [fromTenant, fromParticipant] = await Promise.all([
-        db.select({ contractId: contractTenant.contractId })
-          .from(contractTenant)
-          .where(eq(contractTenant.clientId, id))
-          .then((rows) => rows.map((r) => r.contractId)),
-        db.select({ contractId: contractParticipant.contractId })
-          .from(contractParticipant)
-          .where(eq(contractParticipant.clientId, id))
-          .then((rows) => rows.map((r) => r.contractId)),
-      ]);
-      const allowed = new Set([...fromTenant, ...fromParticipant]);
+      const contractIds = await db
+        .select({ contractId: contractParticipant.contractId })
+        .from(contractParticipant)
+        .where(and(eq(contractParticipant.clientId, id), eq(contractParticipant.role, "tenant")))
+        .then((rows) => rows.map((r) => r.contractId));
+      const allowed = new Set(contractIds);
       if (!allowed.has(contratoId)) {
         return NextResponse.json({ error: "El contrato no pertenece a este inquilino" }, { status: 422 });
       }
