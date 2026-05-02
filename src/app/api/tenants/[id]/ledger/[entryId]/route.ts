@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
-import { and, eq } from "drizzle-orm";
+import { and, eq, not } from "drizzle-orm";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -64,7 +64,7 @@ export async function PATCH(
           cancellationReason: data.cancellationReason ?? null,
           updatedAt: new Date(),
         })
-        .where(eq(tenantLedger.installmentOf, entryId));
+        .where(and(eq(tenantLedger.installmentOf, entryId), not(eq(tenantLedger.estado, "conciliado"))));
     }
 
     return NextResponse.json(updated);
