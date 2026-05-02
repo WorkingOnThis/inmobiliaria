@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { client } from "@/db/schema/client";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { property } from "@/db/schema/property";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
@@ -44,10 +44,11 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const estadoFilter = searchParams.get("estado") || "todos";
 
-    // Clients that appear as tenants: those with type="tenant" OR linked in contract_tenant
+    // Clients that appear as tenants: those with type="tenant" OR linked in contract_participant as tenant
     const tenantLinks = await db
-      .selectDistinct({ clientId: contractTenant.clientId })
-      .from(contractTenant);
+      .selectDistinct({ clientId: contractParticipant.clientId })
+      .from(contractParticipant)
+      .where(eq(contractParticipant.role, "tenant"));
 
     const linkedIds = tenantLinks.map((r) => r.clientId);
 
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
     // All contracts for these tenants (any status)
     const contracts = await db
       .select({
-        clientId: contractTenant.clientId,
+        clientId: contractParticipant.clientId,
         contractId: contract.id,
         contractNumber: contract.contractNumber,
         contractStatus: contract.status,
@@ -105,10 +106,10 @@ export async function GET(request: NextRequest) {
         propertyAddress: property.address,
         propertyFloorUnit: property.floorUnit,
       })
-      .from(contractTenant)
-      .innerJoin(contract, eq(contract.id, contractTenant.contractId))
+      .from(contractParticipant)
+      .innerJoin(contract, eq(contract.id, contractParticipant.contractId))
       .leftJoin(property, eq(property.id, contract.propertyId))
-      .where(inArray(contractTenant.clientId, ids));
+      .where(and(inArray(contractParticipant.clientId, ids), eq(contractParticipant.role, "tenant")));
 
     // Last income payment per tenant
     const payments = await db
