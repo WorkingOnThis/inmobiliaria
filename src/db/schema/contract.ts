@@ -29,6 +29,7 @@ export const contract = pgTable("contract", {
 
   startDate: text("startDate").notNull(), // ISO string "YYYY-MM-DD"
   endDate: text("endDate").notNull(),
+  ledgerStartDate: text("ledgerStartDate"), // "YYYY-MM-DD" — overrides startDate for ledger generation
 
   monthlyAmount: decimal("monthlyAmount", { precision: 12, scale: 2 }).notNull(),
   depositAmount: decimal("depositAmount", { precision: 12, scale: 2 }),
