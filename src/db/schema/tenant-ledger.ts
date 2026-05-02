@@ -51,6 +51,7 @@ export const tenantLedger = pgTable("tenant_ledger", {
 
   // "proyectado" | "pendiente_revision" | "pendiente" | "registrado" | "conciliado" | "cancelado" | "pago_parcial"
   estado: text("estado").notNull().default("proyectado"),
+  cancellationReason: text("cancellationReason"),
 
   reciboNumero: text("reciboNumero"),
   reciboEmitidoAt: timestamp("reciboEmitidoAt"),
