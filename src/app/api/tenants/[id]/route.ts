@@ -3,14 +3,13 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { client } from "@/db/schema/client";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { property } from "@/db/schema/property";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { z } from "zod";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { calculateStatus } from "@/lib/tenants/status";
 import { guarantee } from "@/db/schema/guarantee";
 import { guaranteeSalaryInfo } from "@/db/schema/guarantee-salary-info";
@@ -142,25 +141,11 @@ export async function GET(
       adjustmentFrequency: contract.adjustmentFrequency,
     };
 
-    // All contracts where this client is a tenant — check both link tables
-    const [fromTenant, fromParticipant] = await Promise.all([
-      db.select(contractFields)
-        .from(contractTenant)
-        .innerJoin(contract, eq(contract.id, contractTenant.contractId))
-        .where(eq(contractTenant.clientId, id)),
-      db.select(contractFields)
-        .from(contractParticipant)
-        .innerJoin(contract, eq(contract.id, contractParticipant.contractId))
-        .where(eq(contractParticipant.clientId, id)),
-    ]);
-
-    // Merge and deduplicate by contract ID
-    const seen = new Set<string>();
-    const tenantContractsRaw = [...fromTenant, ...fromParticipant].filter((c) => {
-      if (seen.has(c.id)) return false;
-      seen.add(c.id);
-      return true;
-    });
+    const tenantContractsRaw = await db
+      .select(contractFields)
+      .from(contractParticipant)
+      .innerJoin(contract, eq(contract.id, contractParticipant.contractId))
+      .where(and(eq(contractParticipant.clientId, id), eq(contractParticipant.role, "tenant")));
 
     // Enrich with property address for each contract
     const contractPropIds = [...new Set(tenantContractsRaw.map((c) => c.propertyId))];
