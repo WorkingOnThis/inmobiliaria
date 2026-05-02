@@ -553,20 +553,29 @@ export function ContractDetail({ id }: { id: string }) {
   });
 
   const generateLedger = useMutation({
-    mutationFn: ({ force }: { force: boolean }) =>
-      fetch(`/api/contracts/${id}/generate-ledger${force ? "?force=true" : ""}`, {
+    mutationFn: async ({ force }: { force: boolean }) => {
+      // Save ledgerStartDate first so the generate endpoint picks up the current value
+      if (ledgerStartDateEdit) {
+        await fetch(`/api/contracts/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ledgerStartDate: ledgerStartDateEdit }),
+        });
+      }
+      const r = await fetch(`/api/contracts/${id}/generate-ledger${force ? "?force=true" : ""}`, {
         method: "POST",
-      }).then(async (r) => {
-        if (!r.ok) {
-          const err = await r.json();
-          throw new Error(err.error ?? "Error al generar");
-        }
-        return r.json();
-      }),
+      });
+      if (!r.ok) {
+        const err = await r.json();
+        throw new Error(err.error ?? "Error al generar");
+      }
+      return r.json();
+    },
     onSuccess: (data, { force }) => {
       toast.success(`${force ? "Regenerado" : "Generado"}: ${data.inserted} entradas`);
       refetchLedger();
       queryClient.invalidateQueries({ queryKey: ["tenant-ledger"] });
+      queryClient.invalidateQueries({ queryKey: ["contract", id] });
     },
     onError: (err: Error) => toast.error(err.message),
   });
