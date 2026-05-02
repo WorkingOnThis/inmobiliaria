@@ -1607,22 +1607,14 @@ export function ContractDetail({ id }: { id: string }) {
 
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Primer mes a cobrar</Label>
-              <div className="flex items-center gap-2 max-w-xs">
+              <div className="max-w-xs">
                 <DatePicker
                   value={ledgerStartDateEdit || data.startDate}
                   onChange={(v) => setLedgerStartDateEdit(v)}
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => saveLedgerStartDate.mutate(ledgerStartDateEdit || null)}
-                  disabled={saveLedgerStartDate.isPending}
-                >
-                  Guardar
-                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Si está en blanco, arranca desde la fecha de inicio del contrato.
+                Se guarda al generar. Si está en blanco, arranca desde la fecha de inicio del contrato.
               </p>
             </div>
           </div>
