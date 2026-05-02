@@ -68,6 +68,7 @@ export function ContractForm() {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [isImported, setIsImported] = useState(false);
+  const [ledgerStartDate, setLedgerStartDate] = useState<string>("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [tenantSearchOpen, setTenantSearchOpen] = useState(false);
   const [tenantSearch, setTenantSearch] = useState("");
@@ -105,6 +106,13 @@ export function ContractForm() {
     adjustmentIndex: "none",
     adjustmentFrequency: "3",
   });
+
+  const startDateIsOld = (() => {
+    if (!step2.startDate) return false;
+    const start = new Date(step2.startDate + "T00:00:00");
+    const diffDays = (Date.now() - start.getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays > 30;
+  })();
 
   const [showNewIndexForm, setShowNewIndexForm] = useState(false);
   const [newIndexCode, setNewIndexCode] = useState("");
@@ -293,6 +301,7 @@ export function ContractForm() {
           adjustmentIndex: step2.adjustmentIndex,
           adjustmentFrequency: parseInt(step2.adjustmentFrequency),
           isImported,
+          ledgerStartDate: startDateIsOld && ledgerStartDate ? ledgerStartDate : null,
         }),
       });
       if (!response.ok) {
@@ -759,6 +768,7 @@ export function ContractForm() {
                     } else {
                       setStep2((s) => ({ ...s, startDate: newStart }));
                     }
+                    setLedgerStartDate(""); // reset so it defaults to new startDate
                   }}
                 />
                 {fieldErrors.startDate && (
@@ -809,6 +819,26 @@ export function ContractForm() {
                 )}
               </div>
             </div>
+
+          {startDateIsOld && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
+              <div>
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                  El contrato empieza en el pasado
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  ¿Desde qué mes generamos los cobros? Por defecto arranca desde la fecha de inicio.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Primer mes a cobrar</Label>
+                <DatePicker
+                  value={ledgerStartDate || step2.startDate}
+                  onChange={(v) => setLedgerStartDate(v)}
+                />
+              </div>
+            </div>
+          )}
           </div>
 
           {/* Montos */}
