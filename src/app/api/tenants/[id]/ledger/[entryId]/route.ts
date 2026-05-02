@@ -43,29 +43,33 @@ export async function PATCH(
     }
 
     const data = result.data;
-    const [updated] = await db
-      .update(tenantLedger)
-      .set({
-        ...(data.monto !== undefined && { monto: String(data.monto) }),
-        ...(data.descripcion !== undefined && { descripcion: data.descripcion }),
-        ...(data.estado !== undefined && { estado: data.estado }),
-        ...(data.dueDate !== undefined && { dueDate: data.dueDate }),
-        ...(data.cancellationReason !== undefined && { cancellationReason: data.cancellationReason }),
-        updatedAt: new Date(),
-      })
-      .where(and(eq(tenantLedger.id, entryId), eq(tenantLedger.inquilinoId, inquilinoId)))
-      .returning();
-
-    if (data.estado === "cancelado") {
-      await db
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
         .update(tenantLedger)
         .set({
-          estado: "cancelado",
-          cancellationReason: data.cancellationReason ?? null,
+          ...(data.monto !== undefined && { monto: String(data.monto) }),
+          ...(data.descripcion !== undefined && { descripcion: data.descripcion }),
+          ...(data.estado !== undefined && { estado: data.estado }),
+          ...(data.dueDate !== undefined && { dueDate: data.dueDate }),
+          ...(data.cancellationReason !== undefined && data.estado === "cancelado" && { cancellationReason: data.cancellationReason }),
           updatedAt: new Date(),
         })
-        .where(and(eq(tenantLedger.installmentOf, entryId), not(eq(tenantLedger.estado, "conciliado"))));
-    }
+        .where(and(eq(tenantLedger.id, entryId), eq(tenantLedger.inquilinoId, inquilinoId)))
+        .returning();
+
+      if (data.estado === "cancelado") {
+        await tx
+          .update(tenantLedger)
+          .set({
+            estado: "cancelado",
+            cancellationReason: data.cancellationReason ?? null,
+            updatedAt: new Date(),
+          })
+          .where(and(eq(tenantLedger.installmentOf, entryId), not(eq(tenantLedger.estado, "conciliado"))));
+      }
+
+      return row;
+    });
 
     return NextResponse.json(updated);
   } catch (error) {

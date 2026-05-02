@@ -145,7 +145,8 @@
       "PowerShell(Get-ChildItem *)",
       "PowerShell(& \"C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\Installer\\\\vswhere.exe\" -all -prerelease -format json 2>&1)",
       "Bash(npx impeccable *)",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(Remove-Item *)"
     ]
   },
   "enableAllProjectMcpServers": true,

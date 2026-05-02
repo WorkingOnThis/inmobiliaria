@@ -6,8 +6,6 @@ Trabajar de arriba hacia abajo dentro de cada grupo.
 
 ## 🔴 Prioridad alta
 
-- [ ] **Migrar `contract_tenant` → `contract_participant` y borrar tabla vieja** — 14 archivos todavía usan la tabla vieja (roles "primary"/"co-tenant"). La nueva es `contractParticipant` (roles "owner"/"tenant"/"guarantor"). Actualizar todos los routes (recibos, ledger, servicios, garantías) y borrar la tabla. Los recibos ya emitidos son todos de prueba, no importa perderlos.
-
 - [ ] **Eliminar movimiento pendiente desde la UI de cuenta corriente**
 
 - [ ] **Marcar movimiento como "ya cobrado" sin emitir recibo** — conciliación manual
