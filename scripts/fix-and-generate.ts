@@ -28,7 +28,7 @@ if (existing.rows.length === 0) {
 
 // 2. Get contract details
 const contractRow = await db.execute(
-  sql`SELECT id, "propertyId", "ownerId", "startDate", "endDate", "monthlyAmount", "paymentDay", "adjustmentIndex", "adjustmentFrequency"
+  sql`SELECT id, "propertyId", "ownerId", "startDate", "endDate", "monthlyAmount", "paymentDay", "adjustmentIndex", "adjustmentFrequency", "ledgerStartDate"
       FROM contract WHERE id = ${CONTRACT_ID}`
 );
 
@@ -66,6 +66,7 @@ const entries = buildLedgerEntries(
     ownerId: c.ownerId,
     startDate: c.startDate,
     endDate: c.endDate,
+    ledgerStartDate: c.ledgerStartDate ?? null,
     monthlyAmount: String(c.monthlyAmount),
     paymentDay: c.paymentDay ?? 10,
     adjustmentIndex: c.adjustmentIndex ?? "ICL",

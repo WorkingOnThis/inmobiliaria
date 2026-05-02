@@ -14,7 +14,8 @@ console.log("tenant_ledger rows:", (ledgerCount.rows[0] as any).n);
 
 const contracts = await db.execute(
   sql`SELECT c.id, c."propertyId", c."ownerId", c."startDate", c."endDate",
-       c."monthlyAmount", c."paymentDay", c."adjustmentIndex", c."adjustmentFrequency"
+       c."monthlyAmount", c."paymentDay", c."adjustmentIndex", c."adjustmentFrequency",
+       c."ledgerStartDate"
       FROM contract c LIMIT 10`
 );
 console.log("contracts:", contracts.rows.length);
@@ -50,6 +51,7 @@ for (const contract of contracts.rows as any[]) {
       ownerId: contract.ownerId,
       startDate: contract.startDate,
       endDate: contract.endDate,
+      ledgerStartDate: contract.ledgerStartDate ?? null,
       monthlyAmount: String(contract.monthlyAmount),
       paymentDay: contract.paymentDay ?? 10,
       adjustmentIndex: contract.adjustmentIndex ?? "ICL",
