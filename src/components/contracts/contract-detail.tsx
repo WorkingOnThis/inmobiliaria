@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -131,6 +131,7 @@ interface ContractDetail extends PropertyServices {
   electronicPaymentFeePct: string | null;
   lateInterestPct: string | null;
   isRenewal: boolean | null;
+  ledgerStartDate: string | null;
   createdAt: string;
   propertyAddress: string | null;
   propertyType: string | null;
@@ -294,6 +295,7 @@ export function ContractDetail({ id }: { id: string }) {
   const [editTenantIds, setEditTenantIds] = useState<string[]>([]);
   const [tenantSearchOpen, setTenantSearchOpen] = useState(false);
   const [tenantSearch, setTenantSearch] = useState("");
+  const [ledgerStartDateEdit, setLedgerStartDateEdit] = useState<string>("");
 
   const { data, isLoading, error } = useQuery<ContractDetail>({
     queryKey: ["contract", id],
@@ -366,6 +368,20 @@ export function ContractDetail({ id }: { id: string }) {
     },
     enabled: !!data?.propertyId,
   });
+
+  const { data: ledgerData, refetch: refetchLedger } = useQuery<{ count: number }>({
+    queryKey: ["ledger-count", id],
+    queryFn: () =>
+      fetch(`/api/contracts/${id}/generate-ledger/count`)
+        .then((r) => r.json()),
+  });
+  const hasLedger = (ledgerData?.count ?? 0) > 0;
+
+  useEffect(() => {
+    if (data?.ledgerStartDate) {
+      setLedgerStartDateEdit(data.ledgerStartDate);
+    }
+  }, [data]);
 
   const { data: tenantsData } = useQuery({
     queryKey: ["clients", "tenant", "select"],
@@ -534,6 +550,39 @@ export function ContractDetail({ id }: { id: string }) {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
     },
     onError: (err: Error) => toast.error(err.message),
+  });
+
+  const generateLedger = useMutation({
+    mutationFn: ({ force }: { force: boolean }) =>
+      fetch(`/api/contracts/${id}/generate-ledger${force ? "?force=true" : ""}`, {
+        method: "POST",
+      }).then(async (r) => {
+        if (!r.ok) {
+          const err = await r.json();
+          throw new Error(err.error ?? "Error al generar");
+        }
+        return r.json();
+      }),
+    onSuccess: (data, { force }) => {
+      toast.success(`${force ? "Regenerado" : "Generado"}: ${data.inserted} entradas`);
+      refetchLedger();
+      queryClient.invalidateQueries({ queryKey: ["tenant-ledger"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const saveLedgerStartDate = useMutation({
+    mutationFn: (date: string | null) =>
+      fetch(`/api/contracts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ledgerStartDate: date }),
+      }).then((r) => r.json()),
+    onSuccess: () => {
+      toast.success("Fecha de inicio actualizada");
+      queryClient.invalidateQueries({ queryKey: ["contract", id] });
+    },
+    onError: () => toast.error("Error al guardar"),
   });
 
   const startEditing = () => {
@@ -1512,6 +1561,63 @@ export function ContractDetail({ id }: { id: string }) {
             </div>
           )}
         </div>
+
+        {/* ── Cobros del contrato ───────────────────────────── */}
+        {(data.status === "active" || data.status === "draft") && (
+          <div className="rounded-xl border border-border p-5 space-y-4 mt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold">Cobros del contrato</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {hasLedger
+                    ? `${ledgerData?.count} entradas generadas`
+                    : "El ledger no fue generado todavía"}
+                </p>
+              </div>
+              {hasLedger ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateLedger.mutate({ force: true })}
+                  disabled={generateLedger.isPending}
+                >
+                  {generateLedger.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Regenerar cobros
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => generateLedger.mutate({ force: false })}
+                  disabled={generateLedger.isPending}
+                >
+                  {generateLedger.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Generar cobros
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Primer mes a cobrar</Label>
+              <div className="flex items-center gap-2">
+                <DatePicker
+                  value={ledgerStartDateEdit || data.startDate}
+                  onChange={(v) => setLedgerStartDateEdit(v)}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => saveLedgerStartDate.mutate(ledgerStartDateEdit || null)}
+                  disabled={saveLedgerStartDate.isPending}
+                >
+                  Guardar
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Si está en blanco, arranca desde la fecha de inicio del contrato.
+              </p>
+            </div>
+          </div>
+        )}
 
         </>)} {/* end activeTab === "operativo" */}
 
