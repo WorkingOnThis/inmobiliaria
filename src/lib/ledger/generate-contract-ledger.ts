@@ -7,6 +7,7 @@ type ContractData = {
   ownerId: string;
   startDate: string;      // "YYYY-MM-DD"
   endDate: string;        // "YYYY-MM-DD"
+  ledgerStartDate: string | null;
   monthlyAmount: string;  // decimal string
   paymentDay: number;
   adjustmentIndex: string;
@@ -70,8 +71,8 @@ export function buildLedgerEntries(
     ? null
     : nextAdjustmentDate(contract.startDate, contract.adjustmentFrequency);
 
-  // Iterate month by month from startDate to endDate
-  const start = new Date(contract.startDate + "T00:00:00");
+  // Iterate month by month from ledgerStartDate (if set) or startDate to endDate
+  const start = new Date((contract.ledgerStartDate ?? contract.startDate) + "T00:00:00");
   const end = new Date(contract.endDate + "T00:00:00");
 
   const cursor = new Date(start.getFullYear(), start.getMonth(), 1);

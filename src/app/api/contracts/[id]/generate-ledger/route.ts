@@ -8,10 +8,10 @@ import { servicio } from "@/db/schema/servicio";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { buildLedgerEntries } from "@/lib/ledger/generate-contract-ledger";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -24,6 +24,7 @@ export async function POST(
     }
 
     const { id: contractId } = await params;
+    const force = request.nextUrl.searchParams.get("force") === "true";
 
     const [contractRow] = await db
       .select()
@@ -35,21 +36,32 @@ export async function POST(
       return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
     }
 
-    // Idempotency guard — prevent duplicate generation
-    const [existing] = await db
-      .select({ id: tenantLedger.id })
+    // Check existing entries
+    const existingEntries = await db
+      .select({ id: tenantLedger.id, estado: tenantLedger.estado })
       .from(tenantLedger)
-      .where(eq(tenantLedger.contratoId, contractId))
-      .limit(1);
+      .where(eq(tenantLedger.contratoId, contractId));
 
-    if (existing) {
-      return NextResponse.json(
-        { error: "Este contrato ya tiene entradas generadas. Eliminá las existentes antes de regenerar." },
-        { status: 409 }
-      );
+    if (existingEntries.length > 0) {
+      if (!force) {
+        return NextResponse.json(
+          { error: "Este contrato ya tiene entradas generadas. Usá force=true para regenerar." },
+          { status: 409 }
+        );
+      }
+
+      // Only delete non-paid entries
+      const deletableIds = existingEntries
+        .filter((e) => e.estado !== "cobrado")
+        .map((e) => e.id);
+
+      if (deletableIds.length > 0) {
+        await db
+          .delete(tenantLedger)
+          .where(inArray(tenantLedger.id, deletableIds));
+      }
     }
 
-    // Get primary tenant
     const [primaryTenant] = await db
       .select({ clientId: contractTenant.clientId })
       .from(contractTenant)
@@ -65,7 +77,6 @@ export async function POST(
       return NextResponse.json({ error: "El contrato no tiene inquilino principal" }, { status: 422 });
     }
 
-    // Get property services
     const services = await db
       .select({
         id: servicio.id,
@@ -84,6 +95,7 @@ export async function POST(
         ownerId: contractRow.ownerId,
         startDate: contractRow.startDate,
         endDate: contractRow.endDate,
+        ledgerStartDate: contractRow.ledgerStartDate,
         monthlyAmount: contractRow.monthlyAmount,
         paymentDay: contractRow.paymentDay,
         adjustmentIndex: contractRow.adjustmentIndex,
@@ -97,7 +109,6 @@ export async function POST(
       return NextResponse.json({ inserted: 0 });
     }
 
-    // Insert in batches of 100 to avoid parameter limits
     const BATCH = 100;
     let inserted = 0;
     for (let i = 0; i < entries.length; i += BATCH) {
