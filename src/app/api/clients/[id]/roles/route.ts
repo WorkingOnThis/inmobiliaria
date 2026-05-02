@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { client } from "@/db/schema/client";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { guarantee } from "@/db/schema/guarantee";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
@@ -34,9 +34,9 @@ export async function GET(
     }
 
     const [tenantCount] = await db
-      .select({ count: countDistinct(contractTenant.contractId) })
-      .from(contractTenant)
-      .where(eq(contractTenant.clientId, id));
+      .select({ count: countDistinct(contractParticipant.contractId) })
+      .from(contractParticipant)
+      .where(and(eq(contractParticipant.clientId, id), eq(contractParticipant.role, "tenant")));
 
     const [ownerContractCount] = await db
       .select({ count: countDistinct(contract.id) })

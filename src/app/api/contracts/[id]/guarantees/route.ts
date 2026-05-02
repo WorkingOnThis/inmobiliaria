@@ -3,12 +3,12 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { contract } from "@/db/schema/contract";
 import { guarantee } from "@/db/schema/guarantee";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { client } from "@/db/schema/client";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const addGuaranteeSchema = z.discriminatedUnion("type", [
@@ -58,9 +58,9 @@ export async function POST(
     }
 
     const [firstTenant] = await db
-      .select({ clientId: contractTenant.clientId })
-      .from(contractTenant)
-      .where(eq(contractTenant.contractId, id))
+      .select({ clientId: contractParticipant.clientId })
+      .from(contractParticipant)
+      .where(and(eq(contractParticipant.contractId, id), eq(contractParticipant.role, "tenant")))
       .limit(1);
 
     if (!firstTenant) {

@@ -5,11 +5,11 @@ import { property } from "@/db/schema/property";
 import { client } from "@/db/schema/client";
 import { guarantee } from "@/db/schema/guarantee";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
 import { RENTAL_STATUSES, SALE_STATUSES, PRICE_CURRENCIES } from "@/lib/properties/constants";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const updatePropertySchema = z.object({
@@ -135,8 +135,8 @@ export async function GET(
         })
         .from(guarantee)
         .innerJoin(contract, eq(contract.id, guarantee.contractId))
-        .innerJoin(contractTenant, eq(contractTenant.contractId, guarantee.contractId))
-        .innerJoin(client, eq(client.id, contractTenant.clientId))
+        .innerJoin(contractParticipant, and(eq(contractParticipant.contractId, guarantee.contractId), eq(contractParticipant.role, "tenant")))
+        .innerJoin(client, eq(client.id, contractParticipant.clientId))
         .where(eq(guarantee.propertyId, id)),
     ]);
 

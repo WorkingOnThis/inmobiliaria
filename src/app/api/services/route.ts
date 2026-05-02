@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { canManageServices } from "@/lib/permissions";
-import { servicio, servicioComprobante, servicioOmision, property, contract, contractTenant, client } from "@/db/schema";
+import { servicio, servicioComprobante, servicioOmision, property, contract, contractParticipant, client } from "@/db/schema";
 import { eq, and, desc, sql, inArray, or, ilike } from "drizzle-orm";
 import { z } from "zod";
 import { calculateServiceStatus, getPeriodDays } from "@/lib/services/constants";
@@ -94,10 +94,10 @@ export async function GET(request: NextRequest) {
       })
       .from(contract)
       .innerJoin(
-        contractTenant,
-        and(eq(contractTenant.contractId, contract.id), eq(contractTenant.role, "primary"))
+        contractParticipant,
+        and(eq(contractParticipant.contractId, contract.id), eq(contractParticipant.role, "tenant"))
       )
-      .innerJoin(client, eq(client.id, contractTenant.clientId))
+      .innerJoin(client, eq(client.id, contractParticipant.clientId))
       .where(
         and(
           inArray(contract.propertyId, propertyIds),

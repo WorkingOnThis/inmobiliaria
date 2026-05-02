@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { contract } from "@/db/schema/contract";
 import { contractAmendment } from "@/db/schema/contract-amendment";
 import { client } from "@/db/schema/client";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
 import { eq, and } from "drizzle-orm";
@@ -116,9 +116,9 @@ export async function POST(
 
     // Primary tenant
     const [tenantLink] = await db
-      .select({ clientId: contractTenant.clientId })
-      .from(contractTenant)
-      .where(eq(contractTenant.contractId, contractId))
+      .select({ clientId: contractParticipant.clientId })
+      .from(contractParticipant)
+      .where(and(eq(contractParticipant.contractId, contractId), eq(contractParticipant.role, "tenant")))
       .limit(1);
 
     let tenantName = "—";
