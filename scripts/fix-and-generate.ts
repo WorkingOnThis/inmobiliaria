@@ -2,28 +2,28 @@ import { db } from "../src/db";
 import { sql } from "drizzle-orm";
 import { buildLedgerEntries } from "../src/lib/ledger/generate-contract-ledger";
 import { tenantLedger } from "../src/db/schema/tenant-ledger";
-import { contractTenant } from "../src/db/schema/contract-tenant";
+import { contractParticipant } from "../src/db/schema/contract-participant";
 
 // Data we know from tenant_charge
 const CONTRACT_ID = "18e4d423-3426-4e82-a9b1-75186bd4ea4a";
 const INQUILINO_ID = "3f0a0978-f93f-40f4-a2b4-a55ae52ef9b8";
 const PROPIETARIO_ID = "eff7ff6b-c13b-4929-8caf-35ee1f3c31cc";
 
-// 1. Check if contract_tenant already has this relationship
+// 1. Check if contract_participant already has this relationship
 const existing = await db.execute(
-  sql`SELECT * FROM contract_tenant WHERE "contractId" = ${CONTRACT_ID} AND "clientId" = ${INQUILINO_ID}`
+  sql`SELECT * FROM contract_participant WHERE "contractId" = ${CONTRACT_ID} AND "clientId" = ${INQUILINO_ID}`
 );
 
 if (existing.rows.length === 0) {
-  console.log("Inserting missing contract_tenant relationship...");
-  await db.insert(contractTenant).values({
+  console.log("Inserting missing contract_participant relationship...");
+  await db.insert(contractParticipant).values({
     contractId: CONTRACT_ID,
     clientId: INQUILINO_ID,
-    role: "primary",
+    role: "tenant",
   });
   console.log("Done.");
 } else {
-  console.log("contract_tenant already has this relationship.");
+  console.log("contract_participant already has this relationship.");
 }
 
 // 2. Get contract details

@@ -14,7 +14,6 @@ export * from "./client";
 export * from "./contract";
 export * from "./contract-document";
 export * from "./contract-participant";
-export * from "./contract-tenant";
 export * from "./custom-adjustment-index";
 export * from "./guarantee";
 export * from "./guarantee-salary-info";
