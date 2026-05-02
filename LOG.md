@@ -4,6 +4,48 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## Sesión 2026-05-02 — Ledger start date + limpieza de PENDIENTES
+
+### Qué hice
+
+- Revisé PENDIENTES.md y descubrimos que sub-proyectos A (doble rol) y la auditoría visual ya estaban hechos — los marcamos y seguimos
+- Implementé la feature "elegir desde qué mes generar el ledger" completa: schema (`ledgerStartDate` nullable en `contract`), APIs (POST/GET/PATCH), lógica (`buildLedgerEntries` usa `ledgerStartDate ?? startDate`), formulario (campo ámbar automático cuando `startDate > 30 días pasado`) y ficha del contrato (sección "Cobros del contrato" con botón Generar/Regenerar)
+- Agregué soporte de regeneración forzada (`?force=true`) que borra solo entradas no cobradas antes de regenerar — con guard para evitar duplicados si todo está cobrado
+- Detecté y corregí bug: el route `generate-ledger` buscaba el inquilino en la tabla vieja `contract_tenant` (roles "primary"/"co-tenant") en vez de la nueva `contractParticipant` (roles "owner"/"tenant"/"guarantor") — por eso devolvía 422
+- Corregí un problema de UX: el botón "Generar cobros" ahora guarda `ledgerStartDate` automáticamente antes de generar, sin necesidad de un botón "Guardar" separado
+- Eliminé el botón "Guardar" redundante de la sección de cobros
+- Reorganicé PENDIENTES.md en grupos de prioridad (alta/media/baja) y eliminé los ítems ya hechos
+
+### Por qué lo hice así y no de otra forma
+
+**`ledgerStartDate` como campo en la DB en vez de parámetro del POST de generación**: podría haberse pasado como query param `?from=2026-03`, pero guardarlo en el contrato permite que quede visible en la ficha, que se pueda editar después, y que cualquier regeneración futura use el mismo punto de partida sin tener que volver a especificarlo.
+
+**Guard "all cobrado" en la regeneración**: sin ese guard, llamar a `force=true` en un contrato con todos los movimientos cobrados insertaría filas duplicadas silenciosamente — no hay constraint único en `(contratoId, period, tipo)`. El guard devuelve 409 con mensaje claro antes de insertar.
+
+**Guardar antes de generar en el cliente (no en el servidor)**: en vez de cambiar la firma del endpoint para aceptar `ledgerStartDate` en el body, hicimos un PATCH previo al POST. Más simple — cada endpoint sigue siendo responsable de una sola cosa.
+
+**Migración a tabla nueva como deuda técnica, no hoy**: 14 archivos usan `contractTenant`. Migrarlos todos en la misma sesión era riesgoso — tocaría recibos, ledger, servicios, garantías. Lo más seguro fue anotar la deuda claramente en PENDIENTES con el contexto necesario.
+
+### Conceptos que aparecieron
+
+- **Tabla obsoleta (zombie table)**: una tabla que todavía existe en la DB y tiene referencias en el código, pero el sistema ya no escribe datos nuevos ahí. Detectamos esto porque `contract_tenant` nunca recibía filas desde la creación de contratos — la app nueva escribe en `contractParticipant`, pero los routes viejos seguían leyendo de la vieja.
+- **Idempotencia**: propiedad de una operación que puede ejecutarse múltiples veces sin cambiar el resultado después de la primera ejecución. El botón "Generar cobros" no debería generar el doble si se presiona dos veces — el guard de 409 lo protege.
+- **Nullish coalescing (`??`)**: operador de JavaScript que usa el valor de la derecha solo si el de la izquierda es `null` o `undefined`. Distinto de `||` que también descarta `0` y `""`.
+
+### Preguntas para reflexionar
+
+1. Si `contract_tenant` está en desuso pero 14 archivos la usan, ¿esos features están rotos para contratos creados con el sistema nuevo?
+2. ¿Tiene sentido agregar un constraint único en `(contratoId, period, tipo)` en `tenant_ledger` para que la DB misma rechace duplicados?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Concepto**: Tabla zombie / tabla obsoleta — cómo detectarla y el riesgo de no migrarla
+- [ ] **Bug**: 422 en generate-ledger — causa (tabla equivocada `contract_tenant` vs `contractParticipant`) y fix
+- [ ] **Patrón**: Guardar campo antes de ejecutar acción en un solo click (save-then-act en el cliente)
+- [ ] **Decisión técnica**: `ledgerStartDate` en DB vs parámetro del POST — por qué guardarlo en el contrato
+
+---
+
 ## Sesión 2026-04-29 — Plantas y ambientes + formulario siempre editable
 
 ### Qué hice
