@@ -66,6 +66,7 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
           onMontoChange={() => {}}
           onCancelPunitorio={() => {}}
           onAnularRecibo={() => {}}
+          onCancelEntry={() => {}}
           activeFilters={new Set()}
         />
       )}
