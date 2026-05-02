@@ -95,6 +95,8 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
 
   // Cancel entry dialog (Task 4)
   const [cancelConfirm, setCancelConfirm] = useState<LedgerEntry | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelEntryError, setCancelEntryError] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery<CuentaCorrienteData>({
     queryKey: ["tenant-ledger", inquilinoId],
@@ -187,6 +189,34 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
     },
     onError: (error: Error) => {
       setVoidError(error.message);
+    },
+  });
+
+  const cancelEntryMutation = useMutation({
+    mutationFn: async ({ entryId, reason }: { entryId: string; reason: string }) => {
+      const response = await fetch(`/api/tenants/${inquilinoId}/ledger/${entryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          estado: "cancelado",
+          ...(reason.trim() && { cancellationReason: reason.trim() }),
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Error al cancelar el movimiento");
+      }
+    },
+    onSuccess: (_, { entryId }) => {
+      setSelectedIds((prev) => { const next = new Set(prev); next.delete(entryId); return next; });
+      setMontoOverrides((prev) => { const { [entryId]: _removed, ...rest } = prev; return rest; });
+      setCancelConfirm(null);
+      setCancelReason("");
+      setCancelEntryError(null);
+      queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
+    },
+    onError: (error: Error) => {
+      setCancelEntryError(error.message);
     },
   });
 
@@ -752,48 +782,65 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
         </DialogContent>
       </Dialog>
 
-      {/* ── Cancel entry dialog ── (Task 4 placeholder) */}
-      <Dialog open={cancelConfirm !== null} onOpenChange={(open) => { if (!open) setCancelConfirm(null); }}>
+      {/* ── Cancel entry dialog ── */}
+      <Dialog
+        open={cancelConfirm !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCancelConfirm(null);
+            setCancelReason("");
+            setCancelEntryError(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Cancelar movimiento</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             {cancelConfirm && (
-              <>
-                <p className="text-muted-foreground text-xs">
-                  ¿Estás seguro de que querés cancelar este movimiento?
-                </p>
-                <div className="rounded-md border border-border p-3 bg-muted/50 space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Concepto:</span>
-                    <span className="font-medium">{cancelConfirm.descripcion}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Monto:</span>
-                    <span className="font-mono font-medium">${Number(cancelConfirm.monto ?? 0).toLocaleString("es-AR")}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Estado:</span>
-                    <Badge variant="outline" className="text-[10px]">{cancelConfirm.estado}</Badge>
-                  </div>
-                </div>
-                <p className="text-xs text-destructive font-medium">Esta acción no se puede deshacer.</p>
-              </>
+              <div className="rounded-md border border-border p-3 space-y-0.5">
+                <p className="text-xs text-muted-foreground truncate">{cancelConfirm.descripcion}</p>
+                {cancelConfirm.monto !== null && (
+                  <p className="font-mono text-sm font-semibold">
+                    ${Number(cancelConfirm.monto).toLocaleString("es-AR")}
+                  </p>
+                )}
+              </div>
             )}
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Motivo (opcional)</label>
+              <Textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Ej: error de carga, no corresponde cobrar…"
+                rows={2}
+                className="text-sm resize-none"
+              />
+            </div>
+            {cancelEntryError && <p className="text-xs text-destructive">{cancelEntryError}</p>}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCancelConfirm(null)}>
-              Cancelar
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancelConfirm(null);
+                setCancelReason("");
+                setCancelEntryError(null);
+              }}
+              disabled={cancelEntryMutation.isPending}
+            >
+              Volver
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                // Task 4: implement actual cancellation logic
-                setCancelConfirm(null);
-              }}
+              onClick={() =>
+                cancelConfirm &&
+                cancelEntryMutation.mutate({ entryId: cancelConfirm.id, reason: cancelReason })
+              }
+              disabled={cancelEntryMutation.isPending}
             >
-              Confirmar cancelación
+              {cancelEntryMutation.isPending ? "Cancelando..." : "Confirmar cancelación"}
             </Button>
           </DialogFooter>
         </DialogContent>
