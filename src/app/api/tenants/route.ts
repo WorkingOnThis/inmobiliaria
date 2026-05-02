@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
     const linkedIds = tenantLinks.map((r) => r.clientId);
 
-    // Combine: type="tenant" OR in contract_tenant (avoid duplicates via OR in SQL)
+    // Combine: type="tenant" OR in contract_participant (role="tenant") to catch legacy client.type rows
     const tenantCondition = linkedIds.length > 0
       ? or(eq(client.type, "tenant"), inArray(client.id, linkedIds))!
       : eq(client.type, "tenant");
