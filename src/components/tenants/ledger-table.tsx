@@ -30,6 +30,7 @@ export type LedgerEntry = {
   lateInterestPct: string | null;
   montoPagado: string | null;
   ultimoPagoAt: string | null;
+  cancellationReason: string | null;
 };
 
 type Props = {
