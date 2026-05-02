@@ -1607,7 +1607,7 @@ export function ContractDetail({ id }: { id: string }) {
 
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Primer mes a cobrar</Label>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 max-w-xs">
                 <DatePicker
                   value={ledgerStartDateEdit || data.startDate}
                   onChange={(v) => setLedgerStartDateEdit(v)}
