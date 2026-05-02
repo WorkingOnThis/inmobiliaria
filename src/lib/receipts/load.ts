@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { client } from "@/db/schema/client";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { property } from "@/db/schema/property";
 import { agency } from "@/db/schema/agency";
 import { receiptServiceItem } from "@/db/schema/receipt-service-item";
@@ -99,9 +99,13 @@ export async function loadReceiptData(
           .from(contract).where(eq(contract.id, movimiento.contratoId)).limit(1)
       : movimiento.inquilinoId
         ? db.select({ contractNumber: contract.contractNumber, paymentModality: contract.paymentModality })
-            .from(contractTenant)
-            .innerJoin(contract, eq(contract.id, contractTenant.contractId))
-            .where(and(eq(contractTenant.clientId, movimiento.inquilinoId), eq(contract.status, "active")))
+            .from(contractParticipant)
+            .innerJoin(contract, eq(contract.id, contractParticipant.contractId))
+            .where(and(
+              eq(contractParticipant.clientId, movimiento.inquilinoId),
+              eq(contractParticipant.role, "tenant"),
+              eq(contract.status, "active")
+            ))
             .limit(1)
         : Promise.resolve([]),
     db.select({

@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { client } from "@/db/schema/client";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { contract } from "@/db/schema/contract";
-import { contractTenant } from "@/db/schema/contract-tenant";
+import { contractParticipant } from "@/db/schema/contract-participant";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
@@ -58,9 +58,9 @@ export async function GET(
 
     // ── AS TENANT ────────────────────────────────────────────────────────────
     const tenantContractLinks = await db
-      .select({ contractId: contractTenant.contractId })
-      .from(contractTenant)
-      .where(eq(contractTenant.clientId, id));
+      .select({ contractId: contractParticipant.contractId })
+      .from(contractParticipant)
+      .where(and(eq(contractParticipant.clientId, id), eq(contractParticipant.role, "tenant")));
 
     const tenantContractIds = tenantContractLinks.map((r) => r.contractId);
 
@@ -189,13 +189,16 @@ export async function GET(
 
         db
           .select({
-            contractId: contractTenant.contractId,
+            contractId: contractParticipant.contractId,
             firstName: client.firstName,
             lastName: client.lastName,
           })
-          .from(contractTenant)
-          .leftJoin(client, eq(contractTenant.clientId, client.id))
-          .where(inArray(contractTenant.contractId, ownerContractIds)),
+          .from(contractParticipant)
+          .leftJoin(client, eq(contractParticipant.clientId, client.id))
+          .where(and(
+            inArray(contractParticipant.contractId, ownerContractIds),
+            eq(contractParticipant.role, "tenant")
+          )),
       ]);
 
       const contracts = ownerContractDetails
