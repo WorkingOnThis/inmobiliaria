@@ -32,6 +32,7 @@ const createContractSchema = z.object({
   adjustmentIndex: z.string().min(1).default("none"),
   adjustmentFrequency: z.coerce.number().int().min(1).max(12).default(12),
   isImported: z.boolean().optional().default(false),
+  ledgerStartDate: z.string().optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -258,6 +259,7 @@ export async function POST(request: NextRequest) {
           paymentModality: data.paymentModality,
           adjustmentIndex: data.adjustmentIndex,
           adjustmentFrequency: data.adjustmentFrequency,
+          ledgerStartDate: data.ledgerStartDate ?? null,
           createdBy: session.user.id,
           createdAt: now,
           updatedAt: now,

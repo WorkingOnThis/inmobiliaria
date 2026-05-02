@@ -34,6 +34,7 @@ const patchContractSchema = z.object({
   electronicPaymentFeePct: z.string().regex(/^\d+(\.\d{1,2})?$/).optional().nullable(),
   lateInterestPct: z.string().regex(/^\d+(\.\d{1,2})?$/).optional().nullable(),
   isRenewal: z.boolean().optional(),
+  ledgerStartDate: z.string().optional().nullable(),
 });
 
 export async function GET(
@@ -71,6 +72,7 @@ export async function GET(
         electronicPaymentFeePct: contract.electronicPaymentFeePct,
         lateInterestPct: contract.lateInterestPct,
         isRenewal: contract.isRenewal,
+        ledgerStartDate: contract.ledgerStartDate,
         createdAt: contract.createdAt,
         ownerId: contract.ownerId,
         propertyId: contract.propertyId,
@@ -428,6 +430,7 @@ export async function PATCH(
     if (data.electronicPaymentFeePct !== undefined) updates.electronicPaymentFeePct = data.electronicPaymentFeePct;
     if (data.lateInterestPct !== undefined) updates.lateInterestPct = data.lateInterestPct;
     if (data.isRenewal !== undefined) updates.isRenewal = data.isRenewal;
+    if (data.ledgerStartDate !== undefined) updates.ledgerStartDate = data.ledgerStartDate;
 
     const activating =
       data.status === "active" && existing.status !== "active";
