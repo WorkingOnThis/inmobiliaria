@@ -20,6 +20,8 @@ const TIPOS_MANUAL = [
   { value: "descuento",    label: "Descuento" },
 ] as const;
 
+const INITIAL_FLAGS = defaultFlagsForTipo("gasto");
+
 export type ManualChargeData = {
   tipo: "gasto" | "servicio" | "bonificacion" | "descuento";
   descripcion: string;
@@ -37,14 +39,13 @@ type Props = {
 };
 
 export function AddManualChargeDialog({ open, onOpenChange, onSave }: Props) {
-  const initialFlags = defaultFlagsForTipo("gasto");
   const [tipo, setTipo] = useState<ManualChargeData["tipo"]>("gasto");
   const [descripcion, setDescripcion] = useState("");
   const [monto, setMonto] = useState("");
   const [period, setPeriod] = useState("");
-  const [impactaPropietario, setImpactaPropietario] = useState(initialFlags.impactaPropietario);
-  const [incluirEnBaseComision, setIncluirEnBaseComision] = useState(initialFlags.incluirEnBaseComision);
-  const [impactaCaja, setImpactaCaja] = useState(initialFlags.impactaCaja);
+  const [impactaPropietario, setImpactaPropietario] = useState(INITIAL_FLAGS.impactaPropietario);
+  const [incluirEnBaseComision, setIncluirEnBaseComision] = useState(INITIAL_FLAGS.incluirEnBaseComision);
+  const [impactaCaja, setImpactaCaja] = useState(INITIAL_FLAGS.impactaCaja);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -61,10 +62,9 @@ export function AddManualChargeDialog({ open, onOpenChange, onSave }: Props) {
     setDescripcion("");
     setMonto("");
     setPeriod("");
-    const f = defaultFlagsForTipo("gasto");
-    setImpactaPropietario(f.impactaPropietario);
-    setIncluirEnBaseComision(f.incluirEnBaseComision);
-    setImpactaCaja(f.impactaCaja);
+    setImpactaPropietario(INITIAL_FLAGS.impactaPropietario);
+    setIncluirEnBaseComision(INITIAL_FLAGS.incluirEnBaseComision);
+    setImpactaCaja(INITIAL_FLAGS.impactaCaja);
     setError(null);
     setSaving(false);
   }
@@ -100,7 +100,7 @@ export function AddManualChargeDialog({ open, onOpenChange, onSave }: Props) {
         </DialogHeader>
         <div className="space-y-3 text-sm">
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Tipo</label>
+            <Label className="text-xs text-muted-foreground">Tipo</Label>
             <Select value={tipo} onValueChange={handleTipoChange}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -111,7 +111,7 @@ export function AddManualChargeDialog({ open, onOpenChange, onSave }: Props) {
             </Select>
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Descripción</label>
+            <Label className="text-xs text-muted-foreground">Descripción</Label>
             <Input
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
@@ -120,18 +120,18 @@ export function AddManualChargeDialog({ open, onOpenChange, onSave }: Props) {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Monto ($)</label>
+            <Label className="text-xs text-muted-foreground">Monto ($)</Label>
             <Input
               value={monto}
               onChange={(e) => setMonto(e.target.value)}
               placeholder="0"
-              type="number"
-              min="0"
+              type="text"
+              inputMode="decimal"
               className="h-9"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Período (opcional)</label>
+            <Label className="text-xs text-muted-foreground">Período (opcional)</Label>
             <Input
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
