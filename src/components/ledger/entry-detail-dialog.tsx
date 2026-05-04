@@ -49,7 +49,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave }: Props) {
   useEffect(() => {
     if (entry) {
       setDescripcion(entry.descripcion);
-      setMonto(entry.monto ?? "");
+      setMonto(entry.monto ? String(parseFloat(entry.monto)) : "");
       setDueDate(entry.dueDate ?? "");
       setImpactaPropietario(entry.impactaPropietario);
       setIncluirEnBaseComision(entry.incluirEnBaseComision);

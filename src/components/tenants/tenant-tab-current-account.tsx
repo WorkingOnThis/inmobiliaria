@@ -793,7 +793,10 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       <EntryDetailDialog
         entry={selectedDetailEntry}
         onOpenChange={(open) => { if (!open) setSelectedDetailEntry(null); }}
-        onSave={(data) => editEntryMutation.mutateAsync({ entryId: selectedDetailEntry!.id, ...data })}
+        onSave={(data) => {
+          if (!selectedDetailEntry) return Promise.resolve();
+          return editEntryMutation.mutateAsync({ entryId: selectedDetailEntry.id, ...data });
+        }}
       />
     </div>
   );
