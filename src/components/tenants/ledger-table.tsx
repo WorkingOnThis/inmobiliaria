@@ -45,9 +45,9 @@ type Props = {
   onSelectMonth: (period: string) => void;
   onDeselectMonth: (period: string) => void;
   onMontoChange: (id: string, value: string) => void;
-  onCancelPunitorio: (id: string) => void;
-  onAnularRecibo: (reciboNumero: string) => void;
   onCancelEntry: (entry: LedgerEntry) => void;
+  onAnularRecibo: (reciboNumero: string) => void;
+  onViewDetail: (entry: LedgerEntry) => void;
   activeFilters: Set<string>;
 };
 
@@ -121,9 +121,9 @@ export function LedgerTable({
   onSelectMonth,
   onDeselectMonth,
   onMontoChange,
-  onCancelPunitorio,
-  onAnularRecibo,
   onCancelEntry,
+  onAnularRecibo,
+  onViewDetail,
   activeFilters,
 }: Props) {
   const todayPeriod = new Date().toISOString().slice(0, 7);
@@ -315,39 +315,39 @@ export function LedgerTable({
 
                   {/* Actions */}
                   <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
-                    {isPunitorio && entry.estado !== "conciliado" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onCancelPunitorio(entry.id)}
-                        aria-label="Cancelar punitorio"
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                      >
-                        ✕
-                      </Button>
-                    )}
-                    {!isPunitorio && isCancelable(entry) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                            aria-label="Acciones"
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                          aria-label="Acciones"
+                        >
+                          <MoreHorizontal size={14} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onViewDetail(entry)}>
+                          Ver detalle
+                        </DropdownMenuItem>
+                        {isPunitorio && entry.estado !== "conciliado" && (
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onCancelEntry(entry)}
                           >
-                            <MoreHorizontal size={14} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                            Cancelar punitorio
+                          </DropdownMenuItem>
+                        )}
+                        {!isPunitorio && isCancelable(entry) && (
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() => onCancelEntry(entry)}
                           >
                             Cancelar movimiento
                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     {entry.reciboNumero && (
                       <div className="flex items-center gap-0.5">
                         <Button
