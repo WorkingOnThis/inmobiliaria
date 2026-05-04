@@ -4,6 +4,101 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-02 — Sistema de documentación del proyecto (decisiones, historial, pendientes)
+
+### Qué hice
+
+Armé un sistema de documentación vivo dentro del mismo repositorio:
+
+- Creé la carpeta `docs/decisions/` con un archivo por módulo: `contabilidad.md`, `inquilinos.md`, `propietarios.md`, `contratos.md`, `usuarios-y-acceso.md`, `documentos.md`
+- Escribí las dos primeras decisiones reales en `contabilidad.md`: la cancelación soft (confirmada) y la conciliación manual (postergada)
+- Creé `HISTORIAL.md` para registrar las funcionalidades completadas
+- Reorganicé `PENDIENTES.md`: cada ítem activo ahora linkea a su módulo de decisiones, los completados van al final con link a HISTORIAL, y hay una nueva sección `🔵 Backlog / Futuro` para ítems postergados
+- Actualicé `CLAUDE.md` con una sección que explica el sistema entero
+- Actualicé `CLAUDE.local.md` para que Claude arranque cada sesión leyendo PENDIENTES si no hay un tema específico
+
+También evaluamos el ítem "marcar movimiento como ya cobrado" y decidimos postergarlo: el volumen de casos es bajo, el riesgo de estafa está disuadido por el contrato, y el valor real aparece cuando los inquilinos puedan subir comprobantes en la app — lo cual requiere el módulo de login primero.
+
+### Por qué lo hice así y no de otra forma
+
+**Un archivo por módulo en lugar de uno por decisión**: un archivo por decisión escala bien en equipos grandes pero es overhead para un proyecto de una persona. Agrupar por módulo hace que sea fácil encontrar el contexto de un área sin navegar docenas de archivos.
+
+**Tres documentos separados (PENDIENTES / HISTORIAL / decisions)**: cada uno responde una pregunta distinta. PENDIENTES = qué hacer hoy. HISTORIAL = qué tiene el sistema ahora. Decisions = por qué fue construido así. Mezclarlos haría que ninguno sea útil.
+
+**Links entre PENDIENTES y decisions**: en lugar de duplicar el contexto en dos lugares, el ítem de PENDIENTES apunta al archivo de decisiones. Un solo lugar para leer el detalle.
+
+### Conceptos que aparecieron
+
+- **ADR (Architecture Decision Record)**: documento que registra una decisión técnica — qué se decidió, por qué, qué alternativas se descartaron, cuándo revisarlo. No es una tarea ni un bug. Es memoria del proyecto.
+
+- **Documentación viva**: documentación que vive dentro del repositorio, junto al código, y se actualiza a medida que el sistema cambia. Lo opuesto a una wiki externa que queda desactualizada.
+
+- **Backlog**: lista de cosas que tienen valor pero no son urgentes ahora. No es la papelera — es un estante ordenado de ideas válidas esperando el momento correcto.
+
+### Preguntas para reflexionar
+
+1. ¿Cuál es la diferencia entre documentar *qué hace* el código y documentar *por qué se decidió* hacerlo así?
+2. Si en 6 meses alguien nuevo entra al proyecto, ¿qué documento debería leer primero para entender el estado del sistema?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Concepto**: ADR (Architecture Decision Record) — qué es, para qué sirve, cuándo usarlo
+- [ ] **Decisión técnica**: por qué postergamos la conciliación manual hasta tener login de inquilinos
+
+---
+
+## 2026-05-02 — Cancelar movimiento pendiente desde la UI de cuenta corriente
+
+### Qué hice
+
+Implementé la funcionalidad de cancelar (soft cancel) movimientos pendientes desde la tabla de cuenta corriente del inquilino. El flujo completo:
+
+- Se agrega una columna `cancellationReason` (texto nullable) a la tabla `tenant_ledger` en la base de datos
+- El endpoint PATCH `/api/tenants/[id]/ledger/[entryId]` ahora acepta `cancellationReason` y, cuando se cancela un movimiento, también cancela automáticamente los punitorios hijos en la misma transacción de base de datos
+- En la tabla de movimientos aparece un botón `...` (tres puntos) en las filas con estado cancelable (`pendiente`, `registrado`, `pago_parcial`, `pendiente_revision`)
+- Al hacer click aparece un dialog que muestra descripción y monto del movimiento, con un campo de texto libre opcional para el motivo
+- La fila desaparece de la vista al confirmar
+
+### Por qué lo hice así y no de otra forma
+
+**Soft cancel en lugar de borrado físico**: en contabilidad nunca se borran registros — se anulan. Así queda rastro de que existió, quién lo anuló y cuándo. Si hay empleados, podés auditar. Si mañana alguien pregunta por qué falta un cargo, lo podés rastrear.
+
+**Transacción de base de datos para el cascade**: el alquiler padre y sus punitorios hijos se cancelan en una sola operación atómica. Si el servidor cae a la mitad, todo vuelve atrás automáticamente — no quedás con el padre cancelado y los hijos "fantasmas" todavía pendientes.
+
+**Guard de `conciliado` en el cascade**: si por alguna razón un punitorio ya estaba cobrado (`conciliado`), el sistema lo saltea en lugar de forzar su cancelación. Un pago cobrado no se puede deshacer solo porque se anuló el cargo original.
+
+**Dialog en el componente padre, botón en la tabla**: la tabla (`LedgerTable`) es un componente "tonto" — solo muestra datos y llama callbacks. El estado del dialog y la llamada a la API viven en el padre (`TenantTabCurrentAccount`), que ya tiene el contexto del inquilino. Es el mismo patrón que usan los otros dialogs del componente (emitir recibo, anular recibo, cargo manual).
+
+**Subagentes para implementar**: usamos un sistema de agentes especializados — uno para cada tarea, con revisiones de spec y calidad entre medio. Esto permite que cada cambio sea pequeño y verificado antes de pasar al siguiente.
+
+### Conceptos que aparecieron
+
+- **Soft delete / soft cancel**: en lugar de borrar un registro de la base de datos, se marca con un estado especial (`cancelado`). El dato sigue existiendo pero queda "invisible" para el flujo normal. Es la práctica estándar en sistemas financieros.
+
+- **Transacción de base de datos**: un bloque de operaciones que se ejecutan como una sola unidad. Si cualquiera falla, todas se deshacen. En Drizzle se usa `db.transaction(async (tx) => { ... })`.
+
+- **Atomicidad**: la propiedad de que una operación es "todo o nada". Si actualizás dos tablas y la segunda falla, la primera vuelve atrás. Sin esto, los datos pueden quedar en un estado inconsistente.
+
+- **Cascade**: cuando una acción sobre un registro "cae en cascada" hacia registros relacionados. Aquí, cancelar un alquiler cancela también sus punitorios.
+
+- **Callback prop**: una función que se le pasa a un componente hijo como parámetro. El hijo la llama cuando algo pasa (el usuario hace click), pero no sabe qué hace — eso lo decide el padre.
+
+- **Schema Zod**: una definición de la forma que debe tener un objeto en TypeScript. Sirve para validar los datos que llegan de afuera (el body de un request HTTP) antes de procesarlos.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué es importante que la cancelación de padre e hijos ocurra en una sola transacción? ¿Qué pasaría si no lo fuera?
+2. ¿Cuál es la diferencia entre un componente "tonto" y uno "inteligente"? ¿Por qué conviene que `LedgerTable` sea tonto?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Concepto**: Soft delete — qué es, por qué se usa en sistemas financieros, analogía con tachadura en un cuaderno contable
+- [ ] **Concepto**: Transacción de base de datos — atomicidad, el ejemplo del banco que transfiere plata
+- [ ] **Patrón**: Callback prop en React — cómo un componente hijo avisa al padre sin saber qué hace el padre con esa información
+- [ ] **Decisión técnica**: Por qué elegimos soft cancel en lugar de borrado físico para los movimientos del ledger
+
+---
+
 ## Sesión 2026-05-02 — Ledger start date + limpieza de PENDIENTES
 
 ### Qué hice

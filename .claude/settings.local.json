@@ -146,7 +146,9 @@
       "PowerShell(& \"C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\Installer\\\\vswhere.exe\" -all -prerelease -format json 2>&1)",
       "Bash(npx impeccable *)",
       "Bash(grep *)",
-      "Bash(Remove-Item *)"
+      "Bash(Remove-Item *)",
+      "PowerShell(bash \"C:/Users/guill/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/scripts/start-server.sh\" --project-dir \"F:/Documentos/Proyectos/inmobiliaria\")",
+      "PowerShell(node --version; ls \"C:\\\\Users\\\\guill\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.0.7\\\\skills\\\\brainstorming\\\\scripts\\\\\")"
     ]
   },
   "enableAllProjectMcpServers": true,

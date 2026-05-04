@@ -54,6 +54,29 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## Project Documentation
+
+The project uses three living documents that together work as a manual:
+
+| File | Purpose |
+|---|---|
+| `PENDIENTES.md` | Active backlog ordered by priority. Each item links to its decision module. Completed items move to `HISTORIAL.md`. |
+| `HISTORIAL.md` | Log of completed features with date, description, and affected modules. |
+| `docs/decisions/*.md` | One file per domain area. Captures *why* things were built, deferred, or discarded. |
+| `LOG.md` | Per-session learning log (concepts, decisions made during the session). |
+
+**Decision files** (`docs/decisions/`):
+- `contabilidad.md` — cross-cutting accounting logic (cuenta corriente, caja, liquidaciones)
+- `inquilinos.md` — tenant module
+- `propietarios.md` — owner module
+- `contratos.md` — contracts module
+- `usuarios-y-acceso.md` — auth, roles, third-party access
+- `documentos.md` — document generator, templates, PDF
+
+**Decision status tags:** `confirmada` · `postergada` · `idea` · `descartada`
+
+When closing a task: move it from `PENDIENTES.md` to `HISTORIAL.md` and update the relevant decision file if there's something worth recording.
+
 ## Commands
 
 ```bash

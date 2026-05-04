@@ -109,6 +109,12 @@ para generar notas con sintaxis correcta de Obsidian Flavored Markdown.
 
 ---
 
+## Al iniciar cada sesión
+
+Si el usuario no indica un tema específico, leé `PENDIENTES.md` y mostrá el primer ítem sin tachar de Prioridad alta. Decí cuál es y preguntá si confirmamos ese como objetivo de la sesión antes de tocar cualquier código.
+
+---
+
 ## Workflow de Git (recordatorio)
 
 ```bash
