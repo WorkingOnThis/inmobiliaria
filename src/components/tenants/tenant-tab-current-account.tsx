@@ -10,13 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp, PlusCircle, AlertTriangle, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LedgerTable, type LedgerEntry } from "./ledger-table";
 import { CobroPanel } from "./cobro-panel";
+import { AddManualChargeDialog, type ManualChargeData } from "@/components/ledger/add-manual-charge-dialog";
+import { EntryDetailDialog, type EntryEditData } from "@/components/ledger/entry-detail-dialog";
 
 type KPIs = {
   estadoCuenta: "al_dia" | "en_mora";
@@ -61,13 +61,6 @@ function getMonto(entry: LedgerEntry, overrides: Record<string, string>): number
   return Number(entry.monto ?? 0);
 }
 
-const TIPOS_MANUAL = [
-  { value: "gasto", label: "Gasto" },
-  { value: "servicio", label: "Servicio" },
-  { value: "bonificacion", label: "Bonificación" },
-  { value: "descuento", label: "Descuento" },
-] as const;
-
 export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Props) {
   const queryClient = useQueryClient();
 
@@ -87,11 +80,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
 
   // Cargo manual dialog
   const [showManual, setShowManual] = useState(false);
-  const [manualTipo, setManualTipo] = useState<string>("gasto");
-  const [manualDescripcion, setManualDescripcion] = useState("");
-  const [manualMonto, setManualMonto] = useState("");
-  const [manualPeriod, setManualPeriod] = useState("");
-  const [manualError, setManualError] = useState<string | null>(null);
+  const [selectedDetailEntry, setSelectedDetailEntry] = useState<LedgerEntry | null>(null);
 
   // Cancel entry dialog (Task 4)
   const [cancelConfirm, setCancelConfirm] = useState<LedgerEntry | null>(null);
@@ -221,14 +210,9 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   });
 
   const addManualMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (chargeData: ManualChargeData) => {
       const ctx = ledgerEntries[0];
       if (!ctx) throw new Error("No hay contexto de contrato");
-
-      const monto = parseFloat(manualMonto.replace(/\./g, "").replace(",", "."));
-      if (isNaN(monto) || monto <= 0) throw new Error("El monto debe ser un número positivo");
-      if (!manualDescripcion.trim()) throw new Error("La descripción es obligatoria");
-
       const response = await fetch(`/api/tenants/${inquilinoId}/ledger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -236,10 +220,13 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           contratoId: ctx.contratoId,
           propietarioId: ctx.propietarioId,
           propiedadId: ctx.propiedadId,
-          tipo: manualTipo,
-          descripcion: manualDescripcion.trim(),
-          monto,
-          ...(manualPeriod ? { period: manualPeriod } : {}),
+          tipo: chargeData.tipo,
+          descripcion: chargeData.descripcion,
+          monto: chargeData.monto,
+          ...(chargeData.period ? { period: chargeData.period } : {}),
+          impactaPropietario: chargeData.impactaPropietario,
+          incluirEnBaseComision: chargeData.incluirEnBaseComision,
+          impactaCaja: chargeData.impactaCaja,
         }),
       });
       if (!response.ok) {
@@ -249,16 +236,26 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       return response.json();
     },
     onSuccess: () => {
-      setShowManual(false);
-      setManualDescripcion("");
-      setManualMonto("");
-      setManualPeriod("");
-      setManualTipo("gasto");
-      setManualError(null);
       queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
     },
-    onError: (error: Error) => {
-      setManualError(error.message);
+  });
+
+  const editEntryMutation = useMutation({
+    mutationFn: async ({ entryId, ...data }: EntryEditData & { entryId: string }) => {
+      const response = await fetch(`/api/tenants/${inquilinoId}/ledger/${entryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Error al actualizar el movimiento");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      setSelectedDetailEntry(null);
+      queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
     },
   });
 
@@ -321,6 +318,10 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   }
 
   function handleCancelEntry(entry: LedgerEntry) {
+    if (entry.tipo === "punitorio") {
+      cancelPunitorio.mutate(entry.id);
+      return;
+    }
     setCancelEntryError(null);
     setCancelConfirm(entry);
   }
@@ -555,7 +556,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
             size="sm"
             className="gap-1.5 font-semibold"
             disabled={!hasContract}
-            onClick={() => { setManualError(null); setShowManual(true); }}
+            onClick={() => setShowManual(true)}
           >
             <PlusCircle size={14} />
             Cargo manual
@@ -576,9 +577,9 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           onSelectMonth={handleSelectMonth}
           onDeselectMonth={handleDeselectMonth}
           onMontoChange={handleMontoChange}
-          onCancelPunitorio={(id) => cancelPunitorio.mutate(id)}
           onAnularRecibo={(reciboNumero) => { setVoidError(null); setVoidConfirm({ reciboNumero }); }}
           onCancelEntry={handleCancelEntry}
+          onViewDetail={setSelectedDetailEntry}
           activeFilters={activeFilters}
         />
       </div>
@@ -719,69 +720,11 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
         </DialogContent>
       </Dialog>
 
-      {/* ── Cargo manual dialog ── */}
-      <Dialog open={showManual} onOpenChange={(open) => { setShowManual(open); if (!open) setManualError(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Cargo manual</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 text-sm">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Tipo</label>
-              <Select value={manualTipo} onValueChange={setManualTipo}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIPOS_MANUAL.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Descripción</label>
-              <Input
-                value={manualDescripcion}
-                onChange={(e) => setManualDescripcion(e.target.value)}
-                placeholder="Ej: arreglo de cañería"
-                className="h-9"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Monto ($)</label>
-              <Input
-                value={manualMonto}
-                onChange={(e) => setManualMonto(e.target.value)}
-                placeholder="0"
-                type="number"
-                min="0"
-                className="h-9"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Período (opcional)</label>
-              <Input
-                value={manualPeriod}
-                onChange={(e) => setManualPeriod(e.target.value)}
-                placeholder="YYYY-MM"
-                pattern="\d{4}-\d{2}"
-                className="h-9"
-              />
-            </div>
-            {manualError && <p className="text-xs text-destructive">{manualError}</p>}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowManual(false)}>Cancelar</Button>
-            <Button
-              onClick={() => addManualMutation.mutate()}
-              disabled={addManualMutation.isPending}
-            >
-              {addManualMutation.isPending ? "Guardando..." : "Agregar cargo"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddManualChargeDialog
+        open={showManual}
+        onOpenChange={setShowManual}
+        onSave={(data) => addManualMutation.mutateAsync(data)}
+      />
 
       {/* ── Cancel entry dialog ── */}
       <Dialog
@@ -846,6 +789,12 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EntryDetailDialog
+        entry={selectedDetailEntry}
+        onOpenChange={(open) => { if (!open) setSelectedDetailEntry(null); }}
+        onSave={(data) => editEntryMutation.mutateAsync({ entryId: selectedDetailEntry!.id, ...data })}
+      />
     </div>
   );
 }
