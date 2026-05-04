@@ -8,8 +8,6 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 
 ## 🔴 Prioridad alta
 
-- [ ] **Flags contables en cargo manual** — al agregar cargo manual, poder togglear `impactaPropietario`, `incluirEnBaseComision`, `impactaCaja` · [contabilidad](docs/decisions/contabilidad.md)
-
 - [ ] **Configurar honorarios por contrato** — cobrar sí/no, a quién le llega qué parte; opción de que el pago vaya todo a la inmobiliaria sin trasladar al propietario · [contratos](docs/decisions/contratos.md)
 
 - [ ] **PDF del recibo** — requiere librería tipo `@react-pdf/renderer` o similar · [documentos](docs/decisions/documentos.md)
@@ -24,7 +22,13 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 
 ## 🟡 Prioridad media
 
-- [ ] **Editar movimiento pendiente desde el menú contextual** — agregar opción "Editar" al `...` de la tabla de cuenta corriente; abrir un dialog con campos: descripción, monto, fecha de vencimiento. La API PATCH ya acepta esos campos · [contabilidad](docs/decisions/contabilidad.md)
+- [ ] **Cuenta corriente de propietarios** — dejarla similar a la de inquilinos: misma estructura de tabla, mismo menú `···` con "Ver detalle", misma lógica de flags contables. El `EntryDetailDialog` ya existe como componente reutilizable · [contabilidad](docs/decisions/contabilidad.md)
+
+- [ ] **Rango de fechas en cargo manual** — reemplazar el campo "Período (opcional)" por fecha inicio + fecha fin, con posibilidad de setear el fin especificando días desde el inicio (igual que en generación de contratos). Útil para calcular punitorios sobre cargos manuales · [contabilidad](docs/decisions/contabilidad.md)
+
+- [ ] **Pago parcial y descuento desde dialog de detalle** — al modificar el monto de un alquiler o punitorio en el dialog, mostrar un campo adicional para indicar si es pago parcial. Incluye un flag: si NO es pago parcial, registrarlo como descuento automáticamente · [contabilidad](docs/decisions/contabilidad.md)
+
+- [ ] **Descuentos y bonificaciones — distinción contable** — dos tipos diferenciados: `descuento` (no reduce base de honorarios, el propietario asume la diferencia) y `bonificacion` (reduce base de honorarios, la inmobiliaria también asume). Verificar que los flags `incluirEnBaseComision` e `impactaPropietario` reflejen correctamente esta distinción y que sea claro en la UI cuál es cuál · [contabilidad](docs/decisions/contabilidad.md)
 
 - [ ] **Score de cliente** — métrica que refleja qué tanto trabajo da un inquilino. Schema: tabla `client_interaction` con `clientId`, `tipo` (reclamo/consulta/incidente), `descripcion`, `humorScore` (1–5). Score compuesto: frecuencia de reclamos + promedio humorScore + días promedio de pago. UI en ficha del inquilino · [inquilinos](docs/decisions/inquilinos.md)
 
