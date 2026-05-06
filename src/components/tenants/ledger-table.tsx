@@ -53,6 +53,7 @@ type Props = {
   activeFilters: Set<string>;
   isSplitContract?: boolean;
   isOwnerView?: boolean;
+  /** Required when isSplitContract is true — omitting defaults to 10% and may show wrong amounts */
   managementCommissionPct?: number;
 };
 
