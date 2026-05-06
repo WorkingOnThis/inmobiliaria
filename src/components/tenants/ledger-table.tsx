@@ -109,13 +109,11 @@ function formatDescription(desc: string): string {
   return desc.replace(/\b(\d{4})-(\d{2})\b/g, "$2/$1");
 }
 
-const SHOW_DUEDATE_STATES = new Set(["pendiente", "registrado", "pendiente_revision", "pago_parcial"]);
-
 function getDueDateSubtext(
   entry: LedgerEntry,
   today: string
 ): { text: string; dateLabel: string; color: string } | null {
-  if (!entry.dueDate || !SHOW_DUEDATE_STATES.has(entry.estado)) return null;
+  if (!entry.dueDate || !PENDING_STATES.includes(entry.estado)) return null;
 
   const due = entry.dueDate;
   const [, dm, dd] = due.split("-");
@@ -284,7 +282,7 @@ export function LedgerTable({
             {/* Period header */}
             <div className="flex items-center justify-between px-4 py-1.5">
               <div className="flex items-center gap-2.5 pr-3 border-r border-border/50 self-stretch">
-                {selectableIds.length >= 2 ? (
+                {selectableIds.length >= 2 && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -298,8 +296,6 @@ export function LedgerTable({
                   >
                     {isMonthSelected ? "Desel. mes" : "Sel. mes"}
                   </Button>
-                ) : (
-                  <div className="h-6 w-[110px]" />
                 )}
               </div>
               <span className={cn(
