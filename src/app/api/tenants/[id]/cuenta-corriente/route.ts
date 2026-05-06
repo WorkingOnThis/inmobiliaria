@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { client } from "@/db/schema/client";
 import { agency } from "@/db/schema/agency";
-import { user } from "@/db/schema/better-auth";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { contract } from "@/db/schema/contract";
 import { contractParticipant } from "@/db/schema/contract-participant";
@@ -81,8 +80,7 @@ export async function GET(
         db
           .select({ name: agency.name, bancoCBU: agency.bancoCBU, bancoAlias: agency.bancoAlias })
           .from(agency)
-          .innerJoin(user, eq(agency.ownerId, user.id))
-          .where(eq(user.id, session.user.id))
+          .where(eq(agency.ownerId, session.user.id))
           .limit(1)
           .then((r) => r[0] ?? null),
       ]);
@@ -166,7 +164,12 @@ export async function GET(
           if (Number(existing.monto).toFixed(2) !== monto) {
             await db
               .update(tenantLedger)
-              .set({ monto, descripcion, updatedAt: new Date() })
+              .set({
+                monto,
+                descripcion,
+                updatedAt: new Date(),
+                ...(activeContractSplit?.paymentModality === "split" && { beneficiario: "propietario" }),
+              })
               .where(eq(tenantLedger.id, existing.id));
           }
         } else {
