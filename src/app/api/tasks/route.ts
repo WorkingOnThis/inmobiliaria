@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { tarea, tareaHistorial } from "@/db/schema/tarea";
 import { property } from "@/db/schema/property";
 import { contract } from "@/db/schema/contract";
@@ -17,9 +18,7 @@ const assignedUserAlias = alias(user, "assignedUser");
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const params = request.nextUrl.searchParams;
     const scope = params.get("scope") ?? "mine";
@@ -28,8 +27,8 @@ export async function GET(request: NextRequest) {
     const estado = params.get("estado");
     const excluirResuelta = params.get("excluirResuelta") === "true";
 
-    const conditions = [];
-    if (scope === "mine") conditions.push(eq(tarea.assignedTo, session.user.id));
+    const conditions = [eq(tarea.agencyId, agencyId)];
+    if (scope === "mine") conditions.push(eq(tarea.assignedTo, session!.user.id));
     if (categoria) conditions.push(eq(tarea.category, categoria));
     if (tipo) conditions.push(eq(tarea.type, tipo));
     if (estado) conditions.push(eq(tarea.status, estado));
@@ -61,13 +60,16 @@ export async function GET(request: NextRequest) {
       .leftJoin(contract, eq(tarea.contractId, contract.id))
       .leftJoin(tenantAlias, eq(tarea.tenantId, tenantAlias.id))
       .leftJoin(assignedUserAlias, eq(tarea.assignedTo, assignedUserAlias.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .where(and(...conditions))
       .orderBy(
         sql`CASE ${tarea.priority} WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END`,
         desc(tarea.createdAt)
       );
 
-    const [{ totalProps }] = await db.select({ totalProps: count() }).from(property);
+    const [{ totalProps }] = await db
+      .select({ totalProps: count() })
+      .from(property)
+      .where(eq(property.agencyId, agencyId));
 
     let saludPortfolio = 100;
     if (totalProps > 0) {
@@ -76,6 +78,7 @@ export async function GET(request: NextRequest) {
         .from(tarea)
         .where(
           and(
+            eq(tarea.agencyId, agencyId),
             inArray(tarea.priority, ["urgent", "high"]),
             inArray(tarea.status, ["pending", "in_progress"]),
             isNotNull(tarea.propertyId)
@@ -86,6 +89,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ total: items.length, saludPortfolio, items });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching tareas:", error);
     return NextResponse.json({ error: "Error al obtener tareas" }, { status: 500 });
   }
@@ -108,9 +113,7 @@ const crearTareaSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const body = await request.json();
     const result = crearTareaSchema.safeParse(body);
@@ -128,6 +131,7 @@ export async function POST(request: NextRequest) {
         .insert(tarea)
         .values({
           id,
+          agencyId,
           title: data.title,
           description: data.description ?? null,
           priority: data.priority,
@@ -139,8 +143,8 @@ export async function POST(request: NextRequest) {
           contractId: data.contractId ?? null,
           tenantId: data.tenantId ?? null,
           ownerId: data.ownerId ?? null,
-          assignedTo: data.assignedTo ?? session.user.id,
-          createdBy: session.user.id,
+          assignedTo: data.assignedTo ?? session!.user.id,
+          createdBy: session!.user.id,
           createdAt: now,
           updatedAt: now,
         })
@@ -151,7 +155,7 @@ export async function POST(request: NextRequest) {
         taskId: id,
         text: "Tarea creada",
         type: "manual",
-        createdBy: session.user.id,
+        createdBy: session!.user.id,
         createdAt: now,
       });
 
@@ -160,6 +164,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: "Tarea creada exitosamente", tarea: nuevaTarea }, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error creating tarea:", error);
     return NextResponse.json({ error: "Error al crear la tarea" }, { status: 500 });
   }

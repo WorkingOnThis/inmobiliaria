@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { tarea, tareaHistorial, tareaComentario, tareaArchivo } from "@/db/schema/tarea";
 import { property } from "@/db/schema/property";
 import { contract } from "@/db/schema/contract";
@@ -24,11 +25,10 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
+    await requireAgencyResource(tarea, id, agencyId);
 
     const [row] = await db
       .select({
@@ -63,7 +63,7 @@ export async function GET(
       .leftJoin(ownerAlias, eq(tarea.ownerId, ownerAlias.id))
       .leftJoin(clienteAlias, eq(tarea.clientId, clienteAlias.id))
       .leftJoin(assignedUserAlias, eq(tarea.assignedTo, assignedUserAlias.id))
-      .where(eq(tarea.id, id));
+      .where(and(eq(tarea.id, id), eq(tarea.agencyId, agencyId)));
 
     if (!row) {
       return NextResponse.json({ error: "Tarea no encontrada" }, { status: 404 });
@@ -109,6 +109,8 @@ export async function GET(
 
     return NextResponse.json({ ...row, historial, comentarios, archivos });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching tarea:", error);
     return NextResponse.json({ error: "Error al obtener la tarea" }, { status: 500 });
   }
@@ -131,11 +133,11 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
+    await requireAgencyResource(tarea, id, agencyId);
+
     const body = await request.json();
     const result = patchSchema.safeParse(body);
     if (!result.success) {
@@ -171,7 +173,10 @@ export async function PATCH(
         updateData.dueDate = patch.dueDate ? new Date(patch.dueDate) : null;
       }
 
-      await tx.update(tarea).set(updateData).where(eq(tarea.id, id));
+      await tx
+        .update(tarea)
+        .set(updateData)
+        .where(and(eq(tarea.id, id), eq(tarea.agencyId, agencyId)));
 
       const histEntries = [];
 
@@ -181,7 +186,7 @@ export async function PATCH(
           taskId: id,
           text: `Estado cambiado a "${ESTADO_LABELS[patch.status] ?? patch.status}"`,
           type: "manual" as const,
-          createdBy: session.user.id,
+          createdBy: session!.user.id,
           createdAt: now,
         });
       }
@@ -192,7 +197,7 @@ export async function PATCH(
           taskId: id,
           text: `Prioridad cambiada a "${PRIORIDAD_LABELS[patch.priority] ?? patch.priority}"`,
           type: "manual" as const,
-          createdBy: session.user.id,
+          createdBy: session!.user.id,
           createdAt: now,
         });
       }
@@ -203,7 +208,7 @@ export async function PATCH(
           taskId: id,
           text: `Título actualizado`,
           type: "manual" as const,
-          createdBy: session.user.id,
+          createdBy: session!.user.id,
           createdAt: now,
         });
       }
@@ -214,7 +219,7 @@ export async function PATCH(
           taskId: id,
           text: patch.clientId ? `Persona vinculada actualizada` : `Persona vinculada eliminada`,
           type: "manual" as const,
-          createdBy: session.user.id,
+          createdBy: session!.user.id,
           createdAt: now,
         });
       }
@@ -225,7 +230,7 @@ export async function PATCH(
           taskId: id,
           text: patch.propertyId ? `Propiedad vinculada actualizada` : `Propiedad vinculada eliminada`,
           type: "manual" as const,
-          createdBy: session.user.id,
+          createdBy: session!.user.id,
           createdAt: now,
         });
       }
@@ -237,6 +242,8 @@ export async function PATCH(
 
     return NextResponse.json({ message: "Tarea actualizada" });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error updating tarea:", error);
     return NextResponse.json({ error: "Error al actualizar la tarea" }, { status: 500 });
   }
@@ -252,11 +259,11 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
+    await requireAgencyResource(tarea, id, agencyId);
+
     const body = await request.json();
     const result = comentarioSchema.safeParse(body);
     if (!result.success) {
@@ -269,13 +276,15 @@ export async function POST(
         id: crypto.randomUUID(),
         taskId: id,
         text: result.data.text,
-        createdBy: session.user.id,
+        createdBy: session!.user.id,
         createdAt: new Date(),
       })
       .returning();
 
     return NextResponse.json({ message: "Comentario agregado", comentario }, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error adding comment:", error);
     return NextResponse.json({ error: "Error al agregar el comentario" }, { status: 500 });
   }
@@ -287,14 +296,16 @@ export async function DELETE(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
-    await db.delete(tarea).where(and(eq(tarea.id, id)));
+    await requireAgencyResource(tarea, id, agencyId);
+
+    await db.delete(tarea).where(and(eq(tarea.id, id), eq(tarea.agencyId, agencyId)));
     return NextResponse.json({ message: "Tarea eliminada" });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error deleting tarea:", error);
     return NextResponse.json({ error: "Error al eliminar la tarea" }, { status: 500 });
   }

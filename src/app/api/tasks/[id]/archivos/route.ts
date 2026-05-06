@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
-import { tareaArchivo } from "@/db/schema/tarea";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { tarea, tareaArchivo } from "@/db/schema/tarea";
 import { eq } from "drizzle-orm";
 import path from "path";
 import fs from "fs/promises";
@@ -13,11 +14,11 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
+    await requireAgencyResource(tarea, id, agencyId);
+
     const archivos = await db
       .select()
       .from(tareaArchivo)
@@ -25,6 +26,8 @@ export async function GET(
 
     return NextResponse.json({ archivos });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching archivos:", error);
     return NextResponse.json({ error: "Error al obtener archivos" }, { status: 500 });
   }
@@ -36,11 +39,11 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
+    await requireAgencyResource(tarea, id, agencyId);
+
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
@@ -70,13 +73,15 @@ export async function POST(
         url,
         type: file.type || null,
         size: file.size,
-        createdBy: session.user.id,
+        createdBy: session!.user.id,
         createdAt: new Date(),
       })
       .returning();
 
     return NextResponse.json({ message: "Archivo subido", archivo }, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error uploading archivo:", error);
     return NextResponse.json({ error: "Error al subir el archivo" }, { status: 500 });
   }
@@ -88,11 +93,11 @@ export async function DELETE(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
+    await requireAgencyResource(tarea, id, agencyId);
+
     const { archivoId } = await request.json();
 
     if (!archivoId) {
@@ -114,6 +119,8 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Archivo eliminado" });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error deleting archivo:", error);
     return NextResponse.json({ error: "Error al eliminar el archivo" }, { status: 500 });
   }
