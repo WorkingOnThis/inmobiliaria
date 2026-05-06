@@ -1155,7 +1155,11 @@ export function ContractForm() {
               <div className="grid grid-cols-2 gap-2 px-4 py-3">
                 <span className="text-muted-foreground">Modalidad</span>
                 <span className="font-medium">
-                  {step2.paymentModality === "A" ? "Modalidad A (inmobiliaria)" : "Modalidad B (directo)"}
+                  {step2.paymentModality === "A"
+                    ? "Modalidad A (inmobiliaria)"
+                    : step2.paymentModality === "B"
+                    ? "Modalidad B (directo)"
+                    : "Modalidad Split (dividido)"}
                 </span>
               </div>
             </div>
