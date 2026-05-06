@@ -395,6 +395,19 @@ export function LedgerTable({
                         </div>
                       );
                     })()}
+                    {/* Recibo como subtext */}
+                    {entry.reciboNumero && (
+                      <div
+                        className="flex items-center gap-1 mt-0.5 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(`/recibos/n/${entry.reciboNumero}`, "_blank", "noopener,noreferrer");
+                        }}
+                      >
+                        <span className="text-[10px] text-primary hover:underline">{entry.reciboNumero}</span>
+                        <span className="text-[10px] text-muted-foreground">· ver recibo</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Tipo badge */}
@@ -441,7 +454,7 @@ export function LedgerTable({
                   )}
 
                   {/* Actions */}
-                  <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -473,33 +486,16 @@ export function LedgerTable({
                             Cancelar movimiento
                           </DropdownMenuItem>
                         )}
+                        {entry.reciboNumero && ["conciliado", "pago_parcial"].includes(entry.estado) && (
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onAnularRecibo(entry.reciboNumero!)}
+                          >
+                            Anular recibo
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    {entry.reciboNumero && (
-                      <div className="flex items-center gap-0.5">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(`/recibos/n/${entry.reciboNumero}`, "_blank", "noopener,noreferrer")}
-                          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-primary"
-                          title={`Ver recibo ${entry.reciboNumero}`}
-                        >
-                          {entry.reciboNumero}
-                        </Button>
-                        {["conciliado", "pago_parcial"].includes(entry.estado) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onAnularRecibo(entry.reciboNumero!)}
-                            aria-label="Anular recibo"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                            title="Anular recibo"
-                          >
-                            ✕
-                          </Button>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               );
