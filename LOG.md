@@ -4,6 +4,64 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-06 — Comprobante de liquidación + sistema visual + critique del LedgerTable
+
+### Qué hice
+Sesión larga, tres bloques.
+
+**Bloque 1 — Feature "Comprobante de liquidación al propietario"**: brainstorm + spec + plan + ejecución por subagentes + final review. Página `/comprobantes/[id]` espejada de `/recibos/[id]`, con título dinámico según modalidad ("COMPROBANTE DE LIQUIDACIÓN" en A, "CONSTANCIA DE COBRO DISTRIBUIDO" en split), tabla con bruto/comisión/neto por concepto, sello "ANULADO" diagonal, modal de envío por email. Refactor: `computeNetAndCommission` extraída a `src/lib/owners/commission.ts` para reuso. API GET + POST send. Conexión desde el menú `···` de la CC propietario via un nuevo campo `cashMovementId` (que descubrió un bug: yo asumía `cash_movement.ledgerEntryId` poblado, pero `receipts/emit` nunca lo setea — lookup correcto va por `reciboNumero`).
+
+**Bloque 2 — Sistema visual con `/impeccable`**: corrí `teach` (que detectó que `PRODUCT.md` ya existía) y después `document` → escribió `DESIGN.md` (formato Stitch, 6 secciones, frontmatter con tokens) y `DESIGN.json` (sidecar con tonal ramps, shadows, motion, breakpoints, snippets HTML/CSS de 9 componentes). Documenté el sub-sistema "Paper Surface" como capa visual independiente del dark UI. Creé los tokens `--paper-bg/text/muted/border/mono` y `--destino-owner/-agency`.
+
+**Bloque 3 — Quality passes**: `audit` del comprobante (12/20 → 19/20) → `harden` (Dialog semántico, h1 sr-only, ANULADO con aria-label, tabla con caption+scope) → `polish` (todos los `<button>` a shadcn `<Button>`) → `adapt` (touch targets 44px en mobile). Después `critique` del LedgerTable (17/40 → 27/40) → 5 fixes quirúrgicos: invertir mora dimming, tokenizar destino badges, distill celda Concepto, tooltips + glosario en estados, kebab solo con destructivos + comprobante como icono.
+
+23 commits en total. Feature completa, dos páginas (recibo + comprobante) alineadas con el sistema, ledger sustancialmente más legible.
+
+### Por qué lo hice así y no de otra forma
+**Sobre `@media print` para PDFs**: cuando la audit subió el tema de "¿no sería más serio puppeteer/react-pdf?", la respuesta honesta es: el PDF que genera el navegador desde `Save as PDF` es byte-equivalente al de puppeteer. Lo único que NO se puede con `@media print` es adjuntar PDFs al email — y el sistema ya manda links, no adjuntos. Sumar puppeteer es +100MB de Chromium para una mejora marginal. Quedó en PENDIENTES baja prioridad.
+
+**Sobre "shadcn-first" como regla**: el comprobante había nacido espejando al recibo, que era hand-rolled. Cuando escribí `DESIGN.md` puse "Don't hand-roll a button when `<Button variant="...">` exists" y eso convirtió en deuda lo que antes era pattern. La migración a shadcn `<Button>`/`<Dialog>` no fue purismo — fue cumplir la regla que el propio proyecto se acababa de poner.
+
+**Sobre la mora dimming invertida**: el critique encontró que `opacity-60` en períodos pasados hacía que un cargo impago de hace 2 meses (lo que Marina busca a las 11pm) fuera MÁS callado que un cargo proyectado del mes actual a opacidad completa. La opacidad estaba siendo "distancia temporal" cuando para items impagos la distancia temporal e *importancia* están inversamente correlacionadas. Pasado + pendiente = urgente. La solución fue mover la dimming de período-container a per-row state-based (paid → opacity-60, future → opacity-50, overdue → bg-destructive/5).
+
+**Sobre el sub-sistema "Paper Surface"**: las paletas dark UI (oklch warm-tinted) y paper (cream cálido) son contradictorias por diseño. El comprobante simula papel impreso; usar el dark UI ahí sería romper la metáfora. Tokenizar como sub-sistema explícito (`--paper-*`) deja claro que son dos sistemas que NO se mezclan en la misma superficie, y centraliza el lugar a editar si querés cambiar el "tono del papel" en todo el sistema (recibo + comprobante + signature pad + live preview de la admin).
+
+**Sobre el critique vs audit**: corrí audit primero porque chequea cosas medibles (contraste, ARIA, performance) y critique después porque chequea cosas subjetivas (jerarquía, claridad, AI slop). Hacerlo al revés llevaría a discutir aesthetics sin haber arreglado bugs medibles primero.
+
+### Conceptos que aparecieron
+- **OKLCH**: espacio de color perceptualmente uniforme. `oklch(L C H)` = lightness 0-1, chroma (saturación) 0+, hue 0-360. La gracia: dos colores con misma `L` se ven igual de claros/oscuros independientemente del hue. El proyecto usa OKLCH para dark mode porque mantiene la sensación de "mismo brillo" cuando varía el hue.
+- **Sub-sistema visual**: cuando dos contextos tienen reglas contradictorias (papel = cálido claro / UI = dark warm), conviene tokenizarlos por separado en vez de extender el sistema principal. El `--paper-*` group existe en `:root` y NO se redefine en `.dark` porque no tiene contexto theme — el papel siempre es cream.
+- **Side-stripe borders como anti-pattern**: `border-left` o `border-right` >1px en color saturado es uno de los bans absolutos de impeccable. Razón: lee como "alarma genérica" sin información, y los frameworks de design tokens nunca tienen una semántica para "color stripe edge". Reemplazables por: full-border tinted, top-stripe, leading icon, o nada.
+- **shadcn `<Dialog>` vs modal hand-rolled**: el modal hecho a mano carecía de `role="dialog"`, focus trap, Escape handler. La migración a `<Dialog>` fue una sola pieza grande pero gana esos 3 atributos gratis (Radix lo implementa).
+- **Subagent-driven development**: cada task se delega a un subagente fresco con prompt autocontenido (sin asumir contexto previo), seguido de un spec reviewer (¿hizo lo que el plan pedía?) y un code quality reviewer (¿está bien hecho?). Evita que el coordinator se contamine de detalles de implementación.
+- **Restrained color strategy**: terracota primario usado en ≤10% de cualquier viewport. La rareza ES el significado. Si dos cosas terracota gritan a la vez, la jerarquía se rompió.
+- **WCAG 2.5.5 Target Size**: 44×44px mínimo en touch devices. La forma correcta de fixearlo manteniendo el size compacto en desktop: `min-h-11 sm:min-h-0` (mobile fuerza 44px, ≥640px revierte al `h-8` del Button size="sm").
+- **`role="img"` + `aria-label` en sellos visuales**: el sello "ANULADO" es una marca con significado, no decoración. Lectores de pantalla lo anuncian si tiene `role="img" aria-label="..."`. Sin eso, leen el comprobante completo creyendo que es válido.
+- **Tonal layering vs shadow-based depth**: el dark UI del proyecto usa 4 niveles de surface (bg → surface-mid → surface → surface-high) y NO usa box-shadow. La superficie "sube" porque su tonalidad es un paso más clara que la de atrás. Las sombras se reservan para el papel impreso (recibos/comprobantes).
+- **Tooltip + Popover para documentación in-context**: en vez de un menú "Help" separado, cada Badge de estado lleva su definición en Tooltip (hover/focus) + un botón `?` en el header de la columna abre un Popover con el glosario completo. Cero navegación, cero "buscá la documentación".
+
+### Preguntas para reflexionar
+1. ¿Por qué `isOwnerView` referenciado 11 veces es una bandera roja arquitectónica? ¿En qué punto un boolean prop deja de ser "configuración" y empieza a ser "componente fingiendo ser dos componentes"?
+2. ¿Cuándo conviene un sub-sistema visual como "The Paper Surface" vs extender el sistema principal? Si mañana hubiera una página de "modo presentación" para mostrar datos a un cliente en proyector, ¿también ameritaría sub-sistema o sería abuso del concepto?
+3. La critique encontró que la mora dimming era el bug más grande del LedgerTable. ¿Por qué la opacidad fue tan engañosa como cue visual? ¿Qué hace que un cue funcione "bien" o "mal" para comunicar urgencia?
+4. El `cash_movement.ledgerEntryId` siempre nullable (incluso para movimientos automáticos) fue un bug latente que descubrí cuando intenté usarlo como join key. ¿Por qué los campos "opcionales por diseño" pueden esconder bugs así, y cómo se evita?
+
+### Qué debería anotar en Obsidian
+- [ ] Concepto: OKLCH y por qué se prefiere sobre HSL/sRGB para sistemas con dark mode
+- [ ] Concepto: sub-sistema visual (paper surface) y cuándo amerita tokenización separada
+- [ ] Concepto: tonal layering vs shadow-based depth como dos formas de comunicar profundidad
+- [ ] Patrón: Tooltip + Popover para documentación in-context (sin página de help)
+- [ ] Patrón: `min-h-11 sm:min-h-0` para touch targets 44px en mobile sin perder densidad en desktop
+- [ ] Decisión técnica: por qué `@media print` es válido vs puppeteer/react-pdf
+- [ ] Decisión técnica: subagent-driven development con dos reviewers (spec + code quality)
+- [ ] Bug: opacidad como cue de "distancia temporal" estaba inversamente correlacionada con urgencia
+- [ ] Bug: campos nullable por diseño que la app real nunca puebla (cash_movement.ledgerEntryId)
+- [ ] Comando: `/impeccable teach` + `document` para escribir DESIGN.md desde código existente
+- [ ] Comando: `/impeccable audit` (técnico) vs `/impeccable critique` (subjetivo) — cuál corre primero
+- [ ] Patrón: side-stripe borders como anti-pattern y sus alternativas (top-stripe, full border, leading icon)
+
+---
+
 ## 2026-05-06 — PDF del recibo
 
 ### Qué hice
