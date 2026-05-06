@@ -26,10 +26,20 @@ type KPIs = {
   proximoPago: { total: number | null; montoMinimo: number | null; fecha: string | null; tieneAjuste: boolean } | null;
 };
 
+type SplitMeta = {
+  managementCommissionPct: number;
+  ownerName: string;
+  ownerCbu: string | null;
+  agencyNombre: string | null;
+  agenciaCbu: string | null;
+  agenciaAlias: string | null;
+};
+
 type CuentaCorrienteData = {
   kpis: KPIs;
   ledgerEntries: LedgerEntry[];
   proximoAjuste: { period: string | null; mesesRestantes: number | null } | null;
+  splitMeta: SplitMeta | null;
 };
 
 type Props = {
@@ -61,12 +71,29 @@ function getMonto(entry: LedgerEntry, overrides: Record<string, string>): number
   return Number(entry.monto ?? 0);
 }
 
+function calcSplitBreakdown(
+  entry: LedgerEntry,
+  monto: number,
+  beneficiarioOverrides: Record<string, string>,
+  splitMeta: SplitMeta | null
+): { propietario: number; administracion: number } | undefined {
+  if (!splitMeta) return undefined;
+  const dest = beneficiarioOverrides[entry.id] ?? entry.beneficiario ?? "split";
+  if (dest === "split") {
+    const adm = Math.round(monto * (splitMeta.managementCommissionPct / 100));
+    return { propietario: monto - adm, administracion: adm };
+  }
+  if (dest === "administracion") return { propietario: 0, administracion: monto };
+  return { propietario: monto, administracion: 0 };
+}
+
 export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Props) {
   const queryClient = useQueryClient();
 
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(["overdue", "pending"]));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [montoOverrides, setMontoOverrides] = useState<Record<string, string>>({});
+  const [beneficiarioOverrides, setBeneficiarioOverrides] = useState<Record<string, string>>({});
   const [ajusteDismissed, setAjusteDismissed] = useState(false);
 
   // Emit dialog
@@ -98,6 +125,16 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
 
   const emitirMutation = useMutation({
     mutationFn: async () => {
+      const currentSplitMeta = data?.splitMeta ?? null;
+      const currentSelectedEntries = (data?.ledgerEntries ?? []).filter((e) => selectedIds.has(e.id));
+      const splitBreakdowns: Record<string, { propietario: number; administracion: number }> = {};
+      if (currentSplitMeta) {
+        for (const entry of currentSelectedEntries) {
+          const monto = getMonto(entry, montoOverrides);
+          const breakdown = calcSplitBreakdown(entry, monto, beneficiarioOverrides, currentSplitMeta);
+          if (breakdown) splitBreakdowns[entry.id] = breakdown;
+        }
+      }
       const response = await fetch("/api/receipts/emit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -107,6 +144,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           honorariosPct,
           trasladarAlPropietario: true,
           montoOverrides,
+          ...(Object.keys(splitBreakdowns).length > 0 && { splitBreakdowns }),
         }),
       });
       if (!response.ok) {
@@ -119,6 +157,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       setShowEmit(false);
       setSelectedIds(new Set());
       setMontoOverrides({});
+      setBeneficiarioOverrides({});
       setObservations("");
       setEmitError(null);
       queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
@@ -227,6 +266,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           impactaPropietario: chargeData.impactaPropietario,
           incluirEnBaseComision: chargeData.incluirEnBaseComision,
           impactaCaja: chargeData.impactaCaja,
+          ...(chargeData.beneficiario && { beneficiario: chargeData.beneficiario }),
         }),
       });
       if (!response.ok) {
@@ -317,6 +357,17 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
     setMontoOverrides((prev) => ({ ...prev, [id]: value }));
   }
 
+  function handleBeneficiarioOverride(entryId: string, value: string | null) {
+    setBeneficiarioOverrides((prev) => {
+      if (value === null) {
+        const next = { ...prev };
+        delete next[entryId];
+        return next;
+      }
+      return { ...prev, [entryId]: value };
+    });
+  }
+
   function handleCancelEntry(entry: LedgerEntry) {
     if (entry.tipo === "punitorio") {
       cancelPunitorio.mutate(entry.id);
@@ -353,7 +404,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   );
   if (isError || !data) return <div className="p-4 text-sm text-destructive">Error al cargar la cuenta corriente.</div>;
 
-  const { kpis, ledgerEntries = [], proximoAjuste } = data;
+  const { kpis, ledgerEntries = [], proximoAjuste, splitMeta } = data;
   const selectedEntries = ledgerEntries.filter((e) => selectedIds.has(e.id));
 
   const baseComision = selectedEntries
@@ -581,6 +632,8 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           onCancelEntry={handleCancelEntry}
           onViewDetail={setSelectedDetailEntry}
           activeFilters={activeFilters}
+          isSplitContract={splitMeta !== null}
+          managementCommissionPct={splitMeta?.managementCommissionPct ?? 10}
         />
       </div>
 
@@ -597,12 +650,12 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
         <CobroPanel
           selectedEntries={selectedEntries}
           montoOverrides={montoOverrides}
-          honorariosPct={honorariosPct}
-          onClearSelection={() => { setSelectedIds(new Set()); setMontoOverrides({}); }}
+          honorariosPct={splitMeta?.managementCommissionPct ?? honorariosPct}
+          onClearSelection={() => { setSelectedIds(new Set()); setMontoOverrides({}); setBeneficiarioOverrides({}); }}
           onEmitirRecibo={() => { setEmitError(null); setShowEmit(true); }}
           isEmitting={emitirMutation.isPending}
-          beneficiarioOverrides={{}}
-          splitMeta={null}
+          beneficiarioOverrides={beneficiarioOverrides}
+          splitMeta={splitMeta ?? null}
         />
 
         {selectedEntries.length === 0 && (
@@ -725,7 +778,8 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       <AddManualChargeDialog
         open={showManual}
         onOpenChange={setShowManual}
-        onSave={(data) => addManualMutation.mutateAsync(data)}
+        isSplitContract={splitMeta !== null}
+        onSave={(chargeData) => addManualMutation.mutateAsync(chargeData)}
       />
 
       {/* ── Cancel entry dialog ── */}
@@ -795,9 +849,11 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       <EntryDetailDialog
         entry={selectedDetailEntry}
         onOpenChange={(open) => { if (!open) setSelectedDetailEntry(null); }}
-        onSave={(data) => {
+        isSplitContract={splitMeta !== null}
+        onBeneficiarioOverride={handleBeneficiarioOverride}
+        onSave={(editData) => {
           if (!selectedDetailEntry) return Promise.resolve();
-          return editEntryMutation.mutateAsync({ entryId: selectedDetailEntry.id, ...data });
+          return editEntryMutation.mutateAsync({ entryId: selectedDetailEntry.id, ...editData });
         }}
       />
     </div>
