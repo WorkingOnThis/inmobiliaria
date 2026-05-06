@@ -4,6 +4,35 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-05 — Modalidad de pago dividido (split payment)
+
+### Qué hice
+Implementé la modalidad `"split"` de punta a punta: schema de DB, formulario de contratos, APIs (cuenta corriente, ledger POST, conciliar, emit), componentes UI (LedgerTable con columna Destino, CobroPanel con desglose de dos destinatarios, AddManualChargeDialog con selector de beneficiario, EntryDetailDialog con override efímero), wiring en TenantTabCurrentAccount, y visual distinción en la cuenta del propietario.
+
+En total 12 tasks con ciclo completo: implementación por subagente → spec review → code quality review → fix de issues → commit.
+
+### Por qué lo hice así y no de otra forma
+La clave de diseño fue el campo `beneficiario` en `tenant_ledger` en lugar de dos entradas separadas o un flag booleano. Esto permite que cada ítem lleve su destino natural (`"split"` para alquiler, `"propietario"` para punitorios, elegible para cargos manuales) y que el admin pueda overridearlo efímeramente sin cambiar el registro.
+
+El `splitBreakdown` se persiste al emitir el recibo (no al crear la entrada) porque captura el estado real al momento del cobro, incluyendo cualquier override que el admin haya aplicado en esa sesión. Si el inquilino paga todo junto, hay un solo momento de verdad.
+
+Usé el endpoint `/api/receipts/emit` (que ya tenía la transacción) para persistir `splitBreakdown` en vez de llamar al endpoint `/conciliar` por separado — una sola transacción, sin round-trips adicionales.
+
+### Conceptos que aparecieron
+- **Subagent-Driven Development**: cada task va a un subagente fresco (sin contexto de la sesión actual), con spec review + code quality review antes de marcar completo. Evita que el contexto del coordinador se contamine y detecta bugs antes de acumularlos.
+- **Beneficiario efímero vs. persistido**: el override vive en estado React local; el `splitBreakdown` queda en DB solo al cobrar. Separación entre "qué querés hacer ahora" y "qué quedó registrado".
+- **`db.select()` wildcard**: cuando no especificás columnas en Drizzle, devuelve todas — incluyendo las nuevas que agregaste. Por eso la API de propietarios ya devuelve `splitBreakdown` sin cambios.
+
+### Preguntas para reflexionar
+1. ¿Por qué es importante que el override sea efímero? ¿Qué pasaría si cambiara el `beneficiario` permanentemente en la entrada?
+2. Si en el futuro quisieras que los punitorios también puedan ir a administración, ¿dónde cambiarías la lógica de auto-asignación?
+
+### Qué debería anotar en Obsidian
+- [ ] Patrón: estado efímero en componente + snapshot al persistir (override local → breakdown en DB)
+- [ ] Decisión técnica: campo `beneficiario` en ledger vs. dos entradas separadas vs. flag booleano
+
+---
+
 ## 2026-05-03 — Flags contables en cargo manual + dialog de detalle de movimientos
 
 ### Qué hice
