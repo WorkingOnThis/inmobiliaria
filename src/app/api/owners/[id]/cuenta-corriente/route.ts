@@ -66,19 +66,34 @@ export async function GET(
       )
       .orderBy(tenantLedger.period, tenantLedger.tipo);
 
-    // Map ledgerEntryId → cashMovementId (only conciliated rows have one)
-    const conciliatedLedgerIds = rawRows
-      .filter(({ entry }) => entry.estado === "conciliado" && entry.reciboNumero)
-      .map(({ entry }) => entry.id);
+    // Map reciboNumero → primary cashMovementId (the agency income movement)
+    // Each receipt creates 3 cash_movements; we pick the one with categoria="alquiler"
+    // and tipoFondo="agencia" to use as the canonical comprobante target.
+    const conciliatedReciboNumeros = Array.from(
+      new Set(
+        rawRows
+          .filter(({ entry }) => entry.estado === "conciliado" && entry.reciboNumero)
+          .map(({ entry }) => entry.reciboNumero!)
+      )
+    );
 
-    const cashMovementMap = new Map<string, string>();
-    if (conciliatedLedgerIds.length > 0) {
+    const cashMovementByRecibo = new Map<string, string>();
+    if (conciliatedReciboNumeros.length > 0) {
       const cashRows = await db
-        .select({ id: cajaMovimiento.id, ledgerEntryId: cajaMovimiento.ledgerEntryId })
+        .select({
+          id: cajaMovimiento.id,
+          reciboNumero: cajaMovimiento.reciboNumero,
+        })
         .from(cajaMovimiento)
-        .where(inArray(cajaMovimiento.ledgerEntryId, conciliatedLedgerIds));
+        .where(
+          and(
+            inArray(cajaMovimiento.reciboNumero, conciliatedReciboNumeros),
+            eq(cajaMovimiento.categoria, "alquiler"),
+            eq(cajaMovimiento.tipoFondo, "agencia")
+          )
+        );
       for (const row of cashRows) {
-        if (row.ledgerEntryId) cashMovementMap.set(row.ledgerEntryId, row.id);
+        if (row.reciboNumero) cashMovementByRecibo.set(row.reciboNumero, row.id);
       }
     }
 
@@ -106,7 +121,9 @@ export async function GET(
       // Add the original entry (gross monto stays as-is)
       ledgerEntries.push({
         ...entry,
-        cashMovementId: cashMovementMap.get(entry.id) ?? null,
+        cashMovementId: entry.reciboNumero
+          ? cashMovementByRecibo.get(entry.reciboNumero) ?? null
+          : null,
       });
 
       // Sum nets for KPIs
