@@ -601,6 +601,8 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           onClearSelection={() => { setSelectedIds(new Set()); setMontoOverrides({}); }}
           onEmitirRecibo={() => { setEmitError(null); setShowEmit(true); }}
           isEmitting={emitirMutation.isPending}
+          beneficiarioOverrides={{}}
+          splitMeta={null}
         />
 
         {selectedEntries.length === 0 && (
