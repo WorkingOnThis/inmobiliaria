@@ -11,7 +11,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, FileText } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { MoreHorizontal, FileText, HelpCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +79,20 @@ const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
   pendiente_revision:{ label: "Revisar",       className: "bg-warning-dim text-warning border-warning border-dashed" },
   cancelado:         { label: "Cancelado",     className: "bg-muted text-muted-foreground border-border" },
   pago_parcial:      { label: "Pago parcial",  className: "bg-warning-dim text-warning border-warning" },
+};
+
+/**
+ * One-line definition for each estado, surfaced via Tooltip on the Badge
+ * and via the glossary Popover in the Estado column header.
+ */
+const ESTADO_DEFINITIONS: Record<string, string> = {
+  conciliado:         "El cobro ya se ejecutó y se concilió contra el recibo.",
+  registrado:         "El movimiento entró al sistema pero todavía no se concilió contra un recibo.",
+  pendiente:          "Cargo activo a la espera de cobro. No vencido todavía.",
+  proyectado:         "Cargo futuro generado automáticamente por el contrato.",
+  pendiente_revision: "Algún dato del cargo necesita revisión manual antes de cobrarlo.",
+  cancelado:          "Cargo dado de baja sin cobrar. No genera recibo.",
+  pago_parcial:       "Se cobró una porción del cargo. Queda saldo pendiente.",
 };
 
 const PENDING_STATES = ["pendiente", "registrado", "pendiente_revision", "pago_parcial"];
@@ -274,6 +299,7 @@ export function LedgerTable({
   const periods = [...grouped.keys()].sort();
 
   return (
+    <TooltipProvider delayDuration={300}>
     <div className="w-full">
       {/* Column headers — sticky so they stay visible while scrolling */}
       <div className={cn("sticky top-0 z-10 grid items-center gap-2 px-4 py-1.5 bg-muted/80 backdrop-blur-sm border-b border-border", gridCols)}>
@@ -281,7 +307,42 @@ export function LedgerTable({
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Concepto</span>
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tipo</span>
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Monto</span>
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Estado</span>
+        <span className="flex items-center justify-center gap-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Estado
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="Ver glosario de estados"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <HelpCircle size={11} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              side="bottom"
+              className="w-80 text-sm normal-case tracking-normal font-normal"
+            >
+              <p className="font-semibold mb-2">Estados de un cargo</p>
+              <dl className="flex flex-col gap-2">
+                {Object.entries(ESTADO_BADGE).map(([key, def]) => (
+                  <div key={key} className="grid grid-cols-[90px_1fr] gap-2 items-baseline">
+                    <Badge
+                      variant="outline"
+                      className={cn("text-xs justify-self-start", def.className)}
+                    >
+                      {def.label}
+                    </Badge>
+                    <dd className="text-xs text-muted-foreground leading-snug">
+                      {ESTADO_DEFINITIONS[key]}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </PopoverContent>
+          </Popover>
+        </span>
         {showDestino && (
           <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Destino</span>
         )}
@@ -461,11 +522,22 @@ export function LedgerTable({
                     )}
                   </div>
 
-                  {/* Estado badge */}
+                  {/* Estado badge — Tooltip exposes the one-line definition */}
                   <div className="flex justify-center">
-                    <Badge variant="outline" className={cn("text-xs", badge.className)}>
-                      {badge.label}
-                    </Badge>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          variant="outline"
+                          className={cn("text-xs cursor-help", badge.className)}
+                          tabIndex={0}
+                        >
+                          {badge.label}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        {ESTADO_DEFINITIONS[entry.estado] ?? "Estado sin definir."}
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
 
                   {/* Destino */}
@@ -540,5 +612,6 @@ export function LedgerTable({
         );
       })}
     </div>
+    </TooltipProvider>
   );
 }
