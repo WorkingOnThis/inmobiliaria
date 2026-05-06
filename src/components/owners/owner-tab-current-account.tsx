@@ -68,6 +68,7 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
           onCancelEntry={() => {}}
           onViewDetail={() => {}}
           activeFilters={new Set()}
+          isOwnerView={true}
         />
       )}
     </div>
