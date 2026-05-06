@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
-import { and, eq, sql, sum } from "drizzle-orm";
+import { and, eq, inArray, sql, sum } from "drizzle-orm";
 
 export async function GET(
   _request: NextRequest,
@@ -19,7 +19,7 @@ export async function GET(
 
     const currentYear = new Date().getFullYear().toString();
 
-    const [entries, ytdResult] = await Promise.all([
+    const [entries, ytdResult, pendienteResult] = await Promise.all([
       db
         .select()
         .from(tenantLedger)
@@ -43,10 +43,25 @@ export async function GET(
           )
         )
         .then((rows) => rows[0]),
+
+      db
+        .select({ total: sum(tenantLedger.monto) })
+        .from(tenantLedger)
+        .where(
+          and(
+            eq(tenantLedger.propietarioId, propietarioId),
+            eq(tenantLedger.impactaPropietario, true),
+            inArray(tenantLedger.estado, ["pendiente", "registrado"])
+          )
+        )
+        .then((rows) => rows[0]),
     ]);
 
     return NextResponse.json({
-      kpis: { totalLiquidadoYTD: Number(ytdResult?.total ?? 0) },
+      kpis: {
+        totalLiquidadoYTD: Number(ytdResult?.total ?? 0),
+        totalPendiente: Number(pendienteResult?.total ?? 0),
+      },
       ledgerEntries: entries,
     });
   } catch (error) {
