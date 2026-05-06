@@ -44,6 +44,12 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 
 ## 🔵 Backlog / Futuro
 
+- [ ] **Pago dividido — punitorios con destino configurable por tipo** — hoy todos los punitorios van al propietario; en V2 permitir configurar por tipo de cargo qué destino aplica en contratos split · [contratos](docs/decisions/contratos.md)
+
+- [ ] **Pago dividido — notificación al inquilino con datos de transferencia** — enviar automáticamente al inquilino los CBU/alias y montos de cada destinatario al generar el recibo en modalidad split · [contratos](docs/decisions/contratos.md)
+
+- [ ] **Pago dividido — confirmación bancaria** — registrar qué CBU recibió efectivamente el dinero (comprobante de transferencia), hoy solo se registra el desglose esperado · [contratos](docs/decisions/contratos.md)
+
 - [ ] **Marcar movimiento como "ya cobrado" sin emitir recibo** — postergado hasta tener login de inquilinos y carga de comprobantes; el flujo completo tiene más valor que el botón solo · ver [contabilidad](docs/decisions/contabilidad.md#conciliación-manual-marcar-como-ya-cobrado-sin-emitir-recibo)
 
 - [ ] **Login de inquilinos** — acceso diferenciado para que los inquilinos vean su cuenta corriente y suban comprobantes de pago · ver [inquilinos](docs/decisions/inquilinos.md) · [usuarios-y-acceso](docs/decisions/usuarios-y-acceso.md)
