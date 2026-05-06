@@ -134,7 +134,7 @@ function DestinoBadge({
   if (isOwnerView && splitBreakdown) {
     return (
       <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-blue-950 border border-blue-800 text-blue-300 font-medium">
-        ↗ Cobro directo
+        ↗ Cobro directo desde inquilino
       </span>
     );
   }
