@@ -257,7 +257,7 @@ export default function ComprobantePage() {
           style={{
             background: PALETTE.bg,
             color: PALETTE.text,
-            fontFamily: "Inter, -apple-system, sans-serif",
+            fontFamily: "var(--font-inter), Inter, -apple-system, sans-serif",
             padding: "44px 48px",
             borderRadius: "var(--radius-md)",
             fontSize: "13px",
