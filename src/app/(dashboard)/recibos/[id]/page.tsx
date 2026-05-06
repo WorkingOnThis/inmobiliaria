@@ -164,9 +164,15 @@ export default function ReciboPage() {
 
   return (
     <div className="min-h-screen bg-bg print:bg-white">
-      {/* Barra de acciones — solo en pantalla, no imprime */}
-      <div className="print:hidden h-14 bg-surface border-b border-border flex items-center justify-between px-7">
-        <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-1">
+      {/* Barra de acciones — solo en pantalla, no imprime. On touch viewports
+          (<640px) buttons bump to 44px min-height for WCAG-recommended target. */}
+      <div className="print:hidden h-14 bg-surface border-b border-border flex items-center justify-between px-4 sm:px-7">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-1 min-h-11 sm:min-h-0"
+        >
           <ArrowLeft size={13} aria-hidden="true" /> Volver
         </Button>
         <div className="flex items-center gap-2">
@@ -175,11 +181,15 @@ export default function ReciboPage() {
             size="sm"
             onClick={openEmailDialog}
             disabled={allRecipients.length === 0}
-            className="gap-2"
+            className="gap-2 min-h-11 sm:min-h-0"
           >
             <Mail size={14} aria-hidden="true" /> Enviar por email
           </Button>
-          <Button size="sm" onClick={() => window.print()} className="gap-2">
+          <Button
+            size="sm"
+            onClick={() => window.print()}
+            className="gap-2 min-h-11 sm:min-h-0"
+          >
             <Printer size={14} aria-hidden="true" /> Imprimir recibo
           </Button>
           {movimiento.anuladoAt ? (
@@ -191,7 +201,7 @@ export default function ReciboPage() {
               variant="link"
               size="sm"
               onClick={() => setShowAnnulModal(true)}
-              className="text-destructive hover:text-destructive"
+              className="text-destructive hover:text-destructive min-h-11 sm:min-h-0"
             >
               Anular recibo
             </Button>

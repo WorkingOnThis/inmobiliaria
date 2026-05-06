@@ -134,9 +134,15 @@ export default function ComprobantePage() {
 
   return (
     <div className="min-h-screen bg-bg print:bg-white relative">
-      {/* Top action bar — print:hidden */}
-      <div className="print:hidden h-14 bg-surface border-b border-border flex items-center justify-between px-7">
-        <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-1">
+      {/* Top action bar — print:hidden. On touch viewports (<640px) buttons
+          bump to 44px min-height for WCAG-recommended target size. */}
+      <div className="print:hidden h-14 bg-surface border-b border-border flex items-center justify-between px-4 sm:px-7">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-1 min-h-11 sm:min-h-0"
+        >
           <ArrowLeft size={13} aria-hidden="true" /> Volver
         </Button>
         <div className="flex items-center gap-2">
@@ -153,11 +159,15 @@ export default function ComprobantePage() {
                 ? "El propietario no tiene email cargado"
                 : `Enviar a ${propietarioEmail}`
             }
-            className="gap-2"
+            className="gap-2 min-h-11 sm:min-h-0"
           >
             <Mail size={14} aria-hidden="true" /> Enviar por email
           </Button>
-          <Button size="sm" onClick={() => window.print()} className="gap-2">
+          <Button
+            size="sm"
+            onClick={() => window.print()}
+            className="gap-2 min-h-11 sm:min-h-0"
+          >
             <Printer size={14} aria-hidden="true" /> Imprimir
           </Button>
         </div>
