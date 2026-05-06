@@ -9,7 +9,7 @@ Funcionalidades completadas, de más reciente a más antigua.
 ### Cuenta corriente de propietarios
 Implementación MVP similar a la de inquilinos: tabla con movimientos, filtros (Pendientes/Pagados/Futuros), dos KPI cards (liquidado YTD + pendiente), EntryDetailDialog conectado al menú `···` en modo lectura. Acciones destructivas (cancelar, anular) ocultas en vista propietario. Componentes reutilizables `LedgerTable`, `LedgerFilters`, `EntryDetailDialog` en `src/components/ledger/` compartidos entre módulos.
 
-Archivos clave: `src/app/(dashboard)/propietarios/[id]/cuenta-corriente-tab.tsx` · `src/components/ledger/` · `src/app/api/owners/[id]/account-entries`
+Archivos clave: `src/components/owners/owner-tab-current-account.tsx` · `src/components/ledger/entry-detail-dialog.tsx` · `src/components/tenants/ledger-table.tsx` · `src/app/api/owners/[id]/cuenta-corriente/route.ts`
 
 ### Eliminación de `tenant_charge`
 Tabla y código del sistema de cargos original, reemplazado por `tenant_ledger`. La única fila que quedaba tenía `reciboNumero: null` y nunca apareció en ningún recibo. Se eliminaron: tabla en la DB (migración 0018), schema `tenant-charge.ts`, rutas API `tenants/[id]/charges/`, script de migración `migrate-tenant-charges.ts`. Se limpió el fallback `charges` en `recibos/[id]/page.tsx` y `email-template.ts` — ambos usan ahora solo `ledgerItems`.
