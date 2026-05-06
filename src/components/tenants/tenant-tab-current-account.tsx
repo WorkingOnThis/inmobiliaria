@@ -407,11 +407,12 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   const { kpis, ledgerEntries = [], proximoAjuste, splitMeta } = data;
   const selectedEntries = ledgerEntries.filter((e) => selectedIds.has(e.id));
 
+  const effectiveHonorariosPct = splitMeta?.managementCommissionPct ?? honorariosPct;
   const baseComision = selectedEntries
     .filter((e) => e.tipo !== "punitorio" && e.tipo !== "descuento")
     .reduce((s, e) => s + getMonto(e, montoOverrides), 0);
   const receiptTotal = round2(selectedEntries.reduce((s, e) => s + getMonto(e, montoOverrides), 0));
-  const feesAmount = round2(baseComision * (honorariosPct / 100));
+  const feesAmount = round2(baseComision * (effectiveHonorariosPct / 100));
   const ownerNet = round2(receiptTotal - feesAmount);
 
   const hasContract = ledgerEntries.length > 0;
@@ -690,7 +691,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
                 <span className="font-mono">${receiptTotal.toLocaleString("es-AR")}</span>
               </div>
               <div className="flex justify-between text-xs text-primary">
-                <span>Honorarios ({honorariosPct}%)</span>
+                <span>Honorarios ({effectiveHonorariosPct}%)</span>
                 <span className="font-mono">${feesAmount.toLocaleString("es-AR")}</span>
               </div>
               <div className="flex justify-between text-xs text-income">
