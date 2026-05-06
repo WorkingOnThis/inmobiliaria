@@ -57,6 +57,8 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
 
   const { kpis, ledgerEntries, properties } = data;
 
+  // In owner view, "pending" includes overdue entries (entries past due date are
+  // overdue because the tenant hasn't paid, not because the owner hasn't paid)
   const effectiveFilters = new Set(activeFilters);
   if (activeFilters.has("pending")) effectiveFilters.add("overdue");
 
@@ -115,15 +117,14 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
           <Accordion type="multiple" defaultValue={properties.map((p) => p.id)} className="flex flex-col gap-2">
             {properties.map((p) => {
               const propEntries = ledgerEntries.filter((e) => e.propiedadId === p.id);
-              const propCount = propEntries.filter((e) => !e.isSynthetic).length;
-              const propNet = netYTDForProperty(ledgerEntries, p.id);
+              const propNet = netYTDForProperty(propEntries, p.id);
               return (
                 <AccordionItem key={p.id} value={p.id} className="border rounded-[var(--radius-lg)] px-3">
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center justify-between flex-1 mr-2">
                       <span className="text-sm font-medium">{p.address}</span>
                       <span className="text-xs text-muted-foreground font-mono">
-                        ${propNet.toLocaleString("es-AR")} · {propCount} {propCount === 1 ? "entrada" : "entradas"}
+                        Liquidado {currentYear}: ${propNet.toLocaleString("es-AR")}
                       </span>
                     </div>
                   </AccordionTrigger>
