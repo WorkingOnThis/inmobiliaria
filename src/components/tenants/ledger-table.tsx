@@ -522,8 +522,8 @@ export function LedgerTable({
                     )}
                   </div>
 
-                  {/* Estado badge — Tooltip exposes the one-line definition */}
-                  <div className="flex justify-center">
+                  {/* Estado badge + comprobante shortcut for owner view */}
+                  <div className="flex justify-center items-center gap-1.5">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Badge
@@ -538,6 +538,26 @@ export function LedgerTable({
                         {ESTADO_DEFINITIONS[entry.estado] ?? "Estado sin definir."}
                       </TooltipContent>
                     </Tooltip>
+                    {isOwnerView && entry.cashMovementId && entry.estado === "conciliado" && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/comprobantes/${entry.cashMovementId}`);
+                            }}
+                            aria-label="Ver comprobante de liquidación"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <FileText size={13} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">
+                          Ver comprobante de liquidación
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
 
                   {/* Destino */}
@@ -553,57 +573,64 @@ export function LedgerTable({
                     </div>
                   )}
 
-                  {/* Actions */}
+                  {/* Actions — kebab only renders when there's at least one
+                      destructive action available. "Ver detalle" is reachable
+                      via row click; "Ver comprobante" lives next to the
+                      estado badge in owner view. So in owner view the kebab
+                      never shows; in tenant view it shows only when the row
+                      is cancelable or has an anularable recibo. */}
                   <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-                    {!entry.isSynthetic && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                            aria-label="Acciones"
-                          >
-                            <MoreHorizontal size={14} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onViewDetail(entry)}>
-                            Ver detalle
-                          </DropdownMenuItem>
-                          {isOwnerView && entry.cashMovementId && entry.estado === "conciliado" && (
-                            <DropdownMenuItem onClick={() => router.push(`/comprobantes/${entry.cashMovementId}`)}>
-                              <FileText className="mr-2 size-4" />
-                              Ver comprobante de liquidación
-                            </DropdownMenuItem>
-                          )}
-                          {!isOwnerView && isPunitorio && entry.estado !== "conciliado" && (
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => onCancelEntry(entry)}
+                    {(() => {
+                      if (entry.isSynthetic || isOwnerView) return null;
+                      const canCancelPunitorio = isPunitorio && entry.estado !== "conciliado";
+                      const canCancelMovimiento = !isPunitorio && isCancelable(entry);
+                      const canAnularRecibo =
+                        entry.reciboNumero !== null &&
+                        ["conciliado", "pago_parcial"].includes(entry.estado);
+                      if (!canCancelPunitorio && !canCancelMovimiento && !canAnularRecibo) {
+                        return null;
+                      }
+                      return (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              aria-label="Acciones del movimiento"
                             >
-                              Cancelar punitorio
-                            </DropdownMenuItem>
-                          )}
-                          {!isOwnerView && !isPunitorio && isCancelable(entry) && (
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => onCancelEntry(entry)}
-                            >
-                              Cancelar movimiento
-                            </DropdownMenuItem>
-                          )}
-                          {!isOwnerView && entry.reciboNumero && ["conciliado", "pago_parcial"].includes(entry.estado) && (
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => onAnularRecibo(entry.reciboNumero!)}
-                            >
-                              Anular recibo
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                              <MoreHorizontal size={14} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {canCancelPunitorio && (
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => onCancelEntry(entry)}
+                              >
+                                Cancelar punitorio
+                              </DropdownMenuItem>
+                            )}
+                            {canCancelMovimiento && (
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => onCancelEntry(entry)}
+                              >
+                                Cancelar movimiento
+                              </DropdownMenuItem>
+                            )}
+                            {canAnularRecibo && (
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => onAnularRecibo(entry.reciboNumero!)}
+                              >
+                                Anular recibo
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      );
+                    })()}
                   </div>
                 </div>
               );
