@@ -109,10 +109,12 @@ function formatDescription(desc: string): string {
   return desc.replace(/\b(\d{4})-(\d{2})\b/g, "$2/$1");
 }
 
+export const NO_PERIOD_KEY = "__no_period__";
+
 function groupByPeriod(entries: LedgerEntry[]): Map<string, LedgerEntry[]> {
   const map = new Map<string, LedgerEntry[]>();
   for (const entry of entries) {
-    const key = entry.period ?? "__no_period__";
+    const key = entry.period ?? NO_PERIOD_KEY;
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(entry);
   }
@@ -224,7 +226,7 @@ export function LedgerTable({
     <div className="w-full">
       {/* Column headers — sticky so they stay visible while scrolling */}
       <div className={cn("sticky top-0 z-10 grid items-center gap-2 px-4 py-1.5 bg-muted/80 backdrop-blur-sm border-b border-border", gridCols)}>
-        <div />
+        <div className="self-stretch border-r border-border/50 -mx-1 px-1" />
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Concepto</span>
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tipo</span>
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Monto</span>
@@ -237,8 +239,8 @@ export function LedgerTable({
 
       {periods.map((period) => {
         const periodEntries = grouped.get(period) ?? [];
-        const past = isPast(period === "__no_period__" ? null : period);
-        const current = isCurrent(period === "__no_period__" ? null : period);
+        const past = isPast(period === NO_PERIOD_KEY ? null : period);
+        const current = isCurrent(period === NO_PERIOD_KEY ? null : period);
         const future = !past && !current;
         const hasSelectable = periodEntries.some(isSelectable);
         const selectableIds = periodEntries.filter(isSelectable).map((e) => e.id);
@@ -256,30 +258,34 @@ export function LedgerTable({
             )}
           >
             {/* Period header */}
-            <div className="flex items-center justify-between px-4 py-2">
+            <div className="flex items-center justify-between px-4 py-1.5">
+              <div className="flex items-center gap-2.5 pr-3 border-r border-border/50 self-stretch">
+                {hasSelectable ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-6 text-xs px-2.5 font-medium transition-colors",
+                      isMonthSelected
+                        ? "bg-primary/15 text-primary hover:bg-primary/10"
+                        : "bg-muted text-foreground/70 hover:text-foreground hover:bg-muted/70"
+                    )}
+                    onClick={() => isMonthSelected ? onDeselectMonth(period) : onSelectMonth(period)}
+                  >
+                    {isMonthSelected ? "Deseleccionar" : "Seleccionar mes"}
+                  </Button>
+                ) : (
+                  <div className="h-6 w-[110px]" />
+                )}
+              </div>
               <span className={cn(
                 "text-xs font-semibold uppercase tracking-wide",
                 current ? "text-primary" : "text-muted-foreground"
               )}>
                 {current && "● "}
-                {period === "__no_period__" ? "Sin período" : formatPeriod(period)}
+                {period === NO_PERIOD_KEY ? "Sin período" : formatPeriod(period)}
                 {current && " — hoy"}
               </span>
-              {hasSelectable && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-6 text-xs px-2.5 font-medium transition-colors",
-                    isMonthSelected
-                      ? "bg-primary/15 text-primary hover:bg-primary/10"
-                      : "bg-muted text-foreground/70 hover:text-foreground hover:bg-muted/70"
-                  )}
-                  onClick={() => isMonthSelected ? onDeselectMonth(period) : onSelectMonth(period)}
-                >
-                  {isMonthSelected ? "Deseleccionar" : "Seleccionar mes"}
-                </Button>
-              )}
             </div>
 
             {/* Entries */}
@@ -296,22 +302,30 @@ export function LedgerTable({
               return (
                 <div
                   key={entry.id}
-                  onClick={() => selectable && onToggleSelect(entry.id)}
+                  onClick={() => onViewDetail(entry)}
                   className={cn(
-                    "grid items-center gap-2 px-4 py-2 text-sm",
+                    "grid items-center gap-2 px-4 py-2 text-sm cursor-pointer hover:bg-muted/40",
                     gridCols,
                     isPunitorio && "pl-10 bg-punitorio-dim border-t border-punitorio/30",
-                    selectable && "cursor-pointer hover:bg-muted/40",
                     selected && "bg-primary/10 hover:bg-primary/15",
                     isOwnerView && entry.splitBreakdown ? "bg-blue-950/20" : ""
                   )}
                 >
-                  {/* Checkbox */}
-                  <div>
+                  <div
+                    className={cn(
+                      "flex items-center justify-center self-stretch pr-3 cursor-default",
+                      isPunitorio ? "-ml-6 pl-6" : "-ml-4 pl-4",
+                      selectable ? "border-r-2 border-r-primary/60" : "border-r border-border/50"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (selectable) onToggleSelect(entry.id);
+                    }}
+                  >
                     {selectable ? (
                       <Checkbox
                         checked={selected}
-                        onCheckedChange={() => onToggleSelect(entry.id)}
+                        onCheckedChange={() => {}}
                         className={isPunitorio ? "border-punitorio" : "border-muted-foreground/60"}
                       />
                     ) : (
@@ -320,7 +334,7 @@ export function LedgerTable({
                   </div>
 
                   {/* Descripcion */}
-                  <div>
+                  <div className="pl-2">
                     <span className={cn(
                       "truncate",
                       isPunitorio && "text-punitorio italic text-xs",
@@ -355,13 +369,14 @@ export function LedgerTable({
                   <span className="text-xs text-muted-foreground truncate">{entry.tipo}</span>
 
                   {/* Monto */}
-                  <div className="flex items-center gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1 justify-end">
                     {entry.monto === null ? (
                       <span className="text-warning font-mono text-xs">$???</span>
                     ) : selected ? (
                       <Input
                         value={displayMonto ?? ""}
                         onChange={(e) => onMontoChange(entry.id, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
                         type="number"
                         min="0"
                         className="h-7 w-24 text-right text-xs font-mono"

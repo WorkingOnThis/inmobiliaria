@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp, PlusCircle, AlertTriangle, X, ChevronDown, Check } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LedgerTable, type LedgerEntry } from "./ledger-table";
+import { LedgerTable, NO_PERIOD_KEY, type LedgerEntry } from "./ledger-table";
 import { CobroPanel } from "./cobro-panel";
 import { AddManualChargeDialog, type ManualChargeData } from "@/components/ledger/add-manual-charge-dialog";
 import { EntryDetailDialog, type EntryEditData } from "@/components/ledger/entry-detail-dialog";
@@ -332,10 +332,14 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
     });
   }
 
-  function handleSelectMonth(period: string) {
-    const cobrables = (data?.ledgerEntries ?? [])
-      .filter((e) => e.period === period && (e.estado === "pendiente" || e.estado === "registrado" || e.estado === "pago_parcial") && e.monto !== null)
+  function cobrablesInPeriod(period: string): string[] {
+    return (data?.ledgerEntries ?? [])
+      .filter((e) => (e.period ?? NO_PERIOD_KEY) === period && (e.estado === "pendiente" || e.estado === "registrado" || e.estado === "pago_parcial") && e.monto !== null)
       .map((e) => e.id);
+  }
+
+  function handleSelectMonth(period: string) {
+    const cobrables = cobrablesInPeriod(period);
     setSelectedIds((prev) => new Set([...prev, ...cobrables]));
   }
 
@@ -358,9 +362,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   }
 
   function handleDeselectMonth(period: string) {
-    const cobrables = (data?.ledgerEntries ?? [])
-      .filter((e) => e.period === period && (e.estado === "pendiente" || e.estado === "registrado" || e.estado === "pago_parcial") && e.monto !== null)
-      .map((e) => e.id);
+    const cobrables = cobrablesInPeriod(period);
     setSelectedIds((prev) => {
       const next = new Set(prev);
       cobrables.forEach((id) => next.delete(id));
