@@ -11,7 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 export type LedgerEntry = {
@@ -38,6 +39,7 @@ export type LedgerEntry = {
   beneficiario: string | null;
   splitBreakdown: string | null;
   isSynthetic?: boolean;
+  cashMovementId?: string | null;
 };
 
 type Props = {
@@ -211,6 +213,7 @@ export function LedgerTable({
   managementCommissionPct,
 }: Props) {
   const showDestino = isSplitContract || isOwnerView;
+  const router = useRouter();
   const gridCols = showDestino
     ? "grid-cols-[28px_1fr_80px_110px_110px_150px_90px]"
     : "grid-cols-[28px_1fr_80px_110px_110px_90px]";
@@ -478,6 +481,12 @@ export function LedgerTable({
                           <DropdownMenuItem onClick={() => onViewDetail(entry)}>
                             Ver detalle
                           </DropdownMenuItem>
+                          {isOwnerView && entry.cashMovementId && entry.estado === "conciliado" && (
+                            <DropdownMenuItem onClick={() => router.push(`/comprobantes/${entry.cashMovementId}`)}>
+                              <FileText className="mr-2 size-4" />
+                              Ver comprobante de liquidación
+                            </DropdownMenuItem>
+                          )}
                           {!isOwnerView && isPunitorio && entry.estado !== "conciliado" && (
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"

@@ -6,8 +6,9 @@ import { contract } from "@/db/schema/contract";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { computeNetAndCommission, round2 } from "@/lib/owners/commission";
+import { cajaMovimiento } from "@/db/schema/caja";
 
 type EnrichedEntry = {
   id: string;
@@ -33,6 +34,7 @@ type EnrichedEntry = {
   beneficiario: string | null;
   splitBreakdown: string | null;
   isSynthetic?: boolean;
+  cashMovementId: string | null;
 };
 
 export async function GET(
@@ -64,6 +66,22 @@ export async function GET(
       )
       .orderBy(tenantLedger.period, tenantLedger.tipo);
 
+    // Map ledgerEntryId → cashMovementId (only conciliated rows have one)
+    const conciliatedLedgerIds = rawRows
+      .filter(({ entry }) => entry.estado === "conciliado" && entry.reciboNumero)
+      .map(({ entry }) => entry.id);
+
+    const cashMovementMap = new Map<string, string>();
+    if (conciliatedLedgerIds.length > 0) {
+      const cashRows = await db
+        .select({ id: cajaMovimiento.id, ledgerEntryId: cajaMovimiento.ledgerEntryId })
+        .from(cajaMovimiento)
+        .where(inArray(cajaMovimiento.ledgerEntryId, conciliatedLedgerIds));
+      for (const row of cashRows) {
+        if (row.ledgerEntryId) cashMovementMap.set(row.ledgerEntryId, row.id);
+      }
+    }
+
     // Fetch unique properties
     const propertyRows = await db
       .selectDistinct({ id: property.id, address: property.address })
@@ -86,7 +104,10 @@ export async function GET(
       const { net, commission, effectivePct } = computeNetAndCommission(entry, pct);
 
       // Add the original entry (gross monto stays as-is)
-      ledgerEntries.push({ ...entry });
+      ledgerEntries.push({
+        ...entry,
+        cashMovementId: cashMovementMap.get(entry.id) ?? null,
+      });
 
       // Sum nets for KPIs
       const isCurrentYear = entry.dueDate?.startsWith(currentYear) ?? false;
@@ -122,6 +143,7 @@ export async function GET(
           beneficiario: null,
           splitBreakdown: null,
           isSynthetic: true,
+          cashMovementId: null,
         });
       }
     }
