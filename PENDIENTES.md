@@ -29,6 +29,12 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 
 - [ ] **Score de cliente** — métrica que refleja qué tanto trabajo da un inquilino. Schema: tabla `client_interaction` con `clientId`, `tipo` (reclamo/consulta/incidente), `descripcion`, `humorScore` (1–5). Score compuesto: frecuencia de reclamos + promedio humorScore + días promedio de pago. UI en ficha del inquilino · [inquilinos](docs/decisions/inquilinos.md)
 
+- [ ] **Alert de próximo ajuste para propietarios multi-contrato** — el componente de inquilinos muestra un alert cuando se acerca un ajuste de índice. Para propietario con varias propiedades, requiere agregación: "Tienes 3 ajustes próximos en X mes" con link a detalle, o un alert por contrato. Necesita diseño · [contabilidad](docs/decisions/contabilidad.md)
+
+- [ ] **Notificación post-recibo al propietario** — cuando se emite un recibo (modalidad split), enviar mensaje automático al propietario preguntando si recibió la transferencia. Empezar por mail o link a WhatsApp Web; en el futuro integración WhatsApp directa · [contabilidad](docs/decisions/contabilidad.md)
+
+- [ ] **Comprobante de liquidación al propietario (PDF)** — al emitir un recibo, generar también un PDF que el propietario pueda guardar/imprimir con: bruto cobrado, % comisión, neto recibido, datos del contrato y propiedad. Página `/comprobantes/[id]`, link desde cada entry conciliado en la CC · [contabilidad](docs/decisions/contabilidad.md)
+
 ---
 
 ## 🟢 Prioridad baja
@@ -36,6 +42,8 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 - [ ] **Pool de motivos de cancelación (V2)** — reemplazar el campo de texto libre del dialog de cancelación por un `CreatableCombobox` que guarde y reutilice motivos frecuentes ("Error de carga", "No corresponde cobrar", etc.). Incluye: tabla en DB para los motivos, toggle de obligatorio/opcional por agencia desde un módulo de configuración · [contabilidad](docs/decisions/contabilidad.md)
 
 - [ ] **Selector de mes en "Primer mes a cobrar"** — hoy muestra "1 de marzo de 2026" o "23 de marzo de 2026". Debería mostrar solo "Marzo 2026" independientemente del día seleccionado, ya que la granularidad es mensual · [contratos](docs/decisions/contratos.md)
+
+- [ ] **Conectar/deprecar página `/propietarios/[id]/liquidacion`** — existe una página vieja con honorarios fijos en 7%, desconectada de la CC. Decidir: integrarla con la nueva CC, deprecarla, o reescribirla cuando se diseñe el flujo formal de liquidación · [contabilidad](docs/decisions/contabilidad.md)
 
 ---
 

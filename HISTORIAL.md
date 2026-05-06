@@ -6,6 +6,11 @@ Funcionalidades completadas, de más reciente a más antigua.
 
 ## 2026-05
 
+### Cuenta corriente del propietario — Mejoras
+KPIs en neto (no bruto), filas sintéticas de honorarios derivadas del alquiler que se intercalan después de cada entry padre, agrupación por propiedad con `Accordion` cuando hay 2+ propiedades, empty state cuando los filtros activos no matchean ninguna entrada. La API `/api/owners/[id]/cuenta-corriente` ahora hace `INNER JOIN` con `contract` para obtener `managementCommissionPct` por entry, devuelve un dictionary de `properties` y calcula neto/comisión por entrada (usando `splitBreakdown` cuando está conciliado, o `incluirEnBaseComision` + pct del contrato como fallback). En el `LedgerTable` las filas sintéticas se renderizan indentadas, en italic, sin checkbox ni `···`, sin click-to-detail.
+
+Archivos clave: `src/app/api/owners/[id]/cuenta-corriente/route.ts` · `src/components/owners/owner-tab-current-account.tsx` · `src/components/tenants/ledger-table.tsx` · `src/components/ui/accordion.tsx`
+
 ### Cuenta corriente de propietarios
 Implementación MVP similar a la de inquilinos: tabla con movimientos, filtros (Pendientes/Pagados/Futuros), dos KPI cards (liquidado YTD + pendiente), EntryDetailDialog conectado al menú `···` en modo lectura. Acciones destructivas (cancelar, anular) ocultas en vista propietario. Componentes reutilizables `LedgerTable`, `LedgerFilters`, `EntryDetailDialog` en `src/components/ledger/` compartidos entre módulos.
 
