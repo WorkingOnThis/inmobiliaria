@@ -59,6 +59,11 @@
   /* --- Tokens Arce: origen de movimiento --- */
   --color-origin-auto: var(--origin-auto);
   --color-origin-auto-dim: var(--origin-auto-dim);
+  /* --- Tokens Arce: destino (rol informativo, NO estado) --- */
+  --color-destino-owner: var(--destino-owner);
+  --color-destino-owner-dim: var(--destino-owner-dim);
+  --color-destino-agency: var(--destino-agency);
+  --color-destino-agency-dim: var(--destino-agency-dim);
   /* --- Tokens Arce: sparkline --- */
   --color-spark-neutral: var(--spark-neutral);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -233,6 +238,14 @@
   --paper-muted: #5a514c;
   --paper-border: #d9d1c3;
   --paper-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* --- Tokens Arce: destino (a quién va el dinero en cada fila del ledger) ---
+     Roles informativos, no estados. Chroma deliberadamente baja (~0.04)
+     para no competir con los Badges semánticos de estado. */
+  --destino-owner: oklch(0.7 0.04 155);
+  --destino-owner-dim: oklch(0.7 0.04 155 / 0.1);
+  --destino-agency: oklch(0.7 0.04 240);
+  --destino-agency-dim: oklch(0.7 0.04 240 / 0.1);
 }
 
 .dark {

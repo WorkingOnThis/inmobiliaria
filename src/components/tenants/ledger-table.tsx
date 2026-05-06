@@ -82,11 +82,6 @@ function isCancelable(entry: LedgerEntry): boolean {
   return CANCELABLE_STATES.includes(entry.estado);
 }
 
-function isPast(period: string | null): boolean {
-  if (!period) return false;
-  return period < new Date().toISOString().slice(0, 7);
-}
-
 function isCurrent(period: string | null): boolean {
   if (!period) return false;
   return period === new Date().toISOString().slice(0, 7);
@@ -147,6 +142,12 @@ function groupByPeriod(entries: LedgerEntry[]): Map<string, LedgerEntry[]> {
   return map;
 }
 
+/**
+ * Badge that signals where the money for this ledger row is going.
+ * Uses the muted --destino-* tokens so it doesn't outshout status
+ * badges. The arrow glyph was decorative and got removed; the role
+ * label carries the meaning on its own.
+ */
 function DestinoBadge({
   beneficiario,
   managementCommissionPct,
@@ -162,8 +163,11 @@ function DestinoBadge({
 }) {
   if (isOwnerView && splitBreakdown) {
     return (
-      <Badge variant="outline" className="bg-blue-950 border-blue-800 text-blue-300 font-medium">
-        ↗ Cobro directo desde inquilino
+      <Badge
+        variant="outline"
+        className="bg-destino-agency-dim border-destino-agency/30 text-destino-agency font-medium"
+      >
+        Cobro directo del inquilino
       </Badge>
     );
   }
@@ -173,25 +177,37 @@ function DestinoBadge({
     const prop = monto - adm;
     return (
       <span className="flex flex-wrap gap-1">
-        <Badge variant="outline" className="bg-emerald-950 border-emerald-800 text-emerald-300">
-          ↗ Prop. ${prop.toLocaleString("es-AR")}
+        <Badge
+          variant="outline"
+          className="bg-destino-owner-dim border-destino-owner/30 text-destino-owner"
+        >
+          Prop. ${prop.toLocaleString("es-AR")}
         </Badge>
-        <Badge variant="outline" className="bg-blue-950 border-blue-800 text-blue-300">
-          ↗ Adm. ${adm.toLocaleString("es-AR")}
+        <Badge
+          variant="outline"
+          className="bg-destino-agency-dim border-destino-agency/30 text-destino-agency"
+        >
+          Adm. ${adm.toLocaleString("es-AR")}
         </Badge>
       </span>
     );
   }
   if (beneficiario === "propietario") {
     return (
-      <Badge variant="outline" className="bg-emerald-950 border-emerald-800 text-emerald-300">
-        ↗ Propietario
+      <Badge
+        variant="outline"
+        className="bg-destino-owner-dim border-destino-owner/30 text-destino-owner"
+      >
+        Propietario
       </Badge>
     );
   }
   return (
-    <Badge variant="outline" className="bg-blue-950 border-blue-800 text-blue-300">
-      ↗ Administración
+    <Badge
+      variant="outline"
+      className="bg-destino-agency-dim border-destino-agency/30 text-destino-agency"
+    >
+      Administración
     </Badge>
   );
 }
@@ -274,21 +290,21 @@ export function LedgerTable({
 
       {periods.map((period) => {
         const periodEntries = grouped.get(period) ?? [];
-        const past = isPast(period === NO_PERIOD_KEY ? null : period);
         const current = isCurrent(period === NO_PERIOD_KEY ? null : period);
-        const future = !past && !current;
         const selectableIds = periodEntries.filter(isSelectable).map((e) => e.id);
         const isMonthSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));
 
+        // Period container is at full opacity. Per-row dimming is applied
+        // below based on entry.estado (paid → dim) or futurity (future →
+        // dim) so that an overdue charge in a past month is the loudest
+        // thing on screen, not the quietest.
         return (
           <div
             key={period}
             ref={current ? currentRef : undefined}
             className={cn(
               "border-b border-border",
-              past && "opacity-60",
-              future && "opacity-50",
-              current && "border-l-2 border-l-primary bg-primary/5"
+              current && "bg-primary/5"
             )}
           >
             {/* Period header */}
@@ -331,6 +347,15 @@ export function LedgerTable({
               const displayMonto = montoOverrides[entry.id] ?? defaultMonto;
               const badge = ESTADO_BADGE[entry.estado] ?? ESTADO_BADGE.pendiente;
 
+              // Per-row prominence: paid rows fade, future rows fade,
+              // overdue pending rows get a subtle destructive tint so they
+              // are the loudest scanning target.
+              const isFutureRow = (entry.period ?? "") > todayPeriod;
+              const isPaidRow = entry.estado === "conciliado";
+              const isPendingState = PENDING_STATES.includes(entry.estado);
+              const isOverdueRow =
+                !isFutureRow && isPendingState && entry.dueDate !== null && entry.dueDate < today;
+
               return (
                 <div
                   key={entry.id}
@@ -341,15 +366,17 @@ export function LedgerTable({
                     !entry.isSynthetic && "cursor-pointer hover:bg-muted/40",
                     isPunitorio && "pl-10 bg-punitorio-dim border-t border-punitorio/30",
                     entry.isSynthetic && "pl-10 bg-muted/20 text-muted-foreground italic",
-                    selected && "bg-primary/10 hover:bg-primary/15",
-                    isOwnerView && entry.splitBreakdown ? "bg-blue-950/20" : ""
+                    !entry.isSynthetic && isPaidRow && "opacity-60",
+                    !entry.isSynthetic && isFutureRow && "opacity-50",
+                    !entry.isSynthetic && isOverdueRow && "bg-destructive/5",
+                    selected && "bg-primary/10 hover:bg-primary/15 opacity-100",
+                    isOwnerView && entry.splitBreakdown ? "bg-destino-agency-dim" : ""
                   )}
                 >
                   <div
                     className={cn(
-                      "flex items-center justify-center self-stretch pr-3 cursor-default",
-                      isPunitorio ? "-ml-6 pl-6" : "-ml-4 pl-4",
-                      selectable && !entry.isSynthetic ? "border-r-2 border-r-primary/60" : "border-r border-border/50"
+                      "flex items-center justify-center self-stretch pr-3 cursor-default border-r border-border/50",
+                      isPunitorio ? "-ml-6 pl-6" : "-ml-4 pl-4"
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
