@@ -1,14 +1,18 @@
 import { pgTable, text, timestamp, integer, decimal, smallint, boolean } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 import { client } from "./client";
+import { agency } from "./agency";
 
 /**
  * Property Schema
- * 
+ *
  * Represents a real estate property in the system.
  */
 export const property = pgTable("property", {
   id: text("id").primaryKey(),
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
   title: text("title"), // Opcional, se puede completar luego en la ficha
   address: text("address").notNull(),
   type: text("type").notNull(), // casa, depto, terreno, local, etc.

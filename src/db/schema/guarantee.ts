@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, decimal } from "drizzle-orm/pg-core";
 import { client } from "./client";
 import { contract } from "./contract";
 import { property } from "./property";
+import { agency } from "./agency";
 
 // kind: "propertyOwner" | "deposit" | "salaryReceipt"  (see src/lib/guarantees/constants.ts)
 // status: "active" | "replaced" | "released"
@@ -14,6 +15,9 @@ export const guarantee = pgTable("guarantee", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
   tenantClientId: text("tenantClientId")
     .notNull()
     .references(() => client.id, { onDelete: "cascade" }),

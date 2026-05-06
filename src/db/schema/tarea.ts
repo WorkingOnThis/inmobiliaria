@@ -3,9 +3,13 @@ import { user } from "./better-auth";
 import { property } from "./property";
 import { contract } from "./contract";
 import { client } from "./client";
+import { agency } from "./agency";
 
 export const tarea = pgTable("task", {
   id: text("id").primaryKey(),
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description"),
   priority: text("priority").notNull().default("medium"), // "urgent" | "high" | "medium" | "low"

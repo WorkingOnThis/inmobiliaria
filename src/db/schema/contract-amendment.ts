@@ -1,9 +1,13 @@
 import { pgTable, text, timestamp, integer, jsonb } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 import { contract } from "./contract";
+import { agency } from "./agency";
 
 export const contractAmendment = pgTable("contract_amendment", {
   id:               text("id").primaryKey(),
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
   contractId:       text("contractId").notNull().references(() => contract.id, { onDelete: "restrict" }),
   type:             text("type").notNull(),
   // erratum | modification | extension | termination | guarantee_substitution | index_change

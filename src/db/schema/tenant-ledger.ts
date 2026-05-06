@@ -4,11 +4,16 @@ import { client } from "./client";
 import { contract } from "./contract";
 import { property } from "./property";
 import { servicio } from "./servicio";
+import { agency } from "./agency";
 
 export const tenantLedger = pgTable("tenant_ledger", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
+
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
 
   contratoId: text("contratoId")
     .notNull()

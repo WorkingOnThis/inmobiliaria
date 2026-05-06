@@ -1,9 +1,10 @@
 import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
+import { agency } from "./agency";
 
 /**
  * Clause Template Schema
- * 
+ *
  * Represents a reusable text template for contract clauses.
  * Each template can include variables/placeholders in the format {{variable_name}}.
  * Templates are created by users with authorized roles and can be used
@@ -11,6 +12,9 @@ import { user } from "./better-auth";
  */
 export const clauseTemplate = pgTable("clauseTemplate", {
   id: text("id").primaryKey(),
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   category: text("category").notNull(),
   content: text("content").notNull(),

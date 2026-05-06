@@ -1,6 +1,7 @@
 import { pgTable, text, timestamp, decimal, unique } from "drizzle-orm/pg-core";
 import { client } from "./client";
 import { property } from "./property";
+import { agency } from "./agency";
 
 export const propertyCoOwner = pgTable(
   "property_co_owner",
@@ -8,6 +9,9 @@ export const propertyCoOwner = pgTable(
     id: text("id")
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
+    agencyId: text("agencyId")
+      .notNull()
+      .references(() => agency.id, { onDelete: "cascade" }),
     propertyId: text("propertyId")
       .notNull()
       .references(() => property.id, { onDelete: "cascade" }),

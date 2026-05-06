@@ -1,5 +1,6 @@
 import { pgTable, text, boolean, timestamp } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
+import { agency } from "./agency";
 
 /**
  * Client Schema
@@ -11,6 +12,9 @@ import { user } from "./better-auth";
  */
 export const client = pgTable("client", {
   id: text("id").primaryKey(),
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
   userId: text("userId")
     .unique() // Enforces 1:1 relationship if present
     .references(() => user.id, { onDelete: "cascade" }),

@@ -1,9 +1,13 @@
 import { pgTable, text, timestamp, integer, decimal, boolean, jsonb } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 import { property } from "./property";
+import { agency } from "./agency";
 
 export const servicio = pgTable("service", {
   id: text("id").primaryKey(),
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
   propertyId: text("propertyId")
     .notNull()
     .references(() => property.id, { onDelete: "cascade" }),

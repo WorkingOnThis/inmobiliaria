@@ -1,11 +1,15 @@
 import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { user } from "./better-auth";
 import { contract } from "./contract";
+import { agency } from "./agency";
 
 export const contractDocument = pgTable("contract_document", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
   contractId: text("contractId")
     .notNull()
     .references(() => contract.id, { onDelete: "cascade" }),

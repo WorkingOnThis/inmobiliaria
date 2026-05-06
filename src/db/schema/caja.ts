@@ -3,6 +3,7 @@ import { user } from "./better-auth";
 import { client } from "./client";
 import { contract } from "./contract";
 import { property } from "./property";
+import { agency } from "./agency";
 
 /**
  * Caja General — Movimientos
@@ -19,6 +20,10 @@ export const cajaMovimiento = pgTable("cash_movement", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
+
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
 
   date: text("date").notNull(), // ISO "YYYY-MM-DD"
 

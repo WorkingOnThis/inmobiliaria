@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, integer, decimal, boolean } from "drizzle-orm
 import { user } from "./better-auth";
 import { client } from "./client";
 import { property } from "./property";
+import { agency } from "./agency";
 
 /**
  * Contract Schema
@@ -15,6 +16,9 @@ import { property } from "./property";
  */
 export const contract = pgTable("contract", {
   id: text("id").primaryKey(),
+  agencyId: text("agencyId")
+    .notNull()
+    .references(() => agency.id, { onDelete: "cascade" }),
   contractNumber: text("contractNumber").notNull().unique(), // "CON-0001"
 
   propertyId: text("propertyId")
