@@ -46,6 +46,11 @@ export const auth = betterAuth({
         defaultValue: "visitor",
         input: false, // Don't allow user to set role during signup
       },
+      agencyId: {
+        type: "string",
+        required: false,
+        input: false, // Set when user completes agency registration, not during signup
+      },
     },
   },
 
