@@ -6,7 +6,8 @@ import { propertyCoOwner } from "@/db/schema/property-co-owner";
 import { client } from "@/db/schema/client";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
-import { eq } from "drizzle-orm";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 const addCoOwnerSchema = z.object({
@@ -23,11 +24,10 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
+    await requireAgencyResource(property, id, agencyId);
 
     const rows = await db
       .select({
@@ -47,10 +47,12 @@ export async function GET(
       })
       .from(propertyCoOwner)
       .leftJoin(client, eq(propertyCoOwner.clientId, client.id))
-      .where(eq(propertyCoOwner.propertyId, id));
+      .where(and(eq(propertyCoOwner.propertyId, id), eq(propertyCoOwner.agencyId, agencyId)));
 
     return NextResponse.json({ coOwners: rows });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching co-owners:", error);
     return NextResponse.json({ error: "Error al obtener co-propietarios" }, { status: 500 });
   }
@@ -62,23 +64,13 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageProperties(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageProperties(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
-
-    const [existingProperty] = await db
-      .select({ id: property.id })
-      .from(property)
-      .where(eq(property.id, id))
-      .limit(1);
-    if (!existingProperty) {
-      return NextResponse.json({ error: "Propiedad no encontrada" }, { status: 404 });
-    }
+    await requireAgencyResource(property, id, agencyId);
 
     const body = await request.json();
     const result = addCoOwnerSchema.safeParse(body);
@@ -91,7 +83,7 @@ export async function POST(
     const [existingClient] = await db
       .select({ id: client.id })
       .from(client)
-      .where(eq(client.id, clientId))
+      .where(and(eq(client.id, clientId), eq(client.agencyId, agencyId)))
       .limit(1);
     if (!existingClient) {
       return NextResponse.json({ error: "El cliente no existe" }, { status: 400 });
@@ -100,6 +92,7 @@ export async function POST(
     const [inserted] = await db
       .insert(propertyCoOwner)
       .values({
+        agencyId,
         propertyId: id,
         clientId,
         role,
@@ -111,6 +104,8 @@ export async function POST(
 
     return NextResponse.json({ coOwner: inserted }, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     const msg = error instanceof Error ? error.message : "";
     if (msg.includes("unique")) {
       return NextResponse.json({ error: "Este cliente ya es co-propietario de esta propiedad" }, { status: 409 });

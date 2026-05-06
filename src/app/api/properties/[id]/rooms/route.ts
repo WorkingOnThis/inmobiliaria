@@ -5,7 +5,8 @@ import { property } from "@/db/schema/property";
 import { propertyRoom } from "@/db/schema/property-room";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
-import { eq, asc, count } from "drizzle-orm";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { and, eq, asc, count } from "drizzle-orm";
 import { z } from "zod";
 
 const createRoomSchema = z.object({
@@ -21,20 +22,21 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
+    await requireAgencyResource(property, id, agencyId);
 
     const rooms = await db
       .select()
       .from(propertyRoom)
-      .where(eq(propertyRoom.propertyId, id))
+      .where(and(eq(propertyRoom.propertyId, id), eq(propertyRoom.agencyId, agencyId)))
       .orderBy(asc(propertyRoom.position));
 
     return NextResponse.json({ rooms });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching rooms:", error);
     return NextResponse.json({ error: "Error al obtener ambientes" }, { status: 500 });
   }
@@ -46,23 +48,13 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageProperties(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageProperties(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
-
-    const [existingProperty] = await db
-      .select({ id: property.id })
-      .from(property)
-      .where(eq(property.id, id))
-      .limit(1);
-    if (!existingProperty) {
-      return NextResponse.json({ error: "Propiedad no encontrada" }, { status: 404 });
-    }
+    await requireAgencyResource(property, id, agencyId);
 
     const body = await request.json();
     const result = createRoomSchema.safeParse(body);
@@ -73,13 +65,14 @@ export async function POST(
     const [{ currentCount }] = await db
       .select({ currentCount: count() })
       .from(propertyRoom)
-      .where(eq(propertyRoom.propertyId, id));
+      .where(and(eq(propertyRoom.propertyId, id), eq(propertyRoom.agencyId, agencyId)));
 
     const position = result.data.position ?? currentCount;
 
     const [inserted] = await db
       .insert(propertyRoom)
       .values({
+        agencyId,
         propertyId: id,
         name: result.data.name,
         description: result.data.description,
@@ -90,6 +83,8 @@ export async function POST(
 
     return NextResponse.json({ room: inserted }, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error creating room:", error);
     return NextResponse.json({ error: "Error al crear ambiente" }, { status: 500 });
   }

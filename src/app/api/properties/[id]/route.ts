@@ -8,6 +8,7 @@ import { contract } from "@/db/schema/contract";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { RENTAL_STATUSES, SALE_STATUSES, PRICE_CURRENCIES } from "@/lib/properties/constants";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
@@ -60,11 +61,10 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
+    await requireAgencyResource(property, id, agencyId);
 
     const [[row], guaranteeRows] = await Promise.all([
       db
@@ -162,6 +162,8 @@ export async function GET(
 
     return NextResponse.json({ property: row, usedAsGuaranteeIn });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching property:", error);
     return NextResponse.json({ error: "Error al obtener la propiedad" }, { status: 500 });
   }
@@ -173,15 +175,14 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
-    if (!canManageProperties(session.user.role)) {
+    if (!canManageProperties(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
+    await requireAgencyResource(property, id, agencyId);
     const body = await request.json();
     const result = updatePropertySchema.safeParse(body);
     if (!result.success) {
@@ -233,7 +234,7 @@ export async function PATCH(
     const [updated] = await db
       .update(property)
       .set(updateData)
-      .where(eq(property.id, id))
+      .where(and(eq(property.id, id), eq(property.agencyId, agencyId)))
       .returning();
 
     if (!updated) {
@@ -242,6 +243,8 @@ export async function PATCH(
 
     return NextResponse.json({ property: updated });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error updating property:", error);
     return NextResponse.json({ error: "Error al actualizar la propiedad" }, { status: 500 });
   }

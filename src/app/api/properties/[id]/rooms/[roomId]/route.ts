@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
+import { property } from "@/db/schema/property";
 import { propertyRoom } from "@/db/schema/property-room";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
@@ -20,14 +22,16 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageProperties(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageProperties(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id, roomId } = await params;
+    await requireAgencyResource(property, id, agencyId);
+    await requireAgencyResource(propertyRoom, roomId, agencyId, [
+      eq(propertyRoom.propertyId, id),
+    ]);
 
     const body = await request.json();
     const result = updateRoomSchema.safeParse(body);
@@ -44,7 +48,13 @@ export async function PATCH(
     const [updated] = await db
       .update(propertyRoom)
       .set(updateData)
-      .where(and(eq(propertyRoom.id, roomId), eq(propertyRoom.propertyId, id)))
+      .where(
+        and(
+          eq(propertyRoom.id, roomId),
+          eq(propertyRoom.propertyId, id),
+          eq(propertyRoom.agencyId, agencyId)
+        )
+      )
       .returning();
 
     if (!updated) {
@@ -53,6 +63,8 @@ export async function PATCH(
 
     return NextResponse.json({ room: updated });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error updating room:", error);
     return NextResponse.json({ error: "Error al actualizar ambiente" }, { status: 500 });
   }
@@ -64,18 +76,26 @@ export async function DELETE(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageProperties(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageProperties(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id, roomId } = await params;
+    await requireAgencyResource(property, id, agencyId);
+    await requireAgencyResource(propertyRoom, roomId, agencyId, [
+      eq(propertyRoom.propertyId, id),
+    ]);
 
     const [deleted] = await db
       .delete(propertyRoom)
-      .where(and(eq(propertyRoom.id, roomId), eq(propertyRoom.propertyId, id)))
+      .where(
+        and(
+          eq(propertyRoom.id, roomId),
+          eq(propertyRoom.propertyId, id),
+          eq(propertyRoom.agencyId, agencyId)
+        )
+      )
       .returning();
 
     if (!deleted) {
@@ -84,6 +104,8 @@ export async function DELETE(
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error deleting room:", error);
     return NextResponse.json({ error: "Error al eliminar ambiente" }, { status: 500 });
   }

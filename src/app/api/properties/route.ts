@@ -6,6 +6,7 @@ import { client } from "@/db/schema/client";
 import { contract } from "@/db/schema/contract";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { PROPERTY_TYPES, RENTAL_STATUSES, SALE_STATUSES } from "@/lib/properties/constants";
 import { z } from "zod";
 import { count, desc, eq, ilike, or, and, inArray, isNotNull } from "drizzle-orm";
@@ -39,9 +40,7 @@ function generateId(): string {
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const searchParams = request.nextUrl.searchParams;
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
@@ -52,7 +51,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const zone = searchParams.get("zone") || "";
 
-    const conditions = [];
+    const conditions = [eq(property.agencyId, agencyId)];
     const isManagedParam = searchParams.get("isManaged");
     if (isManagedParam === "true") conditions.push(eq(property.isManaged, true));
     else if (isManagedParam === "false") conditions.push(eq(property.isManaged, false));
@@ -118,8 +117,8 @@ export async function GET(request: NextRequest) {
         .from(property)
         .leftJoin(client, eq(property.ownerId, client.id))
         .where(where),
-      db.select({ status: property.rentalStatus, cnt: count() }).from(property).groupBy(property.rentalStatus),
-      db.select({ status: property.saleStatus, cnt: count() }).from(property).where(isNotNull(property.saleStatus)).groupBy(property.saleStatus),
+      db.select({ status: property.rentalStatus, cnt: count() }).from(property).where(eq(property.agencyId, agencyId)).groupBy(property.rentalStatus),
+      db.select({ status: property.saleStatus, cnt: count() }).from(property).where(and(eq(property.agencyId, agencyId), isNotNull(property.saleStatus))).groupBy(property.saleStatus),
     ]);
 
     const propertyIds = propertiesWithOwner.map((p) => p.id);
@@ -197,6 +196,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching properties:", error);
     return NextResponse.json({ error: "Error al obtener propiedades" }, { status: 500 });
   }
@@ -205,11 +206,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
-    if (!canManageProperties(session.user.role)) {
+    if (!canManageProperties(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -221,7 +220,11 @@ export async function POST(request: NextRequest) {
 
     const data = result.data;
 
-    const [existingClient] = await db.select().from(client).where(eq(client.id, data.ownerId)).limit(1);
+    const [existingClient] = await db
+      .select()
+      .from(client)
+      .where(and(eq(client.id, data.ownerId), eq(client.agencyId, agencyId)))
+      .limit(1);
     if (!existingClient) {
       return NextResponse.json({ error: "El dueño especificado no existe" }, { status: 400 });
     }
@@ -233,6 +236,7 @@ export async function POST(request: NextRequest) {
       .insert(property)
       .values({
         id: propertyId,
+        agencyId,
         title: data.title || data.address.split(",")[0],
         address: data.address,
         type: data.type,
@@ -248,7 +252,7 @@ export async function POST(request: NextRequest) {
         bathrooms: data.bathrooms,
         surface: data.surface?.toString() || null,
         ownerId: data.ownerId,
-        createdBy: session.user.id,
+        createdBy: session!.user.id,
         createdAt: now,
         updatedAt: now,
       })
@@ -256,6 +260,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: "Propiedad creada exitosamente", property: newProperty }, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     return NextResponse.json({ error: "Error al crear la propiedad" }, { status: 500 });
   }
 }
