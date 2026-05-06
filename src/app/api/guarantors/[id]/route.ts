@@ -8,7 +8,8 @@ import { contract } from "@/db/schema/contract";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
-import { eq, inArray } from "drizzle-orm";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 const patchGuarantorSchema = z.object({
@@ -30,12 +31,18 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageClients(session.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const { id } = await params;
 
-    const [guarantor] = await db.select().from(client).where(eq(client.id, id)).limit(1);
+    await requireAgencyResource(client, id, agencyId);
+
+    const [guarantor] = await db
+      .select()
+      .from(client)
+      .where(and(eq(client.id, id), eq(client.agencyId, agencyId)))
+      .limit(1);
     if (!guarantor) return NextResponse.json({ error: "Garante no encontrado" }, { status: 404 });
 
     const guaranteeRows = await db
@@ -57,7 +64,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       .leftJoin(guaranteeSalaryInfo, eq(guaranteeSalaryInfo.guaranteeId, guarantee.id))
       .leftJoin(property, eq(property.id, guarantee.propertyId))
       .innerJoin(contract, eq(contract.id, guarantee.contractId))
-      .where(eq(guarantee.personClientId, id));
+      .where(and(eq(guarantee.agencyId, agencyId), eq(guarantee.personClientId, id)));
 
     const tenantIds = [...new Set(guaranteeRows.map((r) => r.guarantee.tenantClientId))];
     const tenants =
@@ -65,7 +72,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
         ? await db
             .select({ id: client.id, firstName: client.firstName, lastName: client.lastName })
             .from(client)
-            .where(inArray(client.id, tenantIds))
+            .where(and(eq(client.agencyId, agencyId), inArray(client.id, tenantIds)))
         : [];
 
     const tenantById = new Map(tenants.map((t) => [t.id, t]));
@@ -77,6 +84,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ guarantor, guarantees });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error GET /api/guarantors/:id:", error);
     return NextResponse.json({ error: "Error al obtener el garante" }, { status: 500 });
   }
@@ -85,13 +94,12 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageClients(session.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const { id } = await params;
 
-    const [existing] = await db.select({ id: client.id }).from(client).where(eq(client.id, id)).limit(1);
-    if (!existing) return NextResponse.json({ error: "Garante no encontrado" }, { status: 404 });
+    await requireAgencyResource(client, id, agencyId);
 
     const body = await request.json();
     const result = patchGuarantorSchema.safeParse(body);
@@ -102,11 +110,13 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const [updated] = await db
       .update(client)
       .set({ ...result.data, updatedAt: new Date() })
-      .where(eq(client.id, id))
+      .where(and(eq(client.id, id), eq(client.agencyId, agencyId)))
       .returning();
 
     return NextResponse.json({ guarantor: updated });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error PATCH /api/guarantors/:id:", error);
     return NextResponse.json({ error: "Error al actualizar el garante" }, { status: 500 });
   }

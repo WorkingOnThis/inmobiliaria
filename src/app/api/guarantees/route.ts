@@ -7,6 +7,7 @@ import { client } from "@/db/schema/client";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 
@@ -42,9 +43,7 @@ const createGuaranteeSchema = z.discriminatedUnion("kind", [
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const searchParams = request.nextUrl.searchParams;
     const tenantClientId = searchParams.get("tenantId");
@@ -57,7 +56,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const conditions = [];
+    const conditions = [eq(guarantee.agencyId, agencyId)];
     if (tenantClientId) conditions.push(eq(guarantee.tenantClientId, tenantClientId));
     if (contractId) conditions.push(eq(guarantee.contractId, contractId));
 
@@ -83,10 +82,12 @@ export async function GET(request: NextRequest) {
       .leftJoin(guaranteeSalaryInfo, eq(guaranteeSalaryInfo.guaranteeId, guarantee.id))
       .leftJoin(property, eq(property.id, guarantee.propertyId))
       .leftJoin(client, eq(client.id, guarantee.personClientId))
-      .where(conditions.length === 1 ? conditions[0] : and(...conditions));
+      .where(and(...conditions));
 
     return NextResponse.json({ guarantees: rows });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching guarantees:", error);
     return NextResponse.json({ error: "Error al obtener garantías" }, { status: 500 });
   }
@@ -95,11 +96,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
-    if (!canManageClients(session.user.role)) {
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -114,6 +113,7 @@ export async function POST(request: NextRequest) {
     const newGuarantee = await db
       .insert(guarantee)
       .values({
+        agencyId,
         tenantClientId: data.tenantClientId,
         contractId: data.contractId,
         kind: data.kind,
@@ -134,6 +134,8 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error creating guarantee:", error);
     return NextResponse.json({ error: "Error al crear la garantía" }, { status: 500 });
   }

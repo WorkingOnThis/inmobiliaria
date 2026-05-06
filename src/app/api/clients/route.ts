@@ -5,6 +5,7 @@ import { client } from "@/db/schema/client";
 import { user } from "@/db/schema/better-auth";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
 import { and, count, desc, eq, inArray, ilike, or } from "drizzle-orm";
 
@@ -34,11 +35,9 @@ function generateId(): string {
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
-    if (!canManageClients(session.user.role)) {
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -64,10 +63,12 @@ export async function GET(request: NextRequest) {
         )
       : undefined;
 
-    const whereCondition =
-      typeCondition && searchCondition
-        ? and(typeCondition, searchCondition)
-        : typeCondition ?? searchCondition;
+    const agencyCondition = eq(client.agencyId, agencyId);
+    const whereCondition = and(
+      agencyCondition,
+      ...(typeCondition ? [typeCondition] : []),
+      ...(searchCondition ? [searchCondition] : []),
+    );
 
     const [totalCountResult] = await db
       .select({ value: count() })
@@ -120,6 +121,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching clients:", error);
     return NextResponse.json({ error: "Error al obtener clientes" }, { status: 500 });
   }
@@ -128,11 +131,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
-    if (!canManageClients(session.user.role)) {
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -180,6 +181,7 @@ export async function POST(request: NextRequest) {
         .insert(client)
         .values({
           id: clientId,
+          agencyId,
           userId: userId,
           type: data.type || "contacto",
           firstName: data.firstName,
@@ -208,6 +210,8 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error creating client:", error);
     return NextResponse.json({ error: "Error al crear el cliente" }, { status: 500 });
   }

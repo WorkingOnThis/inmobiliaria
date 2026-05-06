@@ -8,6 +8,7 @@ import { property } from "@/db/schema/property";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { calculateStatus } from "@/lib/tenants/status";
@@ -56,10 +57,8 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
@@ -70,10 +69,7 @@ export async function PATCH(
       return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
     }
 
-    const [existing] = await db.select({ id: client.id }).from(client).where(eq(client.id, id)).limit(1);
-    if (!existing) {
-      return NextResponse.json({ error: "Inquilino no encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(client, id, agencyId);
 
     const statusMap: Record<string, string> = { activo: "active", suspendido: "suspended", baja: "inactive" };
     const { trustedEmails, ...rest } = result.data;
@@ -86,11 +82,13 @@ export async function PATCH(
     const [updated] = await db
       .update(client)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(client.id, id))
+      .where(and(eq(client.id, id), eq(client.agencyId, agencyId)))
       .returning();
 
     return NextResponse.json({ tenant: updated });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error PATCH /api/tenants/:id:", error);
     return NextResponse.json({ error: "Error al actualizar el inquilino" }, { status: 500 });
   }
@@ -102,20 +100,20 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
     const { id } = await params;
 
+    await requireAgencyResource(client, id, agencyId);
+
     // Look up the client by ID (role is derived from contract_tenant, not client.type)
     const [tenant] = await db
       .select()
       .from(client)
-      .where(eq(client.id, id))
+      .where(and(eq(client.id, id), eq(client.agencyId, agencyId)))
       .limit(1);
 
     if (!tenant) {
@@ -145,7 +143,11 @@ export async function GET(
       .select(contractFields)
       .from(contractParticipant)
       .innerJoin(contract, eq(contract.id, contractParticipant.contractId))
-      .where(and(eq(contractParticipant.clientId, id), eq(contractParticipant.role, "tenant")));
+      .where(and(
+        eq(contractParticipant.agencyId, agencyId),
+        eq(contractParticipant.clientId, id),
+        eq(contractParticipant.role, "tenant"),
+      ));
 
     // Enrich with property address for each contract
     const contractPropIds = [...new Set(tenantContractsRaw.map((c) => c.propertyId))];
@@ -153,7 +155,7 @@ export async function GET(
       ? await db
           .select({ id: property.id, address: property.address })
           .from(property)
-          .where(inArray(property.id, contractPropIds))
+          .where(and(eq(property.agencyId, agencyId), inArray(property.id, contractPropIds)))
       : [];
     const contractPropMap: Record<string, string> = {};
     for (const p of contractProps) contractPropMap[p.id] = p.address;
@@ -172,8 +174,8 @@ export async function GET(
 
     const [propiedad, propietario] = bestContract
       ? await Promise.all([
-          db.select().from(property).where(eq(property.id, bestContract.propertyId)).limit(1).then((r) => r[0] ?? null),
-          db.select().from(client).where(eq(client.id, bestContract.ownerId)).limit(1).then((r) => r[0] ?? null),
+          db.select().from(property).where(and(eq(property.id, bestContract.propertyId), eq(property.agencyId, agencyId))).limit(1).then((r) => r[0] ?? null),
+          db.select().from(client).where(and(eq(client.id, bestContract.ownerId), eq(client.agencyId, agencyId))).limit(1).then((r) => r[0] ?? null),
         ])
       : [null, null];
 
@@ -181,7 +183,7 @@ export async function GET(
     const movimientos = await db
       .select()
       .from(cajaMovimiento)
-      .where(eq(cajaMovimiento.inquilinoId, id))
+      .where(and(eq(cajaMovimiento.agencyId, agencyId), eq(cajaMovimiento.inquilinoId, id)))
       .orderBy(desc(cajaMovimiento.date))
       .limit(24);
 
@@ -210,7 +212,7 @@ export async function GET(
       .leftJoin(guaranteeSalaryInfo, eq(guaranteeSalaryInfo.guaranteeId, guarantee.id))
       .leftJoin(property, eq(property.id, guarantee.propertyId))
       .leftJoin(client, eq(client.id, guarantee.personClientId))
-      .where(eq(guarantee.tenantClientId, id));
+      .where(and(eq(guarantee.agencyId, agencyId), eq(guarantee.tenantClientId, id)));
 
     const { estado, diasMora } = calculateStatus(
       bestContract
@@ -233,6 +235,8 @@ export async function GET(
       guarantees: guaranteeRows,
     });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error GET /api/tenants/:id:", error);
     return NextResponse.json({ error: "Error al obtener el inquilino" }, { status: 500 });
   }

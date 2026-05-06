@@ -3,8 +3,10 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { cajaMovimiento } from "@/db/schema/caja";
+import { client } from "@/db/schema/client";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -22,8 +24,8 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageClients(session.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const { id: inquilinoId, entryId } = await params;
     const body = await request.json();
@@ -32,10 +34,17 @@ export async function POST(
       return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
     }
 
+    await requireAgencyResource(client, inquilinoId, agencyId);
+    await requireAgencyResource(tenantLedger, entryId, agencyId, [eq(tenantLedger.inquilinoId, inquilinoId)]);
+
     const [entry] = await db
       .select()
       .from(tenantLedger)
-      .where(and(eq(tenantLedger.id, entryId), eq(tenantLedger.inquilinoId, inquilinoId)))
+      .where(and(
+        eq(tenantLedger.id, entryId),
+        eq(tenantLedger.agencyId, agencyId),
+        eq(tenantLedger.inquilinoId, inquilinoId),
+      ))
       .limit(1);
 
     if (!entry) return NextResponse.json({ error: "Ítem no encontrado" }, { status: 404 });
@@ -58,6 +67,7 @@ export async function POST(
         const [mov] = await tx
           .insert(cajaMovimiento)
           .values({
+            agencyId,
             tipo: "income",
             description: entry.descripcion,
             amount: entry.monto!,
@@ -71,7 +81,7 @@ export async function POST(
             tipoFondo: "propietario",
             ledgerEntryId: entry.id,
             source: "contract",
-            createdBy: session.user.id,
+            createdBy: session!.user.id,
           })
           .returning();
         cajaId = mov.id;
@@ -82,18 +92,20 @@ export async function POST(
         .set({
           estado: "conciliado",
           conciliadoAt: now,
-          conciliadoPor: session.user.id,
+          conciliadoPor: session!.user.id,
           ...(cajaId && { cajaMovimientoId: cajaId }),
           ...(result.data.splitBreakdown && {
             splitBreakdown: JSON.stringify(result.data.splitBreakdown),
           }),
           updatedAt: now,
         })
-        .where(eq(tenantLedger.id, entryId));
+        .where(and(eq(tenantLedger.id, entryId), eq(tenantLedger.agencyId, agencyId)));
     });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error POST conciliar:", error);
     return NextResponse.json({ error: "Error al conciliar el ítem" }, { status: 500 });
   }

@@ -8,6 +8,7 @@ import { property } from "@/db/schema/property";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { calculateStatus } from "@/lib/tenants/status";
 
@@ -33,9 +34,8 @@ const CONTRACT_STATUS_PRIORITY: Record<string, number> = {
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user)
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageClients(session.user.role))
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role))
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const searchParams = request.nextUrl.searchParams;
@@ -48,7 +48,10 @@ export async function GET(request: NextRequest) {
     const tenantLinks = await db
       .selectDistinct({ clientId: contractParticipant.clientId })
       .from(contractParticipant)
-      .where(eq(contractParticipant.role, "tenant"));
+      .where(and(
+        eq(contractParticipant.agencyId, agencyId),
+        eq(contractParticipant.role, "tenant"),
+      ));
 
     const linkedIds = tenantLinks.map((r) => r.clientId);
 
@@ -57,8 +60,11 @@ export async function GET(request: NextRequest) {
       ? or(eq(client.type, "tenant"), inArray(client.id, linkedIds))!
       : eq(client.type, "tenant");
 
+    const agencyCondition = eq(client.agencyId, agencyId);
+
     const searchCondition = search
       ? and(
+          agencyCondition,
           tenantCondition,
           or(
             ilike(client.firstName, `%${search}%`),
@@ -67,7 +73,7 @@ export async function GET(request: NextRequest) {
             ilike(client.phone, `%${search}%`)
           )
         )
-      : tenantCondition;
+      : and(agencyCondition, tenantCondition);
 
     const allTenants = await db
       .select({
@@ -109,7 +115,11 @@ export async function GET(request: NextRequest) {
       .from(contractParticipant)
       .innerJoin(contract, eq(contract.id, contractParticipant.contractId))
       .leftJoin(property, eq(property.id, contract.propertyId))
-      .where(and(inArray(contractParticipant.clientId, ids), eq(contractParticipant.role, "tenant")));
+      .where(and(
+        eq(contractParticipant.agencyId, agencyId),
+        inArray(contractParticipant.clientId, ids),
+        eq(contractParticipant.role, "tenant"),
+      ));
 
     // Last income payment per tenant
     const payments = await db
@@ -120,6 +130,7 @@ export async function GET(request: NextRequest) {
       .from(cajaMovimiento)
       .where(
         and(
+          eq(cajaMovimiento.agencyId, agencyId),
           inArray(cajaMovimiento.inquilinoId, ids),
           eq(cajaMovimiento.tipo, "income")
         )
@@ -212,6 +223,8 @@ export async function GET(request: NextRequest) {
       stats,
     });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching tenants:", error);
     return NextResponse.json({ error: "Error al obtener los inquilinos" }, { status: 500 });
   }

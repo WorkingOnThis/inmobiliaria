@@ -6,6 +6,7 @@ import { property } from "@/db/schema/property";
 import { contract } from "@/db/schema/contract";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 
@@ -46,19 +47,19 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
 
+    await requireAgencyResource(client, id, agencyId);
+
     const [propietario] = await db
       .select()
       .from(client)
-      .where(eq(client.id, id))
+      .where(and(eq(client.id, id), eq(client.agencyId, agencyId)))
       .limit(1);
 
     if (!propietario) {
@@ -69,13 +70,17 @@ export async function GET(
     const propiedades = await db
       .select()
       .from(property)
-      .where(eq(property.ownerId, id));
+      .where(and(eq(property.agencyId, agencyId), eq(property.ownerId, id)));
 
     // Sus contratos activos
     const contratosActivos = await db
       .select()
       .from(contract)
-      .where(and(eq(contract.ownerId, id), eq(contract.status, "active")));
+      .where(and(
+        eq(contract.agencyId, agencyId),
+        eq(contract.ownerId, id),
+        eq(contract.status, "active"),
+      ));
 
     return NextResponse.json({
       owner: propietario,
@@ -83,6 +88,8 @@ export async function GET(
       contratosActivos,
     });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error GET /api/owners/:id:", error);
     return NextResponse.json({ error: "Error al obtener el propietario" }, { status: 500 });
   }
@@ -94,24 +101,14 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
 
-    const [existing] = await db
-      .select({ id: client.id })
-      .from(client)
-      .where(eq(client.id, id))
-      .limit(1);
-
-    if (!existing) {
-      return NextResponse.json({ error: "Propietario no encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(client, id, agencyId);
 
     const body = await request.json();
     const result = updatePropietarioSchema.safeParse(body);
@@ -128,11 +125,13 @@ export async function PATCH(
     const [updated] = await db
       .update(client)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(client.id, id))
+      .where(and(eq(client.id, id), eq(client.agencyId, agencyId)))
       .returning();
 
     return NextResponse.json({ propietario: updated });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error PATCH /api/owners/:id:", error);
     return NextResponse.json({ error: "Error al actualizar el propietario" }, { status: 500 });
   }

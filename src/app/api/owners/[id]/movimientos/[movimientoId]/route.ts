@@ -5,6 +5,7 @@ import { client } from "@/db/schema/client";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 
@@ -23,29 +24,23 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id, movimientoId } = await params;
 
-    const [propietario] = await db
-      .select({ id: client.id })
-      .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "owner")))
-      .limit(1);
-
-    if (!propietario) {
-      return NextResponse.json({ error: "Propietario no encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(client, id, agencyId, [eq(client.type, "owner")]);
 
     const [existing] = await db
       .select({ id: cajaMovimiento.id, source: cajaMovimiento.source })
       .from(cajaMovimiento)
-      .where(and(eq(cajaMovimiento.id, movimientoId), eq(cajaMovimiento.propietarioId, id)))
+      .where(and(
+        eq(cajaMovimiento.id, movimientoId),
+        eq(cajaMovimiento.agencyId, agencyId),
+        eq(cajaMovimiento.propietarioId, id),
+      ))
       .limit(1);
 
     if (!existing) {
@@ -77,11 +72,13 @@ export async function PATCH(
     const [updated] = await db
       .update(cajaMovimiento)
       .set(updates)
-      .where(eq(cajaMovimiento.id, movimientoId))
+      .where(and(eq(cajaMovimiento.id, movimientoId), eq(cajaMovimiento.agencyId, agencyId)))
       .returning();
 
     return NextResponse.json({ movimiento: updated });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error PATCH /api/owners/:id/movimientos/:movimientoId:", error);
     return NextResponse.json({ error: "Error al actualizar el movimiento" }, { status: 500 });
   }

@@ -6,6 +6,7 @@ import { cajaMovimiento } from "@/db/schema/caja";
 import { receiptServiceItem } from "@/db/schema/receipt-service-item";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { and, eq } from "drizzle-orm";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { nextReciboNumero } from "@/lib/receipts/numbering";
@@ -23,24 +24,14 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
     const { id } = await params;
 
-    const [inquilino] = await db
-      .select({ id: client.id })
-      .from(client)
-      .where(eq(client.id, id))
-      .limit(1);
-
-    if (!inquilino) {
-      return NextResponse.json({ error: "Inquilino no encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(client, id, agencyId);
 
     const body = await request.json();
     const {
@@ -69,7 +60,11 @@ export async function POST(
       const contractIds = await db
         .select({ contractId: contractParticipant.contractId })
         .from(contractParticipant)
-        .where(and(eq(contractParticipant.clientId, id), eq(contractParticipant.role, "tenant")))
+        .where(and(
+          eq(contractParticipant.agencyId, agencyId),
+          eq(contractParticipant.clientId, id),
+          eq(contractParticipant.role, "tenant"),
+        ))
         .then((rows) => rows.map((r) => r.contractId));
       const allowed = new Set(contractIds);
       if (!allowed.has(contratoId)) {
@@ -93,6 +88,7 @@ export async function POST(
       const [mov] = await tx
         .insert(cajaMovimiento)
         .values({
+          agencyId,
           tipo,
           description: descripcion,
           amount: String(montoFinal),
@@ -105,7 +101,7 @@ export async function POST(
           contratoId: contratoId || null,
           propiedadId: propiedadId || null,
           source: "manual",
-          createdBy: session.user.id,
+          createdBy: session!.user.id,
         })
         .returning();
 
@@ -126,6 +122,8 @@ export async function POST(
 
     return NextResponse.json(nuevo, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error POST /api/tenants/:id/movimientos:", error);
     return NextResponse.json({ error: "Error al registrar movimiento" }, { status: 500 });
   }

@@ -4,8 +4,10 @@ import { db } from "@/db";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { contract } from "@/db/schema/contract";
 import { property } from "@/db/schema/property";
+import { client } from "@/db/schema/client";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { and, eq, inArray } from "drizzle-orm";
 import { computeNetAndCommission, round2 } from "@/lib/owners/commission";
 import { cajaMovimiento } from "@/db/schema/caja";
@@ -43,10 +45,12 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageClients(session.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const { id: propietarioId } = await params;
+
+    await requireAgencyResource(client, propietarioId, agencyId);
 
     const currentYear = new Date().getFullYear().toString();
 
@@ -60,6 +64,7 @@ export async function GET(
       .innerJoin(contract, eq(tenantLedger.contratoId, contract.id))
       .where(
         and(
+          eq(tenantLedger.agencyId, agencyId),
           eq(tenantLedger.propietarioId, propietarioId),
           eq(tenantLedger.impactaPropietario, true)
         )
@@ -87,6 +92,7 @@ export async function GET(
         .from(cajaMovimiento)
         .where(
           and(
+            eq(cajaMovimiento.agencyId, agencyId),
             inArray(cajaMovimiento.reciboNumero, conciliatedReciboNumeros),
             eq(cajaMovimiento.categoria, "alquiler"),
             eq(cajaMovimiento.tipoFondo, "agencia")
@@ -104,6 +110,7 @@ export async function GET(
       .innerJoin(tenantLedger, eq(tenantLedger.propiedadId, property.id))
       .where(
         and(
+          eq(tenantLedger.agencyId, agencyId),
           eq(tenantLedger.propietarioId, propietarioId),
           eq(tenantLedger.impactaPropietario, true)
         )
@@ -174,6 +181,8 @@ export async function GET(
       properties: propertyRows,
     });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error GET /api/owners/:id/cuenta-corriente:", error);
     return NextResponse.json({ error: "Error al obtener la cuenta corriente" }, { status: 500 });
   }

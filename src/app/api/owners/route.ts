@@ -6,6 +6,7 @@ import { property } from "@/db/schema/property";
 import { contract } from "@/db/schema/contract";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
 import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 
@@ -27,10 +28,8 @@ const createPropietarioSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -48,8 +47,8 @@ export async function GET(request: NextRequest) {
     };
     const resolvedStatus = STATUS_MAP[statusParam] ?? statusParam;
 
-    // Condición base: solo propietarios
-    const baseCondition = eq(client.type, "owner");
+    // Condición base: solo propietarios de esta agency
+    const baseCondition = and(eq(client.agencyId, agencyId), eq(client.type, "owner"));
     const statusCondition =
       statusParam !== "todos" ? eq(client.status, resolvedStatus) : undefined;
 
@@ -89,6 +88,8 @@ export async function GET(request: NextRequest) {
         .innerJoin(client, eq(property.ownerId, client.id))
         .where(
           and(
+            eq(property.agencyId, agencyId),
+            eq(client.agencyId, agencyId),
             eq(client.type, "owner"),
             statusCondition,
             ilike(property.address, likeQ)
@@ -154,7 +155,7 @@ export async function GET(request: NextRequest) {
       const propCounts = await db
         .select({ ownerId: property.ownerId, value: count() })
         .from(property)
-        .where(inArray(property.ownerId, ids))
+        .where(and(eq(property.agencyId, agencyId), inArray(property.ownerId, ids)))
         .groupBy(property.ownerId);
 
       for (const r of propCounts) propCountMap[r.ownerId] = Number(r.value);
@@ -162,7 +163,11 @@ export async function GET(request: NextRequest) {
       const contractCounts = await db
         .select({ ownerId: contract.ownerId, value: count() })
         .from(contract)
-        .where(and(inArray(contract.ownerId, ids), eq(contract.status, "active")))
+        .where(and(
+          eq(contract.agencyId, agencyId),
+          inArray(contract.ownerId, ids),
+          eq(contract.status, "active"),
+        ))
         .groupBy(contract.ownerId);
 
       for (const r of contractCounts) contractCountMap[r.ownerId] = Number(r.value);
@@ -180,6 +185,8 @@ export async function GET(request: NextRequest) {
       pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error GET /api/owners:", error);
     return NextResponse.json({ error: "Error al obtener propietarios" }, { status: 500 });
   }
@@ -188,10 +195,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -209,6 +214,7 @@ export async function POST(request: NextRequest) {
       .insert(client)
       .values({
         id,
+        agencyId,
         type: "owner",
         status: "active",
         firstName: data.firstName,
@@ -233,6 +239,8 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error POST /api/owners:", error);
     return NextResponse.json({ error: "Error al crear el propietario" }, { status: 500 });
   }

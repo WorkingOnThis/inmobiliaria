@@ -3,8 +3,10 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { propertyCoOwner } from "@/db/schema/property-co-owner";
 import { property } from "@/db/schema/property";
+import { client } from "@/db/schema/client";
 import { auth } from "@/lib/auth";
-import { eq } from "drizzle-orm";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { and, eq } from "drizzle-orm";
 
 export async function GET(
   _request: NextRequest,
@@ -12,11 +14,11 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
     const { id } = await params;
+
+    await requireAgencyResource(client, id, agencyId);
 
     const rows = await db
       .select({
@@ -37,10 +39,15 @@ export async function GET(
       })
       .from(propertyCoOwner)
       .leftJoin(property, eq(propertyCoOwner.propertyId, property.id))
-      .where(eq(propertyCoOwner.clientId, id));
+      .where(and(
+        eq(propertyCoOwner.agencyId, agencyId),
+        eq(propertyCoOwner.clientId, id),
+      ));
 
     return NextResponse.json({ coOwnerProperties: rows });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching co-owner properties:", error);
     return NextResponse.json({ error: "Error al obtener propiedades" }, { status: 500 });
   }

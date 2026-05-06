@@ -5,6 +5,7 @@ import { client } from "@/db/schema/client";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 
@@ -27,24 +28,14 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
 
-    const [propietario] = await db
-      .select({ id: client.id })
-      .from(client)
-      .where(and(eq(client.id, id), eq(client.type, "owner")))
-      .limit(1);
-
-    if (!propietario) {
-      return NextResponse.json({ error: "Propietario no encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(client, id, agencyId, [eq(client.type, "owner")]);
 
     const body = await request.json();
     const result = movimientoSchema.safeParse(body);
@@ -69,7 +60,8 @@ export async function POST(
         contratoId: data.contratoId ?? null,
         comprobante: data.comprobante ?? null,
         note: data.nota ?? null,
-        createdBy: session.user.id,
+        agencyId,
+        createdBy: session!.user.id,
         createdAt: now,
         updatedAt: now,
       })
@@ -80,6 +72,8 @@ export async function POST(
       { status: 201 }
     );
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error POST /api/owners/:id/movimientos:", error);
     return NextResponse.json({ error: "Error al registrar el movimiento" }, { status: 500 });
   }

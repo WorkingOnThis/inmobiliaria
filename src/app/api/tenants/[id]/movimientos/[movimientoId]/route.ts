@@ -5,6 +5,7 @@ import { client } from "@/db/schema/client";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 
@@ -23,29 +24,23 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id, movimientoId } = await params;
 
-    const [inquilino] = await db
-      .select({ id: client.id })
-      .from(client)
-      .where(eq(client.id, id))
-      .limit(1);
-
-    if (!inquilino) {
-      return NextResponse.json({ error: "Inquilino no encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(client, id, agencyId);
 
     const [existing] = await db
       .select({ id: cajaMovimiento.id, source: cajaMovimiento.source })
       .from(cajaMovimiento)
-      .where(and(eq(cajaMovimiento.id, movimientoId), eq(cajaMovimiento.inquilinoId, id)))
+      .where(and(
+        eq(cajaMovimiento.id, movimientoId),
+        eq(cajaMovimiento.agencyId, agencyId),
+        eq(cajaMovimiento.inquilinoId, id),
+      ))
       .limit(1);
 
     if (!existing) {
@@ -77,45 +72,41 @@ export async function PATCH(
     const [updated] = await db
       .update(cajaMovimiento)
       .set(updates)
-      .where(eq(cajaMovimiento.id, movimientoId))
+      .where(and(eq(cajaMovimiento.id, movimientoId), eq(cajaMovimiento.agencyId, agencyId)))
       .returning();
 
     return NextResponse.json({ movimiento: updated });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error PATCH /api/tenants/:id/movimientos/:movimientoId:", error);
     return NextResponse.json({ error: "Error al actualizar el movimiento" }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string; movimientoId: string }> }
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id, movimientoId } = await params;
 
-    const [inquilino] = await db
-      .select({ id: client.id })
-      .from(client)
-      .where(eq(client.id, id))
-      .limit(1);
-
-    if (!inquilino) {
-      return NextResponse.json({ error: "Inquilino no encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(client, id, agencyId);
 
     const [existing] = await db
       .select({ id: cajaMovimiento.id, source: cajaMovimiento.source })
       .from(cajaMovimiento)
-      .where(and(eq(cajaMovimiento.id, movimientoId), eq(cajaMovimiento.inquilinoId, id)))
+      .where(and(
+        eq(cajaMovimiento.id, movimientoId),
+        eq(cajaMovimiento.agencyId, agencyId),
+        eq(cajaMovimiento.inquilinoId, id),
+      ))
       .limit(1);
 
     if (!existing) {
@@ -129,10 +120,15 @@ export async function DELETE(
       );
     }
 
-    await db.delete(cajaMovimiento).where(eq(cajaMovimiento.id, movimientoId));
+    await db.delete(cajaMovimiento).where(and(
+      eq(cajaMovimiento.id, movimientoId),
+      eq(cajaMovimiento.agencyId, agencyId),
+    ));
 
     return NextResponse.json({ ok: true });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error DELETE /api/tenants/:id/movimientos/:movimientoId:", error);
     return NextResponse.json({ error: "Error al eliminar el movimiento" }, { status: 500 });
   }

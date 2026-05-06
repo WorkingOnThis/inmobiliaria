@@ -9,6 +9,7 @@ import { contractParticipant } from "@/db/schema/contract-participant";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { and, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 
 function defaultPeriodRange() {
@@ -32,9 +33,8 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user)
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageClients(session.user.role))
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role))
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const { id } = await params;
@@ -43,6 +43,8 @@ export async function GET(
     const from = sp.get("from") ?? defaults.from;
     const to = sp.get("to") ?? defaults.to;
 
+    await requireAgencyResource(client, id, agencyId);
+
     const [clientRow] = await db
       .select({
         id: client.id,
@@ -50,7 +52,7 @@ export async function GET(
         lastName: client.lastName,
       })
       .from(client)
-      .where(eq(client.id, id))
+      .where(and(eq(client.id, id), eq(client.agencyId, agencyId)))
       .limit(1);
 
     if (!clientRow)
@@ -60,7 +62,11 @@ export async function GET(
     const tenantContractLinks = await db
       .select({ contractId: contractParticipant.contractId })
       .from(contractParticipant)
-      .where(and(eq(contractParticipant.clientId, id), eq(contractParticipant.role, "tenant")));
+      .where(and(
+        eq(contractParticipant.agencyId, agencyId),
+        eq(contractParticipant.clientId, id),
+        eq(contractParticipant.role, "tenant"),
+      ));
 
     const tenantContractIds = tenantContractLinks.map((r) => r.contractId);
 
@@ -85,7 +91,10 @@ export async function GET(
           })
           .from(contract)
           .leftJoin(property, eq(contract.propertyId, property.id))
-          .where(inArray(contract.id, tenantContractIds)),
+          .where(and(
+            eq(contract.agencyId, agencyId),
+            inArray(contract.id, tenantContractIds),
+          )),
 
         db
           .select({
@@ -97,6 +106,7 @@ export async function GET(
           .from(tenantLedger)
           .where(
             and(
+              eq(tenantLedger.agencyId, agencyId),
               eq(tenantLedger.inquilinoId, id),
               inArray(tenantLedger.contratoId, tenantContractIds),
               isNotNull(tenantLedger.period),
@@ -149,7 +159,7 @@ export async function GET(
       })
       .from(contract)
       .leftJoin(property, eq(contract.propertyId, property.id))
-      .where(eq(contract.ownerId, id));
+      .where(and(eq(contract.agencyId, agencyId), eq(contract.ownerId, id)));
 
     let asOwner: {
       contracts: Array<{
@@ -177,6 +187,7 @@ export async function GET(
           .from(tenantLedger)
           .where(
             and(
+              eq(tenantLedger.agencyId, agencyId),
               eq(tenantLedger.propietarioId, id),
               eq(tenantLedger.impactaPropietario, true),
               inArray(tenantLedger.contratoId, ownerContractIds),
@@ -196,6 +207,7 @@ export async function GET(
           .from(contractParticipant)
           .leftJoin(client, eq(contractParticipant.clientId, client.id))
           .where(and(
+            eq(contractParticipant.agencyId, agencyId),
             inArray(contractParticipant.contractId, ownerContractIds),
             eq(contractParticipant.role, "tenant")
           )),
@@ -248,6 +260,8 @@ export async function GET(
 
     return NextResponse.json({ client: clientRow, from, to, asTenant, asOwner, net });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error GET /api/clients/:id/resumen:", error);
     return NextResponse.json({ error: "Error al obtener el resumen" }, { status: 500 });
   }

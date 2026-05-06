@@ -5,8 +5,9 @@ import { guarantee } from "@/db/schema/guarantee";
 import { guaranteeSalaryInfo } from "@/db/schema/guarantee-salary-info";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 const salaryInfoSchema = z.object({
   employerName: z.string().optional().nullable(),
@@ -25,11 +26,9 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function PUT(request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
-    if (!canManageClients(session.user.role)) {
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -40,10 +39,12 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
     }
 
+    await requireAgencyResource(guarantee, id, agencyId);
+
     const [parentGuarantee] = await db
       .select({ id: guarantee.id, kind: guarantee.kind })
       .from(guarantee)
-      .where(eq(guarantee.id, id))
+      .where(and(eq(guarantee.id, id), eq(guarantee.agencyId, agencyId)))
       .limit(1);
 
     if (!parentGuarantee) {
@@ -81,6 +82,8 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ salaryInfo });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error upserting salary info:", error);
     return NextResponse.json({ error: "Error al guardar la ficha laboral" }, { status: 500 });
   }
