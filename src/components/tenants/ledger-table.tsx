@@ -333,9 +333,9 @@ export function LedgerTable({
                   key={entry.id}
                   onClick={() => { if (!entry.isSynthetic) onViewDetail(entry); }}
                   className={cn(
-                    "grid items-center gap-2 px-4 py-2 text-sm hover:bg-muted/40",
+                    "grid items-center gap-2 px-4 py-2 text-sm",
                     gridCols,
-                    !entry.isSynthetic && "cursor-pointer",
+                    !entry.isSynthetic && "cursor-pointer hover:bg-muted/40",
                     isPunitorio && "pl-10 bg-punitorio-dim border-t border-punitorio/30",
                     entry.isSynthetic && "pl-10 bg-muted/20 text-muted-foreground italic",
                     selected && "bg-primary/10 hover:bg-primary/15",
