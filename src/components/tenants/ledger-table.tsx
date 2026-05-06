@@ -394,26 +394,19 @@ export function LedgerTable({
                     )}
                   </div>
 
-                  {/* Descripcion */}
-                  <div className="pl-2">
+                  {/* Descripcion — single subtext slot. Pago_parcial detail
+                      (Original/Pagado) lives in the detail dialog now;
+                      estado badge "Pago parcial" + remaining monto are
+                      enough for scanning. */}
+                  <div className="pl-2 min-w-0">
                     <span className={cn(
-                      "truncate",
+                      "truncate block",
                       isPunitorio && "text-punitorio italic text-xs",
                       entry.monto === null && "text-warning"
                     )}>
                       {formatDescription(entry.descripcion)}
                     </span>
-                    {/* Subtext: mutually exclusive — DB pago_parcial info OR live partial-override indicator OR due date */}
-                    {entry.estado === "pago_parcial" && entry.montoPagado !== null ? (
-                      <div className="flex gap-3 mt-0.5">
-                        <span className="text-[10px] text-muted-foreground">
-                          Original: ${Number(entry.monto ?? 0).toLocaleString("es-AR")}
-                        </span>
-                        <span className="text-[10px] text-income">
-                          Pagado: ${Number(entry.montoPagado).toLocaleString("es-AR")}
-                        </span>
-                      </div>
-                    ) : isPartialOverride(entry, montoOverrides) ? (
+                    {isPartialOverride(entry, montoOverrides) ? (
                       <div className="flex items-center gap-1.5 mt-1">
                         <span className="text-[10px] font-semibold text-warning">
                           Pago parcial
@@ -432,26 +425,13 @@ export function LedgerTable({
                         </div>
                       );
                     })()}
-                    {/* Recibo como subtext */}
-                    {entry.reciboNumero && (
-                      <div
-                        className="flex items-center gap-1 mt-0.5 cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(`/recibos/n/${entry.reciboNumero}`, "_blank", "noopener,noreferrer");
-                        }}
-                      >
-                        <span className="text-[10px] text-primary hover:underline">{entry.reciboNumero}</span>
-                        <span className="text-[10px] text-muted-foreground">· ver recibo</span>
-                      </div>
-                    )}
                   </div>
 
                   {/* Tipo badge */}
                   <span className="text-xs text-muted-foreground truncate">{entry.tipo}</span>
 
-                  {/* Monto */}
-                  <div className="flex items-center gap-1 justify-end">
+                  {/* Monto + recibo chip below */}
+                  <div className="flex flex-col items-end gap-0.5 justify-center">
                     {entry.monto === null ? (
                       <span className="text-warning font-mono text-xs">$???</span>
                     ) : selected ? (
@@ -467,6 +447,17 @@ export function LedgerTable({
                       <span className="font-mono text-xs">
                         ${Number(entry.monto).toLocaleString("es-AR")}
                       </span>
+                    )}
+                    {entry.reciboNumero && !selected && (
+                      <a
+                        href={`/recibos/n/${entry.reciboNumero}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[10px] font-mono text-muted-foreground hover:text-primary hover:underline leading-none"
+                      >
+                        {entry.reciboNumero}
+                      </a>
                     )}
                   </div>
 
