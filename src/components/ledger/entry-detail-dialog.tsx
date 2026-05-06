@@ -177,7 +177,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
               </div>
             </div>
 
-            {isSplitContract && entry && (
+            {isSplitContract && (
               <div className="border-t border-border pt-3 space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destino del cobro</p>
                 <Select
