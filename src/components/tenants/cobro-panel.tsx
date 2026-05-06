@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import type { LedgerEntry } from "./ledger-table";
 
 type SplitMeta = {
@@ -96,31 +97,35 @@ export function CobroPanel({
                 );
                 return (
                   <>
-                    <div className="flex items-center justify-between rounded-lg border border-emerald-800 bg-emerald-950/40 px-3 py-2">
-                      <div>
-                        <p className="font-medium text-emerald-300">{splitMeta.ownerName}</p>
-                        {splitMeta.ownerCbu && (
-                          <p className="text-xs text-muted-foreground">CBU {splitMeta.ownerCbu}</p>
-                        )}
-                      </div>
-                      <span className="font-mono font-bold text-emerald-300">
-                        ${propietario.toLocaleString("es-AR")}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border border-blue-800 bg-blue-950/40 px-3 py-2">
-                      <div>
-                        <p className="font-medium text-blue-300">{splitMeta.agencyNombre ?? "Administración"}</p>
-                        {splitMeta.agenciaCbu && (
-                          <p className="text-xs text-muted-foreground">CBU {splitMeta.agenciaCbu}</p>
-                        )}
-                        {splitMeta.agenciaAlias && (
-                          <p className="text-xs text-muted-foreground">alias: {splitMeta.agenciaAlias}</p>
-                        )}
-                      </div>
-                      <span className="font-mono font-bold text-blue-300">
-                        ${administracion.toLocaleString("es-AR")}
-                      </span>
-                    </div>
+                    <Card className="border-emerald-800 bg-emerald-950/40">
+                      <CardContent className="px-3 py-2 flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-emerald-300">{splitMeta.ownerName}</p>
+                          {splitMeta.ownerCbu && (
+                            <p className="text-xs text-muted-foreground">CBU {splitMeta.ownerCbu}</p>
+                          )}
+                        </div>
+                        <span className="font-mono font-bold text-emerald-300">
+                          ${propietario.toLocaleString("es-AR")}
+                        </span>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-blue-800 bg-blue-950/40">
+                      <CardContent className="px-3 py-2 flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-blue-300">{splitMeta.agencyNombre ?? "Administración"}</p>
+                          {splitMeta.agenciaCbu && (
+                            <p className="text-xs text-muted-foreground">CBU {splitMeta.agenciaCbu}</p>
+                          )}
+                          {splitMeta.agenciaAlias && (
+                            <p className="text-xs text-muted-foreground">alias: {splitMeta.agenciaAlias}</p>
+                          )}
+                        </div>
+                        <span className="font-mono font-bold text-blue-300">
+                          ${administracion.toLocaleString("es-AR")}
+                        </span>
+                      </CardContent>
+                    </Card>
                   </>
                 );
               })()}

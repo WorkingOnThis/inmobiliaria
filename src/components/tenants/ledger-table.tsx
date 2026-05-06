@@ -134,9 +134,9 @@ function DestinoBadge({
 }) {
   if (isOwnerView && splitBreakdown) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-blue-950 border border-blue-800 text-blue-300 font-medium">
+      <Badge variant="outline" className="bg-blue-950 border-blue-800 text-blue-300 font-medium">
         ↗ Cobro directo desde inquilino
-      </span>
+      </Badge>
     );
   }
   if (!beneficiario) return null;
@@ -145,26 +145,26 @@ function DestinoBadge({
     const prop = monto - adm;
     return (
       <span className="flex flex-wrap gap-1">
-        <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300">
+        <Badge variant="outline" className="bg-emerald-950 border-emerald-800 text-emerald-300">
           ↗ Prop. ${prop.toLocaleString("es-AR")}
-        </span>
-        <span className="text-xs px-1.5 py-0.5 rounded bg-blue-950 border border-blue-800 text-blue-300">
+        </Badge>
+        <Badge variant="outline" className="bg-blue-950 border-blue-800 text-blue-300">
           ↗ Adm. ${adm.toLocaleString("es-AR")}
-        </span>
+        </Badge>
       </span>
     );
   }
   if (beneficiario === "propietario") {
     return (
-      <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300">
+      <Badge variant="outline" className="bg-emerald-950 border-emerald-800 text-emerald-300">
         ↗ Propietario
-      </span>
+      </Badge>
     );
   }
   return (
-    <span className="text-xs px-1.5 py-0.5 rounded bg-blue-950 border border-blue-800 text-blue-300">
+    <Badge variant="outline" className="bg-blue-950 border-blue-800 text-blue-300">
       ↗ Administración
-    </span>
+    </Badge>
   );
 }
 

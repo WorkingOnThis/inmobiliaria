@@ -12,6 +12,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 import { type LedgerEntry } from "@/components/tenants/ledger-table";
 
 export type EntryEditData = {
@@ -197,13 +199,13 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
                   </SelectContent>
                 </Select>
                 {beneficiarioOverride !== null && (
-                  <div className="flex items-start gap-2 rounded-md border border-amber-700/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-400">
-                    <span>⚠️</span>
-                    <span>
+                  <Alert className="border-amber-700/50 bg-amber-950/30 py-2">
+                    <AlertTriangle className="size-3 text-amber-400" />
+                    <AlertDescription className="text-xs text-amber-400">
                       Estás cambiando el destino original de este ítem. Esto afecta el desglose del recibo.
                       El cambio aplica solo para este cobro y no queda guardado en el ítem.
-                    </span>
-                  </div>
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
             )}
