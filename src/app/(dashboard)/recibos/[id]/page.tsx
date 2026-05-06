@@ -78,10 +78,10 @@ export default function ReciboPage() {
   if (error || !data) {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 text-muted-foreground">
-        <div className="text-[0.85rem]">{(error as Error)?.message ?? "Recibo no encontrado"}</div>
-        <button onClick={() => router.back()} className="text-[0.72rem] text-primary hover:underline flex items-center gap-1">
-          <ArrowLeft size={12} /> Volver
-        </button>
+        <div className="text-sm">{(error as Error)?.message ?? "Recibo no encontrado"}</div>
+        <Button variant="link" size="sm" onClick={() => router.back()} className="gap-1">
+          <ArrowLeft size={12} aria-hidden="true" /> Volver
+        </Button>
       </div>
     );
   }
@@ -166,37 +166,35 @@ export default function ReciboPage() {
     <div className="min-h-screen bg-bg print:bg-white">
       {/* Barra de acciones — solo en pantalla, no imprime */}
       <div className="print:hidden h-14 bg-surface border-b border-border flex items-center justify-between px-7">
-        <button
-          onClick={() => router.back()}
-          className="text-[0.8rem] text-text-secondary hover:text-primary flex items-center gap-1"
-        >
-          <ArrowLeft size={13} /> Volver
-        </button>
+        <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-1">
+          <ArrowLeft size={13} aria-hidden="true" /> Volver
+        </Button>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={openEmailDialog}
             disabled={allRecipients.length === 0}
-            className="flex items-center gap-2 text-[0.8rem] font-semibold px-4 py-2 rounded-[8px] transition-colors border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="gap-2"
           >
-            <Mail size={14} /> Enviar por email
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-primary text-white text-[0.8rem] font-semibold px-4 py-2 rounded-[8px] hover:bg-primary/90 transition-colors"
-          >
-            <Printer size={14} /> Imprimir recibo
-          </button>
+            <Mail size={14} aria-hidden="true" /> Enviar por email
+          </Button>
+          <Button size="sm" onClick={() => window.print()} className="gap-2">
+            <Printer size={14} aria-hidden="true" /> Imprimir recibo
+          </Button>
           {movimiento.anuladoAt ? (
-            <span className="text-xs text-destructive border border-destructive/30 rounded px-2 py-1 bg-destructive/10">
+            <span className="text-xs text-destructive border border-destructive/30 rounded-sm px-2 py-1 bg-destructive/10">
               Recibo anulado
             </span>
           ) : session?.user?.role === "account_admin" ? (
-            <button
+            <Button
+              variant="link"
+              size="sm"
               onClick={() => setShowAnnulModal(true)}
-              className="text-[0.72rem] text-destructive hover:underline flex items-center gap-1"
+              className="text-destructive hover:text-destructive"
             >
               Anular recibo
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>
@@ -309,7 +307,7 @@ export default function ReciboPage() {
             color: PALETTE.text,
             fontFamily: "Inter, -apple-system, sans-serif",
             padding: "44px 48px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-md)",
             fontSize: "13px",
             lineHeight: 1.5,
           }}

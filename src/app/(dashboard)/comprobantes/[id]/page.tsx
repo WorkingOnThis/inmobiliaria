@@ -83,15 +83,12 @@ export default function ComprobantePage() {
   if (error || !data) {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 text-muted-foreground">
-        <div className="text-[0.85rem]">
+        <div className="text-sm">
           {(error as Error)?.message ?? "Comprobante no encontrado"}
         </div>
-        <button
-          onClick={() => router.back()}
-          className="text-[0.72rem] text-primary hover:underline flex items-center gap-1"
-        >
-          <ArrowLeft size={12} /> Volver
-        </button>
+        <Button variant="link" size="sm" onClick={() => router.back()} className="gap-1">
+          <ArrowLeft size={12} aria-hidden="true" /> Volver
+        </Button>
       </div>
     );
   }
@@ -139,14 +136,13 @@ export default function ComprobantePage() {
     <div className="min-h-screen bg-bg print:bg-white relative">
       {/* Top action bar — print:hidden */}
       <div className="print:hidden h-14 bg-surface border-b border-border flex items-center justify-between px-7">
-        <button
-          onClick={() => router.back()}
-          className="text-[0.8rem] text-text-secondary hover:text-primary flex items-center gap-1"
-        >
-          <ArrowLeft size={13} /> Volver
-        </button>
+        <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-1">
+          <ArrowLeft size={13} aria-hidden="true" /> Volver
+        </Button>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               setSendResult(null);
               setShowEmailDialog(true);
@@ -157,16 +153,13 @@ export default function ComprobantePage() {
                 ? "El propietario no tiene email cargado"
                 : `Enviar a ${propietarioEmail}`
             }
-            className="flex items-center gap-2 text-[0.8rem] font-semibold px-4 py-2 rounded-[8px] transition-colors border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="gap-2"
           >
-            <Mail size={14} /> Enviar por email
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-primary text-white text-[0.8rem] font-semibold px-4 py-2 rounded-[8px] hover:bg-primary/90 transition-colors"
-          >
-            <Printer size={14} /> Imprimir
-          </button>
+            <Mail size={14} aria-hidden="true" /> Enviar por email
+          </Button>
+          <Button size="sm" onClick={() => window.print()} className="gap-2">
+            <Printer size={14} aria-hidden="true" /> Imprimir
+          </Button>
         </div>
       </div>
 
@@ -256,7 +249,7 @@ export default function ComprobantePage() {
             color: PALETTE.text,
             fontFamily: "Inter, -apple-system, sans-serif",
             padding: "44px 48px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-md)",
             fontSize: "13px",
             lineHeight: 1.5,
             position: "relative",
@@ -278,7 +271,7 @@ export default function ComprobantePage() {
                 color: "rgba(220, 38, 38, 0.3)",
                 border: "6px solid rgba(220, 38, 38, 0.3)",
                 padding: "12px 36px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-md)",
                 letterSpacing: ".1em",
                 pointerEvents: "none",
                 zIndex: 10,
