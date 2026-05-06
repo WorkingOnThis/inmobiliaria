@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { type LedgerEntry } from "@/components/tenants/ledger-table";
 
@@ -24,6 +27,8 @@ type Props = {
   entry: LedgerEntry | null;
   onOpenChange: (open: boolean) => void;
   onSave: (data: EntryEditData) => Promise<void>;
+  isSplitContract?: boolean;
+  onBeneficiarioOverride?: (entryId: string, value: string | null) => void;
 };
 
 const ESTADO_LABEL: Record<string, string> = {
@@ -36,7 +41,7 @@ const ESTADO_LABEL: Record<string, string> = {
   pago_parcial:        "Pago parcial",
 };
 
-export function EntryDetailDialog({ entry, onOpenChange, onSave }: Props) {
+export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract = false, onBeneficiarioOverride }: Props) {
   const [descripcion, setDescripcion] = useState("");
   const [monto, setMonto] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -45,6 +50,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave }: Props) {
   const [impactaCaja, setImpactaCaja] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [beneficiarioOverride, setBeneficiarioOverride] = useState<string | null>(null);
 
   useEffect(() => {
     if (entry) {
@@ -56,6 +62,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave }: Props) {
       setImpactaCaja(entry.impactaCaja);
       setError(null);
       setSaving(false);
+      setBeneficiarioOverride(null);
     }
   }, [entry]);
 
@@ -169,6 +176,37 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave }: Props) {
                 />
               </div>
             </div>
+
+            {isSplitContract && entry && (
+              <div className="border-t border-border pt-3 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destino del cobro</p>
+                <Select
+                  value={beneficiarioOverride ?? entry.beneficiario ?? "split"}
+                  onValueChange={(v) => {
+                    const isChanged = v !== (entry.beneficiario ?? "split");
+                    const newVal = isChanged ? v : null;
+                    setBeneficiarioOverride(newVal);
+                    onBeneficiarioOverride?.(entry.id, newVal);
+                  }}
+                >
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="split">Split (propietario + administración)</SelectItem>
+                    <SelectItem value="propietario">↗ Todo al propietario</SelectItem>
+                    <SelectItem value="administracion">↗ Todo a la administración</SelectItem>
+                  </SelectContent>
+                </Select>
+                {beneficiarioOverride !== null && (
+                  <div className="flex items-start gap-2 rounded-md border border-amber-700/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-400">
+                    <span>⚠️</span>
+                    <span>
+                      Estás cambiando el destino original de este ítem. Esto afecta el desglose del recibo.
+                      El cambio aplica solo para este cobro y no queda guardado en el ítem.
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {!isEditable && entry.estado !== "conciliado" && entry.estado !== "cancelado" && (
               <p className="text-xs text-muted-foreground italic">
