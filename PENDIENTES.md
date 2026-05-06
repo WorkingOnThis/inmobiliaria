@@ -8,7 +8,6 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 
 ## 🔴 Prioridad alta
 
-- [ ] **Configurar honorarios por contrato** — cobrar sí/no, a quién le llega qué parte; opción de que el pago vaya todo a la inmobiliaria sin trasladar al propietario · [contratos](docs/decisions/contratos.md)
 
 - [ ] **PDF del recibo** — requiere librería tipo `@react-pdf/renderer` o similar · [documentos](docs/decisions/documentos.md)
 
@@ -58,4 +57,5 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 
 ## ✅ Completados → ver [HISTORIAL.md](HISTORIAL.md)
 
+- [x] **Modalidad de pago dividido (honorarios por contrato)** — `paymentModality = "split"`, columna `beneficiario` en ledger, desglose en CobroPanel, cobro directo en cuenta del propietario
 - [x] **Eliminar movimiento pendiente desde la UI de cuenta corriente** — soft cancel con menú `...` y dialog de confirmación con motivo opcional
