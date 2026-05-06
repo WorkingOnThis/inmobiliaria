@@ -12,6 +12,7 @@ import { propertyToFeature } from "@/db/schema/property-to-feature";
 import { guarantee } from "@/db/schema/guarantee";
 import { agency } from "@/db/schema/agency";
 import { auth } from "@/lib/auth";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { canManageDocumentTemplates } from "@/lib/permissions";
 import { eq, and, inArray, or } from "drizzle-orm";
 import {
@@ -41,10 +42,8 @@ const GUARANTEE_KEY_MAP: [string, keyof GuaranteeResolvedInfo][] = [
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageDocumentTemplates(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageDocumentTemplates(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
@@ -56,18 +55,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const [contractRow] = await db
-      .select()
-      .from(contract)
-      .where(eq(contract.id, contractId))
-      .limit(1);
-
-    if (!contractRow) {
-      return NextResponse.json(
-        { error: "Contrato no encontrado" },
-        { status: 404 }
-      );
-    }
+    const contractRow = (await requireAgencyResource(contract, contractId, agencyId)) as typeof contract.$inferSelect;
 
     // Round 1 — fetch everything in parallel, including the primary owner (contractRow.ownerId).
     // In the common case the primary owner IS the legal owner, so this avoids a second round-trip.
@@ -99,7 +87,7 @@ export async function GET(request: NextRequest) {
       db
         .select()
         .from(agency)
-        .where(eq(agency.ownerId, session.user.id))
+        .where(eq(agency.id, agencyId))
         .limit(1)
         .then((r) => r[0] ?? null),
       db
@@ -350,7 +338,9 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ resolved, lists });
-  } catch {
+  } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

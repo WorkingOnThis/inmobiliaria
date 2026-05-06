@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { documentTemplate, documentTemplateClause } from "@/db/schema/document-template";
-import { agency } from "@/db/schema/agency";
 import { auth } from "@/lib/auth";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { canManageDocumentTemplates } from "@/lib/permissions";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
@@ -17,45 +17,19 @@ const patchClauseSchema = z.object({
   notes: z.string().max(2000).optional(),
 });
 
-async function getUserAgencyId(userId: string): Promise<string | null> {
-  const [row] = await db
-    .select({ id: agency.id })
-    .from(agency)
-    .where(eq(agency.ownerId, userId))
-    .limit(1);
-  return row?.id ?? null;
-}
-
-async function verifyTemplateOwnership(
-  templateId: string,
-  agencyId: string
-): Promise<boolean> {
-  const [row] = await db
-    .select({ id: documentTemplate.id })
-    .from(documentTemplate)
-    .where(and(eq(documentTemplate.id, templateId), eq(documentTemplate.agencyId, agencyId)))
-    .limit(1);
-  return !!row;
-}
-
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; clauseId: string }> }
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageDocumentTemplates(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageDocumentTemplates(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
     const { id: templateId, clauseId } = await params;
-    const agencyId = await getUserAgencyId(session.user.id);
-    if (!agencyId || !(await verifyTemplateOwnership(templateId, agencyId))) {
-      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(documentTemplate, templateId, agencyId);
 
     const body = await request.json();
     const parsed = patchClauseSchema.safeParse(body);
@@ -90,7 +64,9 @@ export async function PATCH(
     }
 
     return NextResponse.json({ clause });
-  } catch {
+  } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
@@ -101,18 +77,13 @@ export async function DELETE(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageDocumentTemplates(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageDocumentTemplates(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
     const { id: templateId, clauseId } = await params;
-    const agencyId = await getUserAgencyId(session.user.id);
-    if (!agencyId || !(await verifyTemplateOwnership(templateId, agencyId))) {
-      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(documentTemplate, templateId, agencyId);
 
     const [deleted] = await db
       .delete(documentTemplateClause)
@@ -129,7 +100,9 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { clauseTemplate } from "@/db/schema/clause";
 import { auth } from "@/lib/auth";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { canManageClauses } from "@/lib/permissions";
 import {
   CLAUSE_CATEGORIES,
@@ -29,17 +30,10 @@ export async function POST(request: NextRequest) {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-
-    // Verificar autenticación
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "No autenticado" },
-        { status: 401 }
-      );
-    }
+    const agencyId = requireAgencyId(session);
 
     // Verificar permisos
-    if (!canManageClauses(session.user.role)) {
+    if (!canManageClauses(session!.user.role)) {
       return NextResponse.json(
         { error: "No tienes permisos para crear cláusulas" },
         { status: 403 }
@@ -123,10 +117,11 @@ export async function POST(request: NextRequest) {
       .insert(clauseTemplate)
       .values({
         id: clauseId,
+        agencyId,
         title: trimmedTitle,
         category: category,
         content: trimmedContent,
-        creatorId: session.user.id,
+        creatorId: session!.user.id,
         createdAt: now,
         updatedAt: now,
       })
@@ -145,6 +140,8 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error creating clause:", error);
     return NextResponse.json(
       {

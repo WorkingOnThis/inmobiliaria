@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { documentTemplate, documentTemplateClause } from "@/db/schema/document-template";
-import { agency } from "@/db/schema/agency";
 import { auth } from "@/lib/auth";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { canManageDocumentTemplates } from "@/lib/permissions";
 import { eq, desc, count } from "drizzle-orm";
 import { z } from "zod";
@@ -12,28 +12,12 @@ const createSchema = z.object({
   name: z.string().min(1, "El nombre es requerido").max(200),
 });
 
-async function getUserAgencyId(userId: string): Promise<string | null> {
-  const [row] = await db
-    .select({ id: agency.id })
-    .from(agency)
-    .where(eq(agency.ownerId, userId))
-    .limit(1);
-  return row?.id ?? null;
-}
-
 export async function GET(_request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageDocumentTemplates(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageDocumentTemplates(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
-    }
-
-    const agencyId = await getUserAgencyId(session.user.id);
-    if (!agencyId) {
-      return NextResponse.json({ templates: [] });
     }
 
     const templates = await db
@@ -55,7 +39,9 @@ export async function GET(_request: NextRequest) {
       .orderBy(desc(documentTemplate.createdAt));
 
     return NextResponse.json({ templates });
-  } catch {
+  } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
@@ -63,19 +49,9 @@ export async function GET(_request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageDocumentTemplates(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageDocumentTemplates(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
-    }
-
-    const agencyId = await getUserAgencyId(session.user.id);
-    if (!agencyId) {
-      return NextResponse.json(
-        { error: "El usuario no tiene agencia asociada" },
-        { status: 422 }
-      );
     }
 
     const body = await request.json();
@@ -99,7 +75,9 @@ export async function POST(request: NextRequest) {
       .returning();
 
     return NextResponse.json({ template }, { status: 201 });
-  } catch {
+  } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
