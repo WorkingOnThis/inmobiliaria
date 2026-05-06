@@ -466,7 +466,7 @@ export function LedgerTable({
                         <DropdownMenuItem onClick={() => onViewDetail(entry)}>
                           Ver detalle
                         </DropdownMenuItem>
-                        {isPunitorio && entry.estado !== "conciliado" && (
+                        {!isOwnerView && isPunitorio && entry.estado !== "conciliado" && (
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() => onCancelEntry(entry)}
@@ -474,7 +474,7 @@ export function LedgerTable({
                             Cancelar punitorio
                           </DropdownMenuItem>
                         )}
-                        {!isPunitorio && isCancelable(entry) && (
+                        {!isOwnerView && !isPunitorio && isCancelable(entry) && (
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() => onCancelEntry(entry)}
@@ -482,7 +482,7 @@ export function LedgerTable({
                             Cancelar movimiento
                           </DropdownMenuItem>
                         )}
-                        {entry.reciboNumero && ["conciliado", "pago_parcial"].includes(entry.estado) && (
+                        {!isOwnerView && entry.reciboNumero && ["conciliado", "pago_parcial"].includes(entry.estado) && (
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() => onAnularRecibo(entry.reciboNumero!)}
