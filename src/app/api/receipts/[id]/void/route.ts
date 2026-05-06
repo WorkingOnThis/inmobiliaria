@@ -5,7 +5,8 @@ import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { receiptAllocation } from "@/db/schema/receipt-allocation";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
-import { canManageClients, canAnnulReceipts } from "@/lib/permissions";
+import { canAnnulReceipts } from "@/lib/permissions";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and, inArray, ne } from "drizzle-orm";
 
 /**
@@ -23,23 +24,39 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-  }
-  if (!canAnnulReceipts(session.user.role)) {
-    return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
-  }
-
-  const { id: reciboNumero } = await params;
-
+  let reciboNumero: string | undefined;
   try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    const agencyId = requireAgencyId(session);
+    if (!canAnnulReceipts(session!.user.role)) {
+      return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
+    }
+
+    ({ id: reciboNumero } = await params);
+
+    // Validar que el recibo pertenece a la agency: chequeamos que existe al
+    // menos un cash_movement con ese reciboNumero en la agency. Si no, 404.
+    const [scopeCheck] = await db
+      .select({ id: cajaMovimiento.id })
+      .from(cajaMovimiento)
+      .where(
+        and(
+          eq(cajaMovimiento.reciboNumero, reciboNumero),
+          eq(cajaMovimiento.agencyId, agencyId)
+        )
+      )
+      .limit(1);
+
+    if (!scopeCheck) {
+      return NextResponse.json({ error: "Recibo no encontrado" }, { status: 404 });
+    }
+
     const result = await db.transaction(async (tx) => {
       // 1. Load all allocations for this receipt
       const allocations = await tx
         .select()
         .from(receiptAllocation)
-        .where(eq(receiptAllocation.reciboNumero, reciboNumero));
+        .where(eq(receiptAllocation.reciboNumero, reciboNumero!));
 
       if (allocations.length === 0) {
         return { notFound: true };
@@ -47,11 +64,16 @@ export async function POST(
 
       const ledgerEntryIds = allocations.map((a) => a.ledgerEntryId);
 
-      // 2. Load the corresponding ledger entries
+      // 2. Load the corresponding ledger entries (scoped por agency)
       const entries = await tx
         .select()
         .from(tenantLedger)
-        .where(inArray(tenantLedger.id, ledgerEntryIds));
+        .where(
+          and(
+            inArray(tenantLedger.id, ledgerEntryIds),
+            eq(tenantLedger.agencyId, agencyId)
+          )
+        );
 
       // 3. Validate: no entry may have a newer receipt (i.e. reciboNumero !== R)
       //    If it does, the user must void that newer receipt first.
@@ -82,7 +104,7 @@ export async function POST(
           .where(
             and(
               eq(receiptAllocation.ledgerEntryId, allocation.ledgerEntryId),
-              ne(receiptAllocation.reciboNumero, reciboNumero)
+              ne(receiptAllocation.reciboNumero, reciboNumero!)
             )
           );
         // Sort descending by createdAt to find the most recent prior allocation
@@ -101,19 +123,24 @@ export async function POST(
             conciliadoPor: null,
             updatedAt: new Date(),
           })
-          .where(eq(tenantLedger.id, entry.id));
+          .where(and(eq(tenantLedger.id, entry.id), eq(tenantLedger.agencyId, agencyId)));
       }
 
-      // 5. Delete caja_movimiento rows linked to this receipt
+      // 5. Delete caja_movimiento rows linked to this receipt (scoped por agency)
       const deletedMovimientos = await tx
         .delete(cajaMovimiento)
-        .where(eq(cajaMovimiento.reciboNumero, reciboNumero))
+        .where(
+          and(
+            eq(cajaMovimiento.reciboNumero, reciboNumero!),
+            eq(cajaMovimiento.agencyId, agencyId)
+          )
+        )
         .returning({ id: cajaMovimiento.id });
 
       // 6. Delete all allocations for this receipt
       await tx
         .delete(receiptAllocation)
-        .where(eq(receiptAllocation.reciboNumero, reciboNumero));
+        .where(eq(receiptAllocation.reciboNumero, reciboNumero!));
 
       return {
         ok: true,
@@ -131,7 +158,9 @@ export async function POST(
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error(`Error POST /api/receipts/${reciboNumero}/void:`, error);
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
+    console.error(`Error POST /api/receipts/${reciboNumero ?? "?"}/void:`, error);
     return NextResponse.json({ error: "Error al anular el recibo" }, { status: 500 });
   }
 }

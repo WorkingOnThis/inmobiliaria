@@ -7,8 +7,9 @@ import { receiptAllocation } from "@/db/schema/receipt-allocation";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { auth } from "@/lib/auth";
 import { canAnnulReceipts } from "@/lib/permissions";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
-import { eq, sum } from "drizzle-orm";
+import { and, eq, sum } from "drizzle-orm";
 
 const annulSchema = z.object({
   motivo: z.string().max(500).optional(),
@@ -20,10 +21,8 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canAnnulReceipts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canAnnulReceipts(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
@@ -37,11 +36,16 @@ export async function POST(
     const { motivo } = parsed.data;
 
     const result = await db.transaction(async (tx) => {
-      // 1. Buscar todos los movimientos de este recibo
+      // 1. Buscar todos los movimientos de este recibo (scoped por agency)
       const movimientos = await tx
         .select()
         .from(cajaMovimiento)
-        .where(eq(cajaMovimiento.reciboNumero, reciboNumero));
+        .where(
+          and(
+            eq(cajaMovimiento.reciboNumero, reciboNumero),
+            eq(cajaMovimiento.agencyId, agencyId)
+          )
+        );
 
       if (movimientos.length === 0) {
         return { error: "No se encontró el recibo", status: 404 } as const;
@@ -64,20 +68,25 @@ export async function POST(
           reciboNumero,
           motivo: motivo ?? null,
           teniaPagosLiquidados,
-          anuladoPor: session.user.id,
+          anuladoPor: session!.user.id,
           anuladoAt: now,
         })
         .returning();
 
-      // 5. Marcar todos los movimientos como anulados
+      // 5. Marcar todos los movimientos como anulados (scoped por agency)
       await tx
         .update(cajaMovimiento)
         .set({
           anuladoAt: now,
-          anuladoPor: session.user.id,
+          anuladoPor: session!.user.id,
           annulmentId: annulment.id,
         })
-        .where(eq(cajaMovimiento.reciboNumero, reciboNumero));
+        .where(
+          and(
+            eq(cajaMovimiento.reciboNumero, reciboNumero),
+            eq(cajaMovimiento.agencyId, agencyId)
+          )
+        );
 
       // 6. Obtener ledger entries afectadas antes de borrar allocations
       const allocations = await tx
@@ -97,7 +106,7 @@ export async function POST(
         const [entry] = await tx
           .select({ monto: tenantLedger.monto })
           .from(tenantLedger)
-          .where(eq(tenantLedger.id, entryId));
+          .where(and(eq(tenantLedger.id, entryId), eq(tenantLedger.agencyId, agencyId)));
 
         if (!entry || entry.monto === null) continue;
 
@@ -128,7 +137,7 @@ export async function POST(
               : {}),
             updatedAt: now,
           })
-          .where(eq(tenantLedger.id, entryId));
+          .where(and(eq(tenantLedger.id, entryId), eq(tenantLedger.agencyId, agencyId)));
       }
 
       return { annulmentId: annulment.id, teniaPagosLiquidados };
@@ -140,6 +149,8 @@ export async function POST(
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error POST /api/receipts/[id]/annul:", error);
     return NextResponse.json({ error: "Error al anular el recibo" }, { status: 500 });
   }

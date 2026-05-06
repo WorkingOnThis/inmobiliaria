@@ -69,12 +69,12 @@ export type ReceiptData = {
 
 export async function loadReceiptData(
   movimientoId: string,
-  agencyOwnerId: string
+  agencyId: string
 ): Promise<ReceiptData | null> {
   const [movimiento] = await db
     .select()
     .from(cajaMovimiento)
-    .where(eq(cajaMovimiento.id, movimientoId))
+    .where(and(eq(cajaMovimiento.id, movimientoId), eq(cajaMovimiento.agencyId, agencyId)))
     .limit(1);
 
   if (!movimiento || !movimiento.reciboNumero) return null;
@@ -89,7 +89,7 @@ export async function loadReceiptData(
     ? await db
         .select({ id: tenantLedger.id, descripcion: tenantLedger.descripcion, period: tenantLedger.period })
         .from(tenantLedger)
-        .where(inArray(tenantLedger.id, ledgerEntryIds))
+        .where(and(inArray(tenantLedger.id, ledgerEntryIds), eq(tenantLedger.agencyId, agencyId)))
     : [];
 
   const montoByEntry = Object.fromEntries(allocations.map((a) => [a.ledgerEntryId, a.monto]));
@@ -109,15 +109,15 @@ export async function loadReceiptData(
           email: client.email,
           emailDefault: client.emailDefault,
           trustedEmails: client.trustedEmails,
-        }).from(client).where(eq(client.id, movimiento.inquilinoId)).limit(1)
+        }).from(client).where(and(eq(client.id, movimiento.inquilinoId), eq(client.agencyId, agencyId))).limit(1)
       : Promise.resolve([]),
     movimiento.propiedadId
       ? db.select({ address: property.address, floorUnit: property.floorUnit })
-          .from(property).where(eq(property.id, movimiento.propiedadId)).limit(1)
+          .from(property).where(and(eq(property.id, movimiento.propiedadId), eq(property.agencyId, agencyId))).limit(1)
       : Promise.resolve([]),
     movimiento.contratoId
       ? db.select({ contractNumber: contract.contractNumber, paymentModality: contract.paymentModality })
-          .from(contract).where(eq(contract.id, movimiento.contratoId)).limit(1)
+          .from(contract).where(and(eq(contract.id, movimiento.contratoId), eq(contract.agencyId, agencyId))).limit(1)
       : movimiento.inquilinoId
         ? db.select({ contractNumber: contract.contractNumber, paymentModality: contract.paymentModality })
             .from(contractParticipant)
@@ -125,7 +125,8 @@ export async function loadReceiptData(
             .where(and(
               eq(contractParticipant.clientId, movimiento.inquilinoId),
               eq(contractParticipant.role, "tenant"),
-              eq(contract.status, "active")
+              eq(contract.status, "active"),
+              eq(contract.agencyId, agencyId)
             ))
             .limit(1)
         : Promise.resolve([]),
@@ -136,7 +137,7 @@ export async function loadReceiptData(
       monto: receiptServiceItem.monto,
       servicioId: receiptServiceItem.servicioId,
     }).from(receiptServiceItem).where(eq(receiptServiceItem.movimientoId, movimientoId)),
-    db.select().from(agency).where(eq(agency.ownerId, agencyOwnerId)).limit(1),
+    db.select().from(agency).where(eq(agency.id, agencyId)).limit(1),
   ]);
 
   const inq = inqRow[0] ?? null;

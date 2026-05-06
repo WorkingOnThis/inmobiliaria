@@ -79,13 +79,13 @@ export type ComprobanteData = {
 
 export async function loadComprobanteData(
   movimientoId: string,
-  agencyOwnerId: string
+  agencyId: string
 ): Promise<ComprobanteData | null> {
-  // 1. Get cash movement
+  // 1. Get cash movement (scoped por agency)
   const [movimiento] = await db
     .select()
     .from(cajaMovimiento)
-    .where(eq(cajaMovimiento.id, movimientoId))
+    .where(and(eq(cajaMovimiento.id, movimientoId), eq(cajaMovimiento.agencyId, agencyId)))
     .limit(1);
 
   if (
@@ -114,7 +114,7 @@ export async function loadComprobanteData(
     })
     .from(tenantLedger)
     .innerJoin(contract, eq(tenantLedger.contratoId, contract.id))
-    .where(inArray(tenantLedger.id, ledgerEntryIds));
+    .where(and(inArray(tenantLedger.id, ledgerEntryIds), eq(tenantLedger.agencyId, agencyId)));
 
   // 3. Build items + totales
   const items: ComprobanteData["items"] = [];
@@ -146,7 +146,7 @@ export async function loadComprobanteData(
   const [propRow] = await db
     .select()
     .from(property)
-    .where(eq(property.id, movimiento.propiedadId))
+    .where(and(eq(property.id, movimiento.propiedadId), eq(property.agencyId, agencyId)))
     .limit(1);
 
   if (!propRow) return null;
@@ -163,6 +163,7 @@ export async function loadComprobanteData(
     .where(
       and(
         eq(propertyCoOwner.propertyId, movimiento.propiedadId),
+        eq(propertyCoOwner.agencyId, agencyId),
         or(eq(propertyCoOwner.role, "legal"), eq(propertyCoOwner.role, "ambos"))
       )
     );
@@ -184,7 +185,7 @@ export async function loadComprobanteData(
       alias: client.alias,
     })
     .from(client)
-    .where(eq(client.id, legalOwnerId))
+    .where(and(eq(client.id, legalOwnerId), eq(client.agencyId, agencyId)))
     .limit(1);
 
   if (!propietarioRow) return null;
@@ -198,7 +199,7 @@ export async function loadComprobanteData(
           dni: client.dni,
         })
         .from(client)
-        .where(eq(client.id, movimiento.inquilinoId))
+        .where(and(eq(client.id, movimiento.inquilinoId), eq(client.agencyId, agencyId)))
         .limit(1)
     : [];
   const inqRow = inqRows[0] ?? null;
@@ -211,7 +212,7 @@ export async function loadComprobanteData(
       managementCommissionPct: contract.managementCommissionPct,
     })
     .from(contract)
-    .where(eq(contract.id, movimiento.contratoId))
+    .where(and(eq(contract.id, movimiento.contratoId), eq(contract.agencyId, agencyId)))
     .limit(1);
 
   if (!contratoRow) return null;
@@ -220,7 +221,7 @@ export async function loadComprobanteData(
   const [agencyRow] = await db
     .select()
     .from(agency)
-    .where(eq(agency.ownerId, agencyOwnerId))
+    .where(eq(agency.id, agencyId))
     .limit(1);
 
   const agencyData: ComprobanteData["agency"] = agencyRow

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { customAdjustmentIndex } from "@/db/schema/custom-adjustment-index";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
 import { asc } from "drizzle-orm";
 
@@ -19,10 +20,8 @@ const createIndexSchema = z.object({
 export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageContracts(session.user.role)) {
+    requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -37,6 +36,8 @@ export async function GET() {
 
     return NextResponse.json({ indexes: rows });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching custom adjustment indexes:", error);
     return NextResponse.json({ error: "Error al obtener índices" }, { status: 500 });
   }
@@ -45,10 +46,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageContracts(session.user.role)) {
+    requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -69,12 +68,14 @@ export async function POST(request: NextRequest) {
         id: crypto.randomUUID(),
         code,
         label,
-        createdBy: session.user.id,
+        createdBy: session!.user.id,
       })
       .returning();
 
     return NextResponse.json({ index: newIndex }, { status: 201 });
   } catch (error: unknown) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     // Unique constraint violation (code already exists)
     if (
       typeof error === "object" &&

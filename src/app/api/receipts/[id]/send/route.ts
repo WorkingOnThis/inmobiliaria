@@ -6,6 +6,8 @@ import { loadReceiptData } from "@/lib/receipts/load";
 import { buildReceiptEmailHTML } from "@/lib/receipts/email-template";
 import { agencyDisplayName } from "@/lib/receipts/format";
 import { sendEmail } from "@/lib/auth/email";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { cajaMovimiento } from "@/db/schema/caja";
 import { z } from "zod";
 
 const sendSchema = z.object({
@@ -18,10 +20,8 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
@@ -32,7 +32,10 @@ export async function POST(
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
 
-    const data = await loadReceiptData(id, session.user.id);
+    // Validar que el cash_movement pertenece a la agency antes de enviar nada por email.
+    await requireAgencyResource(cajaMovimiento, id, agencyId);
+
+    const data = await loadReceiptData(id, agencyId);
     if (!data) {
       return NextResponse.json({ error: "Recibo no encontrado" }, { status: 404 });
     }
@@ -56,6 +59,8 @@ export async function POST(
 
     return NextResponse.json({ sent, failed });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error POST /api/receipts/:id/send:", error);
     return NextResponse.json({ error: "Error al enviar el recibo" }, { status: 500 });
   }

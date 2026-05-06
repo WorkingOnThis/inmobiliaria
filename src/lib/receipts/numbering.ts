@@ -1,15 +1,20 @@
 import { db } from "@/db";
 import { cajaMovimiento } from "@/db/schema/caja";
-import { like, max } from "drizzle-orm";
+import { and, eq, like, max } from "drizzle-orm";
 
 type DbOrTx = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export async function nextReciboNumero(tx?: DbOrTx): Promise<string> {
+export async function nextReciboNumero(agencyId: string, tx?: DbOrTx): Promise<string> {
   const executor = tx ?? db;
   const [row] = await executor
     .select({ last: max(cajaMovimiento.reciboNumero) })
     .from(cajaMovimiento)
-    .where(like(cajaMovimiento.reciboNumero, "REC-%"));
+    .where(
+      and(
+        eq(cajaMovimiento.agencyId, agencyId),
+        like(cajaMovimiento.reciboNumero, "REC-%")
+      )
+    );
 
   let next = 1;
   if (row?.last) {

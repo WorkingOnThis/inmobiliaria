@@ -8,9 +8,10 @@ import { receiptAllocation } from "@/db/schema/receipt-allocation";
 import { client } from "@/db/schema/client";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { nextReciboNumero } from "@/lib/receipts/numbering";
 import { z } from "zod";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 const emitSchema = z.object({
   ledgerEntryIds: z.array(z.string().min(1)).min(1),
@@ -37,10 +38,8 @@ function getEffectiveAmount(
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
@@ -52,10 +51,12 @@ export async function POST(request: NextRequest) {
 
     const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario, montoOverrides, splitBreakdowns } = parsed.data;
 
+    // Cargar ledger entries scoped por agency. Si alguno pertenece a otra
+    // agency, no aparecerá acá y se reportará como "no encontrado".
     const entries = await db
       .select()
       .from(tenantLedger)
-      .where(inArray(tenantLedger.id, ledgerEntryIds));
+      .where(and(inArray(tenantLedger.id, ledgerEntryIds), eq(tenantLedger.agencyId, agencyId)));
 
     if (entries.length !== ledgerEntryIds.length) {
       return NextResponse.json({ error: "Uno o más ítems no fueron encontrados" }, { status: 404 });
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     const [contratoRow] = await db
       .select({ paymentModality: contract.paymentModality })
       .from(contract)
-      .where(eq(contract.id, contratoId))
+      .where(and(eq(contract.id, contratoId), eq(contract.agencyId, agencyId)))
       .limit(1);
     const paymentModality = contratoRow?.paymentModality ?? null;
     const inquilinoId = first.inquilinoId;
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
     const [inquilinoRow] = await db
       .select({ firstName: client.firstName, lastName: client.lastName })
       .from(client)
-      .where(eq(client.id, inquilinoId))
+      .where(and(eq(client.id, inquilinoId), eq(client.agencyId, agencyId)))
       .limit(1);
 
     const nombreInquilino = inquilinoRow
@@ -135,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     const txResult = await db.transaction(async (tx) => {
       const now = new Date();
-      const reciboNumero = await nextReciboNumero(tx);
+      const reciboNumero = await nextReciboNumero(agencyId, tx);
 
       for (const entry of entries) {
         const effectiveAmount = getEffectiveAmount(entry.id, entry.monto!, montoOverrides);
@@ -152,14 +153,14 @@ export async function POST(request: NextRequest) {
             reciboNumero,
             reciboEmitidoAt: now,
             ...(isFullyPaid
-              ? { conciliadoAt: now, conciliadoPor: session.user.id }
+              ? { conciliadoAt: now, conciliadoPor: session!.user.id }
               : {}),
             ...(splitBreakdowns?.[entry.id] && {
               splitBreakdown: JSON.stringify(splitBreakdowns[entry.id]),
             }),
             updatedAt: now,
           })
-          .where(eq(tenantLedger.id, entry.id));
+          .where(and(eq(tenantLedger.id, entry.id), eq(tenantLedger.agencyId, agencyId)));
 
         await tx.insert(receiptAllocation).values({
           reciboNumero,
@@ -172,6 +173,7 @@ export async function POST(request: NextRequest) {
       const [movAgencia] = await tx
         .insert(cajaMovimiento)
         .values({
+          agencyId,
           tipo: "income",
           description: `Recibo ${reciboNumero} — ${nombreInquilino}`,
           amount: String(totalRecibo),
@@ -185,13 +187,14 @@ export async function POST(request: NextRequest) {
           tipoFondo: "agencia",
           source: "contract",
           paymentModality,
-          createdBy: session.user.id,
+          createdBy: session!.user.id,
         })
         .returning();
 
       if (trasladarAlPropietario) {
         // Owner in-transit income (to be settled later)
         await tx.insert(cajaMovimiento).values({
+          agencyId,
           tipo: "income",
           description: `Ingreso inquilino — ${reciboNumero}`,
           amount: String(totalRecibo),
@@ -204,12 +207,13 @@ export async function POST(request: NextRequest) {
           tipoFondo: "propietario",
           source: "contract",
           paymentModality,
-          createdBy: session.user.id,
+          createdBy: session!.user.id,
         });
 
         // Agency commission expense
         if (montoHonorarios > 0) {
           await tx.insert(cajaMovimiento).values({
+            agencyId,
             tipo: "expense",
             description: `Honorarios administración — ${reciboNumero}`,
             amount: String(montoHonorarios),
@@ -222,7 +226,7 @@ export async function POST(request: NextRequest) {
             tipoFondo: "agencia",
             source: "contract",
             paymentModality,
-            createdBy: session.user.id,
+            createdBy: session!.user.id,
           });
         }
       }
@@ -232,6 +236,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(txResult, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error POST /api/receipts/emit:", error);
     return NextResponse.json({ error: "Error al emitir el recibo" }, { status: 500 });
   }

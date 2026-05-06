@@ -3,68 +3,60 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { fieldNote } from "@/db/schema/field-note";
 import { user } from "@/db/schema/better-auth";
-import { agency } from "@/db/schema/agency";
 import { auth } from "@/lib/auth";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and } from "drizzle-orm";
 
-async function getAgencyId(userId: string): Promise<string | null> {
-  const [row] = await db
-    .select({ id: agency.id })
-    .from(agency)
-    .where(eq(agency.ownerId, userId))
-    .limit(1);
-  return row?.id ?? null;
-}
-
 export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    const agencyId = requireAgencyId(session);
 
-  const agencyId = await getAgencyId(session.user.id);
-  if (!agencyId) return NextResponse.json([], { status: 200 });
+    const entityType = request.nextUrl.searchParams.get("entityType") ?? "";
+    const entityId = request.nextUrl.searchParams.get("entityId") ?? "";
 
-  const entityType = request.nextUrl.searchParams.get("entityType") ?? "";
-  const entityId = request.nextUrl.searchParams.get("entityId") ?? "";
+    if (!entityType || !entityId) {
+      return NextResponse.json({ error: "Parámetros entityType y entityId son requeridos" }, { status: 400 });
+    }
 
-  if (!entityType || !entityId) {
-    return NextResponse.json({ error: "Parámetros entityType y entityId son requeridos" }, { status: 400 });
+    const rows = await db
+      .select({
+        id: fieldNote.id,
+        fieldName: fieldNote.fieldName,
+        comment: fieldNote.comment,
+        authorId: fieldNote.authorId,
+        authorName: user.name,
+        createdAt: fieldNote.createdAt,
+        updatedAt: fieldNote.updatedAt,
+      })
+      .from(fieldNote)
+      .innerJoin(user, eq(user.id, fieldNote.authorId))
+      .where(
+        and(
+          eq(fieldNote.agencyId, agencyId),
+          eq(fieldNote.entityType, entityType),
+          eq(fieldNote.entityId, entityId)
+        )
+      );
+
+    return NextResponse.json(rows);
+  } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
+    console.error("Error GET /api/field-notes:", error);
+    return NextResponse.json({ error: "Error al obtener notas" }, { status: 500 });
   }
-
-  const rows = await db
-    .select({
-      id: fieldNote.id,
-      fieldName: fieldNote.fieldName,
-      comment: fieldNote.comment,
-      authorId: fieldNote.authorId,
-      authorName: user.name,
-      createdAt: fieldNote.createdAt,
-      updatedAt: fieldNote.updatedAt,
-    })
-    .from(fieldNote)
-    .innerJoin(user, eq(user.id, fieldNote.authorId))
-    .where(
-      and(
-        eq(fieldNote.agencyId, agencyId),
-        eq(fieldNote.entityType, entityType),
-        eq(fieldNote.entityId, entityId)
-      )
-    );
-
-  return NextResponse.json(rows);
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    const agencyId = requireAgencyId(session);
 
-    const role = session.user.role as string;
+    const role = session!.user.role as string;
     if (role !== "agent" && role !== "account_admin") {
       return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     }
-
-    const agencyId = await getAgencyId(session.user.id);
-    if (!agencyId) return NextResponse.json({ error: "Agencia no encontrada" }, { status: 400 });
 
     const body = await request.json();
     const { entityType, entityId, fieldName, comment } = body;
@@ -82,7 +74,7 @@ export async function POST(request: NextRequest) {
           eq(fieldNote.entityType, entityType),
           eq(fieldNote.entityId, entityId),
           eq(fieldNote.fieldName, fieldName),
-          eq(fieldNote.authorId, session.user.id)
+          eq(fieldNote.authorId, session!.user.id)
         )
       )
       .limit(1);
@@ -100,12 +92,14 @@ export async function POST(request: NextRequest) {
         entityId,
         fieldName,
         comment: comment.trim(),
-        authorId: session.user.id,
+        authorId: session!.user.id,
       })
       .returning();
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error creating field note:", error);
     return NextResponse.json({ error: "Error al crear nota" }, { status: 500 });
   }

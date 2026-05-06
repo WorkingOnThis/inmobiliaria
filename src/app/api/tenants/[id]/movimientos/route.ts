@@ -81,7 +81,7 @@ export async function POST(
     // Generate receipt number: for alquiler (legacy path) or when generarRecibo flag is set
     let reciboNumero: string | null = null;
     if (tipo === "income" && (categoria === "alquiler" || generarRecibo)) {
-      reciboNumero = await nextReciboNumero();
+      reciboNumero = await nextReciboNumero(agencyId);
     }
 
     const nuevo = await db.transaction(async (tx) => {
