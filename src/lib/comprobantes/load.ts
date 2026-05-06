@@ -18,7 +18,7 @@ export type ComprobanteData = {
     period: string | null;
     amount: string;
     paymentModality: "A" | "split";
-    anuladoAt: Date | null;
+    anuladoAt: string | null;
   };
   contrato: {
     contractNumber: string;
@@ -262,7 +262,7 @@ export async function loadComprobanteData(
       paymentModality: (movimiento.paymentModality ?? contratoRow.paymentModality) as
         | "A"
         | "split",
-      anuladoAt: movimiento.anuladoAt,
+      anuladoAt: movimiento.anuladoAt ? movimiento.anuladoAt.toISOString() : null,
     },
     contrato: {
       contractNumber: contratoRow.contractNumber,
