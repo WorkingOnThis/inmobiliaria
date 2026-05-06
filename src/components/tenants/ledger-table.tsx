@@ -37,6 +37,7 @@ export type LedgerEntry = {
   impactaCaja: boolean;
   beneficiario: string | null;
   splitBreakdown: string | null;
+  isSynthetic?: boolean;
 };
 
 type Props = {
@@ -240,6 +241,14 @@ export function LedgerTable({
 
   const filtered = entries.filter(matchesFilter);
 
+  if (filtered.length === 0) {
+    return (
+      <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+        No hay entradas con los filtros actuales.
+      </div>
+    );
+  }
+
   const topLevel = filtered.filter((e) => !e.installmentOf || e.tipo === "punitorio");
 
   const grouped = groupByPeriod(topLevel);
@@ -322,11 +331,13 @@ export function LedgerTable({
               return (
                 <div
                   key={entry.id}
-                  onClick={() => onViewDetail(entry)}
+                  onClick={() => { if (!entry.isSynthetic) onViewDetail(entry); }}
                   className={cn(
-                    "grid items-center gap-2 px-4 py-2 text-sm cursor-pointer hover:bg-muted/40",
+                    "grid items-center gap-2 px-4 py-2 text-sm hover:bg-muted/40",
                     gridCols,
+                    !entry.isSynthetic && "cursor-pointer",
                     isPunitorio && "pl-10 bg-punitorio-dim border-t border-punitorio/30",
+                    entry.isSynthetic && "pl-10 bg-muted/20 text-muted-foreground italic",
                     selected && "bg-primary/10 hover:bg-primary/15",
                     isOwnerView && entry.splitBreakdown ? "bg-blue-950/20" : ""
                   )}
@@ -335,14 +346,14 @@ export function LedgerTable({
                     className={cn(
                       "flex items-center justify-center self-stretch pr-3 cursor-default",
                       isPunitorio ? "-ml-6 pl-6" : "-ml-4 pl-4",
-                      selectable ? "border-r-2 border-r-primary/60" : "border-r border-border/50"
+                      selectable && !entry.isSynthetic ? "border-r-2 border-r-primary/60" : "border-r border-border/50"
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (selectable) onToggleSelect(entry.id);
+                      if (selectable && !entry.isSynthetic) onToggleSelect(entry.id);
                     }}
                   >
-                    {selectable ? (
+                    {selectable && !entry.isSynthetic ? (
                       <Checkbox
                         checked={selected}
                         onCheckedChange={() => {}}
@@ -451,47 +462,49 @@ export function LedgerTable({
 
                   {/* Actions */}
                   <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                          aria-label="Acciones"
-                        >
-                          <MoreHorizontal size={14} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onViewDetail(entry)}>
-                          Ver detalle
-                        </DropdownMenuItem>
-                        {!isOwnerView && isPunitorio && entry.estado !== "conciliado" && (
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onCancelEntry(entry)}
+                    {!entry.isSynthetic && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            aria-label="Acciones"
                           >
-                            Cancelar punitorio
+                            <MoreHorizontal size={14} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onViewDetail(entry)}>
+                            Ver detalle
                           </DropdownMenuItem>
-                        )}
-                        {!isOwnerView && !isPunitorio && isCancelable(entry) && (
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onCancelEntry(entry)}
-                          >
-                            Cancelar movimiento
-                          </DropdownMenuItem>
-                        )}
-                        {!isOwnerView && entry.reciboNumero && ["conciliado", "pago_parcial"].includes(entry.estado) && (
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onAnularRecibo(entry.reciboNumero!)}
-                          >
-                            Anular recibo
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          {!isOwnerView && isPunitorio && entry.estado !== "conciliado" && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => onCancelEntry(entry)}
+                            >
+                              Cancelar punitorio
+                            </DropdownMenuItem>
+                          )}
+                          {!isOwnerView && !isPunitorio && isCancelable(entry) && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => onCancelEntry(entry)}
+                            >
+                              Cancelar movimiento
+                            </DropdownMenuItem>
+                          )}
+                          {!isOwnerView && entry.reciboNumero && ["conciliado", "pago_parcial"].includes(entry.estado) && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => onAnularRecibo(entry.reciboNumero!)}
+                            >
+                              Anular recibo
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </div>
               );
