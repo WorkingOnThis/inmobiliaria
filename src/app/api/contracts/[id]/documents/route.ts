@@ -5,7 +5,7 @@ import { contract } from "@/db/schema/contract";
 import { contractDocument } from "@/db/schema/contract-document";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
-import { eq } from "drizzle-orm";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
@@ -18,23 +18,13 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
-
-    const [existing] = await db
-      .select({ id: contract.id })
-      .from(contract)
-      .where(eq(contract.id, id))
-      .limit(1);
-    if (!existing) {
-      return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(contract, id, agencyId);
 
     const formData = await request.formData();
     const file = formData.get("file");
@@ -70,15 +60,18 @@ export async function POST(
     const [inserted] = await db
       .insert(contractDocument)
       .values({
+        agencyId,
         contractId: id,
         name: safeName,
         url: publicUrl,
-        uploadedBy: session.user.id,
+        uploadedBy: session!.user.id,
       })
       .returning();
 
     return NextResponse.json(inserted, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error uploading document:", error);
     return NextResponse.json(
       { error: "Error al subir el documento" },

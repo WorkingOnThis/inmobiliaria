@@ -5,18 +5,13 @@ import { contract } from "@/db/schema/contract";
 import { documentTemplate, documentTemplateClause } from "@/db/schema/document-template";
 import { contractClause } from "@/db/schema/contract-clause";
 import { contractDocumentConfig } from "@/db/schema/contract-document-config";
-import { agency } from "@/db/schema/agency";
 import { auth } from "@/lib/auth";
 import { canManageDocumentTemplates } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const EDITABLE_STATUSES = ["draft", "pending_signature"];
-
-async function getUserAgencyId(userId: string): Promise<string | null> {
-  const [row] = await db.select({ id: agency.id }).from(agency).where(eq(agency.ownerId, userId)).limit(1);
-  return row?.id ?? null;
-}
 
 const applySchema = z.object({
   templateId: z.string().min(1),
@@ -28,17 +23,16 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageDocumentTemplates(session.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
+    const agencyId = requireAgencyId(session);
+    if (!canManageDocumentTemplates(session!.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const { id: contractId, documentType } = await params;
-    const agencyId = await getUserAgencyId(session.user.id);
-    if (!agencyId) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    await requireAgencyResource(contract, contractId, agencyId);
 
     const [contractRow] = await db
       .select({ status: contract.status })
       .from(contract)
-      .where(eq(contract.id, contractId))
+      .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)))
       .limit(1);
 
     if (!contractRow) return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
@@ -94,7 +88,10 @@ export async function POST(
     });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (e) {
+    const resp = handleAgencyError(e);
+    if (resp) return resp;
+    console.error(e);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

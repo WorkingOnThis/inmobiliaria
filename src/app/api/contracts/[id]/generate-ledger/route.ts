@@ -7,6 +7,7 @@ import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { servicio } from "@/db/schema/servicio";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { buildLedgerEntries } from "@/lib/ledger/generate-contract-ledger";
 import { eq, and, inArray } from "drizzle-orm";
 
@@ -16,20 +17,20 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageClients(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
     const { id: contractId } = await params;
     const force = request.nextUrl.searchParams.get("force") === "true";
 
+    await requireAgencyResource(contract, contractId, agencyId);
+
     const [contractRow] = await db
       .select()
       .from(contract)
-      .where(eq(contract.id, contractId))
+      .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)))
       .limit(1);
 
     if (!contractRow) {
@@ -40,7 +41,7 @@ export async function POST(
     const existingEntries = await db
       .select({ id: tenantLedger.id, estado: tenantLedger.estado })
       .from(tenantLedger)
-      .where(eq(tenantLedger.contratoId, contractId));
+      .where(and(eq(tenantLedger.contratoId, contractId), eq(tenantLedger.agencyId, agencyId)));
 
     if (existingEntries.length > 0) {
       if (!force) {
@@ -58,7 +59,7 @@ export async function POST(
       if (deletableIds.length > 0) {
         await db
           .delete(tenantLedger)
-          .where(inArray(tenantLedger.id, deletableIds));
+          .where(and(inArray(tenantLedger.id, deletableIds), eq(tenantLedger.agencyId, agencyId)));
       }
 
       // If force=true but every existing entry was cobrado, nothing was deleted.
@@ -95,7 +96,7 @@ export async function POST(
         propietarioResponsable: servicio.propietarioResponsable,
       })
       .from(servicio)
-      .where(eq(servicio.propertyId, contractRow.propertyId));
+      .where(and(eq(servicio.propertyId, contractRow.propertyId), eq(servicio.agencyId, agencyId)));
 
     const entries = buildLedgerEntries(
       {
@@ -112,6 +113,7 @@ export async function POST(
       },
       primaryTenant.clientId,
       services,
+      agencyId,
     );
 
     if (entries.length === 0) {
@@ -128,6 +130,8 @@ export async function POST(
 
     return NextResponse.json({ inserted }, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error POST /api/contracts/:id/generate-ledger:", error);
     return NextResponse.json({ error: "Error al generar el ledger" }, { status: 500 });
   }

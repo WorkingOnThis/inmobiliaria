@@ -13,7 +13,7 @@ const ledgerCount = await db.execute(sql`SELECT COUNT(*) as n FROM tenant_ledger
 console.log("tenant_ledger rows:", (ledgerCount.rows[0] as any).n);
 
 const contracts = await db.execute(
-  sql`SELECT c.id, c."propertyId", c."ownerId", c."startDate", c."endDate",
+  sql`SELECT c.id, c."agencyId", c."propertyId", c."ownerId", c."startDate", c."endDate",
        c."monthlyAmount", c."paymentDay", c."adjustmentIndex", c."adjustmentFrequency",
        c."ledgerStartDate"
       FROM contract c LIMIT 10`
@@ -58,7 +58,8 @@ for (const contract of contracts.rows as any[]) {
       adjustmentFrequency: contract.adjustmentFrequency ?? 12,
     },
     tenantId,
-    []
+    [],
+    contract.agencyId
   );
 
   console.log("Contract", contract.id, "→", entries.length, "entries");

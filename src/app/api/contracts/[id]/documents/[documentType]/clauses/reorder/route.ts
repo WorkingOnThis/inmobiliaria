@@ -5,6 +5,7 @@ import { contract } from "@/db/schema/contract";
 import { contractClause } from "@/db/schema/contract-clause";
 import { auth } from "@/lib/auth";
 import { canManageDocumentTemplates } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
@@ -20,15 +21,16 @@ export async function PUT(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageDocumentTemplates(session.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
+    const agencyId = requireAgencyId(session);
+    if (!canManageDocumentTemplates(session!.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const { id: contractId, documentType } = await params;
+    await requireAgencyResource(contract, contractId, agencyId);
 
     const [contractRow] = await db
       .select({ status: contract.status })
       .from(contract)
-      .where(eq(contract.id, contractId))
+      .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)))
       .limit(1);
 
     if (!contractRow || !EDITABLE_STATUSES.includes(contractRow.status)) {
@@ -55,7 +57,10 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (e) {
+    const resp = handleAgencyError(e);
+    if (resp) return resp;
+    console.error(e);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

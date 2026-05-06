@@ -7,6 +7,7 @@ import { client } from "@/db/schema/client";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
+import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { CONTRACT_TYPES } from "@/lib/clients/constants";
 import { z } from "zod";
 import { count, desc, eq, and, inArray, or, ilike } from "drizzle-orm";
@@ -38,11 +39,9 @@ const createContractSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
-    if (!canManageContracts(session.user.role)) {
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -54,7 +53,7 @@ export async function GET(request: NextRequest) {
     const q = searchParams.get("q") || "";
     const propertyIdFilter = searchParams.get("propertyId") || "";
 
-    const conditions = [];
+    const conditions = [eq(contract.agencyId, agencyId)];
     if (statusFilter === "activos") {
       conditions.push(inArray(contract.status, ["active", "expiring_soon"]));
     } else if (statusFilter) {
@@ -71,7 +70,7 @@ export async function GET(request: NextRequest) {
         )
       );
     }
-    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const where = and(...conditions);
 
     const [contractsData, [totalResult], statusCountsRaw] = await Promise.all([
       db
@@ -102,6 +101,7 @@ export async function GET(request: NextRequest) {
       db
         .select({ status: contract.status, cnt: count() })
         .from(contract)
+        .where(eq(contract.agencyId, agencyId))
         .groupBy(contract.status),
     ]);
 
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
           db
             .select({ firstName: client.firstName, lastName: client.lastName })
             .from(client)
-            .where(eq(client.id, c.ownerId))
+            .where(and(eq(client.id, c.ownerId), eq(client.agencyId, agencyId)))
             .limit(1),
           db
             .select({
@@ -168,6 +168,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching contracts:", error);
     return NextResponse.json({ error: "Error al obtener contratos" }, { status: 500 });
   }
@@ -176,11 +178,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const agencyId = requireAgencyId(session);
 
-    if (!canManageContracts(session.user.role)) {
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
     const [existingProperty] = await db
       .select()
       .from(property)
-      .where(eq(property.id, data.propertyId))
+      .where(and(eq(property.id, data.propertyId), eq(property.agencyId, agencyId)))
       .limit(1);
     if (!existingProperty) {
       return NextResponse.json({ error: "La propiedad no existe" }, { status: 400 });
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
     const existingClients = await db
       .select({ id: client.id })
       .from(client)
-      .where(inArray(client.id, allClientIds));
+      .where(and(inArray(client.id, allClientIds), eq(client.agencyId, agencyId)));
     if (existingClients.length !== allClientIds.length) {
       return NextResponse.json(
         { error: "Uno o más participantes no existen" },
@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
     const [existingOwner] = await db
       .select()
       .from(client)
-      .where(eq(client.id, data.ownerId))
+      .where(and(eq(client.id, data.ownerId), eq(client.agencyId, agencyId)))
       .limit(1);
     if (!existingOwner) {
       return NextResponse.json({ error: "El propietario no existe" }, { status: 400 });
@@ -228,6 +228,7 @@ export async function POST(request: NextRequest) {
     const [last] = await db
       .select({ contractNumber: contract.contractNumber })
       .from(contract)
+      .where(eq(contract.agencyId, agencyId))
       .orderBy(desc(contract.contractNumber))
       .limit(1);
 
@@ -244,6 +245,7 @@ export async function POST(request: NextRequest) {
         .insert(contract)
         .values({
           id: contractId,
+          agencyId,
           contractNumber,
           propertyId: data.propertyId,
           ownerId: data.ownerId,
@@ -260,21 +262,23 @@ export async function POST(request: NextRequest) {
           adjustmentIndex: data.adjustmentIndex,
           adjustmentFrequency: data.adjustmentFrequency,
           ledgerStartDate: data.ledgerStartDate ?? null,
-          createdBy: session.user.id,
+          createdBy: session!.user.id,
           createdAt: now,
           updatedAt: now,
         })
         .returning();
 
       const participantRows = [
-        { contractId, clientId: data.ownerId, role: "owner" as const },
+        { contractId, agencyId, clientId: data.ownerId, role: "owner" as const },
         ...data.tenantIds.map((clientId) => ({
           contractId,
+          agencyId,
           clientId,
           role: "tenant" as const,
         })),
         ...data.guarantorIds.map((clientId) => ({
           contractId,
+          agencyId,
           clientId,
           role: "guarantor" as const,
         })),
@@ -290,6 +294,8 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error creating contract:", error);
     return NextResponse.json({ error: "Error al crear el contrato" }, { status: 500 });
   }

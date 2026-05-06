@@ -8,6 +8,7 @@ import { client } from "@/db/schema/client";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
@@ -39,23 +40,13 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
-
-    const [existing] = await db
-      .select({ id: contract.id })
-      .from(contract)
-      .where(eq(contract.id, id))
-      .limit(1);
-    if (!existing) {
-      return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(contract, id, agencyId);
 
     const [firstTenant] = await db
       .select({ clientId: contractParticipant.clientId })
@@ -82,7 +73,7 @@ export async function POST(
       const [existingClient] = await db
         .select({ id: client.id })
         .from(client)
-        .where(eq(client.id, data.clientId))
+        .where(and(eq(client.id, data.clientId), eq(client.agencyId, agencyId)))
         .limit(1);
       if (!existingClient) {
         return NextResponse.json({ error: "El garante no existe" }, { status: 400 });
@@ -93,7 +84,7 @@ export async function POST(
       const [existingProp] = await db
         .select({ id: property.id })
         .from(property)
-        .where(eq(property.id, data.propertyId))
+        .where(and(eq(property.id, data.propertyId), eq(property.agencyId, agencyId)))
         .limit(1);
       if (!existingProp) {
         return NextResponse.json(
@@ -106,6 +97,7 @@ export async function POST(
     const [inserted] = await db
       .insert(guarantee)
       .values({
+        agencyId,
         tenantClientId: firstTenant.clientId,
         contractId: id,
         kind: data.type === "personal" ? "salaryReceipt" : "propertyOwner",
@@ -129,6 +121,8 @@ export async function POST(
 
     return NextResponse.json(inserted, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error adding guarantee:", error);
     return NextResponse.json(
       { error: "Error al agregar garantía" },

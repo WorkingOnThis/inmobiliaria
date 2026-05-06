@@ -7,6 +7,7 @@ import { contractDocumentConfig } from "@/db/schema/contract-document-config";
 import { documentTemplate } from "@/db/schema/document-template";
 import { auth } from "@/lib/auth";
 import { canManageDocumentTemplates } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and, asc } from "drizzle-orm";
 import { z } from "zod";
 
@@ -18,15 +19,16 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageDocumentTemplates(session.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
+    const agencyId = requireAgencyId(session);
+    if (!canManageDocumentTemplates(session!.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const { id: contractId, documentType } = await params;
+    await requireAgencyResource(contract, contractId, agencyId);
 
     const [contractRow] = await db
       .select({ status: contract.status })
       .from(contract)
-      .where(eq(contract.id, contractId))
+      .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)))
       .limit(1);
 
     if (!contractRow) return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
@@ -48,7 +50,7 @@ export async function GET(
       const [tmpl] = await db
         .select({ name: documentTemplate.name })
         .from(documentTemplate)
-        .where(eq(documentTemplate.id, config.appliedTemplateId))
+        .where(and(eq(documentTemplate.id, config.appliedTemplateId), eq(documentTemplate.agencyId, agencyId)))
         .limit(1);
       templateName = tmpl?.name ?? null;
     }
@@ -58,7 +60,10 @@ export async function GET(
       config: config ? { ...config, templateName } : null,
       isEditable: EDITABLE_STATUSES.includes(contractRow.status),
     });
-  } catch {
+  } catch (e) {
+    const resp = handleAgencyError(e);
+    if (resp) return resp;
+    console.error(e);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
@@ -74,15 +79,16 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageDocumentTemplates(session.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
+    const agencyId = requireAgencyId(session);
+    if (!canManageDocumentTemplates(session!.user.role)) return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const { id: contractId, documentType } = await params;
+    await requireAgencyResource(contract, contractId, agencyId);
 
     const [contractRow] = await db
       .select({ status: contract.status })
       .from(contract)
-      .where(eq(contract.id, contractId))
+      .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)))
       .limit(1);
 
     if (!contractRow) return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
@@ -117,7 +123,10 @@ export async function POST(
       .returning();
 
     return NextResponse.json(created, { status: 201 });
-  } catch {
+  } catch (e) {
+    const resp = handleAgencyError(e);
+    if (resp) return resp;
+    console.error(e);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import { contractParticipant } from "@/db/schema/contract-participant";
 import { client } from "@/db/schema/client";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
@@ -20,23 +21,13 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
-
-    const [existing] = await db
-      .select({ id: contract.id })
-      .from(contract)
-      .where(eq(contract.id, id))
-      .limit(1);
-    if (!existing) {
-      return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
-    }
+    await requireAgencyResource(contract, id, agencyId);
 
     const body = await request.json();
     const result = addParticipantSchema.safeParse(body);
@@ -52,7 +43,7 @@ export async function POST(
     const [existingClient] = await db
       .select({ id: client.id })
       .from(client)
-      .where(eq(client.id, clientId))
+      .where(and(eq(client.id, clientId), eq(client.agencyId, agencyId)))
       .limit(1);
     if (!existingClient) {
       return NextResponse.json({ error: "El cliente no existe" }, { status: 400 });
@@ -78,11 +69,13 @@ export async function POST(
 
     const [inserted] = await db
       .insert(contractParticipant)
-      .values({ contractId: id, clientId, role })
+      .values({ agencyId, contractId: id, clientId, role })
       .returning();
 
     return NextResponse.json(inserted, { status: 201 });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error adding participant:", error);
     return NextResponse.json(
       { error: "Error al agregar participante" },

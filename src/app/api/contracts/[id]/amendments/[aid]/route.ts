@@ -5,6 +5,7 @@ import { contract } from "@/db/schema/contract";
 import { contractAmendment } from "@/db/schema/contract-amendment";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { VALID_TRANSITIONS } from "@/lib/contracts/amendments";
@@ -19,20 +20,27 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    const agencyId = requireAgencyId(session);
 
     const { id: contractId, aid } = await params;
+    await requireAgencyResource(contract, contractId, agencyId);
 
     const [row] = await db
       .select()
       .from(contractAmendment)
-      .where(and(eq(contractAmendment.id, aid), eq(contractAmendment.contractId, contractId)))
+      .where(and(
+        eq(contractAmendment.id, aid),
+        eq(contractAmendment.contractId, contractId),
+        eq(contractAmendment.agencyId, agencyId),
+      ))
       .limit(1);
 
     if (!row) return NextResponse.json({ error: "Instrumento no encontrado" }, { status: 404 });
 
     return NextResponse.json({ amendment: row });
   } catch (e) {
+    const resp = handleAgencyError(e);
+    if (resp) return resp;
     console.error(e);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
@@ -44,12 +52,13 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
     const { id: contractId, aid } = await params;
+    await requireAgencyResource(contract, contractId, agencyId);
     const body = patchSchema.safeParse(await req.json());
     if (!body.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
 
@@ -58,7 +67,11 @@ export async function PATCH(
     const [row] = await db
       .select()
       .from(contractAmendment)
-      .where(and(eq(contractAmendment.id, aid), eq(contractAmendment.contractId, contractId)))
+      .where(and(
+        eq(contractAmendment.id, aid),
+        eq(contractAmendment.contractId, contractId),
+        eq(contractAmendment.agencyId, agencyId),
+      ))
       .limit(1);
 
     if (!row) return NextResponse.json({ error: "Instrumento no encontrado" }, { status: 404 });
@@ -76,11 +89,13 @@ export async function PATCH(
     const [updated] = await db
       .update(contractAmendment)
       .set(update as never)
-      .where(eq(contractAmendment.id, aid))
+      .where(and(eq(contractAmendment.id, aid), eq(contractAmendment.agencyId, agencyId)))
       .returning();
 
     return NextResponse.json({ amendment: updated });
   } catch (e) {
+    const resp = handleAgencyError(e);
+    if (resp) return resp;
     console.error(e);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
@@ -92,17 +107,22 @@ export async function DELETE(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
     const { id: contractId, aid } = await params;
+    await requireAgencyResource(contract, contractId, agencyId);
 
     const [row] = await db
       .select()
       .from(contractAmendment)
-      .where(and(eq(contractAmendment.id, aid), eq(contractAmendment.contractId, contractId)))
+      .where(and(
+        eq(contractAmendment.id, aid),
+        eq(contractAmendment.contractId, contractId),
+        eq(contractAmendment.agencyId, agencyId),
+      ))
       .limit(1);
 
     if (!row) return NextResponse.json({ error: "Instrumento no encontrado" }, { status: 404 });
@@ -125,15 +145,17 @@ export async function DELETE(
       await tx
         .update(contract)
         .set({ ...snapshot, updatedAt: new Date() } as never)
-        .where(eq(contract.id, contractId));
+        .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)));
 
       await tx
         .delete(contractAmendment)
-        .where(eq(contractAmendment.id, aid));
+        .where(and(eq(contractAmendment.id, aid), eq(contractAmendment.agencyId, agencyId)));
     });
 
     return NextResponse.json({ ok: true });
   } catch (e) {
+    const resp = handleAgencyError(e);
+    if (resp) return resp;
     console.error(e);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }

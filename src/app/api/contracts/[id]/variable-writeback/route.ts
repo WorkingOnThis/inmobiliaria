@@ -8,6 +8,7 @@ import { propertyCoOwner } from "@/db/schema/property-co-owner";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { WRITEBACK_MAP } from "@/lib/document-templates/writeback-map";
 import { eq, and, asc } from "drizzle-orm";
 import { z } from "zod";
@@ -42,10 +43,8 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -70,11 +69,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Valor inválido para este campo" }, { status: 400 });
     }
 
+    await requireAgencyResource(contract, contractId, agencyId);
+
     // Fetch contract (needed for all entity types)
     const [contractRow] = await db
       .select({ id: contract.id, propertyId: contract.propertyId, ownerId: contract.ownerId })
       .from(contract)
-      .where(eq(contract.id, contractId))
+      .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)))
       .limit(1);
 
     if (!contractRow) {
@@ -87,26 +88,26 @@ export async function PATCH(
         .update(contract)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .set({ [entry.dbField]: coerced, updatedAt: new Date() } as any)
-        .where(eq(contract.id, contractId));
+        .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)));
     } else if (entry.entity === "property") {
       await db
         .update(property)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .set({ [entry.dbField]: coerced, updatedAt: new Date() } as any)
-        .where(eq(property.id, contractRow.propertyId));
+        .where(and(eq(property.id, contractRow.propertyId), eq(property.agencyId, agencyId)));
     } else if (entry.entity === "owner") {
       // Resolve the legal owner (same logic as document-templates/resolve)
       const [[propertyRow], coOwners] = await Promise.all([
         db
           .select({ ownerRole: property.ownerRole })
           .from(property)
-          .where(eq(property.id, contractRow.propertyId))
+          .where(and(eq(property.id, contractRow.propertyId), eq(property.agencyId, agencyId)))
           .limit(1)
           .then((r) => r),
         db
           .select({ clientId: propertyCoOwner.clientId, role: propertyCoOwner.role })
           .from(propertyCoOwner)
-          .where(eq(propertyCoOwner.propertyId, contractRow.propertyId)),
+          .where(and(eq(propertyCoOwner.propertyId, contractRow.propertyId), eq(propertyCoOwner.agencyId, agencyId))),
       ]);
 
       let legalOwnerId = contractRow.ownerId;
@@ -119,7 +120,7 @@ export async function PATCH(
         .update(client)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .set({ [entry.dbField]: coerced, updatedAt: new Date() } as any)
-        .where(eq(client.id, legalOwnerId));
+        .where(and(eq(client.id, legalOwnerId), eq(client.agencyId, agencyId)));
     } else if (entry.entity === "tenant_0") {
       const [tenantRow] = await db
         .select({ clientId: contractParticipant.clientId })
@@ -141,11 +142,13 @@ export async function PATCH(
         .update(client)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .set({ [entry.dbField]: coerced, updatedAt: new Date() } as any)
-        .where(eq(client.id, tenantRow.clientId));
+        .where(and(eq(client.id, tenantRow.clientId), eq(client.agencyId, agencyId)));
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
+    const resp = handleAgencyError(err);
+    if (resp) return resp;
     console.error("Error PATCH /api/contracts/:id/variable-writeback:", err);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }

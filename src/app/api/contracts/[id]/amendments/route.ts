@@ -5,7 +5,8 @@ import { contract } from "@/db/schema/contract";
 import { contractAmendment } from "@/db/schema/contract-amendment";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
-import { eq, max } from "drizzle-orm";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { and, eq, max } from "drizzle-orm";
 import { z } from "zod";
 import {
   ALLOWED_FIELDS,
@@ -35,14 +36,15 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    const agencyId = requireAgencyId(session);
 
     const { id: contractId } = await params;
+    await requireAgencyResource(contract, contractId, agencyId);
 
     const rows = await db
       .select()
       .from(contractAmendment)
-      .where(eq(contractAmendment.contractId, contractId))
+      .where(and(eq(contractAmendment.contractId, contractId), eq(contractAmendment.agencyId, agencyId)))
       .orderBy(contractAmendment.sequenceNumber);
 
     // Compute typeSequenceNumber in JS: count rows of same type before each row
@@ -72,6 +74,8 @@ export async function GET(
 
     return NextResponse.json({ amendments: items });
   } catch (e) {
+    const resp = handleAgencyError(e);
+    if (resp) return resp;
     console.error(e);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
@@ -83,12 +87,13 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
     const { id: contractId } = await params;
+    await requireAgencyResource(contract, contractId, agencyId);
     const body = postSchema.safeParse(await req.json());
     if (!body.success) {
       return NextResponse.json({ error: "Datos inválidos", details: body.error.flatten() }, { status: 400 });
@@ -134,7 +139,7 @@ export async function POST(
       const [currentContract] = await tx
         .select()
         .from(contract)
-        .where(eq(contract.id, contractId))
+        .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)))
         .limit(1);
 
       if (!currentContract) throw new Error("Contrato no encontrado");
@@ -159,7 +164,7 @@ export async function POST(
         await tx
           .update(contract)
           .set(contractUpdate as never)
-          .where(eq(contract.id, contractId));
+          .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)));
       }
 
       // 4. Insert amendment
@@ -168,6 +173,7 @@ export async function POST(
         .insert(contractAmendment)
         .values({
           id: amendmentId,
+          agencyId,
           contractId,
           type,
           sequenceNumber,
@@ -177,7 +183,7 @@ export async function POST(
           fieldsChanged: fieldsChanged as Record<string, { before: unknown; after: unknown }>,
           contractSnapshot: currentContract as unknown as Record<string, unknown>,
           effectiveDate: effectiveDate ?? null,
-          createdBy: session.user.id,
+          createdBy: session!.user.id,
         })
         .returning();
 
@@ -186,6 +192,8 @@ export async function POST(
 
     return NextResponse.json({ amendment: result }, { status: 201 });
   } catch (e) {
+    const resp = handleAgencyError(e);
+    if (resp) return resp;
     const msg = e instanceof Error ? e.message : "Error interno";
     console.error(e);
     if (msg === "Contrato no encontrado") return NextResponse.json({ error: msg }, { status: 404 });

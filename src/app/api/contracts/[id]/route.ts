@@ -11,6 +11,7 @@ import { propertyCoOwner } from "@/db/schema/property-co-owner";
 import { user } from "@/db/schema/better-auth";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, inArray, and, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { ADJUSTMENT_INDEXES } from "@/lib/clients/constants";
@@ -43,14 +44,13 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
+    await requireAgencyResource(contract, id, agencyId);
 
     const [row] = await db
       .select({
@@ -342,6 +342,8 @@ export async function GET(
       documents,
     });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error fetching contract:", error);
     return NextResponse.json(
       { error: "Error al obtener el contrato" },
@@ -356,10 +358,8 @@ export async function PATCH(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
@@ -368,7 +368,7 @@ export async function PATCH(
     const [existing] = await db
       .select({ id: contract.id, status: contract.status })
       .from(contract)
-      .where(eq(contract.id, id))
+      .where(and(eq(contract.id, id), eq(contract.agencyId, agencyId)))
       .limit(1);
 
     if (!existing) {
@@ -416,7 +416,7 @@ export async function PATCH(
       const [existingOwner] = await db
         .select({ id: client.id })
         .from(client)
-        .where(eq(client.id, data.ownerId))
+        .where(and(eq(client.id, data.ownerId), eq(client.agencyId, agencyId)))
         .limit(1);
       if (!existingOwner) {
         return NextResponse.json(
@@ -436,7 +436,7 @@ export async function PATCH(
       data.status === "active" && existing.status !== "active";
 
     await db.transaction(async (tx) => {
-      await tx.update(contract).set(updates).where(eq(contract.id, id));
+      await tx.update(contract).set(updates).where(and(eq(contract.id, id), eq(contract.agencyId, agencyId)));
 
       if (activating) {
         const tenantParticipants = await tx
@@ -454,7 +454,7 @@ export async function PATCH(
             .update(client)
             .set({ type: "tenant" })
             .where(
-              and(eq(client.id, p.clientId), ne(client.type, "tenant"))
+              and(eq(client.id, p.clientId), eq(client.agencyId, agencyId), ne(client.type, "tenant"))
             );
         }
       }
@@ -462,6 +462,8 @@ export async function PATCH(
 
     return NextResponse.json({ message: "Contrato actualizado" });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error updating contract:", error);
     return NextResponse.json(
       { error: "Error al actualizar el contrato" },

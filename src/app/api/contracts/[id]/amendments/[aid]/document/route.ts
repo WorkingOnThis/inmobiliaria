@@ -7,6 +7,7 @@ import { client } from "@/db/schema/client";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError, AgencyAccessError } from "@/lib/auth/agency";
 import { eq, and } from "drizzle-orm";
 import { AMENDMENT_TYPE_LABELS, FIELD_LABELS, type AmendmentType } from "@/lib/contracts/amendments";
 import { format } from "date-fns";
@@ -82,17 +83,22 @@ export async function POST(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
     const { id: contractId, aid } = await params;
+    await requireAgencyResource(contract, contractId, agencyId);
 
     const [amendment] = await db
       .select()
       .from(contractAmendment)
-      .where(and(eq(contractAmendment.id, aid), eq(contractAmendment.contractId, contractId)))
+      .where(and(
+        eq(contractAmendment.id, aid),
+        eq(contractAmendment.contractId, contractId),
+        eq(contractAmendment.agencyId, agencyId),
+      ))
       .limit(1);
 
     if (!amendment) return NextResponse.json({ error: "Instrumento no encontrado" }, { status: 404 });
@@ -100,7 +106,7 @@ export async function POST(
     const [currentContract] = await db
       .select()
       .from(contract)
-      .where(eq(contract.id, contractId))
+      .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)))
       .limit(1);
 
     if (!currentContract) return NextResponse.json({ error: "Contrato no encontrado" }, { status: 404 });
@@ -109,7 +115,7 @@ export async function POST(
     const [ownerRow] = await db
       .select({ firstName: client.firstName, lastName: client.lastName, dni: client.dni })
       .from(client)
-      .where(eq(client.id, currentContract.ownerId))
+      .where(and(eq(client.id, currentContract.ownerId), eq(client.agencyId, agencyId)))
       .limit(1);
     const ownerName = ownerRow ? `${ownerRow.firstName} ${ownerRow.lastName ?? ""}`.trim() : "—";
     const ownerDni = ownerRow?.dni ?? "—";
@@ -126,7 +132,7 @@ export async function POST(
       const [tenantRow] = await db
         .select({ firstName: client.firstName, lastName: client.lastName })
         .from(client)
-        .where(eq(client.id, tenantLink.clientId))
+        .where(and(eq(client.id, tenantLink.clientId), eq(client.agencyId, agencyId)))
         .limit(1);
       if (tenantRow) tenantName = `${tenantRow.firstName} ${tenantRow.lastName ?? ""}`.trim();
     }
@@ -203,10 +209,12 @@ export async function POST(
     await db
       .update(contractAmendment)
       .set({ documentContent: html, status: "document_generated", updatedAt: new Date() })
-      .where(eq(contractAmendment.id, aid));
+      .where(and(eq(contractAmendment.id, aid), eq(contractAmendment.agencyId, agencyId)));
 
     return NextResponse.json({ ok: true, status: "document_generated" });
   } catch (e) {
+    const resp = handleAgencyError(e);
+    if (resp) return resp;
     console.error(e);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
@@ -219,14 +227,19 @@ export async function GET(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) return new NextResponse("No autenticado", { status: 401 });
+    const agencyId = requireAgencyId(session);
 
     const { id: contractId, aid } = await params;
+    await requireAgencyResource(contract, contractId, agencyId);
 
     const [amendment] = await db
       .select({ documentContent: contractAmendment.documentContent })
       .from(contractAmendment)
-      .where(and(eq(contractAmendment.id, aid), eq(contractAmendment.contractId, contractId)))
+      .where(and(
+        eq(contractAmendment.id, aid),
+        eq(contractAmendment.contractId, contractId),
+        eq(contractAmendment.agencyId, agencyId),
+      ))
       .limit(1);
 
     if (!amendment?.documentContent) {
@@ -237,6 +250,9 @@ export async function GET(
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (e) {
+    if (e instanceof AgencyAccessError) {
+      return new NextResponse(e.message, { status: e.status });
+    }
     console.error(e);
     return new NextResponse("Error interno", { status: 500 });
   }

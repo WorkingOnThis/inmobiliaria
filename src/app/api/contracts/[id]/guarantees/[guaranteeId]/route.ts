@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/db";
+import { contract } from "@/db/schema/contract";
 import { guarantee } from "@/db/schema/guarantee";
 import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
+import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and } from "drizzle-orm";
 
 export async function DELETE(
@@ -12,36 +14,25 @@ export async function DELETE(
 ) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-    if (!canManageContracts(session.user.role)) {
+    const agencyId = requireAgencyId(session);
+    if (!canManageContracts(session!.user.role)) {
       return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id, guaranteeId } = await params;
-
-    const [existing] = await db
-      .select({ id: guarantee.id })
-      .from(guarantee)
-      .where(
-        and(
-          eq(guarantee.id, guaranteeId),
-          eq(guarantee.contractId, id)
-        )
-      )
-      .limit(1);
-
-    if (!existing) {
-      return NextResponse.json({ error: "Garantía no encontrada" }, { status: 404 });
-    }
+    await requireAgencyResource(contract, id, agencyId);
+    await requireAgencyResource(guarantee, guaranteeId, agencyId, [
+      eq(guarantee.contractId, id),
+    ]);
 
     await db
       .delete(guarantee)
-      .where(eq(guarantee.id, guaranteeId));
+      .where(and(eq(guarantee.id, guaranteeId), eq(guarantee.agencyId, agencyId)));
 
     return NextResponse.json({ message: "Garantía eliminada" });
   } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
     console.error("Error deleting guarantee:", error);
     return NextResponse.json(
       { error: "Error al eliminar garantía" },

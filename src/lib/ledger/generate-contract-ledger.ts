@@ -57,6 +57,7 @@ export function buildLedgerEntries(
   contract: ContractData,
   inquilinoId: string,
   services: ServiceData[],
+  agencyId: string,
 ): NewTenantLedger[] {
   const entries: NewTenantLedger[] = [];
   const today = new Date();
@@ -99,6 +100,7 @@ export function buildLedgerEntries(
 
     // Alquiler entry
     entries.push({
+      agencyId,
       contratoId: contract.id,
       inquilinoId,
       propietarioId: contract.ownerId,
@@ -118,6 +120,7 @@ export function buildLedgerEntries(
       const impactaCaja = svc.tipoGestion !== "comprobante";
 
       entries.push({
+        agencyId,
         contratoId: contract.id,
         inquilinoId,
         propietarioId: contract.ownerId,
