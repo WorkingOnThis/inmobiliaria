@@ -47,9 +47,9 @@ export async function POST(
 
     const data = result.data;
 
-    // Verify the contract belongs to this tenant
+    // Verify the contract belongs to this tenant and fetch paymentModality in one query
     const [contractRow] = await db
-      .select({ id: contract.id })
+      .select({ id: contract.id, paymentModality: contract.paymentModality })
       .from(contract)
       .innerJoin(contractParticipant, eq(contractParticipant.contractId, contract.id))
       .where(
@@ -65,14 +65,7 @@ export async function POST(
       return NextResponse.json({ error: "Contrato no encontrado para este inquilino" }, { status: 404 });
     }
 
-    // Fetch paymentModality for split auto-assignment
-    const [contractFull] = await db
-      .select({ paymentModality: contract.paymentModality })
-      .from(contract)
-      .where(eq(contract.id, data.contratoId))
-      .limit(1);
-
-    const isSplit = contractFull?.paymentModality === "split";
+    const isSplit = contractRow.paymentModality === "split";
 
     const computedBeneficiario = isSplit
       ? (data.beneficiario ?? (data.tipo === "alquiler" ? "split" : "propietario"))
