@@ -7,7 +7,9 @@ import { property } from "@/db/schema/property";
 import { agency } from "@/db/schema/agency";
 import { receiptServiceItem } from "@/db/schema/receipt-service-item";
 import { tenantCharge } from "@/db/schema/tenant-charge";
-import { and, eq } from "drizzle-orm";
+import { receiptAllocation } from "@/db/schema/receipt-allocation";
+import { tenantLedger } from "@/db/schema/tenant-ledger";
+import { and, eq, inArray } from "drizzle-orm";
 import { parseTrustedEmails } from "./format";
 
 export type TrustedEmail = { email: string; label?: string; sendDefault: boolean };
@@ -36,6 +38,12 @@ export type ReceiptData = {
     periodo: string | null;
     categoria: string;
     descripcion: string;
+    monto: string;
+  }[];
+  ledgerItems: {
+    id: string;
+    descripcion: string;
+    period: string | null;
     monto: string;
   }[];
   agency: {
@@ -78,6 +86,27 @@ export async function loadReceiptData(
     .limit(1);
 
   if (!movimiento || !movimiento.reciboNumero) return null;
+
+  const allocations = await db
+    .select({ ledgerEntryId: receiptAllocation.ledgerEntryId, monto: receiptAllocation.monto })
+    .from(receiptAllocation)
+    .where(eq(receiptAllocation.reciboNumero, movimiento.reciboNumero));
+
+  const ledgerEntryIds = allocations.map((a) => a.ledgerEntryId);
+  const ledgerRows = ledgerEntryIds.length > 0
+    ? await db
+        .select({ id: tenantLedger.id, descripcion: tenantLedger.descripcion, period: tenantLedger.period })
+        .from(tenantLedger)
+        .where(inArray(tenantLedger.id, ledgerEntryIds))
+    : [];
+
+  const montoByEntry = Object.fromEntries(allocations.map((a) => [a.ledgerEntryId, a.monto]));
+  const ledgerItems = ledgerRows.map((row) => ({
+    id: row.id,
+    descripcion: row.descripcion,
+    period: row.period,
+    monto: montoByEntry[row.id] ?? "0",
+  }));
 
   const [inqRow, propRow, contratoRow, serviceItems, charges, agencyRow] = await Promise.all([
     movimiento.inquilinoId
@@ -170,5 +199,5 @@ export async function loadReceiptData(
       }
     : null;
 
-  return { movimiento, inquilino, propiedad, contrato, serviceItems, charges, agency: agencyData };
+  return { movimiento, inquilino, propiedad, contrato, serviceItems, charges, ledgerItems, agency: agencyData };
 }

@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp, PlusCircle, AlertTriangle, X } from "lucide-react";
+import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp, PlusCircle, AlertTriangle, X, ChevronDown, Check } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LedgerTable, type LedgerEntry } from "./ledger-table";
 import { CobroPanel } from "./cobro-panel";
@@ -40,6 +41,8 @@ type CuentaCorrienteData = {
   ledgerEntries: LedgerEntry[];
   proximoAjuste: { period: string | null; mesesRestantes: number | null } | null;
   splitMeta: SplitMeta | null;
+  contractId: string | null;
+  paymentModality: "A" | "split" | null;
 };
 
 type Props = {
@@ -299,6 +302,23 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
     },
   });
 
+  const changeModalityMutation = useMutation({
+    mutationFn: async ({ contractId, modality }: { contractId: string; modality: "A" | "split" }) => {
+      const response = await fetch(`/api/contracts/${contractId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentModality: modality }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Error al cambiar la modalidad");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
+    },
+  });
+
   function handleToggleSelect(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -404,7 +424,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   );
   if (isError || !data) return <div className="p-4 text-sm text-destructive">Error al cargar la cuenta corriente.</div>;
 
-  const { kpis, ledgerEntries = [], proximoAjuste, splitMeta } = data;
+  const { kpis, ledgerEntries = [], proximoAjuste, splitMeta, contractId, paymentModality } = data;
   const selectedEntries = ledgerEntries.filter((e) => selectedIds.has(e.id));
 
   const effectiveHonorariosPct = splitMeta?.managementCommissionPct ?? honorariosPct;
@@ -603,6 +623,41 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           >
             {isAllSelected ? "Deseleccionar todo" : "Seleccionar todo"}
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!contractId || changeModalityMutation.isPending}
+                className={cn(
+                  "text-xs h-8 px-3 font-medium gap-1.5 transition-colors",
+                  paymentModality === "split"
+                    ? "bg-blue-950/40 text-blue-300 border border-blue-800 hover:bg-blue-950/60 hover:text-blue-200"
+                    : "bg-muted text-foreground/70 hover:text-foreground hover:bg-muted/70"
+                )}
+              >
+                {paymentModality === "A" && "Modalidad A"}
+                {paymentModality === "split" && "Pago dividido"}
+                {!paymentModality && "Sin contrato"}
+                <ChevronDown size={12} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {(["A", "split"] as const).map((m) => (
+                <DropdownMenuItem
+                  key={m}
+                  disabled={paymentModality === m}
+                  onClick={() => contractId && changeModalityMutation.mutate({ contractId, modality: m })}
+                  className="flex items-center justify-between text-xs"
+                >
+                  <span>
+                    {m === "A" ? "Modalidad A" : "Pago dividido"}
+                  </span>
+                  {paymentModality === m && <Check size={12} className="text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="secondary"
             size="sm"

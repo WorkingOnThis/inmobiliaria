@@ -57,7 +57,7 @@ interface Step2Data {
   agencyCommission: string;
   managementCommissionPct: string;
   paymentDay: string;
-  paymentModality: "A" | "B" | "split";
+  paymentModality: "A" | "split";
   adjustmentIndex: string;
   adjustmentFrequency: string;
 }
@@ -921,23 +921,20 @@ export function ContractForm() {
                 <Label>Modalidad de pago</Label>
                 <Select
                   value={step2.paymentModality}
-                  onValueChange={(v) => setStep2((s) => ({ ...s, paymentModality: v as "A" | "B" | "split" }))}
+                  onValueChange={(v) => setStep2((s) => ({ ...s, paymentModality: v as "A" | "split" }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="A">Modalidad A — inmobiliaria recibe y liquida</SelectItem>
-                    <SelectItem value="B">Modalidad B — pago directo al propietario</SelectItem>
-                    <SelectItem value="split">Modalidad Split — el inquilino paga dividido</SelectItem>
+                    <SelectItem value="split">Pago dividido — el inquilino paga directo a cada destino</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   {step2.paymentModality === "A"
                     ? "La inmobiliaria cobra por su CBU y liquida al propietario. Se aplica un recargo del 1% sobre el alquiler, descontado de la liquidación."
-                    : step2.paymentModality === "B"
-                    ? "El inquilino paga directo al CBU del propietario. La inmobiliaria no interviene en el cobro. Sin recargo de administración."
-                    : "El inquilino recibe instrucciones de transferir una parte al propietario y otra a la administración. La división se calcula según el % de administración configurado."}
+                    : "El inquilino transfiere directamente al propietario y a la administración según el % configurado. El propietario puede recibir el 100% si el % de administración es 0."}
                 </p>
               </div>
             </div>
@@ -1155,11 +1152,7 @@ export function ContractForm() {
               <div className="grid grid-cols-2 gap-2 px-4 py-3">
                 <span className="text-muted-foreground">Modalidad</span>
                 <span className="font-medium">
-                  {step2.paymentModality === "A"
-                    ? "Modalidad A (inmobiliaria)"
-                    : step2.paymentModality === "B"
-                    ? "Modalidad B (directo)"
-                    : "Modalidad Split (dividido)"}
+                  {step2.paymentModality === "A" ? "Modalidad A (inmobiliaria)" : "Pago dividido (split)"}
                 </span>
               </div>
             </div>

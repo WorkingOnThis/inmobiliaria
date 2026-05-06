@@ -2,7 +2,7 @@ import type { ReceiptData } from "./load";
 import { formatMonto as fmt, formatFecha as fecha, formatPeriodo as periodo, montoEnLetras, agencyDisplayName } from "./format";
 
 export function buildReceiptEmailHTML(data: ReceiptData): string {
-  const { movimiento, inquilino, propiedad, contrato, charges, serviceItems, agency } = data;
+  const { movimiento, inquilino, propiedad, contrato, charges, ledgerItems, serviceItems, agency } = data;
 
   const agencyName = agencyDisplayName(agency);
   const tipoRecibo = (agency?.receiptType || "Recibo X").toUpperCase();
@@ -20,7 +20,9 @@ export function buildReceiptEmailHTML(data: ReceiptData): string {
   const tableRows: { concepto: string; per: string | null; monto: string }[] =
     charges.length > 0
       ? charges.map((c) => ({ concepto: c.descripcion, per: c.periodo, monto: fmt(c.monto) }))
-      : [{ concepto: movimiento.description, per: movimiento.period, monto: fmt(movimiento.amount) }];
+      : (ledgerItems ?? []).length > 0
+        ? (ledgerItems ?? []).map((l) => ({ concepto: l.descripcion, per: l.period, monto: fmt(l.monto) }))
+        : [{ concepto: movimiento.description, per: movimiento.period, monto: fmt(movimiento.amount) }];
 
   const serviciosCobrados = (serviceItems ?? []).filter((s) => s.monto != null && Number(s.monto) > 0);
 

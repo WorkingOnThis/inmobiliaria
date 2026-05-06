@@ -30,7 +30,7 @@ interface Props {
 
 const modalidadLabel: Record<string, string> = {
   A: "Modalidad A — CBU Inmobiliaria",
-  B: "Modalidad B — Pago directo al owner",
+  split: "Pago dividido — propietario y administración",
 };
 
 export function TenantTabOwner({ owner, contrato }: Props) {

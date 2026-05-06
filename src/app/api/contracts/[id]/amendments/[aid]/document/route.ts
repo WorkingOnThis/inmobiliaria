@@ -21,7 +21,7 @@ function fmtDate(value: unknown): string {
 function fmtValue(field: string, value: unknown): string {
   if (value === null || value === undefined) return "—";
   if (field === "monthlyAmount") return `$${Number(value).toLocaleString("es-AR")}`;
-  if (field === "paymentModality") return value === "A" ? "Modalidad A (inmobiliaria)" : "Modalidad B (directo)";
+  if (field === "paymentModality") return value === "A" ? "Modalidad A (inmobiliaria)" : "Pago dividido (split)";
   if (field === "startDate" || field === "endDate") return fmtDate(value);
   return String(value);
 }

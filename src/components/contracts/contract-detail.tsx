@@ -170,7 +170,7 @@ interface EditableConditions {
   agencyCommission: string;
   managementCommissionPct: string;
   paymentDay: string;
-  paymentModality: "A" | "B";
+  paymentModality: "A" | "split";
   adjustmentIndex: string;
   adjustmentFrequency: string;
   graceDays: string;
@@ -604,7 +604,7 @@ export function ContractDetail({ id }: { id: string }) {
       agencyCommission: data.agencyCommission ?? "",
       managementCommissionPct: data.managementCommissionPct ?? "10",
       paymentDay: String(data.paymentDay),
-      paymentModality: data.paymentModality as "A" | "B",
+      paymentModality: data.paymentModality as "A" | "split",
       adjustmentIndex: data.adjustmentIndex,
       adjustmentFrequency: String(data.adjustmentFrequency),
       graceDays: data.graceDays != null ? String(data.graceDays) : "0",
@@ -935,7 +935,7 @@ export function ContractDetail({ id }: { id: string }) {
               Día {data.paymentDay}
             </p>
             <p className="text-[0.68rem] text-muted-foreground mt-1.5">
-              Modalidad {data.paymentModality === "A" ? "A — inmobiliaria" : "B — directo"}
+              {data.paymentModality === "A" ? "Modalidad A — inmobiliaria" : "Pago dividido — split"}
             </p>
           </div>
         </div>
@@ -1090,11 +1090,11 @@ export function ContractDetail({ id }: { id: string }) {
                   <div className="space-y-1 col-span-2">
                     <Label className="text-xs">Modalidad de pago</Label>
                     <Select value={editValues.paymentModality}
-                      onValueChange={(v) => setEditValues((p) => p ? { ...p, paymentModality: v as "A" | "B" } : p)}>
+                      onValueChange={(v) => setEditValues((p) => p ? { ...p, paymentModality: v as "A" | "split" } : p)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="A">Modalidad A (inmobiliaria recibe y liquida)</SelectItem>
-                        <SelectItem value="B">Modalidad B (pago directo al propietario)</SelectItem>
+                        <SelectItem value="split">Pago dividido (el inquilino paga directo)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

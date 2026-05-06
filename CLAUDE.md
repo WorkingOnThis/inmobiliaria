@@ -281,7 +281,7 @@ User-facing navigation URLs are in Spanish and match folder names under `app/(da
 ## Domain Business Logic
 
 - **Modality A**: agency collects rent via its CBU, adds 1% surcharge, deducts it from owner settlement
-- **Modality B**: rent paid directly to owner's CBU, no surcharge
+- **Modality split**: tenant pays directly to two destinations (owner + agency) per the configured commission %. Owner receives 100% if commission is 0. Replaces former "Modality B" — there is no standalone Modality B.
 - **Cash**: always exempt from surcharges
 - **Adjustment indexes**: ICL, IPC, CER, UVA (BCRA API with manual fallback); stored in `contract.adjustmentIndex`
 - **Services with `triggersBlock: true`**: unpaid service blocks rent collection for that property

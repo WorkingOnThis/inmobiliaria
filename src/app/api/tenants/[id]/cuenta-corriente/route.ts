@@ -44,6 +44,7 @@ export async function GET(
     // Fetch active contract split metadata
     const [activeContractSplit] = await db
       .select({
+        id: contract.id,
         paymentModality: contract.paymentModality,
         managementCommissionPct: contract.managementCommissionPct,
         ownerId: contract.ownerId,
@@ -296,7 +297,14 @@ export async function GET(
         }
       : null;
 
-    return NextResponse.json({ kpis, ledgerEntries: entries, proximoAjuste, splitMeta });
+    return NextResponse.json({
+      kpis,
+      ledgerEntries: entries,
+      proximoAjuste,
+      splitMeta,
+      contractId: activeContractSplit?.id ?? null,
+      paymentModality: activeContractSplit?.paymentModality ?? null,
+    });
   } catch (error) {
     console.error("Error GET /api/tenants/:id/cuenta-corriente:", error);
     return NextResponse.json({ error: "Error al obtener la cuenta corriente" }, { status: 500 });

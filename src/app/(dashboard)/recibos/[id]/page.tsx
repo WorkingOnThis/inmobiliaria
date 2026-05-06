@@ -76,7 +76,7 @@ export default function ReciboPage() {
     );
   }
 
-  const { movimiento, inquilino, propiedad, contrato, serviceItems = [], charges = [], agency } = data;
+  const { movimiento, inquilino, propiedad, contrato, serviceItems = [], charges = [], ledgerItems = [], agency } = data;
 
   // Build email recipient list from inquilino data (safe after early returns)
   const allRecipients: { email: string; label: string; key: string }[] = [];
@@ -143,11 +143,17 @@ export default function ReciboPage() {
           periodo: c.periodo,
           monto: formatMonto(c.monto),
         }))
-      : [{
-          concepto: movimiento.description,
-          periodo: movimiento.period,
-          monto: totalDisplay,
-        }];
+      : ledgerItems.length > 0
+        ? ledgerItems.map((l) => ({
+            concepto: l.descripcion,
+            periodo: l.period,
+            monto: formatMonto(l.monto),
+          }))
+        : [{
+            concepto: movimiento.description,
+            periodo: movimiento.period,
+            monto: totalDisplay,
+          }];
 
   const serviciosCobrados = serviceItems.filter((s) => s.monto != null && Number(s.monto) > 0);
   const serviciosConstancia = serviceItems.filter((s) => s.monto == null || Number(s.monto) === 0);
