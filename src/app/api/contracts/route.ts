@@ -28,7 +28,7 @@ const createContractSchema = z.object({
   agencyCommission: z.coerce.number().min(0).max(100).optional().nullable(),
   managementCommissionPct: z.coerce.number().min(0).max(100).optional().nullable(),
   paymentDay: z.coerce.number().int().min(1).max(28),
-  paymentModality: z.enum(["A", "B"]).default("A"),
+  paymentModality: z.enum(["A", "B", "split"]).default("A"),
   adjustmentIndex: z.string().min(1).default("none"),
   adjustmentFrequency: z.coerce.number().int().min(1).max(12).default(12),
   isImported: z.boolean().optional().default(false),

@@ -23,7 +23,7 @@ const patchContractSchema = z.object({
   agencyCommission: z.coerce.number().min(0).max(100).optional().nullable(),
   managementCommissionPct: z.coerce.number().min(0).max(100).optional().nullable(),
   paymentDay: z.coerce.number().int().min(1).max(28).optional(),
-  paymentModality: z.enum(["A", "B"]).optional(),
+  paymentModality: z.enum(["A", "B", "split"]).optional(),
   adjustmentIndex: z.string().min(1).optional(),
   adjustmentFrequency: z.coerce.number().int().min(1).max(12).optional(),
   status: z

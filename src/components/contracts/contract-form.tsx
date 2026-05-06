@@ -57,7 +57,7 @@ interface Step2Data {
   agencyCommission: string;
   managementCommissionPct: string;
   paymentDay: string;
-  paymentModality: "A" | "B";
+  paymentModality: "A" | "B" | "split";
   adjustmentIndex: string;
   adjustmentFrequency: string;
 }
@@ -921,7 +921,7 @@ export function ContractForm() {
                 <Label>Modalidad de pago</Label>
                 <Select
                   value={step2.paymentModality}
-                  onValueChange={(v) => setStep2((s) => ({ ...s, paymentModality: v as "A" | "B" }))}
+                  onValueChange={(v) => setStep2((s) => ({ ...s, paymentModality: v as "A" | "B" | "split" }))}
                 >
                   <SelectTrigger>
                     <SelectValue />

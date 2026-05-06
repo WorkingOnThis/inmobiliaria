@@ -10,7 +10,7 @@ import { property } from "./property";
  * Los inquilinos se vinculan a través de la tabla intermedia contract_tenant.
  * status: "draft" | "pending_signature" | "active" | "expiring_soon" | "expired" | "terminated"
  * contractType: "residential" | "office" | "commercial" | "other"
- * paymentModality: "A" (inmobiliaria recibe y liquida) | "B" (pago directo al propietario)
+ * paymentModality: "A" (inmobiliaria recibe y liquida) | "B" (pago directo al propietario) | "split" (inquilino paga dividido)
  * adjustmentIndex: "ICL" | "IPC" | "CER" | "UVA" | "manual" | "none"
  */
 export const contract = pgTable("contract", {
