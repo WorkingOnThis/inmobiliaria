@@ -6,7 +6,7 @@ import { contract } from "@/db/schema/contract";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 type SplitBreakdown = { propietario: number; administracion: number };
 
