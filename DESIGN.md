@@ -5,6 +5,10 @@ colors:
   primary: "oklch(0.585 0.135 32)"
   primary-foreground: "oklch(0.97 0.02 34)"
   primary-dim: "oklch(0.585 0.135 32 / 0.16)"
+  paper-bg: "#f7f5ef"
+  paper-text: "#1a1614"
+  paper-muted: "#5a514c"
+  paper-border: "#d9d1c3"
   bg: "oklch(0.165 0.006 40)"
   surface: "oklch(0.215 0.008 40)"
   surface-mid: "oklch(0.195 0.007 40)"
@@ -179,6 +183,19 @@ The palette is grounded in terracota and warm-tinted neutrals. Every neutral has
 - **Indigo Penalty** (`oklch(0.68 0.20 295)`): punitorios. Distinct hue keeps interest charges visually separate from base rent and from generic errors.
 - **Sky Info** (`#8ab4f8`): informational notices, neutral metadata, "ver más" links in panels.
 
+### The Paper Surface (sub-system)
+
+Receipts (`/recibos/[id]`), comprobantes de liquidación (`/comprobantes/[id]`), the receipt preview in agency settings, and the signature pad share a different visual register: **printed paper**. The dark UI palette would not print correctly, and the cream-on-warm-dark feeling is wrong for a document that claims to be a sheet of paper resting on a desk.
+
+These surfaces use a fixed, theme-independent palette tokenized as `--paper-*`:
+
+- **Cream Vellum** (`#f7f5ef`): paper background. Always the same value, light or dark mode.
+- **Ink Black** (`#1a1614`): main text color, signature pen stroke, headers on the printed sheet.
+- **Pencil Gray** (`#5a514c`): secondary text on paper, labels above values, period subtext.
+- **Aged Border** (`#d9d1c3`): horizontal rules, dashed cell borders inside receipt tables.
+
+Paper colors live in `globals.css` `:root` (not under `.dark`) because they don't theme-switch. They are consumed via `var(--paper-bg)`, `var(--paper-text)`, etc. **Never hardcode the hex values.** The canvas signature pad is the one exception (Canvas API requires a literal `strokeStyle`); it carries an inline comment pointing back to the token.
+
 ### Named Rules
 
 **The One Voice Rule.** Aged Terracota appears on no more than ~10% of any screen. Its rarity is the meaning. The moment two terracota things shout for attention, the hierarchy is broken.
@@ -186,6 +203,8 @@ The palette is grounded in terracota and warm-tinted neutrals. Every neutral has
 **The Tinted-Neutral Rule.** No `#000`, no `#fff`. Every neutral carries 0.005-0.012 chroma toward hue 40 or 60 (warm). Pure neutrals belong to clinical software; this is a tool that sits with a person.
 
 **The Semantic-Only-When-Semantic Rule.** Income green, warning amber, destructive red, punitorio violet exist to carry meaning. They never decorate. If a button is green just because green looks nice there, it's wrong.
+
+**The Paper Sub-System Rule.** Anything that simulates printed paper (receipts, comprobantes, the receipt preview, the signature canvas) uses `--paper-*` tokens. Anywhere else uses the dark UI palette. The two systems do not mix on the same surface.
 
 ## 3. Typography
 

@@ -59,6 +59,7 @@ export function SignaturePad({ value, onChange }: SignaturePadProps) {
     ctx.beginPath();
     ctx.moveTo(lastPos.current.x, lastPos.current.y);
     ctx.lineTo(pos.x, pos.y);
+    // Matches --paper-text. Canvas strokeStyle requires a literal value.
     ctx.strokeStyle = "#1a1614";
     ctx.lineWidth = 1.8;
     ctx.lineCap = "round";
@@ -114,9 +115,9 @@ export function SignaturePad({ value, onChange }: SignaturePadProps) {
 
   return (
     <div>
-      <div className="relative rounded-[8px] overflow-hidden border border-dashed border-border" style={{ height: "110px", background: "#f7f5ef" }}>
+      <div className="relative rounded-[8px] overflow-hidden border border-dashed border-border" style={{ height: "110px", background: "var(--paper-bg)" }}>
         {/* Guide line */}
-        <div className="absolute bottom-6 left-5 right-5 border-b border-[#d9d1c3] pointer-events-none" />
+        <div className="absolute bottom-6 left-5 right-5 pointer-events-none border-b" style={{ borderColor: "var(--paper-border)" }} />
         <canvas
           ref={canvasRef}
           width={700}
@@ -132,7 +133,7 @@ export function SignaturePad({ value, onChange }: SignaturePadProps) {
         />
         {isEmpty && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="text-[12px]" style={{ color: "#5a514c" }}>Dibujá tu firma aquí</span>
+            <span className="text-[12px]" style={{ color: "var(--paper-muted)" }}>Dibujá tu firma aquí</span>
           </div>
         )}
       </div>

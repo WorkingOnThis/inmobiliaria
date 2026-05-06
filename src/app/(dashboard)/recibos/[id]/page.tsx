@@ -10,11 +10,11 @@ import { useSession } from "@/lib/auth/hooks";
 import { AnnulReceiptModal } from "@/components/caja/annul-receipt-modal";
 
 const PALETTE = {
-  bg: "#f7f5ef",
-  text: "#1a1614",
-  muted: "#5a514c",
-  border: "#d9d1c3",
-  mono: '"JetBrains Mono", ui-monospace, monospace',
+  bg: "var(--paper-bg)",
+  text: "var(--paper-text)",
+  muted: "var(--paper-muted)",
+  border: "var(--paper-border)",
+  mono: "var(--paper-mono)",
 };
 
 export default function ReciboPage() {

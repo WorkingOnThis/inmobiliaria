@@ -222,6 +222,17 @@
   --warning-dim: rgba(245, 201, 122, 0.12);
   --success: var(--green);
   --success-dim: var(--green-dim);
+
+  /* --- Tokens Arce: paper surface (recibos, comprobantes impresos) ---
+     Sub-sistema visual independiente del dark/light UI. La paleta del
+     papel es siempre la misma (cálido cream) porque representa hoja
+     impresa, no una superficie de pantalla. Ver DESIGN.md "The Paper
+     Surface" sub-section. */
+  --paper-bg: #f7f5ef;
+  --paper-text: #1a1614;
+  --paper-muted: #5a514c;
+  --paper-border: #d9d1c3;
+  --paper-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
 .dark {
