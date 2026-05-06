@@ -6,6 +6,11 @@ Funcionalidades completadas, de más reciente a más antigua.
 
 ## 2026-05
 
+### Comprobante de liquidación al propietario
+Nueva página `/comprobantes/[id]` (HTML imprimible vía `@media print`) que el propietario puede guardar/imprimir o recibir por email. Título dinámico según modalidad de pago: "COMPROBANTE DE LIQUIDACIÓN" en modalidad A (la administradora cobró y liquidó), "CONSTANCIA DE COBRO DISTRIBUIDO" en modalidad split (el inquilino transfirió directamente al propietario y a la administradora). Tabla con bruto/comisión/neto por concepto cobrado, totales destacados, distribución de fondos según modalidad, firma de la administradora y sello "ANULADO" diagonal cuando el recibo subyacente fue anulado. Botón "Enviar por email" manda link al propietario usando Resend. Acceso desde menú `···` en filas conciliadas de la cuenta corriente del propietario; el ID de la URL es el `cash_movement.id`, agregado al response de la API CC propietario para vincular cada entrada con su recibo. Refactor: `computeNetAndCommission` extraída de la API CC propietario a `src/lib/owners/commission.ts` para reuso compartido entre módulos.
+
+Archivos clave: `src/app/(dashboard)/comprobantes/[id]/page.tsx` · `src/lib/comprobantes/load.ts` · `src/lib/comprobantes/email-template.ts` · `src/app/api/comprobantes/[id]/route.ts` · `src/app/api/comprobantes/[id]/send/route.ts` · `src/lib/owners/commission.ts` · `src/components/tenants/ledger-table.tsx`
+
 ### Cuenta corriente del propietario — Mejoras
 KPIs en neto (no bruto), filas sintéticas de honorarios derivadas del alquiler que se intercalan después de cada entry padre, agrupación por propiedad con `Accordion` cuando hay 2+ propiedades, empty state cuando los filtros activos no matchean ninguna entrada. La API `/api/owners/[id]/cuenta-corriente` ahora hace `INNER JOIN` con `contract` para obtener `managementCommissionPct` por entry, devuelve un dictionary de `properties` y calcula neto/comisión por entrada (usando `splitBreakdown` cuando está conciliado, o `incluirEnBaseComision` + pct del contrato como fallback). En el `LedgerTable` las filas sintéticas se renderizan indentadas, en italic, sin checkbox ni `···`, sin click-to-detail.
 

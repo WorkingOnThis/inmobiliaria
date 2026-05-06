@@ -33,7 +33,7 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 
 - [ ] **Notificación post-recibo al propietario** — cuando se emite un recibo (modalidad split), enviar mensaje automático al propietario preguntando si recibió la transferencia. Empezar por mail o link a WhatsApp Web; en el futuro integración WhatsApp directa · [contabilidad](docs/decisions/contabilidad.md)
 
-- [ ] **Comprobante de liquidación al propietario (PDF)** — al emitir un recibo, generar también un PDF que el propietario pueda guardar/imprimir con: bruto cobrado, % comisión, neto recibido, datos del contrato y propiedad. Página `/comprobantes/[id]`, link desde cada entry conciliado en la CC · [contabilidad](docs/decisions/contabilidad.md)
+- [x] **Comprobante de liquidación al propietario (PDF)** — al emitir un recibo, generar también un PDF que el propietario pueda guardar/imprimir con: bruto cobrado, % comisión, neto recibido, datos del contrato y propiedad. Página `/comprobantes/[id]`, link desde cada entry conciliado en la CC · [contabilidad](docs/decisions/contabilidad.md)
 
 ---
 
@@ -44,6 +44,10 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 - [ ] **Selector de mes en "Primer mes a cobrar"** — hoy muestra "1 de marzo de 2026" o "23 de marzo de 2026". Debería mostrar solo "Marzo 2026" independientemente del día seleccionado, ya que la granularidad es mensual · [contratos](docs/decisions/contratos.md)
 
 - [ ] **Conectar/deprecar página `/propietarios/[id]/liquidacion`** — existe una página vieja con honorarios fijos en 7%, desconectada de la CC. Decidir: integrarla con la nueva CC, deprecarla, o reescribirla cuando se diseñe el flujo formal de liquidación · [contabilidad](docs/decisions/contabilidad.md)
+
+- [ ] **Resumen de liquidaciones del año (CC propietario)** — botón global arriba de la tabla de la CC del propietario que liste todos los comprobantes emitidos en un período (mes/año). Permite imprimir o exportar la serie completa. Diferido del MVP de comprobantes de liquidación · [contabilidad](docs/decisions/contabilidad.md)
+
+- [ ] **Generación servidor de PDFs (puppeteer/react-pdf)** — evaluar reemplazo del enfoque `@media print` por generación PDF en servidor. Habilitaría adjuntar PDFs al email (recibos del inquilino + comprobantes del propietario) y generación masiva. Costo: dependencia nueva pesada (Chromium si puppeteer). Revisar cuando el flujo de envío por email se vuelva el principal · [contabilidad](docs/decisions/contabilidad.md)
 
 ---
 
