@@ -18,6 +18,7 @@ const emitSchema = z.object({
   honorariosPct: z.number().min(0).max(100),
   trasladarAlPropietario: z.boolean().default(true),
   montoOverrides: z.record(z.string(), z.string()).default({}),
+  splitBreakdowns: z.record(z.string(), z.object({ propietario: z.number(), administracion: z.number() })).optional(),
 });
 
 function round2(n: number): number {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
 
-    const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario, montoOverrides } = parsed.data;
+    const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario, montoOverrides, splitBreakdowns } = parsed.data;
 
     const entries = await db
       .select()
@@ -153,6 +154,9 @@ export async function POST(request: NextRequest) {
             ...(isFullyPaid
               ? { conciliadoAt: now, conciliadoPor: session.user.id }
               : {}),
+            ...(splitBreakdowns?.[entry.id] && {
+              splitBreakdown: JSON.stringify(splitBreakdowns[entry.id]),
+            }),
             updatedAt: now,
           })
           .where(eq(tenantLedger.id, entry.id));
