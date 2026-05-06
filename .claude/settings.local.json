@@ -148,7 +148,8 @@
       "Bash(grep *)",
       "Bash(Remove-Item *)",
       "PowerShell(bash \"C:/Users/guill/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/scripts/start-server.sh\" --project-dir \"F:/Documentos/Proyectos/inmobiliaria\")",
-      "PowerShell(node --version; ls \"C:\\\\Users\\\\guill\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.0.7\\\\skills\\\\brainstorming\\\\scripts\\\\\")"
+      "PowerShell(node --version; ls \"C:\\\\Users\\\\guill\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.0.7\\\\skills\\\\brainstorming\\\\scripts\\\\\")",
+      "Bash(C:\\\\Users\\\\guill\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.0.7\\\\skills\\\\brainstorming\\\\scripts\\\\start-server.sh *)"
     ]
   },
   "enableAllProjectMcpServers": true,
