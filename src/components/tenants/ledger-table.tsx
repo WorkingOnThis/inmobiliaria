@@ -95,12 +95,17 @@ const ESTADO_DEFINITIONS: Record<string, string> = {
   pago_parcial:       "Se cobró una porción del cargo. Queda saldo pendiente.",
 };
 
+// States that count as "pending" for filter and overdue calculations.
 const PENDING_STATES = ["pendiente", "registrado", "pendiente_revision", "pago_parcial"];
 
+// States that allow issuing a receipt. Excludes "pendiente_revision" because
+// an entry stuck in revision needs cleanup before it can be billed.
 function isSelectable(entry: LedgerEntry): boolean {
   return ["pendiente", "registrado", "pago_parcial"].includes(entry.estado);
 }
 
+// States that allow cancellation. Includes "pendiente_revision" because
+// the user may want to discard an entry stuck in revision rather than fix it.
 const CANCELABLE_STATES = ["pendiente", "registrado", "pendiente_revision", "pago_parcial"];
 
 function isCancelable(entry: LedgerEntry): boolean {
@@ -406,7 +411,17 @@ export function LedgerTable({
                 ? String(Math.max(0, Number(entry.monto) - Number(entry.montoPagado)))
                 : entry.monto;
               const displayMonto = montoOverrides[entry.id] ?? defaultMonto;
-              const badge = ESTADO_BADGE[entry.estado] ?? ESTADO_BADGE.pendiente;
+              // Unknown estados surface visibly with a dashed destructive
+              // border instead of impersonating "Pendiente"; warn in dev so
+              // bugs don't hide in production.
+              const knownBadge = ESTADO_BADGE[entry.estado];
+              if (!knownBadge && process.env.NODE_ENV !== "production") {
+                console.warn(`[LedgerTable] Unknown estado: "${entry.estado}" on entry ${entry.id}`);
+              }
+              const badge = knownBadge ?? {
+                label: entry.estado || "Sin estado",
+                className: "bg-muted text-muted-foreground border-destructive border-dashed",
+              };
 
               // Per-row prominence: paid rows fade, future rows fade,
               // overdue pending rows get a subtle destructive tint so they
