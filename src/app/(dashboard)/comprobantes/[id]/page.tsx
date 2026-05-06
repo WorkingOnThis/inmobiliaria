@@ -393,7 +393,7 @@ export default function ComprobantePage() {
                     marginBottom: "4px",
                   }}
                 >
-                  Liquidado a
+                  {isSplit ? "Propietario" : "Liquidado a"}
                 </div>
                 <div style={{ fontSize: "15px", fontWeight: 500 }}>
                   {nombrePropietario}

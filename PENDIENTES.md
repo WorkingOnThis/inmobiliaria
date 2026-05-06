@@ -49,6 +49,8 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 
 - [ ] **Generación servidor de PDFs (puppeteer/react-pdf)** — evaluar reemplazo del enfoque `@media print` por generación PDF en servidor. Habilitaría adjuntar PDFs al email (recibos del inquilino + comprobantes del propietario) y generación masiva. Costo: dependencia nueva pesada (Chromium si puppeteer). Revisar cuando el flujo de envío por email se vuelva el principal · [contabilidad](docs/decisions/contabilidad.md)
 
+- [ ] **Rediseño estructural del LedgerTable (`shape ledger-table-v2`)** — el critique del componente dejó 3 preguntas estructurales sin resolver: (1) si los períodos deberían ser `<section>` independientes en vez de un grid global, (2) si la vista propietario amerita ser un componente separado del de inquilino (`isOwnerView` se referencia 11 veces), (3) cómo es la "versión quiet" de la fila después de sacar punitorios con tinte naranja, sintéticas en italic, override en tinte primary y mora con tinte destructive. Decisiones de rediseño que requieren brainstorm dedicado, no son polish · [contabilidad](docs/decisions/contabilidad.md)
+
 ---
 
 ## 🔵 Backlog / Futuro
