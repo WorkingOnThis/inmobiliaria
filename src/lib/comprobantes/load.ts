@@ -190,7 +190,7 @@ export async function loadComprobanteData(
   if (!propietarioRow) return null;
 
   // 6. Get inquilino data (if linked)
-  const [inqRow] = movimiento.inquilinoId
+  const inqRows = movimiento.inquilinoId
     ? await db
         .select({
           firstName: client.firstName,
@@ -200,7 +200,8 @@ export async function loadComprobanteData(
         .from(client)
         .where(eq(client.id, movimiento.inquilinoId))
         .limit(1)
-    : [null];
+    : [];
+  const inqRow = inqRows[0] ?? null;
 
   // 7. Get contrato data
   const [contratoRow] = await db
