@@ -4,6 +4,96 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-06 — SEC-3 (multi-tenancy real con `agencyId`)
+
+### Qué hice
+
+Cerrado el bloqueante más grande de la auditoría pre-deploy. Antes de SEC-3, cualquier usuario logueado podía leer/editar/borrar datos de cualquier otra inmobiliaria — las rutas filtraban solo por `eq(table.id, id)` sin verificar a qué agency pertenecía el recurso.
+
+El trabajo siguió el plan en 6 fases (`docs/superpowers/plans/2026-05-06-sec-3-multi-tenancy.md`):
+
+**Fase 1 — Schema migration**: 14 tablas (`client`, `property`, `contract`, `cash_movement`, `task`, `service`, `guarantee`, `clauseTemplate`, `contract_amendment`, `contract_document`, `contract_participant`, `property_co_owner`, `property_room`, `tenant_ledger`) recibieron columna `agencyId NOT NULL` con FK a `agency.id ON DELETE CASCADE`. Migration SQL hand-written en `docs/migrations/sec-3-add-agency-id.sql` (versionado en git como trail de deploy). Backfill trivial: `(SELECT id FROM agency LIMIT 1)` porque hoy hay una sola agency real.
+
+**Fase 2 — Sesión vía Better Auth `additionalFields`**: agregué `agencyId` al `additionalFields` config (mismo patrón que `role`), lo que hace que `session.user.agencyId` esté accesible en cada route handler sin queries extra. Backfill one-time del único user existente. Layout de `(dashboard)` simplificado: pasó de 2 queries (sesión + agency lookup) a 1.
+
+**Fase 3 — Helpers obligatorios** (`src/lib/auth/agency.ts`):
+- `requireAgencyId(session)` → tira 401 si no hay sesión, 403 si la sesión no tiene agency. Toda route lo llama primero.
+- `requireAgencyResource(table, id, agencyId, [extraConditions])` → SELECT con doble filtro, devuelve 404 si no existe O pertenece a otra agency. **Mismo mensaje 404 en ambos casos** — no leak de existencia.
+- 7 unit tests con `bun:test` para los helpers.
+
+**Fase 4 — Cutover de 86 routes** en 8 commits agrupados por dominio (cash, clients/owners/tenants/guarantors/guarantees, properties, contracts, tasks, services, clauses+templates, dashboard+receipts+agency). Patrón uniforme: cada handler envuelto en `try { ... requireAgencyId ... } catch { handleAgencyError }`. Detail routes usan `requireAgencyResource` antes de cualquier mutation. Listings filtran por `eq(table.agencyId, agencyId)`. Inserts requieren `agencyId` por TS (la columna es NOT NULL en el tipo).
+
+**Fase 5 — Validación cross-agency E2E** (`scripts/test-cross-agency.ts`): cree una Neon ephemeral branch, levanté `bun dev` apuntando a la branch, corrí un script que:
+1. Crea 2 agencies fresh (sign-up + verify-email + register-oauth + insert client/property/contract) vía la API real
+2. Hace HTTP calls bidireccionales — cookieA → agencyB.id → expect 404, cookieB → agencyA.id → expect 404
+3. Verifica que listings de A no leakean IDs de B y viceversa
+**32/32 asserciones pasan.** Branch borrada después.
+
+**Fase 6 — Cierre**: build pasa limpio, lint pasa (95 problemas pre-existentes, ninguno en archivos SEC-3).
+
+### Por qué lo hice así y no de otra forma
+
+**Por qué `additionalFields` y no Postgres RLS**: RLS sería el estándar dorado pero choca con connection pooling de Neon serverless (requiere `SET LOCAL` por transacción) y los errores que tira son opacos (`permission denied for table X`) en vez de errores TS legibles. Para este stack, la combinación de "session field + DB constraint NOT NULL + helpers + test E2E" da defense-in-depth real con errores debuggables. Si en V2 el código se vuelve más complejo, RLS queda como capa 5 disponible.
+
+**Por qué hand-written SQL y no `db:push`**: `db:push` no genera archivo versionable, y no permite intercalar el `UPDATE` (backfill) entre `ADD COLUMN` y `SET NOT NULL`. Sin el archivo SQL en git, no había trail para reproducir la migración en prod. Una transacción atómica garantiza que o las 14 tablas migran juntas, o ninguna.
+
+**Por qué errores 404 indistinguibles entre "no existe" y "es de otra agency"**: si distinguís ("no autorizado" vs "no encontrado"), un atacante puede enumerar IDs ajenos por probe — el 401/403 es un side-channel que confirma "este UUID existe en otra agency". El 404 cierra ese leak.
+
+**Por qué fases aditivas (1-3) antes del cutover (4)**: cada una es mergeable y reversible por separado. Si interrumpe algo a la mitad, la app sigue funcionando porque las fases 1-3 no cambian comportamiento — solo agregan capacidad. La fase 4 es la única que sí altera el comportamiento de las routes, y se hizo en 8 sub-commits revisables por dominio, todos sumando al mismo branch.
+
+**Por qué subagentes para el cutover**: cada task de Fase 4 es mecánica (aplicar el mismo patrón a N archivos) pero el contexto se contamina rápido si lo hacés en serie. Un subagente fresh por dominio tiene contexto limpio, aplica el patrón uniforme, reporta concerns puntuales. Verifiqué cada commit antes de avanzar.
+
+**Por qué el script de validación E2E y no un test unitario por route**: un test unitario falla solo si el patrón se aplicó mal en una route específica — pero el patrón se aplicó por subagent, y cada subagent verificó compile-clean por archivo. El bug que captura un E2E es "alguien rompe la cadena entre helpers y rutas en una etapa futura". Para eso, el script funciona como guard rail: lo corrés cuando agregues una route nueva, te dice si rompiste el aislamiento.
+
+**Por qué borré 2 scripts en lugar de actualizarlos**: `fix-and-generate.ts` y `check-and-generate-ledger.ts` eran one-off / diagnóstico de eventos pasados. Ambos referenciaban tablas o flujos que ya no existen (uno tenía early-exit `if count > 0 process.exit(0)`, otro queryeaba `contract_tenant` que fue renombrada). No eran "código a mantener", eran archivos artefacto. Los borré con commit explícito por si en el futuro querés recuperarlos.
+
+### Conceptos que aparecieron
+
+- **Defense-in-depth**: principio de "varias capas que fallan cerradas independientemente". Si una capa se rompe, las otras te salvan. Para multi-tenancy: sesión + DB constraint + helpers + test = 4 capas. Si un dev nuevo se olvida del helper, el constraint NOT NULL del insert lo atrapa. Si el constraint se rompe, el helper en el SELECT lo atrapa. Si ambos fallan, el test E2E lo marca.
+
+- **Multi-tenancy "real" vs implícito**: implícito = "todos los datos pertenecen al user logueado por convención". Real = "cada row tiene un `agencyId` y todas las queries lo filtran". El primero funciona hasta que agregás un segundo tenant; el segundo escala sin sorpresas.
+
+- **`AsyncLocalStorage` y `next/headers`**: por qué Next.js puede saber "qué request está procesando ahora" en una función async sin pasar `request` como parámetro. Useful para entender por qué `auth.api.getSession({ headers: await headers() })` funciona sin parámetros explícitos en cada route.
+
+- **Cookies HMAC-firmadas (Better Auth)**: por qué el token de sesión no es solo el value de `session.token` en la DB — Better Auth firma el cookie con `BETTER_AUTH_SECRET` para que un atacante no pueda forjar un token. En el script E2E, usé `auth.api.signInEmail` para que Better Auth me devuelva el cookie firmado correctamente (no traté de armarlo a mano).
+
+- **Neon branches efímeras**: forks de la DB que comparten storage hasta que divergen. Permite tener una "DB de test" identica a la real, hacerle cualquier cosa, y descartarla en segundos. Sin esto, validar SEC-3 requería montar Postgres en docker o duplicar manualmente — no escalable.
+
+- **Side-channel attacks via status codes**: 401 vs 403 vs 404 leakean info distinta. 401 dice "no estás autenticado". 403 dice "estás autenticado pero no autorizado a este recurso (que existe)". 404 dice "no existe O no está disponible para vos". El 404 es el más inocuo — no le dice al atacante si el recurso existe.
+
+- **"Hijas de hijas" y por qué no llevan `agencyId`**: tablas como `task_history`, `receipt_allocation`, `contract_clause` son hijas de tablas que sí están scoped. Agregar `agencyId` a estas sería 1 nivel de redundancia (ya está en el padre directo). El precio de la redundancia es coordinación: si insertás una `task_history` con un `agencyId` distinto al de su `task`, los datos se desincronizan. Mejor: validar el padre y dejar que el FK chain garantice el aislamiento.
+
+- **Per-agency sequence vs global sequence**: el cambio en `nextReciboNumero` (recibo `REC-0001` reinicia por agency) es un fix de correctitud que SEC-3 forzó. Antes, dos agencies con el mismo número de recibo eran posibles si el contador era global → conflicto en `receiptAnnulment` que joinea por `reciboNumero`. Ahora cada agency tiene su propia secuencia.
+
+### Preguntas para reflexionar
+
+1. La regla "cada commit del cutover compila clean" funciona porque la columna agencyId fue agregada a las tablas (Fase 1) ANTES de que las routes la requieran (Fase 4). ¿Qué hubiera pasado si lo hacíamos al revés (routes primero, schema después)? ¿Por qué ese orden evita un período de "build roto"?
+
+2. Eliminé 2 scripts que estaban "ya ejecutados" (fix-and-generate, check-and-generate-ledger). ¿Cómo distingo "código de un solo uso" de "código de mantenimiento que parece muerto"? Si en el futuro encuentro un script así, ¿qué señales me hacen confiar en que se puede borrar?
+
+3. El test E2E hace 32 asserciones (16 por dirección × 2). Hay ~91 routes en total, pero solo 13 están en CROSS_CHECKS y 3 en LIST_CHECKS. ¿Es suficiente cobertura, o debería ampliar? ¿Qué porcentaje de cobertura es "suficiente" cuando el patrón es uniforme?
+
+4. La posible vulnerabilidad que detectó el implementer de T4.6 (FK target leak: insertar un `servicio` con `agencyId=mine` apuntando a `propertyId=ajeno`) la fixeé solo en services. ¿Cómo decido si vale el costo de auditar las otras ~85 routes para ese mismo vector? ¿Hay forma de hacerlo automático (lint rule, schema constraint cross-agency)?
+
+5. Better Auth's `additionalFields` propaga `agencyId` con la sesión, pero la sesión queda stale si el `agencyId` del user cambia. Hoy no aplica (1 user = 1 agency). En V2 con invitaciones de colaboradores, ¿qué problema concreto introduce esto? ¿Cómo lo resolvés sin forzar logout?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: Defense-in-depth en multi-tenancy (sesión + constraint + helper + test)
+- [ ] Concepto: Postgres RLS — qué es, cuándo usarlo, por qué lo descarté para Neon serverless
+- [ ] Concepto: `AsyncLocalStorage` y cómo Next.js mantiene contexto request-scoped
+- [ ] Concepto: Side-channel attacks via HTTP status codes (404 indistinguible)
+- [ ] Patrón: schema-first migration — agregar columna nullable → backfill → SET NOT NULL → FK, todo en una transacción
+- [ ] Patrón: Better Auth `additionalFields` para propagar tenant info en la sesión
+- [ ] Patrón: subagent-driven cutover de N archivos con pattern uniforme
+- [ ] Patrón: validación E2E con Neon ephemeral branch
+- [ ] Decisión técnica: SEC-3 multi-tenancy — 4 capas vs RLS, fases aditivas vs PR atómico, 14 tablas vs todas
+- [ ] Bug: `LIMIT 1` sin `ORDER BY` → no determinístico (señalado en code review de T1.1, no fixeé porque hay 1 sola agency)
+- [ ] Comando: `mcp__neon__create_branch` + `delete_branch` para tests aislados
+- [ ] Comando: levantar `bun dev` con env var override (`DATABASE_URL=...`)
+
+---
+
 ## 2026-05-06 — SEC-2 (registro + verificación de email)
 
 ### Qué hice
