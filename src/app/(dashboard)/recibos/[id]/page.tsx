@@ -76,7 +76,7 @@ export default function ReciboPage() {
     );
   }
 
-  const { movimiento, inquilino, propiedad, contrato, serviceItems = [], charges = [], ledgerItems = [], agency } = data;
+  const { movimiento, inquilino, propiedad, contrato, serviceItems = [], ledgerItems = [], agency } = data;
 
   // Build email recipient list from inquilino data (safe after early returns)
   const allRecipients: { email: string; label: string; key: string }[] = [];
@@ -137,29 +137,23 @@ export default function ReciboPage() {
     : null;
 
   const tableRows: { concepto: string; periodo: string | null; monto: string }[] =
-    charges.length > 0
-      ? charges.map((c) => ({
-          concepto: c.descripcion,
-          periodo: c.periodo,
-          monto: formatMonto(c.monto),
+    ledgerItems.length > 0
+      ? ledgerItems.map((l) => ({
+          concepto: l.descripcion,
+          periodo: l.period,
+          monto: formatMonto(l.monto),
         }))
-      : ledgerItems.length > 0
-        ? ledgerItems.map((l) => ({
-            concepto: l.descripcion,
-            periodo: l.period,
-            monto: formatMonto(l.monto),
-          }))
-        : [{
-            concepto: movimiento.description,
-            periodo: movimiento.period,
-            monto: totalDisplay,
-          }];
+      : [{
+          concepto: movimiento.description,
+          periodo: movimiento.period,
+          monto: totalDisplay,
+        }];
 
   const serviciosCobrados = serviceItems.filter((s) => s.monto != null && Number(s.monto) > 0);
   const serviciosConstancia = serviceItems.filter((s) => s.monto == null || Number(s.monto) === 0);
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-bg print:bg-white">
       {/* Barra de acciones — solo en pantalla, no imprime */}
       <div className="print:hidden h-14 bg-surface border-b border-border flex items-center justify-between px-7">
         <button
@@ -306,7 +300,7 @@ export default function ReciboPage() {
             fontSize: "13px",
             lineHeight: 1.5,
           }}
-          className="print:rounded-none print:shadow-none shadow-[0_8px_24px_rgba(0,0,0,.3)]"
+          className="print:rounded-none print:shadow-none print:!bg-white shadow-[0_8px_24px_rgba(0,0,0,.3)]"
         >
           {/* Header */}
           <div style={{ display: "flex", gap: "20px", alignItems: "flex-start", paddingBottom: "18px", borderBottom: `1.5px solid ${PALETTE.text}` }}>

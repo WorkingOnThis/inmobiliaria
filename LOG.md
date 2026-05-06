@@ -4,6 +4,39 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-06 — PDF del recibo
+
+### Qué hice
+Implementé los estilos de impresión del recibo de inquilinos. El botón "Imprimir recibo" ya existía y llamaba a `window.print()`. La mejora fue asegurar que al imprimir, el resultado sea limpio: sin sidebar, sin header de navegación, fondo blanco, tamaño A4 con márgenes correctos.
+
+Cambios:
+- `globals.css`: bloque `@media print` con `@page { size: A4; margin: 1.5cm }`, fondo blanco, `print-color-adjust: exact`
+- `dashboard-layout.tsx`: `print:hidden` en `AppSidebar` y en el `<header>` con breadcrumbs
+- `recibos/[id]/page.tsx`: `print:bg-white` en el div raíz y `print:!bg-white` en el card del recibo
+
+### Por qué lo hice así y no de otra forma
+Se evaluó agregar `@react-pdf/renderer` para generar un PDF descargable, pero al explorar el flujo real del negocio quedó claro que el caso de uso es imprimir o enviar por email. Guardar como archivo nunca era el objetivo. La solución con `@media print` no agrega ninguna dependencia nueva, reutiliza el HTML que ya existía, y el navegador hace el trabajo de renderizado.
+
+El `print:!bg-white` (con `!`) fue necesario porque el card del recibo tiene un `background` en inline style. Los estilos inline tienen mayor prioridad que las clases CSS, así que la única forma de pisar eso desde un archivo de estilos es usar `!important`.
+
+### Conceptos que aparecieron
+- **`@media print`**: un bloque CSS que solo aplica cuando el usuario manda a imprimir la página. El navegador lo activa automáticamente al ejecutar `window.print()`.
+- **`@page`**: regla CSS especial para configurar el papel: tamaño, márgenes, orientación. Solo existe dentro de `@media print`.
+- **`print-color-adjust: exact`**: por defecto los navegadores eliminan fondos de color al imprimir para ahorrar tinta. Esta propiedad le dice "imprimí los colores tal cual están en pantalla".
+- **`!important` en CSS**: fuerza que una regla se aplique por encima de otras con mayor especificidad, incluyendo inline styles. En Tailwind v4 se escribe con el prefijo `!` antes de la clase: `print:!bg-white`.
+- **Especificidad CSS**: jerarquía que decide qué regla gana cuando dos reglas apuntan al mismo elemento. De menor a mayor: reglas de hoja de estilos → clases → IDs → inline styles → `!important`.
+
+### Preguntas para reflexionar
+1. ¿Por qué los inline styles tienen mayor prioridad que las clases CSS? ¿Es una decisión de diseño del lenguaje o una limitación?
+2. Si en el futuro necesitás descargar el PDF como archivo (para adjuntar a un email desde el sistema), ¿qué librería usarías y dónde viviría la lógica: en el cliente o en el servidor?
+
+### Qué debería anotar en Obsidian
+- [ ] Concepto: `@media print` y `@page` — cómo controlar la impresión desde CSS
+- [ ] Concepto: especificidad CSS y cuándo usar `!important`
+- [ ] Decisión técnica: por qué elegí `window.print()` sobre una librería de PDF para el recibo
+
+---
+
 ## 2026-05-05 — Modalidad de pago dividido (split payment)
 
 ### Qué hice

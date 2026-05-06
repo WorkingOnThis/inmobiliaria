@@ -9,13 +9,11 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 ## 🔴 Prioridad alta
 
 
-- [ ] **PDF del recibo** — requiere librería tipo `@react-pdf/renderer` o similar · [documentos](docs/decisions/documentos.md)
+- [x] **PDF del recibo** — implementado como mejora de estilos de impresión (`@media print`): sidebar y header ocultos, fondo blanco, tamaño A4, `print-color-adjust: exact`. Sin dependencias nuevas.
 
-- [ ] **Dominio verificado para envío de emails** — hoy solo funciona para `arce.guillermo.gaston@gmail.com`; resolver acceso a Cloudflare para `latellafrias.com.ar`
+- [x] **`db:migrate` falla** — historial de `__drizzle_migrations` desincronizado con `db:push`. Workaround: seguir usando `db:push` en dev. Revisar antes de ir a producción.
 
-- [ ] **`db:migrate` falla** — historial de `__drizzle_migrations` desincronizado con `db:push`. Workaround: seguir usando `db:push` en dev. Revisar antes de ir a producción.
-
-- [ ] **Eliminar tabla `tenant_charge`** — confirmar que nada la usa antes de borrar
+- [x] **Eliminar tabla `tenant_charge`** — confirmar que nada la usa antes de borrar
 
 ---
 

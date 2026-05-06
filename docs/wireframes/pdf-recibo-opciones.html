@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Wireframe — PDF del Recibo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #111; color: #e8e8e8; padding: 32px; }
+  h1 { font-size: 18px; color: #a0a0a0; margin-bottom: 32px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+
+  .option { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; overflow: hidden; }
+  .option-header { padding: 16px 20px; background: #222; border-bottom: 1px solid #2a2a2a; }
+  .option-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin-bottom: 4px; }
+  .option-title { font-size: 16px; font-weight: 600; }
+  .option-body { padding: 20px; }
+
+  /* Simulated page top bar */
+  .page-bar {
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: #666;
+  }
+  .page-bar .url { flex: 1; background: #1e1e1e; border: 1px solid #333; border-radius: 4px; padding: 4px 10px; color: #aaa; }
+
+  /* Simulated action bar */
+  .action-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: default;
+    border: none;
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid #333;
+    color: #ccc;
+  }
+  .btn-primary {
+    background: #2563eb;
+    color: white;
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid #444;
+    color: #aaa;
+  }
+  .btn .icon { font-size: 14px; }
+  .badge-new {
+    font-size: 10px;
+    background: #16a34a;
+    color: white;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Simulated receipt card */
+  .receipt-card {
+    background: #f7f5ef;
+    color: #1a1614;
+    border-radius: 8px;
+    padding: 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .receipt-card .agency { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .receipt-card .meta { font-size: 11px; color: #5a514c; margin-bottom: 12px; }
+  .receipt-card .divider { border: none; border-top: 2px solid #1a1614; margin: 10px 0; }
+  .receipt-card .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .receipt-card .label { font-size: 10px; text-transform: uppercase; color: #5a514c; letter-spacing: 0.05em; }
+  .receipt-card .total { font-weight: 700; font-size: 14px; text-align: right; margin-top: 8px; }
+
+  /* Flow diagram */
+  .flow { margin-top: 16px; }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .flow-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #888;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .flow-text { font-size: 13px; color: #ccc; line-height: 1.5; }
+  .flow-text strong { color: #e8e8e8; }
+  .flow-arrow { color: #444; margin: 0 4px; }
+
+  .pros-cons { margin-top: 20px; border-top: 1px solid #2a2a2a; padding-top: 16px; }
+  .pro { color: #4ade80; font-size: 12px; margin-bottom: 4px; }
+  .con { color: #f87171; font-size: 12px; margin-bottom: 4px; }
+  .pros-cons .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #555; margin-bottom: 8px; margin-top: 12px; }
+
+  /* Dialog mockup */
+  .dialog-overlay {
+    background: rgba(0,0,0,0.5);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 12px;
+  }
+  .dialog-box {
+    background: #fafafa;
+    color: #111;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 12px;
+    font-family: system-ui, sans-serif;
+  }
+  .dialog-title { font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+  .dialog-row { display: flex; justify-content: space-between; margin-bottom: 4px; color: #555; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 12px; }
+  .dialog-btn {
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: default;
+  }
+  .dialog-btn-cancel { background: #e5e5e5; color: #555; }
+  .dialog-btn-save { background: #1a73e8; color: white; }
+
+  /* Download toast */
+  .toast {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    font-size: 12px;
+  }
+  .toast-icon { font-size: 18px; }
+  .toast-text { color: #ccc; }
+  .toast-text strong { color: #4ade80; }
+
+  .highlight-btn { box-shadow: 0 0 0 2px #2563eb, 0 0 12px rgba(37, 99, 235, 0.4); }
+</style>
+</head>
+<body>
+
+<h1>PDF del recibo — Comparación de opciones</h1>
+
+<div class="grid">
+
+  <!-- OPCIÓN A -->
+  <div class="option">
+    <div class="option-header">
+      <div class="option-label">Opción A</div>
+      <div class="option-title">Descarga directa (un clic)</div>
+    </div>
+    <div class="option-body">
+
+      <div class="page-bar">
+        <div class="url">localhost:3000/recibos/abc123</div>
+      </div>
+
+      <div class="action-bar">
+        <div class="btn btn-outline"><span class="icon">✉</span> Enviar por email</div>
+        <div class="btn btn-outline"><span class="icon">🖨</span> Imprimir</div>
+        <div class="btn btn-primary highlight-btn"><span class="icon">⬇</span> Descargar PDF <span class="badge-new">nuevo</span></div>
+      </div>
+
+      <div class="receipt-card">
+        <div class="agency">La Tella Frías Inmobiliaria</div>
+        <div class="meta">CUIT 20-12345678-9 · IVA Responsable Inscripto</div>
+        <hr class="divider">
+        <div class="row"><span class="label">Recibí de</span><span class="label">Fecha</span></div>
+        <div class="row"><strong>García, Juan</strong><span>06/05/2026</span></div>
+        <div class="row"><span style="color:#5a514c">DNI 28.456.789</span><span style="color:#5a514c">Período: Abr 2026</span></div>
+        <hr class="divider">
+        <div class="row"><span>Alquiler mensual · Abr 2026</span><span>$ 180.000</span></div>
+        <div class="row"><span>Expensas · Abr 2026</span><span>$ 25.000</span></div>
+        <hr class="divider">
+        <div class="total">Total: $ 205.000</div>
+      </div>
+
+      <div class="flow" style="margin-top: 16px;">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-text">El usuario hace clic en <strong>"Descargar PDF"</strong></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-text">El servidor genera el PDF y lo devuelve como archivo</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-text">El navegador descarga automáticamente <strong>recibo-0042.pdf</strong></div>
+        </div>
+      </div>
+
+      <div class="toast">
+        <span class="toast-icon">📄</span>
+        <div class="toast-text"><strong>recibo-0042.pdf</strong> descargado</div>
+      </div>
+
+      <div class="pros-cons">
+        <div class="label">Ventajas</div>
+        <div class="pro">✓ Un solo clic, sin diálogos del navegador</div>
+        <div class="pro">✓ El archivo tiene nombre automático (recibo-0042.pdf)</div>
+        <div class="pro">✓ Se puede adjuntar al email directamente</div>
+        <div class="label">Desventajas</div>
+        <div class="con">✗ Requiere librería de PDF en el servidor (~60KB extra)</div>
+        <div class="con">✗ Más trabajo de implementación</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OPCIÓN B -->
+  <div class="option">
+    <div class="option-header">
+      <div class="option-label">Opción B</div>
+      <div class="option-title">Mejorar el botón de imprimir</div>
+    </div>
+    <div class="option-body">
+
+      <div class="page-bar">
+        <div class="url">localhost:3000/recibos/abc123</div>
+      </div>
+
+      <div class="action-bar">
+        <div class="btn btn-outline"><span class="icon">✉</span> Enviar por email</div>
+        <div class="btn btn-primary highlight-btn"><span class="icon">🖨</span> Imprimir / Guardar PDF <span class="badge-new">mejorado</span></div>
+      </div>
+
+      <div class="receipt-card">
+        <div class="agency">La Tella Frías Inmobiliaria</div>
+        <div class="meta">CUIT 20-12345678-9 · IVA Responsable Inscripto</div>
+        <hr class="divider">
+        <div class="row"><span class="label">Recibí de</span><span class="label">Fecha</span></div>
+        <div class="row"><strong>García, Juan</strong><span>06/05/2026</span></div>
+        <div class="row"><span style="color:#5a514c">DNI 28.456.789</span><span style="color:#5a514c">Período: Abr 2026</span></div>
+        <hr class="divider">
+        <div class="row"><span>Alquiler mensual · Abr 2026</span><span>$ 180.000</span></div>
+        <div class="row"><span>Expensas · Abr 2026</span><span>$ 25.000</span></div>
+        <hr class="divider">
+        <div class="total">Total: $ 205.000</div>
+      </div>
+
+      <div class="flow" style="margin-top: 16px;">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-text">El usuario hace clic en <strong>"Imprimir / Guardar PDF"</strong></div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-text">El navegador abre el <strong>diálogo de impresión</strong> nativo</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-text">El usuario elige <strong>"Guardar como PDF"</strong> en la lista de impresoras</div>
+        </div>
+      </div>
+
+      <div class="dialog-overlay">
+        <div class="dialog-box">
+          <div class="dialog-title">🖨 Imprimir</div>
+          <div class="dialog-row"><span>Destino:</span><span><strong>Guardar como PDF</strong> ▾</span></div>
+          <div class="dialog-row"><span>Páginas:</span><span>Todas</span></div>
+          <div class="dialog-row" style="color: #aaa; font-size: 11px; margin-top: 6px;">Sin encabezados de página · Sin URL · Solo el recibo</div>
+          <div class="dialog-actions">
+            <div class="dialog-btn dialog-btn-cancel">Cancelar</div>
+            <div class="dialog-btn dialog-btn-save">Guardar</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pros-cons">
+        <div class="label">Ventajas</div>
+        <div class="pro">✓ Cero dependencias nuevas</div>
+        <div class="pro">✓ El CSS de impresión ya existe, solo hay que pulirlo</div>
+        <div class="pro">✓ El usuario puede elegir imprimir en papel también</div>
+        <div class="label">Desventajas</div>
+        <div class="con">✗ Requiere un paso extra (elegir "Guardar como PDF")</div>
+        <div class="con">✗ El nombre del archivo lo pone el usuario manualmente</div>
+        <div class="con">✗ El diálogo varía según el navegador y SO</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

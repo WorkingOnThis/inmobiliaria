@@ -6,7 +6,6 @@ import { contractParticipant } from "@/db/schema/contract-participant";
 import { property } from "@/db/schema/property";
 import { agency } from "@/db/schema/agency";
 import { receiptServiceItem } from "@/db/schema/receipt-service-item";
-import { tenantCharge } from "@/db/schema/tenant-charge";
 import { receiptAllocation } from "@/db/schema/receipt-allocation";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { and, eq, inArray } from "drizzle-orm";
@@ -32,13 +31,6 @@ export type ReceiptData = {
     period: string;
     monto: string | null;
     servicioId: string | null;
-  }[];
-  charges: {
-    id: string;
-    periodo: string | null;
-    categoria: string;
-    descripcion: string;
-    monto: string;
   }[];
   ledgerItems: {
     id: string;
@@ -108,7 +100,7 @@ export async function loadReceiptData(
     monto: montoByEntry[row.id] ?? "0",
   }));
 
-  const [inqRow, propRow, contratoRow, serviceItems, charges, agencyRow] = await Promise.all([
+  const [inqRow, propRow, contratoRow, serviceItems, agencyRow] = await Promise.all([
     movimiento.inquilinoId
       ? db.select({
           firstName: client.firstName,
@@ -144,13 +136,6 @@ export async function loadReceiptData(
       monto: receiptServiceItem.monto,
       servicioId: receiptServiceItem.servicioId,
     }).from(receiptServiceItem).where(eq(receiptServiceItem.movimientoId, movimientoId)),
-    db.select({
-      id: tenantCharge.id,
-      periodo: tenantCharge.period,
-      categoria: tenantCharge.categoria,
-      descripcion: tenantCharge.descripcion,
-      monto: tenantCharge.monto,
-    }).from(tenantCharge).where(eq(tenantCharge.reciboNumero, movimiento.reciboNumero)),
     db.select().from(agency).where(eq(agency.ownerId, agencyOwnerId)).limit(1),
   ]);
 
@@ -199,5 +184,5 @@ export async function loadReceiptData(
       }
     : null;
 
-  return { movimiento, inquilino, propiedad, contrato, serviceItems, charges, ledgerItems, agency: agencyData };
+  return { movimiento, inquilino, propiedad, contrato, serviceItems, ledgerItems, agency: agencyData };
 }
