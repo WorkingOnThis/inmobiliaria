@@ -84,10 +84,10 @@ export async function POST(request: NextRequest) {
           updatedAt: new Date(),
         });
 
-        // Ensure user has role set
+        // Ensure user has role set + link to agency
         await tx
           .update(user)
-          .set({ role: "account_admin" })
+          .set({ role: "account_admin", agencyId })
           .where(eq(user.id, userId));
       });
     } catch (dbError: any) {
