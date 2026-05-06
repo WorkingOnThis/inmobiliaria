@@ -109,6 +109,31 @@ function formatDescription(desc: string): string {
   return desc.replace(/\b(\d{4})-(\d{2})\b/g, "$2/$1");
 }
 
+const SHOW_DUEDATE_STATES = new Set(["pendiente", "registrado", "pendiente_revision", "pago_parcial"]);
+
+function getDueDateSubtext(
+  entry: LedgerEntry,
+  today: string
+): { text: string; dateLabel: string; color: string } | null {
+  if (!entry.dueDate || !SHOW_DUEDATE_STATES.has(entry.estado)) return null;
+
+  const due = entry.dueDate;
+  const [, dm, dd] = due.split("-");
+  const dateLabel = `${dd}/${dm}`;
+
+  if (due > today) {
+    const diffMs = new Date(due).getTime() - new Date(today).getTime();
+    const days = Math.round(diffMs / 86_400_000);
+    return { text: `${days} día${days !== 1 ? "s" : ""} hasta vencimiento`, dateLabel: `vence ${dateLabel}`, color: "text-warning" };
+  }
+  if (due === today) {
+    return { text: "Vence hoy", dateLabel: dateLabel, color: "text-warning" };
+  }
+  const diffMs = new Date(today).getTime() - new Date(due).getTime();
+  const days = Math.round(diffMs / 86_400_000);
+  return { text: `${days} día${days !== 1 ? "s" : ""} de mora`, dateLabel: `vencía ${dateLabel}`, color: "text-destructive" };
+}
+
 export const NO_PERIOD_KEY = "__no_period__";
 
 function groupByPeriod(entries: LedgerEntry[]): Map<string, LedgerEntry[]> {
@@ -341,7 +366,7 @@ export function LedgerTable({
                     )}>
                       {formatDescription(entry.descripcion)}
                     </span>
-                    {/* Subtext: mutually exclusive — DB pago_parcial info OR live partial-override indicator */}
+                    {/* Subtext: mutually exclusive — DB pago_parcial info OR live partial-override indicator OR due date */}
                     {entry.estado === "pago_parcial" && entry.montoPagado !== null ? (
                       <div className="flex gap-3 mt-0.5">
                         <span className="text-[10px] text-muted-foreground">
@@ -360,7 +385,16 @@ export function LedgerTable({
                           · Saldo: ${(Number(entry.monto) - Number(montoOverrides[entry.id])).toLocaleString("es-AR")}
                         </span>
                       </div>
-                    ) : null}
+                    ) : (() => {
+                      const due = getDueDateSubtext(entry, today);
+                      if (!due) return null;
+                      return (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={cn("text-[10px] font-semibold", due.color)}>{due.text}</span>
+                          <span className="text-[10px] text-muted-foreground">· {due.dateLabel}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Tipo badge */}
