@@ -242,7 +242,6 @@ export function LedgerTable({
         const past = isPast(period === NO_PERIOD_KEY ? null : period);
         const current = isCurrent(period === NO_PERIOD_KEY ? null : period);
         const future = !past && !current;
-        const hasSelectable = periodEntries.some(isSelectable);
         const selectableIds = periodEntries.filter(isSelectable).map((e) => e.id);
         const isMonthSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));
 
@@ -260,7 +259,7 @@ export function LedgerTable({
             {/* Period header */}
             <div className="flex items-center justify-between px-4 py-1.5">
               <div className="flex items-center gap-2.5 pr-3 border-r border-border/50 self-stretch">
-                {hasSelectable ? (
+                {selectableIds.length >= 2 ? (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -272,7 +271,7 @@ export function LedgerTable({
                     )}
                     onClick={() => isMonthSelected ? onDeselectMonth(period) : onSelectMonth(period)}
                   >
-                    {isMonthSelected ? "Deseleccionar" : "Seleccionar mes"}
+                    {isMonthSelected ? "Desel. mes" : "Sel. mes"}
                   </Button>
                 ) : (
                   <div className="h-6 w-[110px]" />
@@ -340,7 +339,6 @@ export function LedgerTable({
                       isPunitorio && "text-punitorio italic text-xs",
                       entry.monto === null && "text-warning"
                     )}>
-                      {isPunitorio && "↳ "}
                       {formatDescription(entry.descripcion)}
                     </span>
                     {/* Subtext: mutually exclusive — DB pago_parcial info OR live partial-override indicator */}
