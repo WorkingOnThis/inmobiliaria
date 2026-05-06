@@ -4,6 +4,101 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-06 — SEC-2 (registro + verificación de email)
+
+### Qué hice
+Cerrado el segundo bloqueante de la auditoría: el flujo de registro otorgaba `account_admin` + `emailVerified: true` directo desde un endpoint público, lo que convertía a cualquiera en admin instantáneo. Cuatro archivos:
+
+1. **`src/app/api/register/route.ts`**: el insert ahora pone `role: "visitor"` y `emailVerified: false`. Después del commit del transaction, llama `auth.api.sendVerificationEmail({ body: { email, callbackURL: "/login" } })` — el endpoint nativo de Better Auth que genera el token, lo persiste en `verification`, y dispara el callback `sendVerificationEmail` configurado en `auth/index.ts` (que a su vez usa nuestro `sendEmail` con nodemailer + Gmail). Si el envío falla, borro el user (cascade borra el account) para que el usuario pueda reintentar sin chocarse con "email ya registrado".
+
+2. **`src/lib/auth/index.ts`**: `requireEmailVerification: false` → `true`. Ahora Better Auth refuses sign-in si el user no verificó.
+
+3. **`src/proxy.ts`**: descomenté el bloque que redirige a `/verify-email` si la sesión no tiene `emailVerified`. Le pasé `?email=X` para que el form de reenvío venga prefilled.
+
+4. **`src/app/(dashboard)/layout.tsx`**: lo convertí en `async` y agregué un check — si el user logueado no tiene agency en `agency.ownerId = user.id`, redirige a `/register-oauth`. Esa página es la que pide el nombre de inmobiliaria y promueve el rol a `account_admin` en transacción atómica con la creación de la agency.
+
+El resultado: el flujo email/password ahora es simétrico al OAuth. Empezás como `visitor` sin verificar → recibís email → verificás → logueás → si no tenés agency te mandan a `/register-oauth` → creás la agency y te promueven a admin. Antes el email/password cortocircuitaba todos los pasos.
+
+Anoté 5 deudas técnicas que quedaron del fix en `PENDIENTES.md` bajo prioridad baja (rename de `/register-oauth`, schema default `account_admin`, UX del verify-email, perf del layout, idempotencia del role-promotion).
+
+### Por qué lo hice así y no de otra forma
+**Por qué reusé `/register-oauth` para los dos flujos en vez de hacer una página nueva**: la lógica que necesita el flujo email/password después de verificar email es exactamente la misma que el OAuth — pedir nombre de inmobiliaria, crear `agency`, promover a `account_admin`. La página y la ruta API ya hacían eso. Hacer una página separada hubiera sido duplicación. El nombre `register-oauth` queda incorrecto, pero renombrar es scope creep — lo dejé como deuda chica.
+
+**Por qué `auth.api.sendVerificationEmail()` y no `createEmailVerificationToken()` manual**: el segundo es la primitiva (genera el token, lo persiste). El primero hace eso + dispara el callback configurado + arma la URL final. Como el callback ya está configurado en `auth/index.ts` con el HTML del email, llamar al endpoint de alto nivel reusa todo eso gratis. Si hubiera ido por la primitiva tendría que reimplementar la URL builder y el llamado a `sendEmail`, y duplicar la plantilla.
+
+**Por qué borrar el user si falla el envío del email**: la alternativa es dejar al user creado y que use el form de "reenviar verificación". Pero si falla la primera vez, probablemente fallaba la segunda igual (Gmail caído, network, etc.). Mientras tanto el user queda inconsistente: registrado pero sin posibilidad de verificar, y si intenta registrarse de vuelta le sale "email ya registrado". Mejor borrar y que vea el error claro inmediatamente.
+
+**Por qué el chequeo de agency en el layout y no en el proxy**: el proxy corre en TODOS los requests del matcher (incluso assets si no estuvieran excluidos). Hacer una query de agency ahí sería caro. El layout corre solo en server components del dashboard, una vez por navegación. Mismo efecto, fracción del costo. La contra es que si el user navega vía cliente sin re-renderizar el layout, el check no corre — pero Next.js App Router rerenderiza el layout en navegaciones server-side, así que el path real está cubierto.
+
+**Por qué no migré el schema default `user.role` de `"account_admin"` a `"visitor"`**: requiere `db:push` y la decisión técnica del proyecto fue tratar `db:migrate` como roto y usar `db:push` solo en dev. Mover el default ahora puede pasar inadvertido al deploy si no se replica en prod. Lo dejé como deuda explícita para hacer junto con la migración grande de SEC-3 (donde hay otras columnas a tocar).
+
+### Conceptos que aparecieron
+- **`async` en Next.js layouts**: los layouts de App Router pueden ser `async function` y hacer queries DB / `getSession` / `headers()` antes de renderizar. Es lo que permite el "guard" del agency check sin tener que bouncear al cliente. Servir-side, sin flash, redirigible vía `redirect()` de `next/navigation`.
+- **`redirect()` de `next/navigation` desde server components**: tira una excepción especial que Next.js cazza y convierte en HTTP 307. No retorna nada — la ejecución se corta ahí. Por eso no hace falta `return` después.
+- **Cascade delete en SQL**: cuando defino una FK con `onDelete: "cascade"` (como `account.userId → user.id`), borrar la fila padre borra automáticamente las hijas. Es lo que me permite hacer `db.delete(user)` y el `account` asociado desaparece solo, sin tener que escribir un transaction explícito.
+- **Better Auth's `auth.api`**: los endpoints HTTP de Better Auth se exponen en `/api/auth/*`, pero también están disponibles como llamadas TypeScript en `auth.api.*`. Esto permite invocarlos desde server code sin pasar por la red. El shape es `{ body, headers? }` para imitar un request.
+- **Simetría entre flows de auth como principio de diseño**: los dos paths (email/password y OAuth) tenían un destino común (un `account_admin` con su agency creada) pero llegaban por caminos asimétricos. Hacer que converjan en `/register-oauth` cierra agujeros (no hay manera de saltarse el paso de "crear agency") y baja la superficie de testeo (un solo flow de promoción a auditar). Cuando dos paths llevan al mismo estado final, es señal de que pueden converger antes.
+- **Deuda técnica honesta**: no todo lo que descubrís durante un fix se arregla en el mismo commit. Las 5 deudas que anoté no son procrastinación — son cambios que tienen su propio scope (rename de URL = todo un sweep, schema default = migración) y meterlos en SEC-2 lo hubiera convertido en un PR gigante difícil de revisar. Pequeño y atómico > grande y "completo".
+
+### Preguntas para reflexionar
+1. La `dashboard/layout.tsx` ahora hace 2 queries por navegación (`getSession` + agency check). Better Auth tiene un cookie cache que está deshabilitado adrede ("para evitar problemas después del logout"). ¿Cuál es el costo real de mantener cookie cache habilitado con TTL corto (ej. 60s)? ¿Vale el trade entre "session siempre fresca" y "logout instantáneo"?
+2. El check de agency en el layout funciona porque el layout corre server-side. Pero si en el futuro algún componente cliente hace fetches directos sin recargar el layout (ej. un dialog que abre `/api/properties`), ese check no se evalúa. ¿Eso es un problema? La respuesta corta es "no, porque las APIs tienen sus propios checks de auth y rol". ¿Cuándo deja de ser cierto eso?
+3. Hice que el flujo de `register/route.ts` borre al user si falla el envío del email. Pero `auth.api.sendVerificationEmail` ya creó la fila en la tabla `verification`. ¿Esa fila queda huérfana al borrar el user? Si el user reintenta registrarse 5 minutos después, ¿esa fila stale puede generar conflicto?
+4. Better Auth tiene `auth.api.sendVerificationEmail` que parece pensado para ser llamado por usuarios autenticados que quieren reenviarse el email. Lo estoy llamando desde un endpoint público con un user recién creado y sin sesión. ¿Hay algún check interno de Better Auth que pueda hacerlo fallar en un caso raro? Lo confirmé funcionalmente leyendo el callback en `auth/index.ts`, pero un test E2E no estaría de más.
+
+### Qué debería anotar en Obsidian
+- [ ] Concepto: `async` server components en Next.js 16 — qué pueden hacer y dónde correrlos vs cliente
+- [ ] Concepto: `redirect()` de `next/navigation` — cómo funciona la excepción especial bajo el capó
+- [ ] Concepto: cascade delete en FKs y cuándo usarlo (vs explicit transaction delete)
+- [ ] Patrón: simetría entre flows de auth como principio de diseño — convergencia en un único punto de creación de estado
+- [ ] Patrón: `auth.api.*` para llamar a endpoints de Better Auth desde server code sin pasar por HTTP
+- [ ] Patrón: rollback manual cuando la operación cruza el borde de un transaction (envío de email post-commit)
+- [ ] Decisión técnica: SEC-2 — por qué reusar `/register-oauth` para email/password en vez de duplicar
+- [ ] Decisión técnica: agency check en layout vs proxy — costo por request
+- [ ] Bug: endpoint de registro que insertaba `account_admin + emailVerified: true` directo, saltando Better Auth
+- [ ] Práctica: anotar deuda técnica explícita en vez de arrastrarla en el mismo commit
+
+---
+
+## 2026-05-06 — Auditoría de seguridad pre-deploy + SEC-1 (secrets obligatorios)
+
+### Qué hice
+Antes de subir el proyecto a producción corrí una auditoría de seguridad sobre todo el código. El agente identificó 10 candidatos; verifiqué cada uno leyendo el código citado y filtré 2 falsos positivos (path traversal en uploads — Next.js no permite `..` en segmentos dinámicos; PATCH `/api/agency` sin chequeo de rol — solo afecta la propia agencia del usuario). Quedaron **4 HIGH y 4 MEDIUM** reales, todos bloqueantes para deploy. Los volqué como sección nueva `🚨 Bloqueante para producción` arriba de todo en `PENDIENTES.md`, agrupados en 7 ítems (junté los que son el mismo trabajo).
+
+Después arranqué con SEC-1 (el más barato, ~5 min). Dos archivos:
+
+1. **`src/lib/auth/index.ts`**: el secreto que firma las cookies de sesión caía a `"change-me-in-production"` si la env var `BETTER_AUTH_SECRET` faltaba. Ese string está commiteado en el repo, o sea es público. Fix: guard al tope del módulo que tira `Error` si falta. La app ya no arranca sin secreto.
+
+2. **`src/app/api/cron/cleanup-files/route.ts`**: la ruta hacía `if (CRON_SECRET) { check }` — si la env var faltaba, saltaba el chequeo entero y la ruta quedaba abierta a cualquiera en internet. Fix: invertí la lógica — devuelve 503 si falta el secreto, 401 si no coincide. Cerrada siempre.
+
+### Por qué lo hice así y no de otra forma
+**Por qué `throw` y no warning + fallback a otro valor**: el fallback `|| "change-me-in-production"` era exactamente el bug — un valor "por defecto" que hace que la app *parezca* funcionar pero con un secreto público. Cualquier mitigación que mantenga el fallback (loguear warning, usar un secreto generado al boot, etc.) sigue siendo "puerta abierta". La única opción honesta es que la app no arranque. Es preferible un error claro al deployar que un hueco silencioso.
+
+**Por qué `throw` para uno y `return 503` para el otro**: depende del scope del recurso. `BETTER_AUTH_SECRET` es transversal a toda la app — sin él, ni un solo request puede ser autenticado correctamente. Tirar al boot es lo correcto: si la app no puede hacer auth, no debería ofrecer ninguna ruta. `CRON_SECRET` es solo para una ruta específica (cleanup); si falta, la ruta no debería funcionar pero el resto del sistema sí. Por eso la ruta del cron devuelve 503 ("no disponible") en vez de derribar todo.
+
+**Por qué no junté los dos secretos en un solo archivo de validación**: tentador hacer `src/lib/env.ts` con todas las validaciones centralizadas, pero hoy son solo dos. Si crece a 5+ vale la pena la abstracción; con 2 es overengineering. El `throw` al tope del archivo que usa el secreto es más localizado — quien lee `src/lib/auth/index.ts` ve la regla ahí mismo.
+
+### Conceptos que aparecieron
+- **Fail-fast vs fail-closed**: dos formas distintas de "fallar bien". Fail-fast = la app no arranca si la config crítica falta (preferible para todo lo transversal: secrets de auth, conexión a DB, etc.). Fail-closed = el recurso afectado devuelve error pero el resto sigue (preferible para features opcionales: cron jobs, integraciones específicas). La regla general es: nunca fallar abierto — ante una config faltante, jamás debe quedar más permisivo de lo normal.
+- **Narrowing por `throw`/`asserts`**: cuando hacés `if (!x) throw ...`, TypeScript "sabe" que después de esa línea `x` no puede ser `undefined`. Por eso después podés usar `x` como si fuera `string` aunque arriba era `string | undefined`. Es lo que permite que el `secret,` de la línea siguiente compile sin un `!` ni un `?? throw`.
+- **"Llave debajo del felpudo"** como antipatrón: dejar un default público para que algo "no falle por las dudas" es la firma de seguridad más común que sale mal. El default termina siendo el caso real (porque la gente se olvida de setear la env var), y el "por las dudas" se convierte en "siempre". Si el comportamiento por defecto es inseguro, el código debe rechazarse a sí mismo, no aceptarse con un default.
+- **Auditoría con sub-agente vs revisión propia**: el flujo fue: agente identificador (lee código y lista candidatos) → yo verifico cada cita leyendo los archivos → filtro falsos positivos. Importante: el agente acertó 8 de 10, pero los 2 errores eran sutiles (path traversal en Next.js, scope del PATCH /agency). Sin la verificación humana hubiera quedado ruido en el reporte. La regla: nunca confiar la conclusión final al agente, sí la búsqueda inicial.
+
+### Preguntas para reflexionar
+1. El bug de la "llave debajo del felpudo" aparece muy seguido en código. ¿Por qué los developers lo escriben? ¿Es por miedo a que la app crashee en dev? ¿Por costumbre de poner defaults a todo? Si pudieras meter una regla de lint que detectara `process.env.X || "..."` cuando `X` es un secret, ¿cómo distinguirías "secret" de "config benigna" automáticamente?
+2. La diferencia entre fail-fast y fail-closed la determiné por "qué tan crítico es el recurso". Pero "crítico" es subjetivo. ¿Hay alguna otra heurística más concreta? Por ejemplo: ¿"si falta esta env var, ¿hay alguna ruta que aún tenga sentido servir?"? Si sí → fail-closed por ruta. Si no → fail-fast.
+3. La auditoría detectó que `register/route.ts` bypassea Better Auth y mete `role: "account_admin"` directo. ¿Por qué existe este bypass? Si Better Auth ya implementa registro, ¿qué necesidad había de duplicar la lógica? ¿Es una decisión técnica vieja que quedó? (esto lo voy a investigar al hacer SEC-2)
+
+### Qué debería anotar en Obsidian
+- [ ] Concepto: fail-fast vs fail-closed — cuándo usar cada uno
+- [ ] Concepto: TypeScript narrowing por `throw` (también por `asserts` y `never`)
+- [ ] Patrón: validar env vars secretas al boot del módulo en vez de en runtime con fallback
+- [ ] Patrón: sub-agente identificador + verificación humana de cada cita = auditoría confiable
+- [ ] Bug: `|| "default-value"` en secrets como antipatrón — el default se vuelve el caso real
+- [ ] Decisión técnica: SEC-1 — por qué `BETTER_AUTH_SECRET` tira al boot (transversal) vs `CRON_SECRET` que devuelve 503 (route-specific)
+
+---
+
 ## 2026-05-06 — Comprobante de liquidación + sistema visual + critique del LedgerTable
 
 ### Qué hice

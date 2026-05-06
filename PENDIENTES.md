@@ -6,6 +6,26 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 
 ---
 
+## 🚨 Bloqueante para producción (auditoría de seguridad)
+
+Antes de subir el proyecto online. Orden: barato primero → migración grande → operacional. Cada ítem trae archivo:línea y la idea del fix; el detalle completo del exploit está en la sesión de auditoría (LOG.md).
+
+- [x] **SEC-1 · `BETTER_AUTH_SECRET` obligatorio (HIGH)** — `src/lib/auth/index.ts` ahora tira `Error` al boot si la env var falta (fail-fast). `src/app/api/cron/cleanup-files/route.ts` invertido a fail-closed: 503 si no hay `CRON_SECRET`, 401 si no coincide. OAuth de Google se valida cuando se active el provider · [usuarios-y-acceso](docs/decisions/usuarios-y-acceso.md)
+
+- [x] **SEC-2 · Arreglar flujo de registro y verificación de email (HIGH)** — Nuevos registros ahora entran como `visitor` + `emailVerified: false`. `auth.api.sendVerificationEmail()` se dispara post-insert (con rollback del user si el envío falla). `requireEmailVerification: true` en Better Auth. Bloque del proxy descomentado para forzar verificación. Layout de `(dashboard)` chequea agency y redirige a `/register-oauth` si falta — el flujo de creación de inmobiliaria + promoción a `account_admin` queda compartido entre email/password y OAuth · [usuarios-y-acceso](docs/decisions/usuarios-y-acceso.md)
+
+- [ ] **SEC-3 · Multi-tenancy real: agregar `agencyId` y scopear todas las queries (HIGH)** — Hoy `property`, `client`, `contract`, `cajaMovimiento`, `tarea`, `servicio`, `guarantee`, `clauseTemplate`, `contractAmendment`, etc. no tienen `agencyId`. Las rutas filtran solo por `eq(table.id, id)` sin verificar inquilino. Resultado: cualquier usuario logueado lee/edita/borra datos de cualquier otra inmobiliaria (verificado en `properties/[id]`, `cash/movimientos`, `tasks/[id]/archivos`, etc.). Fix: migración con backfill desde `createdBy` → `agency.ownerId`, helper `requireAgencyResource(table, id, agencyId)`, y `eq(table.agencyId, agencyId)` en cada listado y `[id]`. Es el bloque más grande — 1 PR atómico con script de backfill y test de integración cross-agencia · [usuarios-y-acceso](docs/decisions/usuarios-y-acceso.md)
+
+- [ ] **SEC-4 · Chequeo de rol en mutaciones de Caja (MEDIUM)** — `src/app/api/cash/movimientos/route.ts:133` (POST), `[id]/route.ts:14` (PATCH), `[id]/route.ts:83` (DELETE), `[id]/comprobante/route.ts` y `[id]/conciliar/route.ts` solo verifican que haya sesión. Un `visitor` (read-only) puede crear/editar/borrar movimientos. Fix: crear `canManageCash(role)` en `src/lib/permissions.ts` y agregarlo después del check de sesión. Aprovechar para barrer las otras rutas POST/PATCH/DELETE en busca del mismo patrón · [contabilidad](docs/decisions/contabilidad.md)
+
+- [ ] **SEC-5 · Stored XSS en documento HTML de modificación de contrato (MEDIUM)** — `src/app/api/contracts/[id]/amendments/[aid]/document/route.ts:39-43` concatena `description`, `before`/`after` y nombres en HTML sin escapar; el GET (`:236`) lo sirve con `Content-Type: text/html` desde el mismo origen. Un atacante con rol `agent` inyecta `<script>` y captura sesiones de quien abra el instrumento. Fix: helper `escapeHtml()` en cada interpolación + `Content-Security-Policy` restrictivo en la respuesta. Mejor aún: dejar de almacenar HTML, rendear on-demand con JSX · [contratos](docs/decisions/contratos.md)
+
+- [ ] **SEC-6 · Whitelist de tipos de archivo en uploads a `public/` (MEDIUM)** — `src/app/api/tasks/[id]/archivos/route.ts:43-62` no valida MIME ni extensión; un `.html` o `.svg` malicioso queda servido desde el mismo origen y dispara stored XSS. Mismo patrón en `contracts/[id]/documents` y, parcialmente, en `cash/movimientos/[id]/comprobante` (valida MIME pero confía en el header del cliente). Fix: whitelist de extensiones (`pdf`, `jpg`, `jpeg`, `png`), validar magic bytes (no `file.type`), y servir uploads vía route-handler con `Content-Disposition: attachment` (idealmente moverlos fuera de `public/`)
+
+- [ ] **SEC-7 · Operacional al deployar** — Generar secrets de prod nuevos (`openssl rand -base64 32` para `BETTER_AUTH_SECRET` y `CRON_SECRET`); rotar `RESEND_API_KEY` y la app password de Gmail antes del go-live; configurar `BETTER_AUTH_URL` con la URL pública; forzar HTTPS; verificar que el host (Vercel/Railway/etc.) no exponga `/uploads/` de forma persistente — idealmente migrar uploads a S3/Vercel Blob
+
+---
+
 ## 🔴 Prioridad alta
 
 
@@ -38,6 +58,18 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 ---
 
 ## 🟢 Prioridad baja
+
+### Deuda técnica heredada de la auditoría de seguridad
+
+- [ ] **Renombrar `/register-oauth` a algo agnóstico** — hoy el flujo de "crear inmobiliaria + promoción a `account_admin`" se reusa para email/password también, así que el nombre quedó confuso. Candidatos: `/completar-registro` o `/nueva-inmobiliaria`. Toca: `src/app/(auth)/register-oauth/`, `src/app/api/register-oauth/`, `src/components/auth/oauth-buttons.tsx:25`, `src/components/auth/register-oauth-form.tsx:34`, y la redirección en `src/app/(dashboard)/layout.tsx`
+
+- [ ] **Schema default `user.role` debería ser `"visitor"`** — `src/db/schema/better-auth.ts:19` hoy es `default("account_admin")`. No es explotable porque todos los inserts pasan rol explícito, pero es contradictorio con el `defaultValue: "visitor"` de Better Auth (`src/lib/auth/index.ts:39`) y rompería defense-in-depth si algún caller futuro olvidara pasarlo. Cambio: `default("visitor")` + `bun run db:push`
+
+- [ ] **Verify-email: mostrar "te mandamos el email a X" cuando viene de register** — hoy `src/app/(auth)/verify-email/page.tsx:60-66` muestra "Hemos enviado un email a X" solo si hay `session?.user`. Después de registrarse no hay sesión todavía, así que cae al texto genérico "Ingresa tu email para recibir un link de verificación". Mejorar: detectar `?email=X&sent=true` y mostrar el mensaje correcto
+
+- [ ] **Performance: 2 queries por page load del dashboard** — `getSession()` (con cookie cache deshabilitado) + nuevo query de agency en layout = 2+ queries en cada navegación. Considerar habilitar cookie cache de Better Auth con TTL corto, o cachear el agency lookup en la sesión. Optimizar solo si se vuelve perf concern
+
+- [ ] **`register-oauth/route.ts` fuerza `role: "account_admin"` sin chequear el rol previo** — `src/app/api/register-oauth/route.ts:90` siempre setea admin. Hoy funciona porque solo viene de visitor → admin, pero si V2 agrega flujo de "invitar colaborador" con rol `agent`, este bypass los rompe. Cuando aparezca el feature de invitaciones, condicionar la promoción
 
 - [ ] **Pool de motivos de cancelación (V2)** — reemplazar el campo de texto libre del dialog de cancelación por un `CreatableCombobox` que guarde y reutilice motivos frecuentes ("Error de carga", "No corresponde cobrar", etc.). Incluye: tabla en DB para los motivos, toggle de obligatorio/opcional por agencia desde un módulo de configuración · [contabilidad](docs/decisions/contabilidad.md)
 

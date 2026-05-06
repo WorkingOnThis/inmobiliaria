@@ -6,6 +6,13 @@ import * as schema from "@/db/schema";
 // Import email sending function
 import { sendEmail } from "./email";
 
+const secret = process.env.BETTER_AUTH_SECRET;
+if (!secret) {
+  throw new Error(
+    "BETTER_AUTH_SECRET is required. Generate one with: openssl rand -base64 32"
+  );
+}
+
 /**
  * Better Auth configuration
  *
@@ -28,7 +35,7 @@ export const auth = betterAuth({
     process.env.NEXT_PUBLIC_APP_URL ||
     "http://localhost:3000",
   basePath: "/api/auth",
-  secret: process.env.BETTER_AUTH_SECRET || "change-me-in-production",
+  secret,
 
   // User configuration with additional fields
   user: {
@@ -80,7 +87,7 @@ export const auth = betterAuth({
   // Email and Password configuration
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    requireEmailVerification: true,
     minPasswordLength: 8,
     maxPasswordLength: 128,
 

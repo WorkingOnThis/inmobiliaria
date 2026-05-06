@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { user, account, verification, rateLimit } from "@/db/schema/better-auth";
+import { user, account, rateLimit } from "@/db/schema/better-auth";
 import {
   validateRegistrationInput,
   emailExists,
 } from "@/lib/auth/register";
-import { sendEmail } from "@/lib/auth/email";
 import { auth } from "@/lib/auth";
-import { createEmailVerificationToken } from "better-auth/api";
 import { hashPassword } from "better-auth/crypto";
 import { eq } from "drizzle-orm";
 
@@ -150,8 +148,8 @@ export async function POST(request: NextRequest) {
           id: userId,
           name: fullName,
           email: normalizedEmail,
-          emailVerified: true,
-          role: "account_admin",
+          emailVerified: false,
+          role: "visitor",
           createdAt: new Date(),
           updatedAt: new Date(),
         });
@@ -167,27 +165,29 @@ export async function POST(request: NextRequest) {
         });
       });
     } catch (dbError: any) {
-      // Check if it's a unique constraint violation (duplicate email)
       if (dbError.code === "23505" || dbError.constraint?.includes("email")) {
         return NextResponse.json(
           { error: "Email already registered" },
           { status: 400 }
         );
       }
-      
-      // Check if error is from email sending (will be thrown by sendEmail)
-      if (dbError.message?.includes("Failed to send email") || dbError.message?.includes("email")) {
-        console.error("Email sending failed during registration:", dbError);
-        // Transaction already rolled back automatically, no need to manually delete
-        return NextResponse.json(
-          { error: "No se pudo enviar el email de verificación. Por favor intenta nuevamente." },
-          { status: 500 }
-        );
-      }
-      
       console.error("Database transaction error:", dbError);
       return NextResponse.json(
         { error: "Registration failed. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    // Send verification email. If it fails, delete the user so they can retry.
+    try {
+      await auth.api.sendVerificationEmail({
+        body: { email: normalizedEmail, callbackURL: "/login" },
+      });
+    } catch (emailError) {
+      console.error("Verification email failed, rolling back user:", emailError);
+      await db.delete(user).where(eq(user.id, userId)); // cascade deletes account
+      return NextResponse.json(
+        { error: "No se pudo enviar el email de verificación. Por favor intenta nuevamente." },
         { status: 500 }
       );
     }

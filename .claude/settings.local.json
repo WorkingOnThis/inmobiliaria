@@ -155,7 +155,8 @@
       "Bash(npm run *)",
       "Bash(npx shadcn@latest add accordion --yes)",
       "Bash(Get-ChildItem *)",
-      "Bash(New-Item *)"
+      "Bash(New-Item *)",
+      "Bash(Select-String -Pattern \"auth.index|cleanup-files\")"
     ]
   },
   "enableAllProjectMcpServers": true,

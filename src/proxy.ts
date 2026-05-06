@@ -44,11 +44,11 @@ export async function proxy(request: NextRequest) {
     }
 
     // Si el usuario no ha verificado su email, redirigir a verificación
-    // Nota: Esta verificación puede ser opcional dependiendo de la configuración
-    // if (!session.user.emailVerified) {
-    //   const verifyUrl = new URL("/verify-email", request.url);
-    //   return NextResponse.redirect(verifyUrl);
-    // }
+    if (!session.user.emailVerified) {
+      const verifyUrl = new URL("/verify-email", request.url);
+      verifyUrl.searchParams.set("email", session.user.email);
+      return NextResponse.redirect(verifyUrl);
+    }
 
     // Usuario autenticado, permitir acceso
     // Agregar headers para prevenir cache en rutas protegidas
