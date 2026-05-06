@@ -19,7 +19,7 @@ Decisiones y contexto → [docs/decisions/](docs/decisions/)
 
 ## 🟡 Prioridad media
 
-- [ ] **Cuenta corriente de propietarios** — dejarla similar a la de inquilinos: misma estructura de tabla, mismo menú `···` con "Ver detalle", misma lógica de flags contables. El `EntryDetailDialog` ya existe como componente reutilizable · [contabilidad](docs/decisions/contabilidad.md)
+- [x] **Cuenta corriente de propietarios** — dejarla similar a la de inquilinos: misma estructura de tabla, mismo menú `···` con "Ver detalle", misma lógica de flags contables. El `EntryDetailDialog` ya existe como componente reutilizable · [contabilidad](docs/decisions/contabilidad.md)
 
 - [ ] **Rango de fechas en cargo manual** — reemplazar el campo "Período (opcional)" por fecha inicio + fecha fin, con posibilidad de setear el fin especificando días desde el inicio (igual que en generación de contratos). Útil para calcular punitorios sobre cargos manuales · [contabilidad](docs/decisions/contabilidad.md)
 
