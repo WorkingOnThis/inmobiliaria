@@ -17,6 +17,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("emailVerified").notNull().default(false),
   image: text("image"),
   role: text("role").notNull().default("account_admin"), // User role, default to account_admin
+  agencyId: text("agencyId"), // nullable: visitors no la tienen hasta crear su agency
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
