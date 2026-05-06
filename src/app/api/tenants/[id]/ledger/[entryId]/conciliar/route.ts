@@ -10,6 +10,10 @@ import { z } from "zod";
 
 const conciliarSchema = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  splitBreakdown: z.object({
+    propietario: z.number(),
+    administracion: z.number(),
+  }).optional(),
 });
 
 export async function POST(
@@ -80,6 +84,9 @@ export async function POST(
           conciliadoAt: now,
           conciliadoPor: session.user.id,
           ...(cajaId && { cajaMovimientoId: cajaId }),
+          ...(result.data.splitBreakdown && {
+            splitBreakdown: JSON.stringify(result.data.splitBreakdown),
+          }),
           updatedAt: now,
         })
         .where(eq(tenantLedger.id, entryId));
