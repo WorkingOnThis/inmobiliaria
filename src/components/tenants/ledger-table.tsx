@@ -35,6 +35,8 @@ export type LedgerEntry = {
   impactaPropietario: boolean;
   incluirEnBaseComision: boolean;
   impactaCaja: boolean;
+  beneficiario: string | null;
+  splitBreakdown: string | null;
 };
 
 type Props = {
@@ -49,6 +51,9 @@ type Props = {
   onAnularRecibo: (reciboNumero: string) => void;
   onViewDetail: (entry: LedgerEntry) => void;
   activeFilters: Set<string>;
+  isSplitContract?: boolean;
+  isOwnerView?: boolean;
+  managementCommissionPct?: number;
 };
 
 const ESTADO_BADGE: Record<string, { label: string; className: string }> = {
@@ -113,6 +118,55 @@ function groupByPeriod(entries: LedgerEntry[]): Map<string, LedgerEntry[]> {
   return map;
 }
 
+function DestinoBadge({
+  beneficiario,
+  managementCommissionPct,
+  monto,
+  splitBreakdown,
+  isOwnerView,
+}: {
+  beneficiario: string | null;
+  managementCommissionPct: number;
+  monto: number;
+  splitBreakdown: string | null;
+  isOwnerView?: boolean;
+}) {
+  if (isOwnerView && splitBreakdown) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-blue-950 border border-blue-800 text-blue-300 font-medium">
+        ↗ Cobro directo
+      </span>
+    );
+  }
+  if (!beneficiario) return null;
+  if (beneficiario === "split") {
+    const adm = Math.round(monto * (managementCommissionPct / 100));
+    const prop = monto - adm;
+    return (
+      <span className="flex flex-wrap gap-1">
+        <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300">
+          ↗ Prop. ${prop.toLocaleString("es-AR")}
+        </span>
+        <span className="text-xs px-1.5 py-0.5 rounded bg-blue-950 border border-blue-800 text-blue-300">
+          ↗ Adm. ${adm.toLocaleString("es-AR")}
+        </span>
+      </span>
+    );
+  }
+  if (beneficiario === "propietario") {
+    return (
+      <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300">
+        ↗ Propietario
+      </span>
+    );
+  }
+  return (
+    <span className="text-xs px-1.5 py-0.5 rounded bg-blue-950 border border-blue-800 text-blue-300">
+      ↗ Administración
+    </span>
+  );
+}
+
 export function LedgerTable({
   entries,
   montoOverrides,
@@ -125,7 +179,15 @@ export function LedgerTable({
   onAnularRecibo,
   onViewDetail,
   activeFilters,
+  isSplitContract = false,
+  isOwnerView = false,
+  managementCommissionPct,
 }: Props) {
+  const showDestino = isSplitContract || isOwnerView;
+  const gridCols = showDestino
+    ? "grid-cols-[28px_1fr_80px_110px_110px_150px_90px]"
+    : "grid-cols-[28px_1fr_80px_110px_110px_90px]";
+
   const todayPeriod = new Date().toISOString().slice(0, 7);
   const currentRef = useRef<HTMLDivElement>(null);
 
@@ -160,12 +222,15 @@ export function LedgerTable({
   return (
     <div className="w-full">
       {/* Column headers — sticky so they stay visible while scrolling */}
-      <div className="sticky top-0 z-10 grid items-center gap-2 px-4 py-1.5 bg-muted/80 backdrop-blur-sm border-b border-border grid-cols-[28px_1fr_80px_110px_110px_90px]">
+      <div className={cn("sticky top-0 z-10 grid items-center gap-2 px-4 py-1.5 bg-muted/80 backdrop-blur-sm border-b border-border", gridCols)}>
         <div />
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Concepto</span>
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tipo</span>
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Monto</span>
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Estado</span>
+        {showDestino && (
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Destino</span>
+        )}
         <div />
       </div>
 
@@ -233,10 +298,11 @@ export function LedgerTable({
                   onClick={() => selectable && onToggleSelect(entry.id)}
                   className={cn(
                     "grid items-center gap-2 px-4 py-2 text-sm",
-                    "grid-cols-[28px_1fr_80px_110px_110px_90px]",
+                    gridCols,
                     isPunitorio && "pl-10 bg-punitorio-dim border-t border-punitorio/30",
                     selectable && "cursor-pointer hover:bg-muted/40",
-                    selected && "bg-primary/10 hover:bg-primary/15"
+                    selected && "bg-primary/10 hover:bg-primary/15",
+                    isOwnerView && entry.splitBreakdown ? "bg-blue-950/20" : ""
                   )}
                 >
                   {/* Checkbox */}
@@ -312,6 +378,19 @@ export function LedgerTable({
                       {badge.label}
                     </Badge>
                   </div>
+
+                  {/* Destino */}
+                  {showDestino && (
+                    <div>
+                      <DestinoBadge
+                        beneficiario={entry.beneficiario}
+                        managementCommissionPct={managementCommissionPct ?? 10}
+                        monto={Number(entry.monto ?? 0)}
+                        splitBreakdown={entry.splitBreakdown}
+                        isOwnerView={isOwnerView}
+                      />
+                    </div>
+                  )}
 
                   {/* Actions */}
                   <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
