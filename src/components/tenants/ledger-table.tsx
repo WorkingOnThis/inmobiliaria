@@ -384,7 +384,7 @@ export function LedgerTable({
                   {showDestino && (
                     <div>
                       <DestinoBadge
-                        beneficiario={entry.beneficiario}
+                        beneficiario={entry.beneficiario ?? (entry.tipo === "alquiler" ? "split" : "propietario")}
                         managementCommissionPct={managementCommissionPct ?? 10}
                         monto={Number(entry.monto ?? 0)}
                         splitBreakdown={entry.splitBreakdown}

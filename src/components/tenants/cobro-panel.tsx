@@ -43,7 +43,8 @@ function computeSplitTotals(
   let adm = 0;
   for (const e of entries) {
     const monto = getMonto(e, overrides);
-    const dest = beneficiarioOverrides[e.id] ?? e.beneficiario;
+    // null = entry pre-dates split feature; apply default by tipo
+    const dest = beneficiarioOverrides[e.id] ?? e.beneficiario ?? (e.tipo === "alquiler" ? "split" : "propietario");
     if (dest === "split") {
       const admPart = Math.round(monto * (pct / 100));
       adm += admPart;
