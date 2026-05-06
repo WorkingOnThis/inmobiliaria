@@ -30,15 +30,17 @@ export type ManualChargeData = {
   impactaPropietario: boolean;
   incluirEnBaseComision: boolean;
   impactaCaja: boolean;
+  beneficiario?: "propietario" | "administracion";
 };
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: ManualChargeData) => Promise<void>;
+  isSplitContract?: boolean;
 };
 
-export function AddManualChargeDialog({ open, onOpenChange, onSave }: Props) {
+export function AddManualChargeDialog({ open, onOpenChange, onSave, isSplitContract }: Props) {
   const [tipo, setTipo] = useState<ManualChargeData["tipo"]>("gasto");
   const [descripcion, setDescripcion] = useState("");
   const [monto, setMonto] = useState("");
@@ -46,6 +48,7 @@ export function AddManualChargeDialog({ open, onOpenChange, onSave }: Props) {
   const [impactaPropietario, setImpactaPropietario] = useState(INITIAL_FLAGS.impactaPropietario);
   const [incluirEnBaseComision, setIncluirEnBaseComision] = useState(INITIAL_FLAGS.incluirEnBaseComision);
   const [impactaCaja, setImpactaCaja] = useState(INITIAL_FLAGS.impactaCaja);
+  const [beneficiario, setBeneficiario] = useState<"propietario" | "administracion">("propietario");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -65,6 +68,7 @@ export function AddManualChargeDialog({ open, onOpenChange, onSave }: Props) {
     setImpactaPropietario(INITIAL_FLAGS.impactaPropietario);
     setIncluirEnBaseComision(INITIAL_FLAGS.incluirEnBaseComision);
     setImpactaCaja(INITIAL_FLAGS.impactaCaja);
+    setBeneficiario("propietario");
     setError(null);
     setSaving(false);
   }
@@ -84,6 +88,7 @@ export function AddManualChargeDialog({ open, onOpenChange, onSave }: Props) {
         impactaPropietario,
         incluirEnBaseComision,
         impactaCaja,
+        ...(isSplitContract && { beneficiario }),
       });
       reset();
     } catch (e) {
@@ -140,6 +145,21 @@ export function AddManualChargeDialog({ open, onOpenChange, onSave }: Props) {
               className="h-9"
             />
           </div>
+          {isSplitContract && (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">¿A quién va este cargo?</Label>
+              <Select
+                value={beneficiario}
+                onValueChange={(v) => setBeneficiario(v as "propietario" | "administracion")}
+              >
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="propietario">↗ Propietario</SelectItem>
+                  <SelectItem value="administracion">↗ Administración</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="border-t border-border pt-3 space-y-2.5">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contabilidad</p>
             <div className="flex items-center justify-between">
