@@ -929,12 +929,15 @@ export function ContractForm() {
                   <SelectContent>
                     <SelectItem value="A">Modalidad A — inmobiliaria recibe y liquida</SelectItem>
                     <SelectItem value="B">Modalidad B — pago directo al propietario</SelectItem>
+                    <SelectItem value="split">Modalidad Split — el inquilino paga dividido</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   {step2.paymentModality === "A"
                     ? "La inmobiliaria cobra por su CBU y liquida al propietario. Se aplica un recargo del 1% sobre el alquiler, descontado de la liquidación."
-                    : "El inquilino paga directo al CBU del propietario. La inmobiliaria no interviene en el cobro. Sin recargo de administración."}
+                    : step2.paymentModality === "B"
+                    ? "El inquilino paga directo al CBU del propietario. La inmobiliaria no interviene en el cobro. Sin recargo de administración."
+                    : "El inquilino recibe instrucciones de transferir una parte al propietario y otra a la administración. La división se calcula según el % de administración configurado."}
                 </p>
               </div>
             </div>
