@@ -215,7 +215,7 @@ export function LedgerTable({
   const showDestino = isSplitContract || isOwnerView;
   const router = useRouter();
   const gridCols = showDestino
-    ? "grid-cols-[28px_1fr_80px_110px_110px_150px_90px]"
+    ? "grid-cols-[28px_1fr_80px_110px_110px_220px_90px]"
     : "grid-cols-[28px_1fr_80px_110px_110px_90px]";
 
   const todayPeriod = new Date().toISOString().slice(0, 7);
