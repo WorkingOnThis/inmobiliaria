@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-06T00:00:00Z",
+  "title": "Design System: Arce Administración",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Aged Terracota",
+        "canonical": "oklch(0.585 0.135 32)",
+        "tonalRamp": [
+          "oklch(0.15 0.06 32)",
+          "oklch(0.25 0.09 32)",
+          "oklch(0.35 0.11 32)",
+          "oklch(0.45 0.12 32)",
+          "oklch(0.585 0.135 32)",
+          "oklch(0.70 0.13 32)",
+          "oklch(0.82 0.10 32)",
+          "oklch(0.95 0.04 32)"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Roasted Walnut",
+        "canonical": "oklch(0.165 0.006 40)",
+        "tonalRamp": [
+          "oklch(0.10 0.005 40)",
+          "oklch(0.165 0.006 40)",
+          "oklch(0.21 0.008 40)",
+          "oklch(0.27 0.010 40)",
+          "oklch(0.40 0.012 40)",
+          "oklch(0.55 0.012 40)",
+          "oklch(0.72 0.012 50)",
+          "oklch(0.972 0.004 60)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Warm Slate",
+        "canonical": "oklch(0.215 0.008 40)",
+        "tonalRamp": [
+          "oklch(0.165 0.006 40)",
+          "oklch(0.195 0.007 40)",
+          "oklch(0.215 0.008 40)",
+          "oklch(0.235 0.008 40)",
+          "oklch(0.255 0.010 40)",
+          "oklch(0.40 0.012 40)",
+          "oklch(0.72 0.012 50)",
+          "oklch(0.972 0.004 60)"
+        ]
+      },
+      "on-surface": {
+        "role": "neutral",
+        "displayName": "Bone Cream",
+        "canonical": "oklch(0.972 0.004 60)",
+        "tonalRamp": [
+          "oklch(0.165 0.006 40)",
+          "oklch(0.30 0.010 40)",
+          "oklch(0.45 0.012 40)",
+          "oklch(0.60 0.012 50)",
+          "oklch(0.72 0.012 50)",
+          "oklch(0.85 0.008 60)",
+          "oklch(0.93 0.005 60)",
+          "oklch(0.972 0.004 60)"
+        ]
+      },
+      "income": {
+        "role": "secondary",
+        "displayName": "Mint Ledger",
+        "canonical": "oklch(0.74 0.14 155)",
+        "tonalRamp": [
+          "oklch(0.20 0.06 155)",
+          "oklch(0.30 0.08 155)",
+          "oklch(0.42 0.10 155)",
+          "oklch(0.55 0.13 155)",
+          "oklch(0.65 0.14 155)",
+          "oklch(0.74 0.14 155)",
+          "oklch(0.85 0.10 155)",
+          "oklch(0.95 0.04 155)"
+        ]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Pencil Amber",
+        "canonical": "oklch(0.80 0.13 85)",
+        "tonalRamp": [
+          "oklch(0.22 0.06 85)",
+          "oklch(0.32 0.08 85)",
+          "oklch(0.45 0.10 85)",
+          "oklch(0.58 0.12 85)",
+          "oklch(0.70 0.13 85)",
+          "oklch(0.80 0.13 85)",
+          "oklch(0.88 0.10 85)",
+          "oklch(0.96 0.04 85)"
+        ]
+      },
+      "destructive": {
+        "role": "secondary",
+        "displayName": "Iron Oxide",
+        "canonical": "oklch(0.68 0.18 25)",
+        "tonalRamp": [
+          "oklch(0.18 0.07 25)",
+          "oklch(0.28 0.10 25)",
+          "oklch(0.40 0.13 25)",
+          "oklch(0.52 0.16 25)",
+          "oklch(0.68 0.18 25)",
+          "oklch(0.78 0.15 25)",
+          "oklch(0.88 0.10 25)",
+          "oklch(0.96 0.04 25)"
+        ]
+      },
+      "punitorio": {
+        "role": "tertiary",
+        "displayName": "Indigo Penalty",
+        "canonical": "oklch(0.68 0.20 295)",
+        "tonalRamp": [
+          "oklch(0.18 0.08 295)",
+          "oklch(0.28 0.12 295)",
+          "oklch(0.40 0.15 295)",
+          "oklch(0.52 0.18 295)",
+          "oklch(0.68 0.20 295)",
+          "oklch(0.78 0.16 295)",
+          "oklch(0.88 0.10 295)",
+          "oklch(0.96 0.04 295)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display (Space Grotesk 700)",
+        "purpose": "Page titles and h1 in entity fichas. Negative tracking for editorial confidence."
+      },
+      "headline": {
+        "displayName": "Headline (Space Grotesk 600)",
+        "purpose": "Section heads, panel titles inside dashboards."
+      },
+      "title": {
+        "displayName": "Title (Space Grotesk 600 small)",
+        "purpose": "Subsection labels, card heads in lists."
+      },
+      "body": {
+        "displayName": "Body (Inter 400)",
+        "purpose": "Default paragraph and form text. Cap line length at 65-75ch for prose."
+      },
+      "label": {
+        "displayName": "Label (Inter 600 uppercase)",
+        "purpose": "KPI labels, table column heads, field labels above values."
+      },
+      "mono": {
+        "displayName": "Mono (Geist Mono)",
+        "purpose": "Every number a human will compare: montos, DNI/CUIT, periods, receipt numbers, contract IDs."
+      },
+      "brand": {
+        "displayName": "Brand (Montserrat 800)",
+        "purpose": "Tiny uppercase labels inside avatars and the smallest pills."
+      }
+    },
+    "shadows": [
+      {
+        "name": "paper-surface",
+        "value": "0 8px 24px rgba(0,0,0,0.3)",
+        "purpose": "Reserved for printed-paper artifacts (receipt page, comprobante de liquidación). Evokes a sheet of paper resting on a desk. Forbidden anywhere else."
+      },
+      {
+        "name": "inset-highlight",
+        "value": "inset 0 0 0 1px rgba(255,255,255,0.08)",
+        "purpose": "Subtle top-edge shimmer on Avatars and gradient surfaces. Lifts the gradient slightly."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-quick",
+        "value": "150ms ease",
+        "purpose": "Hover and focus state transitions on buttons, badges, links. Fast enough to feel mechanical."
+      },
+      {
+        "name": "ease-soft",
+        "value": "200ms cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Tab indicator moves, dropdown opens, sheet slides. Ease-out-quart, no bounce."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "shadcn <Button variant=\"default\"> in this project. Aged Terracota fill, Bone Cream text, rounded-md.",
+      "html": "<button class=\"ds-btn-primary\">Emitir recibo</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 8px 16px; background-color: oklch(0.585 0.135 32); color: oklch(0.97 0.02 34); border: none; border-radius: 10px; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1; cursor: pointer; transition: background-color 150ms ease, opacity 150ms ease; } .ds-btn-primary:hover { opacity: 0.9; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(0.585 0.135 32 / 0.5); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "shadcn <Button variant=\"outline\">. Border, transparent fill until hover.",
+      "html": "<button class=\"ds-btn-outline\">Cancelar</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 8px 16px; background-color: oklch(0.195 0.007 40); color: oklch(0.972 0.004 60); border: 1px solid oklch(0.285 0.010 40); border-radius: 10px; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1; cursor: pointer; transition: background-color 150ms ease; } .ds-btn-outline:hover { background-color: oklch(0.235 0.008 40); }"
+    },
+    {
+      "name": "Status Badge — Active",
+      "kind": "chip",
+      "refersTo": "badge-active",
+      "description": "shadcn <Badge variant=\"active\"> with leading dot. Used for entity state (inquilino activo, contrato activo).",
+      "html": "<span class=\"ds-badge-active\"><span class=\"ds-badge-dot\"></span>Activo</span>",
+      "css": ".ds-badge-active { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; background-color: oklch(0.74 0.14 155 / 0.12); color: oklch(0.74 0.14 155); border: 1px solid oklch(0.74 0.14 155 / 0.20); border-radius: 9999px; font-family: Inter, system-ui, sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; line-height: 1; white-space: nowrap; } .ds-badge-dot { width: 6px; height: 6px; border-radius: 50%; background-color: currentColor; flex-shrink: 0; }"
+    },
+    {
+      "name": "Status Badge — Income",
+      "kind": "chip",
+      "refersTo": "badge-active",
+      "description": "shadcn <Badge variant=\"income\">. Dim mint background + saturated text. Financial domain.",
+      "html": "<span class=\"ds-badge-income\">Pagado</span>",
+      "css": ".ds-badge-income { display: inline-flex; align-items: center; padding: 2px 8px; background-color: oklch(0.74 0.14 155 / 0.12); color: oklch(0.74 0.14 155); border: 1px solid oklch(0.74 0.14 155 / 0.20); border-radius: 9999px; font-family: Inter, system-ui, sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; line-height: 1; }"
+    },
+    {
+      "name": "Surface Card",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "shadcn <Card> with project radius (--radius-lg = 18px) and hairline border. No shadow.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-label\">Liquidado 2026</div><div class=\"ds-card-value\">$495.000</div></div>",
+      "css": ".ds-card { background-color: oklch(0.215 0.008 40); border: 1px solid oklch(0.285 0.010 40); border-radius: 18px; padding: 20px 22px; display: flex; flex-direction: column; gap: 6px; } .ds-card-label { font-family: Inter, system-ui, sans-serif; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: oklch(0.72 0.012 50); } .ds-card-value { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 1.75rem; font-weight: 700; line-height: 1; color: oklch(0.74 0.14 155); }"
+    },
+    {
+      "name": "KPI Card with Top Stripe",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "Dashboard KPI tile. 2px top stripe in semantic color is the project's only sanctioned stripe pattern. Side stripes are forbidden.",
+      "html": "<div class=\"ds-kpi ds-kpi-mustard\"><div class=\"ds-kpi-label\">Por vencer</div><div class=\"ds-kpi-value\">7</div><div class=\"ds-kpi-sub\">contratos</div></div>",
+      "css": ".ds-kpi { position: relative; background-color: oklch(0.215 0.008 40); border: 1px solid oklch(0.285 0.010 40); border-radius: 18px; padding: 20px 22px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; } .ds-kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background-color: oklch(0.80 0.13 85); } .ds-kpi-label { font-family: Inter, system-ui, sans-serif; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: oklch(0.72 0.012 50); } .ds-kpi-value { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; color: oklch(0.80 0.13 85); } .ds-kpi-sub { font-family: Inter, system-ui, sans-serif; font-size: 0.72rem; color: oklch(0.72 0.012 50); margin-top: 2px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "shadcn <Input>. Warm Slate fill, 1px Charcoal border, terracota ring on focus.",
+      "html": "<input type=\"text\" class=\"ds-input\" placeholder=\"DNI 12.345.678\" />",
+      "css": ".ds-input { width: 100%; height: 36px; padding: 8px 12px; background-color: oklch(0.195 0.007 40); color: oklch(0.972 0.004 60); border: 1px solid oklch(0.285 0.010 40); border-radius: 10px; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; line-height: 1; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease; } .ds-input::placeholder { color: oklch(0.72 0.012 50); } .ds-input:focus { border-color: oklch(0.585 0.135 32); box-shadow: 0 0 0 3px oklch(0.585 0.135 32 / 0.5); }"
+    },
+    {
+      "name": "Tenant Avatar (Role Gradient)",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "shadcn <Avatar> with role-specific gradient fill. Squarish (rounded-[12px]), not circular. Tenant uses the indigo gradient.",
+      "html": "<div class=\"ds-avatar-tenant\"><span>JG</span></div>",
+      "css": ".ds-avatar-tenant { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(145deg, oklch(0.45 0.16 265), oklch(0.35 0.14 260)); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); color: oklch(0.972 0.004 60); font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 1.375rem; font-weight: 700; letter-spacing: -0.015em; }"
+    },
+    {
+      "name": "Tabs (Line Variant)",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "shadcn <Tabs> with line variant. Underline indicator in terracota, no chip backgrounds, count badge in mono.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab ds-tab-active\">Datos</button><button class=\"ds-tab\">Contrato</button><button class=\"ds-tab\">Cuenta corriente <span class=\"ds-tab-count\">12</span></button><button class=\"ds-tab\">Documentos</button></div>",
+      "css": ".ds-tabs { display: flex; align-items: center; gap: 0; border-bottom: 1px solid oklch(0.285 0.010 40); } .ds-tab { display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; background: transparent; color: oklch(0.72 0.012 50); border: none; font-family: Inter, system-ui, sans-serif; font-size: 0.8rem; font-weight: 500; cursor: pointer; position: relative; transition: color 150ms ease; } .ds-tab:hover { color: oklch(0.972 0.004 60); } .ds-tab-active { color: oklch(0.972 0.004 60); } .ds-tab-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background-color: oklch(0.585 0.135 32); } .ds-tab-count { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; font-weight: 400; padding: 2px 7px; background-color: oklch(0.235 0.008 40); border: 1px solid oklch(0.285 0.010 40); border-radius: 4px; line-height: 1; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Ledger",
+    "overview": "A real estate accounting tool for Argentine agencies that deal with rental contracts, owner settlements, and tenant ledgers. The agent works at a desk, often at night, often with multiple browser tabs and a phone in the other hand. The interface should disappear into the task. Numbers in monospace, words in editorial sans, surfaces tinted toward warm earth so the data feels like it lives on aged paper, not a screen.\n\nThis is not a SaaS dashboard with gradient hero metrics. It's not a consumer app that performs delight. It's a tool, polished by use, never by branding. The terracota accent is rare; the surface holds it loosely. The system rejects: clunky legacy real-estate desktop UIs, generic Tailwind UI templates, and consumer-app delight. Clarity over personality, always.",
+    "keyCharacteristics": [
+      "Warm dark surface (oklch(0.165 0.006 40)) tinted toward terracota; no pure black, no pure white anywhere.",
+      "Editorial sans pairing: Space Grotesk for headlines, Inter for body, Geist Mono for numbers, Montserrat for short brand-weight labels.",
+      "Restrained color: terracota primary used on ≤10% of any screen, semantic colors reserved for state.",
+      "Flat-by-default depth; surfaces stack via tonality, not shadow.",
+      "shadcn/ui is the component foundation. Custom CSS only when shadcn variants don't fit."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "Aged Terracota appears on no more than ~10% of any screen. Its rarity is the meaning.", "section": "colors" },
+      { "name": "The Tinted-Neutral Rule", "body": "No #000, no #fff. Every neutral carries 0.005-0.012 chroma toward hue 40 or 60.", "section": "colors" },
+      { "name": "The Semantic-Only-When-Semantic Rule", "body": "Income green, warning amber, destructive red, punitorio violet exist to carry meaning, never to decorate.", "section": "colors" },
+      { "name": "The Mono-For-Numbers Rule", "body": "Every number a human compares lives in Geist Mono: amounts, DNI, CUIT, periods, dates, receipt numbers, contract IDs.", "section": "typography" },
+      { "name": "The Headline Tracking Rule", "body": "Headlines get letter-spacing -0.015em to -0.02em. Body and labels stay at default tracking.", "section": "typography" },
+      { "name": "The Label Whisper Rule", "body": "UPPERCASE LABELS at 0.68rem with 0.1em tracking introduce data, never decorate.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest. Cards do not float. Depth is tonal: surface-mid → surface → surface-high.", "section": "elevation" },
+      { "name": "The Paper-Only-Shadow Rule", "body": "Box-shadow appears only on artifacts that simulate physical paper (receipts, comprobantes).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do reach for shadcn <Button>, <Badge>, <Card>, <Input>, <Tabs>, <Dialog> first. Extend variants in src/components/ui/ if a new one is needed across the app.",
+      "Do use Geist Mono for every number a human will read or compare.",
+      "Do tint every neutral toward hue 40 or 60 with chroma 0.005-0.012.",
+      "Do keep Aged Terracota under 10% of any visible viewport.",
+      "Do use existing semantic dim variants for status backgrounds (bg-income-dim, bg-error-dim) plus saturated counterpart for text.",
+      "Do stack surfaces by tonality (bg → surface-mid → surface → surface-high).",
+      "Do use the Top-Stripe pattern for KPI cards (2px top accent in semantic color).",
+      "Do show entity status with a leading colored dot inside the Badge.",
+      "Do put labels above values in UPPERCASE Inter at 0.68rem with tracking-[0.1em].",
+      "Do use role gradients on Avatars to signal entity type (owner / tenant / property)."
+    ],
+    "donts": [
+      "Don't hand-roll a button when <Button variant=\"...\"> exists. Add new variants to buttonVariants in src/components/ui/button.tsx.",
+      "Don't paint Badges with arbitrary Tailwind classes. Use the named variant (active, income, baja, expiring).",
+      "Don't use #000 or #fff anywhere.",
+      "Don't use border-left or border-right > 1px as a colored stripe. Side-stripe accents are banned.",
+      "Don't use box-shadow on cards, dialogs, popovers, dropdowns. Depth is tonal. Shadows are reserved for printed-paper artifacts.",
+      "Don't nest cards. Use <Separator>, tonal shifts, or labels.",
+      "Don't add gradient text (background-clip: text).",
+      "Don't put numbers in body sans. Use Geist Mono.",
+      "Don't use big-gradient-number hero KPIs (PRODUCT.md anti-reference: generic SaaS dashboards).",
+      "Don't make the screen look like a Tailwind UI template (PRODUCT.md anti-reference).",
+      "Don't use modals as the first thought. Inline editing is the project's preferred path.",
+      "Don't animate layout properties (width, height, top, left). Animate opacity, transform, color only. Ease-out exponential, not bouncy."
+    ]
+  }
+}
