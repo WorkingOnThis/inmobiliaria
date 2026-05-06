@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LedgerTable, type LedgerEntry } from "@/components/tenants/ledger-table";
 import { EntryDetailDialog } from "@/components/ledger/entry-detail-dialog";
 
@@ -14,7 +15,23 @@ type Props = {
 type CuentaCorrienteData = {
   kpis: { totalLiquidadoYTD: number; totalPendiente: number };
   ledgerEntries: LedgerEntry[];
+  properties: { id: string; address: string }[];
 };
+
+const currentYear = new Date().getFullYear().toString();
+
+function netYTDForProperty(entries: LedgerEntry[], propiedadId: string): number {
+  // Sum the gross alquiler entries for this property + their negative honorarios
+  // Both are in the entries array; just filter by property + estado conciliado + currentYear
+  return entries
+    .filter(
+      (e) =>
+        e.propiedadId === propiedadId &&
+        e.estado === "conciliado" &&
+        e.dueDate?.startsWith(currentYear)
+    )
+    .reduce((sum, e) => sum + Number(e.monto ?? 0), 0);
+}
 
 export function OwnerTabCurrentAccount({ propietarioId }: Props) {
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(["pending", "paid"]));
@@ -38,12 +55,12 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
     );
   }
 
-  const { kpis, ledgerEntries } = data;
+  const { kpis, ledgerEntries, properties } = data;
 
-  // In owner view, "pending" includes overdue entries (entries past due date are
-  // overdue because the tenant hasn't paid, not because the owner hasn't paid)
   const effectiveFilters = new Set(activeFilters);
   if (activeFilters.has("pending")) effectiveFilters.add("overdue");
+
+  const isMultiProperty = properties.length >= 2;
 
   return (
     <div className="flex flex-col gap-4 pb-8">
@@ -52,7 +69,7 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
         <Card className="rounded-[var(--radius-lg)] border py-0 gap-0">
           <CardContent className="p-4">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Liquidado {new Date().getFullYear()}
+              Liquidado {currentYear}
             </p>
             <p className="text-2xl font-bold mt-1 font-mono text-income">
               ${kpis.totalLiquidadoYTD.toLocaleString("es-AR")}
@@ -88,10 +105,48 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
         </ToggleGroup>
       </div>
 
-      {/* Ledger table */}
+      {/* Ledger — single or grouped by property */}
       {ledgerEntries.length === 0 ? (
         <div className="px-4 py-8 text-center text-sm text-muted-foreground">
           No hay entradas en la cuenta corriente todavía.
+        </div>
+      ) : isMultiProperty ? (
+        <div className="px-4">
+          <Accordion type="multiple" defaultValue={properties.map((p) => p.id)} className="flex flex-col gap-2">
+            {properties.map((p) => {
+              const propEntries = ledgerEntries.filter((e) => e.propiedadId === p.id);
+              const propCount = propEntries.filter((e) => !e.isSynthetic).length;
+              const propNet = netYTDForProperty(ledgerEntries, p.id);
+              return (
+                <AccordionItem key={p.id} value={p.id} className="border rounded-[var(--radius-lg)] px-3">
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="flex items-center justify-between flex-1 mr-2">
+                      <span className="text-sm font-medium">{p.address}</span>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        ${propNet.toLocaleString("es-AR")} · {propCount} {propCount === 1 ? "entrada" : "entradas"}
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <LedgerTable
+                      entries={propEntries}
+                      montoOverrides={{}}
+                      selectedIds={new Set()}
+                      onToggleSelect={() => {}}
+                      onSelectMonth={() => {}}
+                      onDeselectMonth={() => {}}
+                      onMontoChange={() => {}}
+                      onAnularRecibo={() => {}}
+                      onCancelEntry={() => {}}
+                      onViewDetail={setSelectedDetailEntry}
+                      activeFilters={effectiveFilters}
+                      isOwnerView={true}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         </div>
       ) : (
         <LedgerTable
