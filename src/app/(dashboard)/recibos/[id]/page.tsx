@@ -8,6 +8,16 @@ import type { ReceiptData } from "@/lib/receipts/load";
 import { formatMonto, formatFecha, formatPeriodo, montoEnLetras, agencyDisplayName } from "@/lib/receipts/format";
 import { useSession } from "@/lib/auth/hooks";
 import { AnnulReceiptModal } from "@/components/caja/annul-receipt-modal";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const PALETTE = {
   bg: "var(--paper-bg)",
@@ -192,82 +202,78 @@ export default function ReciboPage() {
       </div>
 
       {/* Dialog — enviar por email */}
-      {showEmailDialog && (
-        <div className="print:hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-surface border border-border rounded-[12px] shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-[0.95rem] font-semibold text-on-bg">Enviar recibo por email</h3>
-              <button onClick={() => setShowEmailDialog(false)} className="text-muted-foreground hover:text-on-bg">
-                ✕
-              </button>
-            </div>
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="sm:max-w-sm print:hidden">
+          <DialogHeader>
+            <DialogTitle>Enviar recibo por email</DialogTitle>
+            <DialogDescription>
+              {sendResult
+                ? "Resultado del envío."
+                : "Seleccioná los destinatarios."}
+            </DialogDescription>
+          </DialogHeader>
 
-            {sendResult ? (
-              <div className="flex flex-col items-center gap-3 py-4 text-center">
-                <div className="size-10 rounded-full bg-income-dim flex items-center justify-center">
-                  <Check size={20} className="text-income" />
-                </div>
-                <p className="text-[0.9rem] font-semibold text-on-bg">
-                  {sendResult.sent === 1 ? "Recibo enviado" : `${sendResult.sent} recibos enviados`}
-                </p>
-                {sendResult.failed.length > 0 && (
-                  <p className="text-[0.78rem] text-destructive">
-                    No se pudo enviar a: {sendResult.failed.join(", ")}
-                  </p>
-                )}
-                <button
-                  onClick={() => setShowEmailDialog(false)}
-                  className="mt-1 text-[0.8rem] text-primary hover:underline"
-                >
-                  Cerrar
-                </button>
+          {sendResult ? (
+            <div className="flex flex-col items-center gap-3 py-2 text-center">
+              <div className="size-10 rounded-full bg-income-dim flex items-center justify-center">
+                <Check size={20} className="text-income" aria-hidden="true" />
               </div>
-            ) : (
-              <>
-                <p className="text-[0.78rem] text-muted-foreground">Seleccioná los destinatarios:</p>
-                <div className="flex flex-col gap-2">
-                  {allRecipients.map((r) => (
-                    <label key={r.key} className="flex items-start gap-2.5 cursor-pointer group">
-                      <input
-                        type="checkbox"
+              <p className="text-sm font-semibold text-on-bg">
+                {sendResult.sent === 1 ? "Recibo enviado" : `${sendResult.sent} recibos enviados`}
+              </p>
+              {sendResult.failed.length > 0 && (
+                <p className="text-xs text-destructive">
+                  No se pudo enviar a: {sendResult.failed.join(", ")}
+                </p>
+              )}
+              <Button variant="link" size="sm" onClick={() => setShowEmailDialog(false)}>
+                Cerrar
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2">
+                {allRecipients.map((r) => {
+                  const checkboxId = `recipient-${r.key}`;
+                  return (
+                    <div key={r.key} className="flex items-start gap-2.5">
+                      <Checkbox
+                        id={checkboxId}
                         checked={selectedRecipients.has(r.email)}
-                        onChange={() => toggleRecipient(r.email)}
-                        className="mt-0.5 accent-primary"
+                        onCheckedChange={() => toggleRecipient(r.email)}
+                        className="mt-0.5"
                       />
-                      <div>
-                        <div className="text-[0.82rem] text-on-bg group-hover:text-primary transition-colors">{r.email}</div>
-                        <div className="text-[0.72rem] text-muted-foreground">{r.label}</div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-                {sendMutation.isError && (
-                  <p className="text-[0.75rem] text-destructive">{(sendMutation.error as Error).message}</p>
-                )}
-                <div className="flex gap-2 justify-end mt-1">
-                  <button
-                    onClick={() => setShowEmailDialog(false)}
-                    className="text-[0.8rem] px-3 py-1.5 border border-border rounded-[6px] text-text-secondary hover:bg-muted/30"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={() => sendMutation.mutate()}
-                    disabled={selectedRecipients.size === 0 || sendMutation.isPending}
-                    className="flex items-center gap-1.5 text-[0.8rem] font-semibold px-4 py-1.5 rounded-[6px] bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <Mail size={13} />
-                    {sendMutation.isPending
-                      ? "Enviando..."
-                      : `Enviar a ${selectedRecipients.size > 0 ? selectedRecipients.size : ""} destinatario${selectedRecipients.size !== 1 ? "s" : ""}`
-                    }
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+                      <label htmlFor={checkboxId} className="flex flex-col cursor-pointer">
+                        <span className="text-[0.82rem] text-on-bg">{r.email}</span>
+                        <span className="text-[0.72rem] text-muted-foreground">{r.label}</span>
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+              {sendMutation.isError && (
+                <p className="text-xs text-destructive">{(sendMutation.error as Error).message}</p>
+              )}
+              <DialogFooter className="sm:justify-end">
+                <Button variant="outline" size="sm" onClick={() => setShowEmailDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => sendMutation.mutate()}
+                  disabled={selectedRecipients.size === 0 || sendMutation.isPending}
+                  className="gap-1.5"
+                >
+                  <Mail size={13} aria-hidden="true" />
+                  {sendMutation.isPending
+                    ? "Enviando..."
+                    : `Enviar a ${selectedRecipients.size > 0 ? selectedRecipients.size : ""} destinatario${selectedRecipients.size !== 1 ? "s" : ""}`}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de anulación */}
       {data && showAnnulModal && (
@@ -287,6 +293,13 @@ export default function ReciboPage() {
           onSuccess={() => router.push("/caja")}
         />
       )}
+
+      {/* Semantic page heading for screen readers — visual title is rendered
+          in the document header below as a stylized div. */}
+      <h1 className="sr-only">
+        {tipoRecibo} {numeroRecibo}
+        {movimiento.anuladoAt ? " (anulado)" : ""}
+      </h1>
 
       {/* Recibo — centrado en A4 */}
       <div className="mx-auto max-w-[760px] p-8 print:p-0 print:max-w-none">
@@ -378,10 +391,13 @@ export default function ReciboPage() {
 
             {/* Tabla concepto / importe */}
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12.5px" }}>
+              <caption className="sr-only">
+                Detalle de conceptos cobrados con sus importes.
+              </caption>
               <thead>
                 <tr>
-                  <th style={{ textAlign: "left", padding: "8px 6px", borderBottom: `1px solid ${PALETTE.text}`, fontSize: "11px", textTransform: "uppercase", letterSpacing: ".05em", color: PALETTE.muted, fontWeight: 600 }}>Concepto</th>
-                  <th style={{ textAlign: "right", padding: "8px 6px", borderBottom: `1px solid ${PALETTE.text}`, fontSize: "11px", textTransform: "uppercase", letterSpacing: ".05em", color: PALETTE.muted, fontWeight: 600 }}>Importe</th>
+                  <th scope="col" style={{ textAlign: "left", padding: "8px 6px", borderBottom: `1px solid ${PALETTE.text}`, fontSize: "11px", textTransform: "uppercase", letterSpacing: ".05em", color: PALETTE.muted, fontWeight: 600 }}>Concepto</th>
+                  <th scope="col" style={{ textAlign: "right", padding: "8px 6px", borderBottom: `1px solid ${PALETTE.text}`, fontSize: "11px", textTransform: "uppercase", letterSpacing: ".05em", color: PALETTE.muted, fontWeight: 600 }}>Importe</th>
                 </tr>
               </thead>
               <tbody>

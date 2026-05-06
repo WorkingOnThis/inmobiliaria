@@ -12,6 +12,15 @@ import {
   montoEnLetras,
   agencyDisplayName,
 } from "@/lib/receipts/format";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const PALETTE = {
   bg: "var(--paper-bg)",
@@ -162,77 +171,82 @@ export default function ComprobantePage() {
       </div>
 
       {/* Email dialog */}
-      {showEmailDialog && propietarioEmail && (
-        <div className="print:hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-surface border border-border rounded-[12px] shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-[0.95rem] font-semibold text-on-bg">
-                Enviar comprobante por email
-              </h3>
-              <button
-                onClick={() => setShowEmailDialog(false)}
-                className="text-muted-foreground hover:text-on-bg"
-              >
-                ✕
-              </button>
-            </div>
+      <Dialog
+        open={showEmailDialog && !!propietarioEmail}
+        onOpenChange={setShowEmailDialog}
+      >
+        <DialogContent className="sm:max-w-sm print:hidden">
+          <DialogHeader>
+            <DialogTitle>Enviar comprobante por email</DialogTitle>
+            <DialogDescription>
+              {sendResult
+                ? "Resultado del envío."
+                : "Se enviará el comprobante con un link al propietario."}
+            </DialogDescription>
+          </DialogHeader>
 
-            {sendResult ? (
-              <div className="flex flex-col items-center gap-3 py-4 text-center">
-                <div className="size-10 rounded-full bg-income-dim flex items-center justify-center">
-                  <Check size={20} className="text-income" />
-                </div>
-                <p className="text-[0.9rem] font-semibold text-on-bg">
-                  {sendResult.sent === 1
-                    ? "Comprobante enviado"
-                    : `${sendResult.sent} comprobantes enviados`}
-                </p>
-                {sendResult.failed.length > 0 && (
-                  <p className="text-[0.78rem] text-destructive">
-                    No se pudo enviar a: {sendResult.failed.join(", ")}
-                  </p>
-                )}
-                <button
-                  onClick={() => setShowEmailDialog(false)}
-                  className="mt-1 text-[0.8rem] text-primary hover:underline"
-                >
-                  Cerrar
-                </button>
+          {sendResult ? (
+            <div className="flex flex-col items-center gap-3 py-2 text-center">
+              <div className="size-10 rounded-full bg-income-dim flex items-center justify-center">
+                <Check size={20} className="text-income" aria-hidden="true" />
               </div>
-            ) : (
-              <>
-                <p className="text-[0.78rem] text-muted-foreground">
-                  Se enviará el comprobante con un link al propietario:
+              <p className="text-sm font-semibold text-on-bg">
+                {sendResult.sent === 1
+                  ? "Comprobante enviado"
+                  : `${sendResult.sent} comprobantes enviados`}
+              </p>
+              {sendResult.failed.length > 0 && (
+                <p className="text-xs text-destructive">
+                  No se pudo enviar a: {sendResult.failed.join(", ")}
                 </p>
-                <div className="text-[0.85rem] text-on-bg border border-border rounded-[6px] px-3 py-2 bg-muted/20">
-                  {propietarioEmail}
-                </div>
-                {sendMutation.isError && (
-                  <p className="text-[0.75rem] text-destructive">
-                    {(sendMutation.error as Error).message}
-                  </p>
-                )}
-                <div className="flex gap-2 justify-end mt-1">
-                  <button
-                    onClick={() => setShowEmailDialog(false)}
-                    className="text-[0.8rem] px-3 py-1.5 border border-border rounded-[6px] text-text-secondary hover:bg-muted/30"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={() => sendMutation.mutate()}
-                    disabled={sendMutation.isPending}
-                    className="flex items-center gap-1.5 text-[0.8rem] font-semibold px-4 py-1.5 rounded-[6px] bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <Mail size={13} />
-                    {sendMutation.isPending ? "Enviando..." : "Enviar"}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+              )}
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => setShowEmailDialog(false)}
+              >
+                Cerrar
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="text-sm text-on-bg border border-border rounded-md px-3 py-2 bg-muted/20 break-all">
+                {propietarioEmail}
+              </div>
+              {sendMutation.isError && (
+                <p className="text-xs text-destructive">
+                  {(sendMutation.error as Error).message}
+                </p>
+              )}
+              <DialogFooter className="sm:justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEmailDialog(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => sendMutation.mutate()}
+                  disabled={sendMutation.isPending}
+                  className="gap-1.5"
+                >
+                  <Mail size={13} aria-hidden="true" />
+                  {sendMutation.isPending ? "Enviando..." : "Enviar"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Semantic page heading for screen readers — visual title is rendered
+          in the document header below as a stylized div. */}
+      <h1 className="sr-only">
+        {tituloDoc} {movimiento.reciboNumero}
+        {isAnulado ? " (anulado)" : ""}
+      </h1>
 
       {/* Comprobante — A4 centered */}
       <div className="mx-auto max-w-[760px] p-8 print:p-0 print:max-w-none">
@@ -252,6 +266,8 @@ export default function ComprobantePage() {
           {/* ANULADO stamp */}
           {isAnulado && (
             <div
+              role="img"
+              aria-label="Comprobante anulado"
               style={{
                 position: "absolute",
                 top: "40%",
@@ -484,9 +500,13 @@ export default function ComprobantePage() {
                 marginTop: "16px",
               }}
             >
+              <caption className="sr-only">
+                Detalle de conceptos cobrados con bruto, porcentaje de honorarios, honorarios y neto al propietario.
+              </caption>
               <thead>
                 <tr>
                   <th
+                    scope="col"
                     style={{
                       textAlign: "left",
                       padding: "8px 6px",
@@ -501,6 +521,7 @@ export default function ComprobantePage() {
                     Concepto
                   </th>
                   <th
+                    scope="col"
                     style={{
                       textAlign: "right",
                       padding: "8px 6px",
@@ -515,6 +536,7 @@ export default function ComprobantePage() {
                     Bruto
                   </th>
                   <th
+                    scope="col"
                     style={{
                       textAlign: "right",
                       padding: "8px 6px",
@@ -530,6 +552,7 @@ export default function ComprobantePage() {
                     %
                   </th>
                   <th
+                    scope="col"
                     style={{
                       textAlign: "right",
                       padding: "8px 6px",
@@ -544,6 +567,7 @@ export default function ComprobantePage() {
                     Honorarios
                   </th>
                   <th
+                    scope="col"
                     style={{
                       textAlign: "right",
                       padding: "8px 6px",
