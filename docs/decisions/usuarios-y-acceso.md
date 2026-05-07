@@ -4,6 +4,52 @@ Roles, autenticación, permisos, acceso de terceros (inquilinos, propietarios).
 
 ---
 
+## SEC-6 · Hardening de uploads (private storage + magic bytes) — 2026-05-07 — confirmada
+
+**La decisión:** los archivos subidos por users se guardan en `private-uploads/` (project root, gitignored, fuera de `public/`) y se sirven exclusivamente via `GET /api/files/[scope]/[id]/[filename]` con auth checks + headers seguros. La validación al subir usa whitelist de extensiones + verificación de magic bytes leídos del servidor (NO `file.type` del cliente).
+
+**El contexto:** auditoría detectó que las 3 rutas de upload (`tasks/archivos`, `contracts/documents`, `cash/comprobante`) confiaban en `file.type` (header MIME del cliente, trivialmente falsificable) y guardaban en `public/uploads/...` — donde Next.js sirve archivos directamente con `Content-Type` inferido de la extensión. Un `agent` malicioso podía subir `.html` con script y, al click-ear el link, otro user del equipo se comía el XSS en el origen de la inmobiliaria.
+
+**Las alternativas que existían:**
+- **Validation only**: helper `validateUpload()` (whitelist + magic bytes) aplicado en las 3 rutas; archivos siguen en `public/uploads/`. Descartada como solución principal: cierra el vector inmediato pero deja URLs públicas sin auth check (cross-tenancy filtrado por SEC-3 no aplica a archivos estáticos), y deja al `Content-Type` determinado por la extensión del filesystem (sin que nosotros lo controlemos).
+- **`escapeHtml()` en filenames + CSP**: irrelevante — el problema no es el filename, es el contenido del archivo y cómo se sirve.
+- **Reusar la column `documentTemplate.url` con object storage de una**: prematuro — no hay deploy a Vercel todavía. Mover a S3 cuando haya un trigger real (SEC-7 / deploy).
+
+**Por qué private-storage + serving route:**
+1. **Auth checks en cada read** — la URL `/api/files/...` pasa por un route handler que valida sesión + agency + ownership del recurso parent (task/contract/movimiento). SEC-3 ahora aplica también a archivos.
+2. **Control sobre Content-Type** — no es la extensión del filesystem la que decide cómo lo sirve el browser, somos nosotros. Whitelist server-side: `pdf jpg jpeg png webp` mapean a sus MIMEs canónicos; cualquier otra cosa sale como `application/octet-stream`.
+3. **`Content-Disposition: attachment` siempre** — fuerza descarga, el browser nunca interpreta el archivo como ejecutable. Defense-in-depth: si la validación tiene un bug, el archivo sigue siendo inerte.
+4. **`X-Content-Type-Options: nosniff`** — bloquea MIME sniffing del browser (vector histórico donde el browser ignoraba el `Content-Type` y "adivinaba" leyendo bytes).
+5. **Path natural a S3 / Vercel Blob**: `saveUpload`/`readUpload`/`deleteUpload` son una abstracción sobre el filesystem; cuando se haga el deploy a Vercel (donde el filesystem es read-only en runtime), solo cambia la implementación interna a `s3.putObject` / `s3.getObject`. Misma forma, distinto backend.
+
+**4 capas de defense-in-depth:**
+1. **Validate before save**: ext whitelist (`pdf jpg jpeg png webp`) + magic bytes leídos del buffer del servidor (no `file.type`)
+2. **Private storage**: archivos en `private-uploads/<scope>/<id>/<filename>`, fuera del web root, gitignored, con path traversal protection (regex de componentes + `path.resolve` + prefix check con `path.sep`)
+3. **Auth + ownership check on read**: route handler `GET /api/files/[scope]/[id]/[filename]` valida sesión + agency + `requireAgencyResource(table, id, agencyId)` antes de leer el archivo
+4. **Safe response headers**: `Content-Disposition: attachment` + `X-Content-Type-Options: nosniff` + `Cache-Control: private, no-store` + `Content-Type` controlado server-side
+
+**Magic bytes implementados:**
+- PDF: `25 50 44 46` en bytes 0-3 (`%PDF`)
+- JPEG: `FF D8 FF` en bytes 0-2
+- PNG: `89 50 4E 47 0D 0A 1A 0A` en bytes 0-7
+- WebP: `52 49 46 46` en bytes 0-3 (`RIFF`) Y `57 45 42 50` en bytes 8-11 (`WEBP`) — descarta otros containers RIFF como AVI/WAV
+
+**Desventajas de lo elegido:**
+- **Pérdida de inline preview**: `Content-Disposition: attachment` fuerza descarga. Para imágenes pequeñas (preview de tasks), el user pierde el "click → ver inline". Tradeoff aceptado: para una inmobiliaria, los uploads son evidencia de pagos/contratos que se descargan, no se "leen en el browser".
+- **Filename ASCII-only en filesystem**: regex `^[A-Za-z0-9._-]+$` para portabilidad multi-OS. El nombre original (con tildes, espacios) se preserva en el campo `name` del DB y se muestra en la UI; lo que se ve restringido es el filename físico en disk.
+- **TS narrowing weaker**: con `strict: false`, el discriminated union `{ ok: true, data } | { ok: false, error }` no narrow-ea bien. Implementación cae en forma plana `{ ok: boolean, data?, error?, status? }` con check defensivo. Cuando el proyecto active `strict: true`, swap fácil.
+- **Vercel deployment**: filesystem write a `private-uploads/` no funciona en serverless runtime (read-only). El deploy real necesita migración a S3/Vercel Blob — el adapter ya está armado, solo cambia la implementación. Tracked como SEC-7.
+
+**Cuándo revisarla:** cuando se haga el deploy a Vercel/Railway, swap-ear `saveUpload`/`readUpload`/`deleteUpload` para usar S3 o Vercel Blob. La interfaz no cambia. También cuando se quiera permitir formatos adicionales (Office docs, CSV, etc.) — los magic bytes son hardcoded por ahora, considerar la lib `file-type` si crece la matriz.
+
+**Fuente:**
+- Helpers: `src/lib/uploads/validate.ts`, `src/lib/uploads/storage.ts`
+- Serving route: `src/app/api/files/[scope]/[id]/[filename]/route.ts`
+- Routes modificadas: tasks/archivos, contracts/documents (POST + DELETE), cash/comprobante, cleanup-files cron
+- Commits: `06f42fe`
+
+---
+
 ## SEC-4 · Chequeo de rol en mutaciones — 2026-05-07 — confirmada
 
 **La decisión:** todo route handler que ejecuta una mutación (POST/PATCH/PUT/DELETE) sobre datos de negocio debe llamar a `canManageX(session.user.role)` después de `requireAgencyId(session)`. Si el helper devuelve `false`, la route responde 403 con `{ error: "No tienes permisos" }`. Tres helpers nuevos en `src/lib/permissions.ts`: `canManageCash`, `canManageFieldNotes`, `canManageAgency`.

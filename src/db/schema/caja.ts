@@ -50,7 +50,7 @@ export const cajaMovimiento = pgTable("cash_movement", {
   // Fecha en que el movimiento entró a una liquidación cerrada (para TTL de 90 días)
   settledAt: timestamp("settledAt"),
 
-  // Comprobante adjunto (PDF o imagen, almacenado en /public/uploads/movimientos/)
+  // Comprobante adjunto (PDF o imagen). Storage: private-uploads/movimientos/<id>/<filename>; URL: /api/files/movimientos/<id>/<filename>.
   comprobanteUrl: text("comprobanteUrl"),
   comprobanteMime: text("comprobanteMime"),
   comprobanteTamano: integer("comprobanteTamano"),

@@ -4,6 +4,126 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-07 — SEC-6 (whitelist + private storage para uploads)
+
+### Qué hice
+
+Las 3 rutas que aceptan uploads (`tasks/[id]/archivos`, `contracts/[id]/documents`, `cash/movimientos/[id]/comprobante`) confiaban en `file.type` (header MIME del cliente, trivialmente falsificable) y guardaban los archivos en `public/uploads/...` — que Next.js sirve directamente con `Content-Type` inferido de la extensión. Un `agent` malicioso podía subir un `<script>...</script>.html` y, cuando otro user click-eaba el link, el browser lo renderizaba como HTML en el origen de la inmobiliaria → cookie theft, session hijack, todo lo que quisieras hacer con XSS same-origin.
+
+Refactor completo en lugar de fix mínimo:
+
+**1. Helper de validación** (`src/lib/uploads/validate.ts`) — ext whitelist (`pdf jpg jpeg png webp`) + verificación de magic bytes leídos del servidor (no `file.type`):
+- PDF: `25 50 44 46` (`%PDF`)
+- JPEG: `FF D8 FF`
+- PNG: `89 50 4E 47 0D 0A 1A 0A`
+- WebP: `52 49 46 46` en bytes 0-3 + `57 45 42 50` en bytes 8-11 (RIFF...WEBP, descarta AVI/WAV/otros RIFF)
+
+Devuelve `{ ok: true, data: { ext, mime, buffer, size } }` con el MIME canónico de nuestra whitelist (no del cliente). Si el cliente miente y manda `application/pdf` con bytes de HTML, los magic bytes no matchean → 400.
+
+**2. Helper de storage** (`src/lib/uploads/storage.ts`) — saveUpload/readUpload/deleteUpload contra `private-uploads/` (project root, gitignored). Path traversal protection en 3 capas:
+- Regex: `^[A-Za-z0-9._-]+$` filename, `^[A-Za-z0-9_-]+$` para id (rechaza `..`, `/`, `\`)
+- `path.resolve(ROOT, ...)` para normalización
+- Prefix check: el path resuelto DEBE empezar con `path.resolve(ROOT, scope, id) + path.sep` (con el separador para evitar bypass por substring match)
+
+`buildFileUrl(scope, id, filename)` genera `/api/files/<scope>/<id>/<filename>` (URL-encoded). Lo que se guarda en DB es esta URL, no la ruta del filesystem.
+
+**3. Route protegida de servicio** (`src/app/api/files/[scope]/[id]/[filename]/route.ts`) — server route handler que:
+- Valida sesión + agency con `requireAgencyId`
+- Valida ownership: lookea la tabla del scope (tasks/contracts/movimientos) con `requireAgencyResource(table, id, agencyId)`. Si el recurso no es de mi agency → 404 indistinguible.
+- Lee el archivo con `readUpload`
+- Setea `Content-Type` desde nuestra whitelist (`EXT_TO_MIME[ext] ?? "application/octet-stream"`) — NUNCA confiamos en lo que mande la extensión del filesystem
+- Headers de seguridad: `Content-Disposition: attachment` (fuerza descarga, no render inline) + `X-Content-Type-Options: nosniff` (bloquea MIME sniffing del browser) + `Cache-Control: private, no-store`
+
+**4. Las 3 rutas de upload** dejaron de hacer escritura inline a `public/uploads/...`. Ahora:
+1. `validateUpload(file, { allowedExts, maxBytes })` → si `!ok`, 400
+2. Construir filename seguro (timestamp + sanitized para tasks/cash; UUID + ext para contracts)
+3. `saveUpload(scope, id, filename, buffer)` → escribe en `private-uploads/<scope>/<id>/<filename>`
+4. `buildFileUrl(scope, id, filename)` → `/api/files/<scope>/<id>/<filename>`
+5. INSERT en DB con esa URL
+
+Los DELETE/replace usan `parseFileUrl(stored_url)` + `deleteUpload(...)`. Si la URL es legacy (`/uploads/...`), parse devuelve null y skip silently — best-effort.
+
+**5. Cron `cleanup-files.ts`** actualizado al mismo patrón (parse → deleteUpload).
+
+**6. `.gitignore`** agrega `private-uploads/`.
+
+**7. Comment outdated en `caja.ts:53`** corregido en commit aparte (referenciaba el path viejo).
+
+### Por qué lo hice así y no de otra forma
+
+**Por qué private-uploads + serving route en lugar de validation only**: la validación sola cierra el "subir `.html`" pero deja el resto del attack surface abierto:
+- URLs en `/uploads/...` son accesibles a CUALQUIERA con la URL (sin auth check). Cross-tenancy filtrado por SEC-3 no aplica al filesystem. Si un agent comparte el link de un comprobante interno, cualquiera con la URL lo descarga.
+- La extensión del archivo determina el `Content-Type` que el browser usa. Si mañana relajan la whitelist (ej: agregan `.svg`), el SVG es ejecutable como código en el browser y el XSS vuelve.
+- En Vercel serverless, escribir a `public/` no funciona en runtime (filesystem read-only). Mover a `private-uploads/` no resuelve eso (mismo problema), pero la ARCHITECTURA queda alineada con S3/Vercel Blob para cuando se haga el deploy real (SEC-7).
+
+Con private-uploads + serving route:
+- Auth + agency check antes de cada read → respeta multi-tenancy en la capa de archivos también
+- `Content-Type` lo controlamos nosotros (whitelist server-side, no extensión)
+- `Content-Disposition: attachment` fuerza download, no render → defense-in-depth
+- Path natural a S3: `saveUpload` se reemplaza por `s3.putObject`, `readUpload` por `s3.getObject`. Misma forma.
+
+**Por qué magic bytes y no `file.type`**: el header `Content-Type` viene del cliente y se setea con un FormData browser-driven, pero nada impide a un atacante hacer `curl -F "file=@malicious.html;type=application/pdf"` y mandar bytes de HTML con header de PDF. Magic bytes los lee el server desde el buffer de bytes — son la única fuente confiable de "qué es este archivo realmente".
+
+**Por qué `Content-Disposition: attachment` siempre, incluso para PDFs**: la alternativa (`inline`) deja al browser decidir si renderea o descarga. Para PDFs los browsers modernos rendean inline (PDF.js) — se ve bien para el user. PERO si un atacante pasa magic bytes de PDF en los primeros bytes y trash HTML después (PDF poliglot), algunos viewers tropiezan. `attachment` siempre = el archivo se descarga, el browser nunca lo procesa como ejecutable. El user pierde la previsualización inline pero gana seguridad. Tradeoff aceptable para una inmobiliaria — los uploads son evidencia de pagos, contratos, etc., que se descargan, no se "leen en el browser".
+
+**Por qué `X-Content-Type-Options: nosniff`**: aunque seteamos `Content-Type: application/pdf`, IE y navegadores viejos podían "sniffear" el contenido y decidir que en realidad es HTML. `nosniff` les dice "respetá el Content-Type que mando, no adivines". Defense-in-depth.
+
+**Por qué dejé `file.type` en el campo `tareaArchivo.type` del DB**: mirá, el campo es display metadata. Si el cliente manda mal MIME, el peor caso es que en el listado de archivos diga "image/jpeg" cuando es realmente PNG. Cosmético, no security. Pero para `comprobanteMime` en cash, sí lo cambié a `result.data.mime` (canonical) porque ese campo se usa downstream en algún reporte que decide cómo formatear.
+
+**Por qué la regex de filename rechaza espacios y unicode**: la URL se construye con `encodeURIComponent` así que técnicamente no hay corrupción, pero el filesystem en Windows/macOS/Linux maneja unicode con sutilezas (NFD vs NFC). Restringir a ASCII alfanumérico + `._-` es portátil. El nombre original del archivo se preserva en el campo `name` de la DB (que sí permite unicode), entonces el user ve "Recibo de pago.pdf" en la UI aunque en disk se llama `1759823234-Recibo_de_pago.pdf`.
+
+**Por qué single non-union ValidateResult en lugar de discriminated union**: tsconfig tiene `strict: false`. Con strict desactivado, TS no narrow-ea el `result.ok` para discriminar las dos branches del union. El call-site `if (!result.ok) return ...; result.data.buffer` falla con "Property 'data' does not exist on type". Workaround: forma plana `{ ok: boolean; data?; error?; status? }` y check defensivo `if (!result.ok || !result.data)`. Type safety ligeramente más débil pero compila. Si el proyecto activa `strict: true` en el futuro, swap fácil.
+
+### Conceptos que aparecieron
+
+- **Magic bytes / file signatures**: secuencias de bytes específicas al inicio (o cerca) de un archivo que identifican su formato real. PDFs siempre empiezan con `%PDF`, JPEGs con `FF D8 FF`. Es la única forma confiable de saber "qué es este archivo" — el cliente puede mentir sobre el `Content-Type`, pero los bytes son los bytes. La librería `file-type` de npm hace esto pero para 5 formatos custom es overkill — un switch es suficiente.
+
+- **MIME sniffing**: heurística histórica de browsers (originalmente IE) que ignora el `Content-Type` y "adivina" el formato leyendo los primeros bytes de la respuesta. Pensado para "ayudar" cuando el server estaba mal configurado, pero abrió un vector de ataque: sirvo `Content-Type: text/plain` con HTML en el body, browser sniffea HTML, render. Solución: header `X-Content-Type-Options: nosniff` que le dice al browser "respetá lo que te mando".
+
+- **`Content-Disposition: attachment` vs `inline`**: el header le dice al browser cómo manejar la respuesta. `inline` (default) = renderear en pestaña actual; `attachment` = descargar como archivo. Para uploads user-controlados, `attachment` es siempre la opción segura — saca al browser del rol de "intérprete de contenido".
+
+- **Path traversal**: vector clásico donde un atacante manda `../../../etc/passwd` como filename y el server, ingenuamente, hace `fs.readFile("uploads/" + userInput)` → lee fuera de uploads/. Defensa: validar componentes del path (regex), normalizar con `path.resolve`, y verificar que el path resuelto está dentro del directorio esperado. Tres capas porque cada una sola tiene casos sutiles donde falla (encoding tricks, symlinks, prefix vs full match).
+
+- **Defense-in-depth para uploads**: 4 capas:
+  1. **Validate before save**: ext whitelist + magic bytes
+  2. **Private storage**: archivos fuera de web root, no accesibles por URL directa
+  3. **Auth + ownership check on read**: route handler valida cada serve
+  4. **Safe headers on response**: `Content-Disposition: attachment` + `X-Content-Type-Options: nosniff`
+  
+  Si una capa se rompe (ej: bug en validación que deja pasar un .html), las otras te salvan. Atacante necesita romper LAS CUATRO para lograr un exploit real.
+
+- **Vercel serverless filesystem**: en Vercel, el filesystem en runtime es read-only (excepto `/tmp`). `fs.writeFile("public/uploads/...")` falla. La fix arquitectural correcta es S3 / Vercel Blob — object storage externo. `private-uploads/` queda como step intermedio: en local funciona, en Vercel hay que swap por S3. La forma de los helpers `saveUpload/readUpload/deleteUpload` ya está, solo cambia la implementación interna.
+
+- **Pollution vs deletion en file storage**: cuando reemplazás un upload (caso del comprobante de movimiento), el código viejo hacía `fs.unlink` y luego `fs.writeFile`. Si el unlink falla (race condition, file no existe), el writeFile sigue. Pero si el writeFile falla (disk full, perms), el unlink ya pasó → archivo viejo perdido sin reemplazo. Idiomatic: write first to temp filename, fsync, atomic rename. Para upload mvp esto es overkill, pero worth saberlo. Por ahora: best-effort en delete, atomic save no se hace.
+
+### Preguntas para reflexionar
+
+1. La regex `^[A-Za-z0-9._-]+$` para filenames es restrictiva — los users no pueden subir archivos con espacios, tildes, etc. en el filename. Pero el campo `name` en DB sí los preserva. ¿Es la restricción del filesystem name razonable, o vale la pena aceptar unicode? ¿Cuándo conviene complejidad vs portabilidad?
+
+2. Los uploads ahora están en `private-uploads/` (filesystem). En Vercel hay que migrar a object storage. ¿Cuál es el momento correcto para hacer ese swap — antes del primer deploy a Vercel, o después de probar en self-hosted? ¿Vale la pena escribir un adapter abstraction ahora (`UploadStorage` interface con local + s3 implementations) o YAGNI hasta que duela?
+
+3. La validación de magic bytes hardcodea los 5 formatos. Si mañana querés permitir `.docx`, hay que agregar la magic byte sequence (que para Office docs es no-trivial — son ZIPs con structure adentro). ¿Conviene seguir hardcodeando o usar la lib `file-type` (35+ formatos out of the box)? Tradeoff: dependencia nueva vs control granular.
+
+4. El `Content-Disposition: attachment` siempre fuerza descarga. Para una imagen que el user quiere ver inline (preview en una task) se vuelve molesto — click → descarga → abrir manualmente. ¿Hay un patrón para "inline para imágenes verificadas, attachment para PDFs y otros"? ¿O el costo de UX vale lo que se gana en seguridad?
+
+5. La regla "magic bytes server-side" es dura. Si el día de mañana querés validar un formato custom que no tiene magic bytes obvios (ej: CSV, JSON), el approach se rompe. ¿Cómo extendés la validation para esos casos sin abrir el vector de "cliente miente sobre el tipo"?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: magic bytes / file signatures — qué son y por qué son la única fuente confiable de tipo
+- [ ] Concepto: MIME sniffing y `X-Content-Type-Options: nosniff`
+- [ ] Concepto: `Content-Disposition: attachment` vs `inline`
+- [ ] Concepto: path traversal — vector y las 3 capas de defensa
+- [ ] Concepto: defense-in-depth para uploads (4 capas)
+- [ ] Patrón: validar uploads con whitelist de extensión + magic bytes (no `file.type`)
+- [ ] Patrón: storage privado + serving route con auth check (no archivos en `public/`)
+- [ ] Patrón: `saveUpload`/`readUpload`/`deleteUpload` como abstraction sobre filesystem (futuro adapter para S3)
+- [ ] Decisión técnica: SEC-6 — refactor a private-storage vs validation only
+- [ ] Bug: TS narrowing falla con `strict: false` en discriminated unions
+- [ ] Comando: `path.resolve(ROOT) + path.sep` prefix check para evitar path traversal con substring match
+
+---
+
 ## 2026-05-07 — SEC-5 (eliminar Stored XSS en documento de modificación de contrato)
 
 ### Qué hice
