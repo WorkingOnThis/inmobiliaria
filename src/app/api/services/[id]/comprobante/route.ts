@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { canManageServices } from "@/lib/permissions";
 import { servicio, servicioComprobante } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
@@ -20,6 +21,9 @@ export async function POST(
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
+    if (!canManageServices(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
 
     const { id } = await params;
     await requireAgencyResource(servicio, id, agencyId);

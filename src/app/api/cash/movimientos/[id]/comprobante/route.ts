@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { canManageCash } from "@/lib/permissions";
 import { and, eq } from "drizzle-orm";
 import path from "path";
 import fs from "fs/promises";
@@ -24,6 +25,9 @@ export async function POST(
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
+    if (!canManageCash(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
     const { id } = await params;
 
     await requireAgencyResource(cajaMovimiento, id, agencyId);
@@ -107,6 +111,9 @@ export async function DELETE(
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
+    if (!canManageCash(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
     const { id } = await params;
 
     await requireAgencyResource(cajaMovimiento, id, agencyId);

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { zone } from "@/db/schema/zone";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
+import { canManageProperties } from "@/lib/permissions";
 import { eq, ilike, and } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
@@ -36,6 +37,9 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
+    if (!canManageProperties(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
 
     const body = await request.json();
     const name = (body.name ?? "").trim();

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { fieldNote } from "@/db/schema/field-note";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { canManageFieldNotes } from "@/lib/permissions";
 import { and, eq } from "drizzle-orm";
 
 export async function PATCH(
@@ -13,10 +14,8 @@ export async function PATCH(
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
-
-    const role = session!.user.role as string;
-    if (role !== "agent" && role !== "account_admin") {
-      return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+    if (!canManageFieldNotes(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -56,10 +55,8 @@ export async function DELETE(
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
-
-    const role = session!.user.role as string;
-    if (role !== "agent" && role !== "account_admin") {
-      return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+    if (!canManageFieldNotes(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const { id } = await params;

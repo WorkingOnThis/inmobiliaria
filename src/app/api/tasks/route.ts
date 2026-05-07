@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
+import { canManageTasks } from "@/lib/permissions";
 import { tarea, tareaHistorial } from "@/db/schema/tarea";
 import { property } from "@/db/schema/property";
 import { contract } from "@/db/schema/contract";
@@ -114,6 +115,9 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
+    if (!canManageTasks(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
 
     const body = await request.json();
     const result = crearTareaSchema.safeParse(body);

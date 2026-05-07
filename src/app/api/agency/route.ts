@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { agency } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
+import { canManageAgency } from "@/lib/permissions";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { ensureDefaultTemplate } from "@/lib/document-templates/default-template";
@@ -39,6 +40,9 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!canManageAgency(session.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
 
     const body = await request.json();
 

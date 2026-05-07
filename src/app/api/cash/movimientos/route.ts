@@ -7,6 +7,7 @@ import { contract } from "@/db/schema/contract";
 import { property } from "@/db/schema/property";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
+import { canManageCash } from "@/lib/permissions";
 import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
@@ -141,6 +142,9 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
+    if (!canManageCash(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
 
     let body: Record<string, unknown>;
     try {
@@ -208,6 +212,9 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
+    if (!canManageCash(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
 
     let body: { ids: unknown };
     try {

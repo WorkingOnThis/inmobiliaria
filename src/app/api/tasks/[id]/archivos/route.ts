@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
+import { canManageTasks } from "@/lib/permissions";
 import { tarea, tareaArchivo } from "@/db/schema/tarea";
 import { eq } from "drizzle-orm";
 import path from "path";
@@ -40,6 +41,9 @@ export async function POST(
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
+    if (!canManageTasks(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
 
     const { id } = await params;
     await requireAgencyResource(tarea, id, agencyId);
@@ -94,6 +98,9 @@ export async function DELETE(
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
+    if (!canManageTasks(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
 
     const { id } = await params;
     await requireAgencyResource(tarea, id, agencyId);

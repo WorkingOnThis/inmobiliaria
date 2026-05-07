@@ -5,6 +5,7 @@ import { fieldNote } from "@/db/schema/field-note";
 import { user } from "@/db/schema/better-auth";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
+import { canManageFieldNotes } from "@/lib/permissions";
 import { eq, and } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
@@ -52,10 +53,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
-
-    const role = session!.user.role as string;
-    if (role !== "agent" && role !== "account_admin") {
-      return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+    if (!canManageFieldNotes(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
     }
 
     const body = await request.json();
