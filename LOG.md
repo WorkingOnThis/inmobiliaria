@@ -4,6 +4,155 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-07 — SEC-7 (preparación de deploy a Vercel)
+
+### Qué hice
+
+Última fase de la auditoría pre-deploy. SEC-7 era operacional + algo de código preparatorio para que el deploy real sea ejecutar la `docs/deploy-checklist.md`, no improvisar.
+
+**Decisión de host: Vercel.** (Justificación al final de esta entrada.)
+
+Cambios de código:
+
+**1. Storage adapter** (`src/lib/uploads/storage.ts`) — refactorizado a interfaz `StorageAdapter` con dos implementaciones:
+- `LocalStorageAdapter` — current filesystem behavior (`private-uploads/` local)
+- `BlobStorageAdapter` — usa `@vercel/blob` SDK (instalado v2.3.3); pathname format `<scope>/<id>/<filename>`, `addRandomSuffix: false` para determinismo, error prefix `ENOENT:` para parity con la regex que el route handler ya usaba
+
+Selección automática al cargar el módulo: si `BLOB_READ_WRITE_TOKEN` está seteado → Blob, si no → Local. El public API (`saveUpload`, `readUpload`, `deleteUpload`) no cambió — ningún caller necesita modificarse. Path traversal protection (regex de id/filename) sigue en ambos adapters.
+
+**2. Cron migrado a Vercel Cron Jobs** (`vercel.json` + `src/instrumentation.ts`):
+- `vercel.json` declara `crons: [{ path: "/api/cron/cleanup-files", schedule: "0 2 * * *" }]`. Vercel envía un request HTTP con `Authorization: Bearer ${CRON_SECRET}` — el endpoint ya validaba ese exact header desde SEC-1.
+- `instrumentation.ts` skip-ea el registro de `node-cron` cuando `process.env.VERCEL` está seteado (Vercel lo setea automáticamente en runtime). En Railway/VPS/dev, el cron interno sigue funcionando.
+- Net: una sola implementación en cada host, sin duplicación.
+
+**3. `sendEmail` fail-fast en producción** (`src/lib/auth/email.ts`):
+- Antes: si faltaban `GMAIL_USER` / `GMAIL_APP_PASSWORD`, logueaba un warning y retornaba void → silent failure.
+- Ahora: en `NODE_ENV=production` tira `Error("...must be configured in production")` que el caller (`register/route.ts`) atrapa y rollbackea el user (cascade borra account).
+- En dev sigue como warning para no romper flows locales sin Gmail config.
+
+**4. Security headers** (`next.config.ts` § `headers()`):
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains` — fuerza HTTPS por 1 año (sin `preload` todavía, requiere submit a hstspreload.org y es difícil revertir).
+- `X-Frame-Options: DENY` — anti-clickjacking, la app no se embebe.
+- `X-Content-Type-Options: nosniff` — bloquea MIME sniffing.
+- `Referrer-Policy: strict-origin-when-cross-origin` — no leak de path en cross-origin nav.
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()` — desactiva features que la app no necesita.
+
+**5. `.env.example`** — documenta todas las env vars: required-always (DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL), required-prod (GMAIL_USER, GMAIL_APP_PASSWORD, CRON_SECRET), Vercel-auto (BLOB_READ_WRITE_TOKEN), opcionales (NEXT_PUBLIC_*, GOOGLE_*). Con notas de cómo generar los secrets (`openssl rand -base64 32`) y cómo obtener Gmail app password.
+
+**6. `.gitignore`** — agregué `!.env.example` para que `.env.example` se commitee (regla previa `.env*` lo bloqueaba).
+
+**7. `docs/deploy-checklist.md`** — 8 fases (pre-requisitos, generar secrets, preparar Neon DB, crear Vercel Blob store, importar proyecto + setear env vars, primer deploy + verificación, smoke test E2E completo, custom domain opcional, runbook operacional). Smoke test cubre: registro + email verify, creación de inmobiliaria, ABM de cliente/propiedad, upload de archivo, cron manual, **test explícito de XSS resistance** (subir `.html` debe dar 400). Runbook incluye: rotar secrets, invalidar sesiones (panic button), correr cron manualmente, hotfix flow, rollback de deploy.
+
+### Por qué Vercel y no las otras opciones
+
+Tradeoff matrix evaluada:
+
+| Host | Filesystem | Cron | Storage | Mental model | Costo | Setup |
+|---|---|---|---|---|---|---|
+| Vercel | read-only en runtime | Vercel Cron via vercel.json | Vercel Blob (paid, free tier 1GB) | Serverless functions (cold start, 10s default timeout) | Free tier robusto + pay-as-you-grow | git push deploys, 0 ops |
+| Railway | persistent | `node-cron` interno OK | Filesystem local (con caveat de redeploys) | Long-running Node server | $5/mes mínimo | Setup mínimo, manual de envs |
+| Self-hosted VPS | persistent | `node-cron` OK | Filesystem local | Linux box clásico | ~$5-20/mes (DO/Hetzner) | Setup completo (firewall, SSL, backups, etc.) |
+
+**Por qué Vercel ganó** para este caso específico:
+
+1. **Stack-fit**: Vercel es de los creadores de Next.js. Optimizaciones del framework (Turbopack, React Server Components, edge runtime) están testeadas y deployadas en Vercel primero. Cualquier feature nueva de Next.js anda en Vercel desde el día 1 — en otros hosts hay lag.
+
+2. **DX para vos como solo dev / aprendiz**: el flujo es `git push → main → deploy automático`. Sin SSH, sin pm2, sin nginx config, sin Let's Encrypt manual. Cada PR genera un preview deploy con su URL para testear antes de mergear. Para un programador que está aprendiendo, eliminar 30 cosas que pueden salir mal es valor enorme.
+
+3. **Free tier suficiente**: el Hobby plan da 100 GB-hours de function invocations/mes y 100 GB de bandwidth. Una inmobiliaria con tráfico orgánico (10-20 visitas/día) usa una fracción de eso. Vercel Blob free tier: 1 GB storage + 1 GB bandwidth/mes — suficiente para arrancar (eventualmente upgrade si los uploads crecen).
+
+4. **Operacional outsourceado**: backups (Neon hace los suyos automáticos), HTTPS (Let's Encrypt automático), DDoS protection (built-in), CDN global, observability básica (Logs tab, Function metrics) — todo viene gratis. En VPS, cada uno de esos requiere setup explícito.
+
+5. **Vector de fallos compartido**: si Vercel tiene un outage, tu app cae. PERO: el SLA de Vercel free es ~99.9% (~9 horas/año de downtime). Para una app de inmobiliaria donde el cliente abre el sistema 5 veces/semana, ese downtime es irrelevante. Self-hosted con vos como única persona-de-guardia probablemente tiene WORSE uptime (vacaciones, dormir, no-monitoreo).
+
+6. **Path natural a escala**: si Arce crece a 10 inmobiliarias, Vercel escala automático (más functions). En VPS hay que escalar a mano (más instancias, load balancer, etc.).
+
+**Por qué NO Railway**:
+
+- Mental model más simple (es un Node server long-running) → más familiar si venís de hosting tradicional. Pero el aprendizaje técnico es similar al de Vercel para un proyecto Next.js.
+- $5/mes mínimo vs Vercel free tier para tráfico bajo. Para una inmobiliaria recién arrancando, esa diferencia es real.
+- No tiene el ecosystem cohesivo de Vercel (Cron Jobs, Blob Storage, Analytics todo en el mismo dashboard).
+
+**Por qué NO VPS self-hosted**:
+
+- Setup completo (firewall, SSL, backup automation, deploy automation, monitoring) es 10-20 horas de trabajo previo al primer deploy. Para un dev solo aprendiendo, ese tiempo se gasta mejor escribiendo features.
+- Operacional ongoing: si la VPS se cuelga a las 3 AM, alguien tiene que rebootearla. En Vercel no aplica — auto-recovery.
+- El control extra que da el VPS (custom kernel, software no-Node, etc.) acá no se usa. Costo sin beneficio.
+
+**Trade-off aceptado**:
+- **Filesystem read-only en runtime** → uploads van a Vercel Blob (extra dependency). El storage adapter ya está armado para esto.
+- **Function timeout 10s en Hobby plan** → operaciones largas (generación de PDFs masivos, procesamiento de uploads grandes) podrían chocar. Hoy ninguna operación supera 2-3s. Si crece, upgrade a Pro ($20/mes) sube timeout a 60s.
+- **Cold starts** (~1s) → primer request después de inactividad es más lento. Para una app de uso interno (no tráfico público alto), invisible.
+- **Lock-in moderado** → el código está mayormente portable (Next.js es estándar), pero los pieces que dependen de `vercel.json` (cron) y `@vercel/blob` requerirían refactor si migra a otro host. El storage adapter pattern minimiza ese lock-in (cambiar el `BlobStorageAdapter` por `S3Adapter` es un solo archivo).
+
+### Por qué fail-fast en sendEmail
+
+El comportamiento previo (warning + return void si faltaban creds) era explotable como bug:
+- En prod sin GMAIL config, `register/route.ts` insertaría el user, llamaría a `auth.api.sendVerificationEmail` que internamente llama `sendEmail`, que silently retorna sin throw.
+- Better Auth no detecta el fallo (no hubo error)
+- Register devuelve 201 al cliente
+- El user nunca recibe email
+- El user no puede verificar
+- Si reintentan registrarse: 400 "Email already registered"
+- Resultado: dead user en DB sin path para recuperar.
+
+Fail-fast en prod corta este loop: el throw atrapa por el try/catch en `register/route.ts`, que rollbackea el user (cascade borra account). El cliente recibe 500 con mensaje claro. **Mejor un error visible que un éxito ficticio**.
+
+En dev no aplica el fail-fast porque pretendemos que en local podés trabajar sin Gmail configurado (y el warning es suficiente para recordar setearlo).
+
+### Por qué storage adapter pattern y no llamadas directas a `@vercel/blob`
+
+Tres razones:
+
+1. **Local dev sigue funcionando**: si reemplazara `fs.writeFile` directamente por `put()` de Vercel Blob, los devs locales necesitarían setear `BLOB_READ_WRITE_TOKEN` también. Innecesario.
+
+2. **Tests E2E pueden usar filesystem**: `scripts/test-cross-agency.ts` corre contra un Neon ephemeral branch + bun dev local — si fuerzo Vercel Blob, el test necesita un store separado o mock. Con el adapter, el test usa filesystem y los uploads se escriben a `private-uploads/` que es ephemeral por test run.
+
+3. **Future portability**: si en V2 migran a otro host (Cloudflare Workers, AWS Lambda, etc.) que tiene su propio object storage, agregás un tercer adapter sin tocar callers. La abstracción cuesta ~50 líneas de código y compra opciones.
+
+### Conceptos que aparecieron
+
+- **Adapter pattern**: misma interfaz pública, diferentes implementaciones intercambiables. Acá: `StorageAdapter` con `LocalStorageAdapter` y `BlobStorageAdapter`. La selección se hace por env (`BLOB_READ_WRITE_TOKEN` ? Blob : Local). El caller (`saveUpload`) ni se entera de cuál está activa.
+
+- **Vercel Cron Jobs vs `node-cron`**: en serverless functions (Vercel/Lambda), las funciones son short-lived — `node-cron` registra una tarea que muere cuando termina la invocation. La solución es invertir: el host (Vercel) llama a un endpoint HTTP en horarios cron, autenticando con un secret. El endpoint es stateless, fácil de escalar.
+
+- **Fail-fast vs fail-silent**: dos políticas para "qué hago si una dependencia falta". Fail-fast tira excepción visible — el caller decide. Fail-silent retorna como si todo estuviera OK — el bug aparece después, lejos del root cause. En auth flows (sensible), fail-fast siempre.
+
+- **HSTS preload**: `Strict-Transport-Security` con `preload` directive le dice al browser de hardcoded-ear el dominio en la lista "always-HTTPS". Es difícil revertir (hay que esperar 6+ meses para que se quite de la lista de Chrome/Firefox). Por eso lo dejé sin `preload` en SEC-7 — agregar más adelante cuando esté consolidado el deploy.
+
+- **Vercel free tier limits**: 100 GB-hours/mes (function execution time × memory), 100 GB bandwidth, 1 GB Blob storage. Para una app de uso interno con tráfico bajo, sobra. Saberlo evita "arrepentimiento" cuando el dashboard muestra el 5% usado y pensás que se va a romper.
+
+- **`process.env.VERCEL`**: env var auto-seteada por Vercel en runtime. Útil para detectar "estoy corriendo en Vercel" sin un flag manual. Existe también `VERCEL_ENV` (production/preview/development) para más granularidad.
+
+- **`addRandomSuffix: false` en Vercel Blob**: por default, `put("foo.pdf")` guarda como `foo-<hash>.pdf` para evitar colisiones. Con `false`, guardás exactamente en el path que vos pasás → determinístico, podés calcular el path al leer sin storage adicional. Ideal para nuestro caso (path = scope/id/filename ya único por construcción).
+
+### Preguntas para reflexionar
+
+1. La elección de Vercel acepta lock-in moderado. La portabilidad real (cuántas horas tardaría migrar a otro host si Vercel sube precios o cambia política) es ~8-16 hs (sustituir adapter Blob, traducir vercel.json a equivalente del nuevo host, ajustar instrumentation). ¿Cuánto lock-in es "OK" para un proyecto de un solo dev? ¿Hay un threshold donde el costo de migración hipotética justifica preferir un host menos opinionated?
+
+2. La storage adapter selecciona por env var (`BLOB_READ_WRITE_TOKEN`). Si alguien setea esa var por error en local, el dev se rompe sin warning claro. ¿Conviene loguear "Storage backend: local|blob" al startup? Trade-off: log noise vs operacional clarity.
+
+3. La `docs/deploy-checklist.md` tiene 8 fases. Es prescriptive — pero quien la lea (vos, o un dev futuro) tiene que confiar en mí que el orden importa. ¿Vale la pena una segunda doc tipo "deploy mental model" que explica POR QUÉ cada fase está donde está, para que alguien pueda saltarse pasos con criterio? O es overkill — basta la prescripción.
+
+4. SEC-7 incluye decisiones de host pero la decisión es reversible (cambiar de Vercel a Railway en 6 meses cuesta ~16 hs). Otras decisiones de SEC-3..6 son menos reversibles (cambiar de `additionalFields` a Postgres RLS implicaría rehacer las 86 routes). ¿Cómo se piensa la reversibilidad como criterio de decisión? ¿Algunas decisiones merecen más rigor que otras por eso?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: Adapter pattern (interface + multiple implementations + selección runtime)
+- [ ] Concepto: Vercel Cron Jobs vs `node-cron` — cuándo usar cuál
+- [ ] Concepto: Fail-fast vs fail-silent en config de producción
+- [ ] Concepto: HSTS y por qué `preload` requiere planning
+- [ ] Concepto: Vercel free tier limits para apps de uso interno
+- [ ] Patrón: storage adapter para hacer apps multi-host (filesystem + object storage)
+- [ ] Patrón: `process.env.VERCEL` para detectar runtime
+- [ ] Decisión técnica: SEC-7 — Vercel sobre Railway/VPS, criterios y trade-offs
+- [ ] Decisión técnica: cron migration via vercel.json + endpoint HTTP existente
+- [ ] Decisión técnica: fail-fast en sendEmail solo en producción (dev sigue como warning)
+- [ ] Comando: `openssl rand -base64 32` para generar secrets
+- [ ] Bug: `.env.example` ignorado por `.gitignore` con regla `.env*` — fix con `!.env.example`
+
+---
+
 ## 2026-05-07 — SEC-6 (whitelist + private storage para uploads)
 
 ### Qué hice

@@ -4,6 +4,54 @@ Roles, autenticación, permisos, acceso de terceros (inquilinos, propietarios).
 
 ---
 
+## SEC-7 · Deploy a Vercel — 2026-05-07 — confirmada
+
+**La decisión:** target host de producción es **Vercel**. Code/config preparation completa. Storage adapter (filesystem ↔ Vercel Blob) selecciona automáticamente por presencia de `BLOB_READ_WRITE_TOKEN`. Cron migrado a Vercel Cron Jobs vía `vercel.json`. `sendEmail` fail-fast en producción. Security headers en `next.config.ts`. Deploy paso-a-paso documentado en `docs/deploy-checklist.md`.
+
+**El contexto:** SEC-7 era el último item de la auditoría — operacional + algo de prep de código. Antes de ejecutarlo había que elegir host, porque el código diverge significativamente: Vercel obliga a object storage para uploads (filesystem read-only en runtime), Railway/VPS pueden quedarse en filesystem. La pregunta gating fue cuál host.
+
+**Las alternativas que existían:**
+- **Railway** — Node.js long-running, filesystem persistent, `node-cron` interno funciona, simpler mental model. $5/mes mínimo. Sin ecosystem cohesivo (cron + blob + analytics están separados).
+- **VPS self-hosted** — Linux box clásico (DigitalOcean/Hetzner). Control total. Pero setup explícito de TODO (firewall, SSL, backups, deploy automation, monitoring) — 10-20 horas previas al primer deploy. Operacional ongoing: si falla a las 3 AM hay que arreglarlo manualmente.
+- **Fly.io / Render** — opciones intermedias. Free tiers más generosos que Railway pero menos cohesivos que Vercel para Next.js.
+
+**Por qué Vercel ganó:**
+1. **Stack-fit** — creadores de Next.js, optimizaciones del framework deployadas allá primero. Cero lag entre release de Next.js y soporte.
+2. **DX para solo dev / aprendiz** — `git push → main → deploy`. Sin SSH, pm2, nginx, Let's Encrypt. Preview deploys per PR para validar antes de mergear.
+3. **Free tier suficiente** — Hobby plan: 100 GB-hours functions + 100 GB bandwidth. Vercel Blob: 1 GB storage + 1 GB bw. Para una inmobiliaria con tráfico orgánico, sobra.
+4. **Operacional outsourceado** — backups (Neon), HTTPS automático, DDoS protection, CDN global, observability básica.
+5. **Path de escala natural** — más users → más functions auto-escaladas. En VPS hay que escalar a mano.
+
+**Trade-offs aceptados:**
+- **Filesystem read-only en runtime** → uploads requieren Vercel Blob (extra dependency). Storage adapter pattern minimiza el lock-in: `BlobStorageAdapter` se reemplaza por `S3Adapter` o similar en un solo archivo si migra.
+- **Function timeout 10s en Hobby plan** → operaciones largas chocarían. Ninguna operación actual supera 2-3s; si crece, upgrade a Pro ($20/mes) sube a 60s.
+- **Cold starts ~1s** → primer request post-inactividad más lento. Para uso interno (no tráfico público alto), invisible.
+- **Lock-in moderado** → `vercel.json` (cron) y `@vercel/blob` (storage) son Vercel-specific. Migración real estimada: 8-16 hs.
+
+**Cambios de código preparatorios:**
+1. **Storage adapter** (`src/lib/uploads/storage.ts`) — `StorageAdapter` interface + `LocalStorageAdapter` + `BlobStorageAdapter`, selección automática.
+2. **Cron migration** — `vercel.json` declara cron HTTP-triggered. `instrumentation.ts` skip-ea `node-cron` cuando `process.env.VERCEL` está seteado. Endpoint `/api/cron/cleanup-files` ya validaba `Authorization: Bearer ${CRON_SECRET}` desde SEC-1 — compatible directo.
+3. **`sendEmail` fail-fast** (`src/lib/auth/email.ts`) — en `NODE_ENV=production` tira si faltan creds Gmail. En dev sigue como warning.
+4. **Security headers** (`next.config.ts`) — HSTS (sin preload), X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, Permissions-Policy con camera/mic/geo desactivados.
+5. **`.env.example`** — todas las env vars documentadas con sección clara de "required-always / required-prod / Vercel-auto / opcional".
+6. **`docs/deploy-checklist.md`** — 8 fases, smoke test E2E (incluye test de XSS resistance en uploads), runbook operacional.
+
+**Cuándo revisarla:** si Vercel sube precios significativamente, cambia política, o si la app crece a un punto donde el Hobby plan no alcanza Y el Pro plan es demasiado caro vs alternativas. La portabilidad del código está armada (storage adapter) — la migración es bounded.
+
+**Pendiente:** ejecutar el deploy mismo. Cuándo es decisión del user. Toda la preparación está lista.
+
+**Fuente:**
+- Storage adapter: `src/lib/uploads/storage.ts`
+- Cron config: `vercel.json`
+- Instrumentation guard: `src/instrumentation.ts`
+- Email fail-fast: `src/lib/auth/email.ts`
+- Security headers: `next.config.ts` § `headers()`
+- Env doc: `.env.example`
+- Deploy checklist: `docs/deploy-checklist.md`
+- Commits: `3be0f58` (storage adapter), `d4bb1df` (config + headers + cron + email), `0cdbbc8` (env example)
+
+---
+
 ## SEC-6 · Hardening de uploads (private storage + magic bytes) — 2026-05-07 — confirmada
 
 **La decisión:** los archivos subidos por users se guardan en `private-uploads/` (project root, gitignored, fuera de `public/`) y se sirven exclusivamente via `GET /api/files/[scope]/[id]/[filename]` con auth checks + headers seguros. La validación al subir usa whitelist de extensiones + verificación de magic bytes leídos del servidor (NO `file.type` del cliente).
