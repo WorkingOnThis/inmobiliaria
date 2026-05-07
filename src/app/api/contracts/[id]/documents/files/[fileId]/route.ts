@@ -7,8 +7,7 @@ import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and } from "drizzle-orm";
-import { unlink } from "fs/promises";
-import path from "path";
+import { deleteUpload, parseFileUrl } from "@/lib/uploads/storage";
 
 export async function DELETE(
   _request: NextRequest,
@@ -48,11 +47,9 @@ export async function DELETE(
       .where(and(eq(contractDocument.id, fileId), eq(contractDocument.agencyId, agencyId)));
 
     // Best-effort file deletion — don't fail the request if the file is missing
-    try {
-      const filePath = path.join(process.cwd(), "public", existing.url);
-      await unlink(filePath);
-    } catch {
-      // file may already be gone
+    const parsed = parseFileUrl(existing.url);
+    if (parsed) {
+      await deleteUpload(parsed.scope, parsed.id, parsed.filename);
     }
 
     return NextResponse.json({ message: "Documento eliminado" });

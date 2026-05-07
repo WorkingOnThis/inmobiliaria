@@ -6,11 +6,10 @@ import { auth } from "@/lib/auth";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { canManageCash } from "@/lib/permissions";
 import { and, eq } from "drizzle-orm";
-import path from "path";
-import fs from "fs/promises";
+import { validateUpload } from "@/lib/uploads/validate";
+import { saveUpload, deleteUpload, buildFileUrl, parseFileUrl } from "@/lib/uploads/storage";
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_MIME = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 
 /**
  * POST /api/cash/movimientos/:id/comprobante
@@ -48,38 +47,36 @@ export async function POST(
     if (!file) {
       return NextResponse.json({ error: "No se recibió ningún archivo" }, { status: 400 });
     }
-    if (file.size > MAX_SIZE_BYTES) {
-      return NextResponse.json({ error: "El archivo supera el límite de 5 MB" }, { status: 400 });
-    }
-    if (!ALLOWED_MIME.includes(file.type)) {
-      return NextResponse.json({ error: "Solo se permiten PDF e imágenes (JPEG, PNG, WebP)" }, { status: 400 });
+
+    const result = await validateUpload(file, {
+      allowedExts: ["pdf", "jpg", "jpeg", "png", "webp"],
+      maxBytes: MAX_SIZE_BYTES,
+    });
+    if (!result.ok || !result.data) {
+      return NextResponse.json({ error: result.error ?? "Archivo inválido" }, { status: result.status ?? 400 });
     }
 
-    // Si había un archivo previo, eliminarlo del disco
+    const validated = result.data;
+
+    // Si había un archivo previo, eliminarlo del disco (best-effort)
     if (movimiento.comprobanteUrl) {
-      const oldPath = path.join(process.cwd(), "public", movimiento.comprobanteUrl);
-      await fs.unlink(oldPath).catch(() => {});
+      const parsed = parseFileUrl(movimiento.comprobanteUrl);
+      if (parsed) {
+        await deleteUpload(parsed.scope, parsed.id, parsed.filename);
+      }
     }
-
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "movimientos", id);
-    await fs.mkdir(uploadDir, { recursive: true });
 
     const timestamp = Date.now();
-    const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const filename = `${timestamp}-${safeFilename}`;
-    await fs.writeFile(path.join(uploadDir, filename), buffer);
-
-    const comprobanteUrl = `/uploads/movimientos/${id}/${filename}`;
+    const safeFilename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    await saveUpload("movimientos", id, safeFilename, validated.buffer);
+    const comprobanteUrl = buildFileUrl("movimientos", id, safeFilename);
 
     const [actualizado] = await db
       .update(cajaMovimiento)
       .set({
         comprobanteUrl,
-        comprobanteMime: file.type,
-        comprobanteTamano: file.size,
+        comprobanteMime: validated.mime,
+        comprobanteTamano: validated.size,
         updatedAt: new Date(),
       })
       .where(and(eq(cajaMovimiento.id, id), eq(cajaMovimiento.agencyId, agencyId)))
@@ -131,8 +128,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Este movimiento no tiene comprobante" }, { status: 404 });
     }
 
-    const filePath = path.join(process.cwd(), "public", movimiento.comprobanteUrl);
-    await fs.unlink(filePath).catch(() => {});
+    const parsed = parseFileUrl(movimiento.comprobanteUrl);
+    if (parsed) {
+      await deleteUpload(parsed.scope, parsed.id, parsed.filename);
+    }
 
     await db
       .update(cajaMovimiento)

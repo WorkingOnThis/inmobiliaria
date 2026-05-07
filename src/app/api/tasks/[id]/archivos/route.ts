@@ -6,8 +6,8 @@ import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib
 import { canManageTasks } from "@/lib/permissions";
 import { tarea, tareaArchivo } from "@/db/schema/tarea";
 import { eq } from "drizzle-orm";
-import path from "path";
-import fs from "fs/promises";
+import { validateUpload } from "@/lib/uploads/validate";
+import { saveUpload, deleteUpload, buildFileUrl, parseFileUrl } from "@/lib/uploads/storage";
 
 export async function GET(
   _request: NextRequest,
@@ -55,18 +55,19 @@ export async function POST(
       return NextResponse.json({ error: "No se recibió ningún archivo" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const result = await validateUpload(file, {
+      allowedExts: ["pdf", "jpg", "jpeg", "png", "webp"],
+      maxBytes: 10 * 1024 * 1024, // 10 MB
+    });
+    if (!result.ok || !result.data) {
+      return NextResponse.json({ error: result.error ?? "Archivo inválido" }, { status: result.status ?? 400 });
+    }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "tareas", id);
-    await fs.mkdir(uploadDir, { recursive: true });
-
+    const validated = result.data;
     const timestamp = Date.now();
-    const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const filename = `${timestamp}-${safeFilename}`;
-    await fs.writeFile(path.join(uploadDir, filename), buffer);
-
-    const url = `/uploads/tareas/${id}/${filename}`;
+    const safeFilename = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    await saveUpload("tasks", id, safeFilename, validated.buffer);
+    const url = buildFileUrl("tasks", id, safeFilename);
 
     const [archivo] = await db
       .insert(tareaArchivo)
@@ -75,8 +76,8 @@ export async function POST(
         taskId: id,
         name: file.name,
         url,
-        type: file.type || null,
-        size: file.size,
+        type: validated.mime,
+        size: validated.size,
         createdBy: session!.user.id,
         createdAt: new Date(),
       })
@@ -120,8 +121,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Archivo no encontrado" }, { status: 404 });
     }
 
-    const filePath = path.join(process.cwd(), "public", archivo.url);
-    await fs.unlink(filePath).catch(() => {});
+    const parsed = parseFileUrl(archivo.url);
+    if (parsed) {
+      await deleteUpload(parsed.scope, parsed.id, parsed.filename);
+    }
     await db.delete(tareaArchivo).where(eq(tareaArchivo.id, archivoId));
 
     return NextResponse.json({ message: "Archivo eliminado" });

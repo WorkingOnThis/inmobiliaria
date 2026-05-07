@@ -1,8 +1,7 @@
 import { db } from "@/db";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { and, inArray, isNotNull, lt } from "drizzle-orm";
-import path from "path";
-import fs from "fs/promises";
+import { deleteUpload, parseFileUrl } from "@/lib/uploads/storage";
 
 export interface CleanupResult {
   processed: number;
@@ -28,7 +27,10 @@ export async function cleanupExpiredFiles(): Promise<CleanupResult> {
   const cleanedIds: string[] = [];
   for (const mov of expired) {
     if (!mov.comprobanteUrl) continue;
-    await fs.unlink(path.join(process.cwd(), "public", mov.comprobanteUrl)).catch(() => {});
+    const parsed = parseFileUrl(mov.comprobanteUrl);
+    if (parsed) {
+      await deleteUpload(parsed.scope, parsed.id, parsed.filename);
+    }
     cleanedIds.push(mov.id);
   }
 
