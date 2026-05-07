@@ -133,12 +133,6 @@ export async function DELETE(
       }, { status: 409 });
     }
 
-    if (row.documentContent) {
-      return NextResponse.json({
-        error: "El instrumento ya tiene un documento generado. No se puede eliminar.",
-      }, { status: 409 });
-    }
-
     // Revert contract to snapshot and delete amendment in a single transaction
     const snapshot = row.contractSnapshot as Record<string, unknown>;
     await db.transaction(async (tx) => {

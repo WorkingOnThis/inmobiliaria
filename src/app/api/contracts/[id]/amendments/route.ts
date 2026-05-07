@@ -66,7 +66,7 @@ export async function GET(
         description: row.description,
         fieldsChanged: enrichedFields,
         effectiveDate: row.effectiveDate,
-        hasDocument: !!row.documentContent,
+        hasDocument: row.status !== "registered",
         signedAt: row.signedAt?.toISOString() ?? null,
         createdAt: row.createdAt.toISOString(),
       };
