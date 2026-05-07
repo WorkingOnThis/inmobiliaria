@@ -33,7 +33,7 @@ Módulo de contratos: creación, ajustes de índice, honorarios, cláusulas.
 
 **Desventajas de lo elegido:**
 - **Performance**: cada vista del documento dispara queries a la DB (contract + amendment + owner + tenant + agency + same-type amendments para typeSeqNumber). Antes era un SELECT del HTML guardado. Para un documento que se ve 1-3 veces por amendment, irrelevante; si en V2 hay alta concurrencia, considerar caching.
-- **Datos legacy en `documentContent`**: la columna sigue conteniendo HTML potencialmente malicioso de amendments viejos. No se sirve, pero está. Si una feature futura lo lee sin pensar, el XSS vuelve. Mitigación opcional: `UPDATE contract_amendment SET documentContent = NULL` para neutralizar — no se hizo en SEC-5 para minimizar scope.
+- **Datos legacy en `documentContent`**: la columna sigue conteniendo HTML potencialmente malicioso de amendments viejos. No se sirve, pero está. Si una feature futura lo lee sin pensar, el XSS vuelve. **Mitigación aplicada (2026-05-07):** ejecutado `UPDATE contract_amendment SET "documentContent" = NULL WHERE "documentContent" IS NOT NULL` en la DB de dev (0 filas afectadas — no había amendments todavía). En producción cuando llegue, misma operación.
 
 **Cuándo revisarla:** cuando se confirme que ningún caller usa la URL `/api/.../document` (el redirect 307 puede dropearse), o cuando se decida hacer `UPDATE` de neutralización + `ALTER TABLE DROP COLUMN documentContent`.
 

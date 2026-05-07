@@ -24,7 +24,9 @@ El endpoint `POST /api/contracts/[id]/amendments/[aid]/document` construía HTML
 
 6. **`hasDocument` flag** ahora se deriva de `status !== "registered"` (era `!!documentContent`). Sin esto, el botón "Ver documento" no aparecía para amendments nuevos post-SEC-5.
 
-7. **Schema**: `documentContent` queda nullable, marcado como `// DEPRECATED post-SEC-5` en el comment. Datos legacy quedan en la columna pero nunca más se sirven.
+7. **Schema**: `documentContent` queda nullable, marcado como `// DEPRECATED post-SEC-5` en el comment.
+
+8. **Cleanup de datos legacy**: corrí `UPDATE contract_amendment SET "documentContent" = NULL WHERE "documentContent" IS NOT NULL` contra la DB de dev. En esta DB devolvió 0 filas (no hay amendments todavía), pero la operación quedó ejecutada de forma idempotente. Esto neutraliza el suelo de datos: si en el futuro una feature lee la columna sin pensar, no encuentra HTML potencialmente malicioso. Para producción cuando llegue ahí: misma operación.
 
 ### Por qué lo hice así y no de otra forma
 
