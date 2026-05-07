@@ -4,6 +4,89 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-07 — SEC-4 (chequeo de rol en mutaciones)
+
+### Qué hice
+
+Audité los 71 archivos de routes con métodos POST/PATCH/PUT/DELETE buscando los que NO tenían chequeo de rol. Encontré 14 — de los cuales 2 son exempts por diseño (`register`, `register-oauth` anteceden a la sesión completa). Los 12 restantes recibieron checks tras `requireAgencyId(session)`.
+
+**3 helpers nuevos en `src/lib/permissions.ts`**:
+- `canManageCash(role)` → `agent | account_admin`
+- `canManageFieldNotes(role)` → `agent | account_admin`
+- `canManageAgency(role)` → **`account_admin` solamente** (más estricto que el resto)
+
+**12 routes con check agregado**:
+
+| Grupo | Files | Helper |
+|---|---|---|
+| Cash | 4 | `canManageCash` |
+| Tasks | 3 | `canManageTasks` (existía) |
+| Services comprobante | 1 | `canManageServices` (existía) |
+| Field-notes | 2 | `canManageFieldNotes` |
+| Zones POST | 1 | `canManageProperties` (zones son catálogo de propiedades) |
+| Agency PATCH | 1 | `canManageAgency` |
+
+El patrón aplicado uniformemente:
+
+```ts
+const session = await auth.api.getSession({ headers: await headers() });
+const agencyId = requireAgencyId(session);          // SEC-3
+if (!canManageX(session.user.role)) {               // SEC-4
+  return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+}
+```
+
+### Por qué lo hice así y no de otra forma
+
+**Por qué `canManageAgency` es `account_admin` solamente y no `agent + account_admin`**: editar la configuración de la inmobiliaria (datos fiscales, banking, preferencias de emisión) es una operación administrativa. Hoy no aplica (un user = un account_admin), pero cuando V2 agregue invitaciones de colaboradores con rol `agent`, los invitados NO deberían poder cambiar el CBU de la inmobiliaria ni los datos fiscales. Mejor cerrarlo desde ahora.
+
+**Por qué `canManageProperties` para `zones POST` y no un `canManageZones` separado**: zones son etiquetas de barrios que se usan al crear/editar propiedades. Cualquiera que pueda crear propiedades necesita poder agregar zonas (`CreatableCombobox` permite crearlas inline). Crear un permiso separado `canManageZones` agregaría boilerplate sin lógica distintiva — dos arrays con el mismo contenido.
+
+**Por qué `canManageFieldNotes` separado y no reutilizar `canManageProperties`**: las field notes son observaciones que un agente toma en visitas a propiedades. Conceptualmente "anotar una observación" es una operación distinta a "crear una propiedad". Si en V2 querés permitir que un rol más restringido (ej: futuro `inspector`) pueda agregar field notes pero no crear/editar propiedades, ya tenemos el split listo.
+
+**Por qué reutilicé `canManageTasks`/`canManageServices` en vez de crear nuevos**: ya existían y son justo lo que necesitamos. Los routes faltaban el check pero el helper estaba.
+
+**Por qué unifiqué el mensaje de error a `"No tienes permisos"`**: las routes de field-notes tenían `"Sin permiso"` inline. El resto del codebase usa `"No tienes permisos"`. Estandaricé al mensaje mayoritario para que el cliente UI tenga una sola string que matchear si quiere mostrar UX especial en 403.
+
+**Por qué no inserté el check ANTES de `requireAgencyId`**: el orden es importante. `requireAgencyId` valida sesión + agency (401/403 según corresponda). Si lo dejabas para después del role check, un user sin agency vería un 403 "No tienes permisos" en vez del más correcto 403 "No has completado el registro de inmobiliaria". El orden actual da mensajes precisos.
+
+### Conceptos que aparecieron
+
+- **Defense-in-depth aplicado por capas**: SEC-3 garantiza que un usuario no vea recursos de otra agency (inquilino isolation). SEC-4 garantiza que un usuario read-only de su PROPIA agency no pueda mutarlos (role isolation). Las dos capas son ortogonales: un visitor con agencyId válido podía pasar SEC-3 (ve sus recursos) pero no SEC-4 (no los puede modificar).
+
+- **Default permisivo vs default restrictivo**: las routes que pre-existían en SEC-3 sin checks de rol estaban funcionando con default permisivo — "todo logueado puede mutar". El audit cambió eso a default restrictivo — "todo logueado necesita un check explícito de rol para mutar". Cada route nueva en el futuro debe declararlo.
+
+- **Audit pattern via grep**: la forma de detectar routes faltantes fue:
+  ```bash
+  for f in $(grep -lrE "^export async function (POST|PATCH|PUT|DELETE)" src/app/api); do
+    grep -q "canManage\|canAnnulReceipts" "$f" || echo "$f"
+  done
+  ```
+  Listó los 14 archivos sin check. Patrón reusable: cualquier convención que querés que sea uniforme se puede chequear así.
+
+- **Granularidad de permisos**: tres niveles vimos hoy: (a) "todos los authenticated en la agency" (GETs), (b) "agent + account_admin" (mutaciones de negocio), (c) "account_admin solamente" (config admin). Más granular = más complejo de mantener. Menos granular = más leakage. La regla pragmática: empezar con un permiso por feature, granular solo cuando una distinción real aparece (V2 con invitaciones).
+
+### Preguntas para reflexionar
+
+1. El audit detectó 14 routes faltantes — pero la próxima route que agregues podría volver a olvidar el check. ¿Cómo lo prevenís? Una idea: lint rule custom que detecte `^export async function (POST|PATCH|PUT|DELETE)` sin un `canManage` cerca. ¿Vale el costo de mantenerla, o conviene un test que recorra `src/app/api` y falle si falta?
+
+2. `canManageZones = canManageProperties` (mismo array). ¿Cuándo conviene un alias (ej: `canManageZones = canManageProperties`) y cuándo un permiso separado con el mismo contenido inicial? El alias es DRY pero acopla; el permiso separado es duplicación pero permite divergir sin refactor.
+
+3. La unificación del mensaje (`"Sin permiso"` → `"No tienes permisos"`) es UX-visible. ¿Cuándo cambiar wording por consistencia es OK y cuándo es overreach? La regla "no romper UX" diría no tocar; la regla "consistencia" diría unificar. ¿Cómo lo balanceás?
+
+4. `canManageAgency` admin-only no afecta hoy (un user = account_admin), pero anticipa V2. ¿Es esto YAGNI o legítima defense-in-depth? La diferencia: YAGNI es "agregar feature sin demanda real", defense-in-depth es "cerrar puerta antes de que alguien la abra". Acá la decisión fue cerrar puerta porque el costo es minúsculo (una línea).
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: defense-in-depth en autorización (tenant isolation + role isolation son ortogonales)
+- [ ] Concepto: default permisivo vs default restrictivo en endpoints
+- [ ] Patrón: audit grep para detectar routes que no siguen una convención
+- [ ] Patrón: orden de validación en route handler (sesión → tenant → role → input)
+- [ ] Decisión técnica: SEC-4 — qué helpers reutilizar vs crear nuevos
+- [ ] Decisión técnica: granularidad de permisos (uno por feature vs aliases vs separados)
+
+---
+
 ## 2026-05-06 — SEC-3 (multi-tenancy real con `agencyId`)
 
 ### Qué hice

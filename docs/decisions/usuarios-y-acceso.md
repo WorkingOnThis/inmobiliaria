@@ -4,6 +4,48 @@ Roles, autenticación, permisos, acceso de terceros (inquilinos, propietarios).
 
 ---
 
+## SEC-4 · Chequeo de rol en mutaciones — 2026-05-07 — confirmada
+
+**La decisión:** todo route handler que ejecuta una mutación (POST/PATCH/PUT/DELETE) sobre datos de negocio debe llamar a `canManageX(session.user.role)` después de `requireAgencyId(session)`. Si el helper devuelve `false`, la route responde 403 con `{ error: "No tienes permisos" }`. Tres helpers nuevos en `src/lib/permissions.ts`: `canManageCash`, `canManageFieldNotes`, `canManageAgency`.
+
+**El contexto:** auditoría pre-deploy detectó que 14 de 71 routes con mutaciones no validaban rol del user — solo verificaban que hubiera sesión. Un `visitor` (read-only por contrato) podía crear/editar/borrar movimientos de caja, tareas, comprobantes de servicio, field notes, zonas y settings de la inmobiliaria.
+
+**Las alternativas que existían:**
+- **Middleware/proxy global**: chequear rol en `src/proxy.ts` antes de que el request llegue al route handler. Descartada: el proxy ya hace bastante (auth + path-based routing), agregar lógica de rol granular ahí lo vuelve frágil. Además, no toda mutación sigue el mismo patrón de path → permission.
+- **Permission checks declarativos por archivo**: convención tipo `export const requiredPermission = "cash.write"` que un wrapper verifica. Descartada: requiere más infraestructura, y por ahora 6 helpers nominales son legibles y discoverable por grep.
+- **Único helper genérico `canManage(resource, role)`**: un solo punto, parametrizado por string. Descartada: mata el type-checking — si tipeás `canManage("cas", role)` (typo), TS no te avisa.
+
+**Por qué elegí esta y no las otras:** el patrón `canManageX(role)` ya existía en el codebase (clauses, clients, properties, contracts, services, tasks, document templates). Sumar 3 helpers nuevos sigue la convención sin agregar abstracciones. El check es local al route, fácil de auditar con grep, y type-safe (las funciones son explícitas).
+
+**Cobertura aplicada:**
+| Routes | Helper |
+|---|---|
+| `cash/movimientos/*` (4) | `canManageCash` (nuevo) |
+| `tasks/*` (3) | `canManageTasks` |
+| `services/[id]/comprobante` (1) | `canManageServices` |
+| `field-notes/*` (2) | `canManageFieldNotes` (nuevo) |
+| `zones POST` (1) | `canManageProperties` (catalog reuse) |
+| `agency PATCH` (1) | `canManageAgency` (nuevo, admin-only) |
+
+**Casos especiales:**
+- **`canManageAgency` es `account_admin` solamente** — más estricto que el resto. Editar la configuración de la inmobiliaria (datos fiscales, banking, preferencias de emisión) es operación admin. Cuando V2 sume invitaciones de colaboradores con rol `agent`, los invitados no van a poder cambiar settings de la inmobiliaria (que es lo que queremos).
+- **`canManageProperties` cubre `zones POST`** — zones son etiquetas de barrios usadas en el form de propiedades. Quien crea propiedades necesita poder crear zonas inline (`CreatableCombobox`). Crear `canManageZones` separado sería duplicación sin lógica distintiva.
+- **GETs no se tocaron** — read access se queda al nivel de agency (todo el equipo de la agency puede ver los datos).
+- **Routes exentas**: `register/route.ts`, `register-oauth/route.ts` — anteceden a la sesión completa con role asignado.
+
+**Desventajas de lo elegido:**
+- **Sin lint rule que prevenga regresiones**: si alguien suma una route nueva con POST/PATCH/PUT/DELETE y olvida el check, no hay nada que lo bloquee. Mitigación: re-correr el grep audit periódicamente, o sumar un test que recorra `src/app/api` y verifique el patrón.
+- **Permisos estáticos por enum** (`["agent", "account_admin"]`) — no hay UI para configurar quién puede qué. Si quisieras que un agente específico tenga permiso de admin, hay que cambiarle el rol entero. Por ahora es deliberado — empezar simple, granular cuando duela.
+
+**Cuándo revisarla:** cuando V2 abra invitaciones de colaboradores con rol `agent`, validar que `canManageAgency` siga siendo admin-only y que el resto de los `canManage*` permitan al rol `agent`. Si en algún momento se quiere granularidad por-feature por-user (ej: "este agente puede pero ese no"), considerar mover a un sistema de capabilities en DB en vez de enums hardcoded.
+
+**Fuente:**
+- Helpers: `src/lib/permissions.ts`
+- Routes modificadas: 12 — ver commits `dced78a` (routes) y `5c4c239` (helpers)
+- Audit: `for f in $(grep -lrE "^export async function (POST|PATCH|PUT|DELETE)" src/app/api); do grep -q "canManage\|canAnnulReceipts" "$f" || echo "$f"; done`
+
+---
+
 ## SEC-3 · Multi-tenancy con `agencyId` — 2026-05-06 — confirmada
 
 **La decisión:** las 14 tablas de negocio (`client`, `property`, `contract`, `cash_movement`, `task`, `service`, `guarantee`, `clauseTemplate`, `contract_amendment`, `contract_document`, `contract_participant`, `property_co_owner`, `property_room`, `tenant_ledger`) reciben columna `agencyId NOT NULL` con FK a `agency.id ON DELETE CASCADE`. El `agencyId` se propaga vía Better Auth `additionalFields` (sin queries extra). Toda route handler usa los helpers `requireAgencyId` y `requireAgencyResource` (en `src/lib/auth/agency.ts`) para validar pertenencia. Errores 404 indistinguibles entre "no existe" y "es de otra agency".
