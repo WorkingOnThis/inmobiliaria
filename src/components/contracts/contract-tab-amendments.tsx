@@ -194,7 +194,7 @@ export function ContractTabAmendments({ contractId }: { contractId: string }) {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => window.open(`/api/contracts/${contractId}/amendments/${a.id}/document`, "_blank")}
+                onClick={() => window.open(`/contratos/${contractId}/modificaciones/${a.id}`, "_blank")}
               >
                 <FileText className="h-3 w-3 mr-1" />
                 Ver documento

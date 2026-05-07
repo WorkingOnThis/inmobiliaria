@@ -28,7 +28,7 @@ export const contractAmendment = pgTable("contract_amendment", {
   // ISO "YYYY-MM-DD" — obligatorio para modification, extension, termination, index_change
 
   documentContent:  text("documentContent"),
-  // HTML del instrumento generado (se sirve via GET /api/.../document)
+  // DEPRECATED post-SEC-5: documents are now rendered on-demand via /contratos/[id]/modificaciones/[aid]. Existing values remain for old amendments.
 
   signedAt:         timestamp("signedAt"),
 
