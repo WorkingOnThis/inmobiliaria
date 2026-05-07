@@ -4,6 +4,47 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-07 — Deploy a producción (Vercel)
+
+### Qué hice
+
+Ejecuté el primer deploy completo de Arce Administración a Vercel. El proceso incluyó:
+- Limpié la DB de producción (Neon branch `production`): TRUNCATE de todas las tablas operacionales, preservando agencia y plantillas de contrato.
+- Pushé el código al repo propio del usuario (`Montaigne252/arce-administracion`) para independizarse del repo del programador.
+- Importé el proyecto en Vercel, configuré las 6 env vars de producción (DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, GMAIL_USER, GMAIL_APP_PASSWORD, CRON_SECRET) y deployé.
+- Creé el Blob Store `arce-uploads` (Private, región São Paulo) y lo conecté al proyecto; redeploy para que `BLOB_READ_WRITE_TOKEN` tomara efecto.
+- Resolví una cadena de problemas post-deploy: Gmail app password inválida (email de verificación no llegaba), rate limit por intentos fallidos, agencia en cascada borrada al eliminar el usuario original, documentTemplate vacío.
+- Restauré la agencia con todos los datos via SQL directo en Neon, actualicé el `agencyId` del usuario, y sedeé el template de contrato con `scripts/seed-prod-template.ts`.
+
+**URL de producción:** `https://arce-administracion.vercel.app`
+
+### Por qué lo hice así y no de otra forma
+
+- **Repo propio**: deployar con el repo del programador crea dependencia operacional. El usuario necesita control total del código en producción.
+- **Blob Store Private**: los archivos (comprobantes, tareas) son datos privados del negocio — nunca deben ser públicamente accesibles por URL directa.
+- **SQL directo para recuperar datos**: el seed script fallaba porque bun auto-carga el `.env` local (con DB de dev) y pisaba el DATABASE_URL seteado en PowerShell. La solución fue `--env-file NUL` para que bun no cargue ningún .env.
+
+### Conceptos que aparecieron
+
+- **Blob Store**: almacenamiento de archivos en la nube. Vercel Blob es el equivalente de "una carpeta en internet" con permisos; `Private` significa que cada archivo necesita un token para ser leído.
+- **Cascade en FK**: cuando una tabla tiene una FK con `ON DELETE CASCADE`, borrar el registro padre borra automáticamente los hijos. Aquí: borrar el usuario borró la agencia, que borró el documentTemplate.
+- **Rate limiting**: Better Auth bloquea temporalmente un IP/email después de varios intentos fallidos de login. Se limpia con `TRUNCATE "rateLimit"`.
+- **BETTER_AUTH_URL**: Better Auth valida que los requests vengan del mismo origen que esta variable. Si el usuario accede por una URL diferente (ej: la URL del deploy específico en vez de la URL canónica), el login da 403.
+- **dotenv y bun**: bun carga automáticamente el archivo `.env` al arrancar cualquier script, incluso sin `import "dotenv/config"`. Para evitarlo: `bun --env-file NUL`.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué tiene sentido que borrar un usuario borre en cascada su agencia? ¿En qué casos eso podría ser un problema?
+2. Si tuvieras que volver a hacer este deploy desde cero, ¿qué paso te parece más crítico no saltear?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: **Foreign Key con CASCADE** — qué es, cuándo ayuda, cuándo destruye datos sin avisar
+- [ ] Decisión técnica: **Por qué deployamos en Vercel + Neon** en lugar de Supabase u otras opciones
+- [ ] Patrón: **Recuperar datos de producción borrados por cascade** — la receta SQL que usamos para reconstruir agency + agencyId + template
+
+---
+
 ## 2026-05-07 — SEC-7 (preparación de deploy a Vercel)
 
 ### Qué hice
