@@ -4,6 +4,90 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-07 — Flujo de trabajo, base de datos de dev y fix de descuento
+
+### Qué hice
+
+**1. Fix: descuento se sumaba en lugar de restarse**
+El monto de los descuentos se guarda en la DB como número positivo (ej: `43825`). El código de `cobro-panel.tsx` y `receipts/emit/route.ts` lo sumaba igual que un alquiler, dando totales incorrectos (`$800.000 + $43.825 = $843.825` en lugar de `$756.175`). Agregué `getSignedMonto()` / `getSignedEffectiveAmount()` que devuelve negativo cuando el tipo es `descuento` o `bonificacion`. El fix está en dos lugares: la pantalla (UI) y el servidor (lo que se graba en caja).
+
+**2. Configuración del flujo de trabajo local → producción**
+- Corregí el email de git: estaba `arce.guillermo.gaston@email.com` (typo), lo cambié a `@gmail.com`. Vercel bloqueaba los deploys porque no podía asociar el committer con la cuenta de GitHub.
+- Configuré `personal` (repo `Montaigne252/arce-administracion`) como remote por defecto para que `git push` apunte a Vercel.
+
+**3. Rama de base de datos para desarrollo**
+Creé la rama `dev` en Neon (copiada exactamente de producción en ese momento). Actualicé el `.env` local para apuntar a esa rama. Ahora local y producción tienen bases de datos separadas.
+
+---
+
+### Guía de trabajo autónomo (sin ayuda de Claude)
+
+#### Flujo de cada sesión
+
+```
+1. Abrís la terminal en el proyecto
+2. bun dev                    ← arranca el servidor local
+3. Abrís localhost:3000 en el navegador
+4. Hacés cambios en el código → se ven al instante en el navegador (sin tocar git)
+5. Cuando algo funciona:
+   git add src/el/archivo/que/cambiaste.tsx
+   git commit -m "descripción breve de lo que hiciste"
+6. Repetís 4-5 las veces que haga falta
+7. Cuando todo está probado y listo para producción:
+   git push                   ← esto sí deploya en Vercel (~1-2 minutos)
+```
+
+#### Resetear la base de datos local (datos frescos de producción)
+
+Cuando querés que tu base local sea una copia exacta de lo que hay en producción en ese momento, pedíselo a Claude: *"reseteá la rama dev"*. Claude lo hace con el MCP de Neon en segundos. No hay comando manual para esto — requiere autenticación.
+
+#### Si Vercel bloquea un deploy
+
+Causa más común: el email de git no coincide con GitHub. Verificar con:
+```bash
+git config user.email
+# debe decir: arce.guillermo.gaston@gmail.com
+# si dice otra cosa:
+git config user.email "arce.guillermo.gaston@gmail.com"
+# luego hacer un commit vacío para re-triggerear el deploy:
+git commit --allow-empty -m "chore: trigger redeploy"
+git push
+```
+
+#### Cuándo NO usar git push todavía
+
+- Cuando el cambio rompe algo que todavía no arreglaste
+- Cuando estás en medio de algo y querés guardar progreso parcial → usá `git commit` sin push
+
+#### Cambios de estructura de base de datos (migraciones)
+
+Si en alguna sesión se agrega una columna o tabla nueva al schema:
+1. El cambio se aplica primero en la rama `dev` (local) con `bun run db:push`
+2. Se prueba que funciona
+3. Al momento de deployar, hay que aplicar el mismo cambio en producción — pedíselo a Claude, que lo hace con el DATABASE_URL de producción
+
+---
+
+### Conceptos que aparecieron
+
+- **git add vs git commit vs git push**: `add` elige qué archivos incluir, `commit` guarda una foto local, `push` manda todo a GitHub y dispara el deploy. Son tres pasos separados, cada uno con su propósito.
+- **Neon branches**: Neon permite tener copias de la misma base de datos (igual que git tiene ramas de código). La rama `main` es producción, la rama `dev` es para probar. Resetear `dev` copia `main → dev`, nunca al revés — no hay riesgo de contaminar producción.
+- **Variables de entorno sensitivas**: Vercel oculta los valores una vez guardados. No es un bug, es seguridad — nadie que acceda al dashboard puede leer las claves.
+- **Commit vacío**: `git commit --allow-empty` crea un commit sin cambios de código, útil para re-triggerear un deploy sin tener que modificar un archivo.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué tiene sentido que el código y los datos vayan por caminos separados (git vs Neon)? ¿Qué problema crearía si fueran juntos?
+2. ¿En qué situación sería peligroso hacer `git push` sin probar en local primero?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: **git add / commit / push** — los tres pasos del workflow y para qué sirve cada uno
+- [ ] Patrón: **Flujo local → staging → producción** con Vercel + Neon branches
+- [ ] Bug: **Descuento sumado en lugar de restado** — causa raíz (monto positivo en DB, sin signo en la suma), fix (función `getSignedMonto`), dónde mirar si vuelve a pasar
+
+---
+
 ## 2026-05-07 — Deploy a producción (Vercel)
 
 ### Qué hice
