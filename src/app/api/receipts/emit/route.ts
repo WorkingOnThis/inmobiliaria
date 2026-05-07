@@ -35,6 +35,14 @@ function getEffectiveAmount(
   return override !== undefined ? Number(override) : Number(originalMonto);
 }
 
+function getSignedEffectiveAmount(
+  entry: { id: string; monto: string | null; tipo: string },
+  overrides: Record<string, string>
+): number {
+  const raw = getEffectiveAmount(entry.id, entry.monto!, overrides);
+  return entry.tipo === "descuento" || entry.tipo === "bonificacion" ? -raw : raw;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -127,11 +135,11 @@ export async function POST(request: NextRequest) {
 
     // Commission base = sum of entries where incluirEnBaseComision=true
     const totalRecibo = round2(
-      entries.reduce((s, e) => s + getEffectiveAmount(e.id, e.monto!, montoOverrides), 0)
+      entries.reduce((s, e) => s + getSignedEffectiveAmount(e, montoOverrides), 0)
     );
     const baseComision = entries
       .filter((e) => e.incluirEnBaseComision)
-      .reduce((s, e) => s + getEffectiveAmount(e.id, e.monto!, montoOverrides), 0);
+      .reduce((s, e) => s + getSignedEffectiveAmount(e, montoOverrides), 0);
     const montoHonorarios = round2(baseComision * honorariosPct / 100);
 
     const txResult = await db.transaction(async (tx) => {

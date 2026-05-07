@@ -34,6 +34,12 @@ function getMonto(entry: LedgerEntry, overrides: Record<string, string>): number
   return raw !== null ? Number(raw) : 0;
 }
 
+// Descuentos y bonificaciones reducen el total — se tratan como negativos
+function getSignedMonto(entry: LedgerEntry, overrides: Record<string, string>): number {
+  const raw = getMonto(entry, overrides);
+  return entry.tipo === "descuento" || entry.tipo === "bonificacion" ? -raw : raw;
+}
+
 function computeSplitTotals(
   entries: LedgerEntry[],
   overrides: Record<string, string>,
@@ -43,7 +49,7 @@ function computeSplitTotals(
   let prop = 0;
   let adm = 0;
   for (const e of entries) {
-    const monto = getMonto(e, overrides);
+    const monto = getSignedMonto(e, overrides);
     // null = entry pre-dates split feature; apply default by tipo
     const dest = beneficiarioOverrides[e.id] ?? e.beneficiario ?? (e.tipo === "alquiler" ? "split" : "propietario");
     if (dest === "split") {
@@ -74,9 +80,9 @@ export function CobroPanel({
 
   const baseComision = selectedEntries
     .filter((e) => e.tipo !== "punitorio" && e.tipo !== "descuento")
-    .reduce((s, e) => s + getMonto(e, montoOverrides), 0);
+    .reduce((s, e) => s + getSignedMonto(e, montoOverrides), 0);
 
-  const receiptTotal = round2(selectedEntries.reduce((s, e) => s + getMonto(e, montoOverrides), 0));
+  const receiptTotal = round2(selectedEntries.reduce((s, e) => s + getSignedMonto(e, montoOverrides), 0));
   const feesAmount = round2(baseComision * (honorariosPct / 100));
   const ownerNet = round2(receiptTotal - feesAmount);
 
