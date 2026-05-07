@@ -63,6 +63,33 @@ export const TASK_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"
 export const DOCUMENT_TEMPLATE_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
 
 /**
+ * Permisos para mutaciones en Caja
+ *
+ * Define qué roles pueden crear/editar/borrar/conciliar movimientos de caja
+ * y subir comprobantes:
+ * - `/api/cash/movimientos*`
+ */
+export const CASH_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
+
+/**
+ * Permisos para mutaciones en Field Notes
+ *
+ * Define qué roles pueden crear/editar/borrar field notes (observaciones de campo):
+ * - `/api/field-notes*`
+ */
+export const FIELD_NOTE_MANAGEMENT_PERMISSIONS: UserRole[] = ["agent", "account_admin"];
+
+/**
+ * Permisos para editar la configuración de la inmobiliaria (Agency)
+ *
+ * Solo el admin puede modificar datos de la inmobiliaria (datos fiscales, banking,
+ * preferencias de emisión, etc). Un `agent` invitado a colaborar no debería poder
+ * cambiar estos datos.
+ * - `PATCH /api/agency`
+ */
+export const AGENCY_MANAGEMENT_PERMISSIONS: UserRole[] = ["account_admin"];
+
+/**
  * Verifica si un rol tiene permisos para crear cláusulas
  * 
  * @param role - El rol del usuario a verificar
@@ -131,6 +158,30 @@ export function canManageTasks(role: string | null | undefined): boolean {
 export function canManageDocumentTemplates(role: string | null | undefined): boolean {
   if (!role) return false;
   return DOCUMENT_TEMPLATE_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
+}
+
+/**
+ * Verifica si un rol puede mutar movimientos de caja
+ */
+export function canManageCash(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return CASH_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
+}
+
+/**
+ * Verifica si un rol puede mutar field notes
+ */
+export function canManageFieldNotes(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return FIELD_NOTE_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
+}
+
+/**
+ * Verifica si un rol puede editar configuración de la inmobiliaria
+ */
+export function canManageAgency(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return AGENCY_MANAGEMENT_PERMISSIONS.includes(role as UserRole);
 }
 
 /**
