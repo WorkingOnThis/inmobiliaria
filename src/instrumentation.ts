@@ -1,6 +1,12 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // En Vercel (serverless), las funciones son short-lived y `node-cron` no se mantiene
+  // corriendo. La cleanup se dispara vía Vercel Cron Jobs (configurado en vercel.json),
+  // que llama al endpoint HTTP `/api/cron/cleanup-files` con CRON_SECRET.
+  // En servidores long-running (Railway, VPS, dev local) usamos el cron interno.
+  if (process.env.VERCEL) return;
+
   const { schedule } = await import("node-cron");
   const { cleanupExpiredFiles } = await import("@/lib/cron/cleanup-files");
 

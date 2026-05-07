@@ -23,6 +23,13 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
   const from = process.env.GMAIL_USER;
 
   if (!transporter || !from) {
+    // En producción es fail-fast: el caller (register/route.ts) hace rollback del user
+    // si esto tira. En dev/test lo dejamos como warning para no romper flows locales.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "GMAIL_USER and GMAIL_APP_PASSWORD must be configured in production. Email not sent."
+      );
+    }
     console.warn("⚠️ GMAIL_USER o GMAIL_APP_PASSWORD no configurados. Email no enviado.");
     console.log("📧 Email would be sent:", { to: options.to, subject: options.subject });
     return;
