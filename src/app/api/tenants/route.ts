@@ -33,6 +33,17 @@ const CONTRACT_STATUS_PRIORITY: Record<string, number> = {
   terminated: 5,
 };
 
+function groupMatchesSearch(g: TenantGroup, term: string): boolean {
+  const t = term.toLowerCase();
+  return [g.primary, ...g.coTenants].some(
+    (m) =>
+      m.firstName.toLowerCase().includes(t) ||
+      (m.lastName?.toLowerCase().includes(t) ?? false) ||
+      (m.dni?.toLowerCase().includes(t) ?? false) ||
+      (m.phone?.toLowerCase().includes(t) ?? false)
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -41,8 +52,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
 
     const searchParams = request.nextUrl.searchParams;
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
     const search = searchParams.get("search") || "";
     const estadoFilter = searchParams.get("estado") || "todos";
 
@@ -237,17 +248,6 @@ export async function GET(request: NextRequest) {
     });
 
     const groups = groupTenants(enriched, participantOrder);
-
-    function groupMatchesSearch(g: TenantGroup, term: string): boolean {
-      const t = term.toLowerCase();
-      return [g.primary, ...g.coTenants].some(
-        (m) =>
-          m.firstName.toLowerCase().includes(t) ||
-          (m.lastName?.toLowerCase().includes(t) ?? false) ||
-          (m.dni?.toLowerCase().includes(t) ?? false) ||
-          (m.phone?.toLowerCase().includes(t) ?? false)
-      );
-    }
 
     const searched = search
       ? groups.filter((g) => groupMatchesSearch(g, search))
