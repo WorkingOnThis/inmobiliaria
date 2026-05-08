@@ -165,7 +165,10 @@
       "Bash(TEST_DATABASE_URL='postgresql://neondb_owner:npg_9IprLfGB6nyt@ep-billowing-wind-act51012-pooler.sa-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require' APP_BASE='http://localhost:3000' bun run scripts/test-cross-agency.ts)",
       "mcp__neon__delete_branch",
       "Bash(openssl rand *)",
-      "mcp__neon__describe_project"
+      "mcp__neon__describe_project",
+      "Bash(C:\\\\Users\\\\guill\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.1.0\\\\scripts\\\\start-server.sh *)",
+      "mcp__neon__reset_from_parent",
+      "Bash(findstr /i \"GMAIL\")"
     ]
   },
   "enableAllProjectMcpServers": true,
