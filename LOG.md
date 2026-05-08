@@ -4,6 +4,58 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-08 — Fix de signos en la liquidación (comprobante)
+
+### Qué hice
+
+**Bug**: En la liquidación del propietario, los ítems de tipo `descuento` o `bonificacion` aparecían como suma positiva en las columnas BRUTO y NETO, cuando deberían aparecer como resta negativa. Además los honorarios (comisión de la inmobiliaria) tampoco tenían signo negativo, haciendo que la aritmética de la tabla no fuera obvia.
+
+**Fix en `src/lib/comprobantes/load.ts`**:
+- Agregué `tipo` al tipo `ComprobanteData["items"]` para que la página sepa con qué tipo de movimiento está trabajando
+- Introduje un multiplicador de signo: `sign = -1` si el tipo es `descuento` o `bonificacion`, `sign = 1` para el resto
+- `bruto` y `net` se multiplican por `sign` → descuentos salen negativos
+- `commission` se multiplica por `-sign` → honorarios siempre negativos (representan una deducción de lo que recibe el propietario)
+- Los totales acumulan valores ya signados, así que quedan correctos automáticamente
+
+**Fix en `src/app/(dashboard)/comprobantes/[id]/page.tsx`**:
+- Color rojo (`#dc2626`) cuando BRUTO o NETO son negativos
+- Color azul (`#2563eb`) en toda la columna de honorarios cuando hay valor
+- Misma lógica de color en la fila de Totales
+
+**Fix en `src/lib/receipts/email-template.ts`** (sesión anterior, completado):
+- El logo de la agencia (guardado como base64 data URL) ya se renderiza en el email HTML con un `<img>` antes del nombre de la agencia
+
+---
+
+### Por qué lo hice así y no de otra forma
+
+**El signo va en `load.ts`, no en la página**: la regla de negocio ("un descuento resta") pertenece a la capa de datos, no al presentador. Si en el futuro se genera un PDF o se manda el comprobante por email, los números llegan ya correctos sin repetir la lógica.
+
+**`commission = -(rawCommission * sign)`**: los honorarios son siempre negativos desde el punto de vista del propietario — es plata que la agencia retiene. Mostrarlos negativos hace que la aritmética de la tabla sea evidente: BRUTO + HONORARIOS + NETO no necesita explicación. Para descuentos, la comisión ya era 0, negarlo sigue siendo 0 — sin efecto colateral.
+
+**Color en la página y no en variables CSS**: estos colores son de estado de negocio específicos de la liquidación (negativo = resta, azul = honorarios), no colores de tema. Usar hex directos (`#dc2626`, `#2563eb`) los mantiene aislados y no contamina el sistema de diseño general.
+
+---
+
+### Conceptos que aparecieron
+
+- **Multiplicador de signo**: en lugar de tener condiciones `if` esparcidas, se define `sign = ±1` una sola vez y se multiplica. Todos los derivados (`bruto`, `commission`, `net`) heredan el signo automáticamente.
+- **Base64 data URL en email**: las imágenes en email HTML no pueden referenciar archivos del servidor (los clientes de email no hacen fetch autenticado). Si el logo está guardado como `data:image/png;base64,...`, el `src` del `<img>` funciona directamente sin necesidad de una URL pública.
+- **Capa de presentación vs. capa de datos**: la misma distinción que "modelo vs. vista". Cuando una regla de negocio (como el signo de un descuento) está en la capa de datos, todos los presentadores (pantalla, PDF, email) la heredan sin esfuerzo extra.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué es importante que `commission` sea negativo incluso cuando el `bruto` del ítem también es negativo (descuento)?
+2. Si guardar montos positivos en la DB es la convención, ¿cómo sabés cuándo aplicar el signo negativo al mostrarlos?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Patrón: **Multiplicador de signo** — definir `sign = ±1` según el tipo y multiplicar todos los valores derivados, en lugar de condicionales dispersos
+- [ ] Bug: **Descuentos sumando en lugar de restar en liquidación** — causa raíz (load.ts no consideraba `tipo` al calcular bruto/neto), fix (sign multiplier + negar commission)
+- [ ] Concepto: **Base64 data URL en emails HTML** — por qué funciona para logos en lugar de URLs externas
+
+---
+
 ## 2026-05-07 — Fix de días de gracia en punitorios
 
 ### Qué hice
