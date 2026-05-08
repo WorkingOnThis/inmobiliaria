@@ -89,7 +89,7 @@ export function groupTenants(
 
     const [primary, ...coTenants] = sorted;
     const groupEstado = resolveGroupEstado(sorted);
-    const diasMora = Math.max(...sorted.map((m) => m.diasMora));
+    const diasMora = Math.max(0, ...sorted.map((m) => m.diasMora));
     const ultimoPago =
       sorted
         .map((m) => m.ultimoPago)
