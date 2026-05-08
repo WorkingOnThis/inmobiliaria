@@ -11,7 +11,7 @@ import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { defaultFlagsForTipo } from "@/lib/ledger/flags";
 import { calcDaysMora } from "@/lib/ledger/mora";
-import { and, eq, sum, sql, getTableColumns, lt, isNotNull, inArray } from "drizzle-orm";
+import { and, eq, or, sum, sql, getTableColumns, lt, isNotNull, inArray } from "drizzle-orm";
 
 export async function GET(
   request: NextRequest,
@@ -53,6 +53,13 @@ export async function GET(
       )
       .orderBy(contract.createdAt)
       .limit(1);
+
+    // When the tenant is on a shared contract, include all entries for that contract
+    // (not just entries with this tenant's inquilinoId) so co-tenants see the same ledger.
+    const ledgerContractId = activeContractSplit?.id ?? null;
+    const ledgerFilter = ledgerContractId
+      ? or(eq(tenantLedger.inquilinoId, id), eq(tenantLedger.contratoId, ledgerContractId))
+      : eq(tenantLedger.inquilinoId, id);
 
     let splitMeta: {
       managementCommissionPct: number;
@@ -111,7 +118,7 @@ export async function GET(
       .where(
         and(
           eq(tenantLedger.agencyId, agencyId),
-          eq(tenantLedger.inquilinoId, id),
+          ledgerFilter,
           eq(tenantLedger.tipo, "alquiler"),
           inArray(tenantLedger.estado, ["pendiente", "pago_parcial"]),
           lt(tenantLedger.dueDate, today),
@@ -198,7 +205,7 @@ export async function GET(
       })
       .from(tenantLedger)
       .leftJoin(contract, eq(tenantLedger.contratoId, contract.id))
-      .where(and(eq(tenantLedger.agencyId, agencyId), eq(tenantLedger.inquilinoId, id)))
+      .where(and(eq(tenantLedger.agencyId, agencyId), ledgerFilter))
       .orderBy(tenantLedger.period, tenantLedger.tipo);
 
     const [ytdResult] = await db
@@ -207,7 +214,7 @@ export async function GET(
       .where(
         and(
           eq(tenantLedger.agencyId, agencyId),
-          eq(tenantLedger.inquilinoId, id),
+          ledgerFilter,
           eq(tenantLedger.estado, "conciliado"),
           eq(tenantLedger.tipo, "alquiler"),
           sql`substring(${tenantLedger.period}, 1, 4) = ${currentYear}`
