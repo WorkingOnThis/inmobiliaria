@@ -34,6 +34,34 @@ type Props = {
   readOnly?: boolean;
 };
 
+function formatMontoInput(raw: string): string {
+  const commaIdx = raw.lastIndexOf(",");
+  let intRaw: string;
+  let decStr: string | null = null;
+
+  if (commaIdx !== -1) {
+    intRaw = raw.slice(0, commaIdx);
+    decStr = raw.slice(commaIdx + 1).replace(/[^\d]/g, "").slice(0, 2);
+  } else if (raw.endsWith(".")) {
+    intRaw = raw.slice(0, -1);
+    decStr = "";
+  } else {
+    intRaw = raw;
+  }
+
+  const intClean = intRaw.replace(/[^\d]/g, "");
+  const intFormatted = intClean.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return decStr !== null ? `${intFormatted},${decStr}` : intFormatted;
+}
+
+function formatInitialMonto(raw: string): string {
+  const n = parseFloat(raw);
+  if (isNaN(n)) return "";
+  const parts = n.toFixed(2).split(".");
+  const intFormatted = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return parts[1] === "00" ? intFormatted : `${intFormatted},${parts[1]}`;
+}
+
 const ESTADO_LABEL: Record<string, string> = {
   proyectado:          "Proyectado",
   pendiente:           "Pendiente",
@@ -58,7 +86,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
   useEffect(() => {
     if (entry) {
       setDescripcion(entry.descripcion);
-      setMonto(entry.monto ? String(parseFloat(entry.monto)) : "");
+      setMonto(entry.monto ? formatInitialMonto(entry.monto) : "");
       setDueDate(entry.dueDate ?? "");
       setImpactaPropietario(entry.impactaPropietario);
       setIncluirEnBaseComision(entry.incluirEnBaseComision);
@@ -125,7 +153,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
               <Label className="text-xs text-muted-foreground">Monto ($)</Label>
               <Input
                 value={monto}
-                onChange={(e) => setMonto(e.target.value)}
+                onChange={(e) => setMonto(formatMontoInput(e.target.value))}
                 type="text"
                 inputMode="decimal"
                 className="h-9"
