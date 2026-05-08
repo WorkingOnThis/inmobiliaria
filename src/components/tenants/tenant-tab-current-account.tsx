@@ -74,6 +74,11 @@ function getMonto(entry: LedgerEntry, overrides: Record<string, string>): number
   return Number(entry.monto ?? 0);
 }
 
+function getSignedMonto(entry: LedgerEntry, overrides: Record<string, string>): number {
+  const raw = getMonto(entry, overrides);
+  return entry.tipo === "descuento" || entry.tipo === "bonificacion" ? -raw : raw;
+}
+
 function calcSplitBreakdown(
   entry: LedgerEntry,
   monto: number,
@@ -436,7 +441,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   const baseComision = selectedEntries
     .filter((e) => e.tipo !== "punitorio" && e.tipo !== "descuento")
     .reduce((s, e) => s + getMonto(e, montoOverrides), 0);
-  const receiptTotal = round2(selectedEntries.reduce((s, e) => s + getMonto(e, montoOverrides), 0));
+  const receiptTotal = round2(selectedEntries.reduce((s, e) => s + getSignedMonto(e, montoOverrides), 0));
   const feesAmount = round2(baseComision * (effectiveHonorariosPct / 100));
   const ownerNet = round2(receiptTotal - feesAmount);
 
@@ -739,7 +744,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
               {selectedEntries.map((e) => (
                 <div key={e.id} className="flex justify-between">
                   <span className="text-muted-foreground truncate max-w-[240px]">{e.descripcion}</span>
-                  <span className="font-mono ml-4">${getMonto(e, montoOverrides).toLocaleString("es-AR")}</span>
+                  <span className="font-mono ml-4">${getSignedMonto(e, montoOverrides).toLocaleString("es-AR")}</span>
                 </div>
               ))}
             </div>
