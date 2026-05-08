@@ -62,6 +62,24 @@ function formatInitialMonto(raw: string): string {
   return parts[1] === "00" ? intFormatted : `${intFormatted},${parts[1]}`;
 }
 
+function formatPeriod(period: string): string {
+  const [year, month] = period.split("-");
+  return `${month}-${year}`;
+}
+
+function formatDueDateDisplay(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  return `${day}-${month}-${year}`;
+}
+
+function parseDueDateDisplay(display: string): string {
+  const parts = display.split("-");
+  if (parts.length === 3 && parts[2].length === 4) {
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  return display;
+}
+
 const ESTADO_LABEL: Record<string, string> = {
   proyectado:          "Proyectado",
   pendiente:           "Pendiente",
@@ -87,7 +105,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
     if (entry) {
       setDescripcion(entry.descripcion);
       setMonto(entry.monto ? formatInitialMonto(entry.monto) : "");
-      setDueDate(entry.dueDate ?? "");
+      setDueDate(entry.dueDate ? formatDueDateDisplay(entry.dueDate) : "");
       setImpactaPropietario(entry.impactaPropietario);
       setIncluirEnBaseComision(entry.incluirEnBaseComision);
       setImpactaCaja(entry.impactaCaja);
@@ -110,7 +128,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
       await onSave({
         descripcion: descripcion.trim(),
         monto: montoNum,
-        ...(dueDate ? { dueDate } : {}),
+        ...(dueDate ? { dueDate: parseDueDateDisplay(dueDate) } : {}),
         impactaPropietario,
         incluirEnBaseComision,
         impactaCaja,
@@ -160,12 +178,18 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
                 disabled={!isEditable}
               />
             </div>
+            {entry.period && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Fecha de período</Label>
+                <p className="h-9 flex items-center text-sm px-3">{formatPeriod(entry.period)}</p>
+              </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Fecha de vencimiento</Label>
               <Input
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                placeholder="YYYY-MM-DD"
+                placeholder="DD-MM-YYYY"
                 className="h-9"
                 disabled={!isEditable}
               />
