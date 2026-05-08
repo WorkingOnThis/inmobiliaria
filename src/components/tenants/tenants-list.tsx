@@ -23,6 +23,8 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
   Download,
   Loader2,
   PlusCircle,
@@ -66,14 +68,24 @@ interface Stats {
   total: number;
   conContratoActivo: number;
   enMora: number;
+  pendiente: number;
   porVencer: number;
   sinContrato: number;
   pendienteFirma: number;
   historico: number;
 }
 
+interface TenantGroup {
+  contractId: string | null;
+  primary: TenantRow;
+  coTenants: TenantRow[];
+  groupEstado: EstadoInquilino;
+  diasMora: number;
+  ultimoPago: string | null;
+}
+
 interface TenantsResponse {
-  tenants: TenantRow[];
+  groups: TenantGroup[];
   pagination: { total: number; page: number; limit: number; totalPages: number };
   stats: Stats;
 }
@@ -151,6 +163,177 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
+// ─── Fila de grupo (primario + co-inquilinos colapsables) ─────────────────────
+
+function TenantGroupRow({
+  group,
+  onNavigate,
+}: {
+  group: TenantGroup;
+  onNavigate: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasCoTenants = group.coTenants.length > 0;
+  const { primary } = group;
+  const nombre = `${primary.firstName} ${primary.lastName ?? ""}`.trim();
+
+  return (
+    <>
+      <TableRow
+        className="cursor-pointer hover:bg-muted/30 transition-colors"
+        onClick={() => onNavigate(primary.id)}
+      >
+        {/* Toggle */}
+        <TableCell className="w-8 p-2 text-center">
+          {hasCoTenants && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen((v) => !v);
+              }}
+              className="inline-flex items-center justify-center size-5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              {open ? (
+                <ChevronDown className="size-3" />
+              ) : (
+                <ChevronRight className="size-3" />
+              )}
+            </button>
+          )}
+        </TableCell>
+
+        {/* Tenant */}
+        <TableCell>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-shrink-0">
+              <EntityAvatar
+                initials={getInitials(primary.firstName, primary.lastName)}
+                size="md"
+                colorSeed={primary.firstName}
+              />
+              {hasCoTenants && (
+                <div className="absolute -bottom-1 -right-1 ring-1 ring-background rounded-sm">
+                  <EntityAvatar
+                    initials={getInitials(
+                      group.coTenants[0].firstName,
+                      group.coTenants[0].lastName
+                    )}
+                    size="sm"
+                    colorSeed={group.coTenants[0].firstName}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="font-medium text-sm leading-tight truncate">{nombre}</p>
+              {hasCoTenants && (
+                <p className="text-xs text-muted-foreground">
+                  +{group.coTenants.length} co-inquilino
+                  {group.coTenants.length > 1 ? "s" : ""}
+                </p>
+              )}
+              {primary.dni && (
+                <p className="text-xs text-muted-foreground">DNI {primary.dni}</p>
+              )}
+            </div>
+          </div>
+        </TableCell>
+
+        {/* Propiedad */}
+        <TableCell>
+          <span className="text-sm">
+            {primary.property ?? <span className="field-value empty" />}
+          </span>
+        </TableCell>
+
+        {/* Contrato */}
+        <TableCell>
+          {primary.contrato ? (
+            <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
+              {primary.contrato.numero}
+            </span>
+          ) : (
+            <span className="field-value empty" />
+          )}
+        </TableCell>
+
+        {/* Vencimiento */}
+        <TableCell>
+          {primary.contrato?.endDate ? (
+            <span className="text-sm">{formatFecha(primary.contrato.endDate)}</span>
+          ) : (
+            <span className="field-value empty" />
+          )}
+        </TableCell>
+
+        {/* Último pago (más reciente del grupo) */}
+        <TableCell>
+          {group.ultimoPago ? (
+            <span className="text-sm">{formatFecha(group.ultimoPago)}</span>
+          ) : (
+            <span className="field-value empty" />
+          )}
+        </TableCell>
+
+        {/* Completitud */}
+        <TableCell>
+          {primary.contrato?.completitud != null ? (
+            <ProgressBar value={primary.contrato.completitud} />
+          ) : (
+            <span className="field-value empty" />
+          )}
+        </TableCell>
+
+        {/* Estado */}
+        <TableCell>
+          <EstadoBadge estado={group.groupEstado} diasMora={group.diasMora} />
+        </TableCell>
+      </TableRow>
+
+      {/* Sub-filas de co-inquilinos */}
+      {open &&
+        group.coTenants.map((ct) => {
+          const ctNombre = `${ct.firstName} ${ct.lastName ?? ""}`.trim();
+          return (
+            <TableRow
+              key={ct.id}
+              className="bg-muted/5 hover:bg-muted/15 transition-colors"
+            >
+              <TableCell className="w-8 p-2" />
+              <TableCell className="border-l-2 border-primary/40 pl-10">
+                <button
+                  className="flex items-center gap-2 text-left hover:underline underline-offset-2"
+                  onClick={() => onNavigate(ct.id)}
+                >
+                  <EntityAvatar
+                    initials={getInitials(ct.firstName, ct.lastName)}
+                    size="sm"
+                    colorSeed={ct.firstName}
+                  />
+                  <span className="text-sm font-medium">{ctNombre}</span>
+                </button>
+              </TableCell>
+              <TableCell><span className="text-muted-foreground/40 text-sm">—</span></TableCell>
+              <TableCell><span className="text-muted-foreground/40 text-sm">—</span></TableCell>
+              <TableCell><span className="text-muted-foreground/40 text-sm">—</span></TableCell>
+              <TableCell>
+                {ct.ultimoPago ? (
+                  <span className="text-sm">{formatFecha(ct.ultimoPago)}</span>
+                ) : (
+                  <span className="field-value empty" />
+                )}
+              </TableCell>
+              <TableCell><span className="text-muted-foreground/40 text-sm">—</span></TableCell>
+              <TableCell>
+                <EstadoBadge estado={ct.estado} diasMora={ct.diasMora} />
+              </TableCell>
+            </TableRow>
+          );
+        })}
+    </>
+  );
+}
+
 // ─── Filtros de estado ────────────────────────────────────────────────────────
 
 const FILTROS = [
@@ -165,17 +348,10 @@ const FILTROS = [
 
 // ─── Export CSV ───────────────────────────────────────────────────────────────
 
-function exportarCSV(inquilinos: TenantRow[]) {
+function exportarCSV(groups: TenantGroup[]) {
   const encabezados = [
-    "Nombre",
-    "DNI",
-    "Teléfono",
-    "Propiedad",
-    "Contrato",
-    "Vencimiento",
-    "Último Pago",
-    "Completitud",
-    "Estado",
+    "Nombre", "DNI", "Teléfono", "Propiedad", "Contrato",
+    "Vencimiento", "Último Pago", "Completitud", "Estado", "Rol",
   ];
   const estadoLabel: Record<EstadoInquilino, string> = {
     activo: "Al día",
@@ -186,23 +362,34 @@ function exportarCSV(inquilinos: TenantRow[]) {
     pendiente_firma: "Por firmar",
     historico: "Histórico",
   };
-  const filas = inquilinos.map((i) => [
-    `${i.firstName} ${i.lastName ?? ""}`.trim(),
-    i.dni ?? "",
-    i.phone ?? "",
-    i.property ?? "",
-    i.contrato?.numero ?? "",
-    i.contrato?.endDate ? formatFecha(i.contrato.endDate) : "",
-    i.ultimoPago ? formatFecha(i.ultimoPago) : "",
-    i.contrato?.completitud != null ? `${i.contrato.completitud}%` : "",
-    estadoLabel[i.estado],
-  ]);
+
+  const filas: string[][] = [];
+  for (const g of groups) {
+    const allMembers = [
+      { tenant: g.primary, rol: g.coTenants.length > 0 ? "Principal" : "" },
+      ...g.coTenants.map((ct) => ({ tenant: ct, rol: "Co-inquilino" })),
+    ];
+    for (const { tenant: i, rol } of allMembers) {
+      filas.push([
+        `${i.firstName} ${i.lastName ?? ""}`.trim(),
+        i.dni ?? "",
+        i.phone ?? "",
+        i.property ?? "",
+        i.contrato?.numero ?? "",
+        i.contrato?.endDate ? formatFecha(i.contrato.endDate) : "",
+        i.ultimoPago ? formatFecha(i.ultimoPago) : "",
+        i.contrato?.completitud != null ? `${i.contrato.completitud}%` : "",
+        estadoLabel[i.estado],
+        rol,
+      ]);
+    }
+  }
 
   const csv = [encabezados, ...filas]
     .map((fila) => fila.map((c) => `"${c}"`).join(","))
     .join("\n");
 
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -262,7 +449,7 @@ export function TenantsList() {
   };
 
   const stats = data?.stats;
-  const inquilinos = data?.tenants ?? [];
+  const groups = data?.groups ?? [];
   const pagination = data?.pagination;
 
   // ─── Render ──────────────────────────────────────────────────────────────
@@ -281,8 +468,8 @@ export function TenantsList() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => inquilinos.length > 0 && exportarCSV(inquilinos)}
-            disabled={inquilinos.length === 0}
+            onClick={() => groups.length > 0 && exportarCSV(groups)}
+            disabled={groups.length === 0}
           >
             <Download className="mr-2 size-4" />
             Exportar
@@ -410,7 +597,7 @@ export function TenantsList() {
         </div>
         {!isLoading && pagination && (
           <span className="text-sm text-muted-foreground">
-            {pagination.total} registro{pagination.total !== 1 ? "s" : ""}
+            {pagination.total} grupo{pagination.total !== 1 ? "s" : ""}
           </span>
         )}
       </div>
@@ -435,6 +622,7 @@ export function TenantsList() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="w-8" />
                   <TableHead className="font-semibold">Tenant</TableHead>
                   <TableHead className="font-semibold">Propiedad</TableHead>
                   <TableHead className="font-semibold">Contrato</TableHead>
@@ -445,107 +633,17 @@ export function TenantsList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inquilinos.length > 0 ? (
-                  inquilinos.map((inq) => {
-                    const nombre = `${inq.firstName} ${inq.lastName ?? ""}`.trim();
-                    return (
-                      <TableRow
-                        key={inq.id}
-                        className="cursor-pointer hover:bg-muted/30 transition-colors"
-                        onClick={() =>
-                          router.push(`/inquilinos/${inq.id}`)
-                        }
-                      >
-                        {/* Tenant */}
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <EntityAvatar
-                              initials={getInitials(inq.firstName, inq.lastName)}
-                              size="md"
-                              colorSeed={inq.firstName}
-                            />
-                            <div className="min-w-0">
-                              <p className="font-medium text-sm leading-tight truncate">
-                                {nombre}
-                              </p>
-                              {inq.dni && (
-                                <p className="text-xs text-muted-foreground">
-                                  DNI {inq.dni}
-                                </p>
-                              )}
-                              {inq.phone && (
-                                <p className="text-xs text-muted-foreground">
-                                  {inq.phone}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-
-                        {/* Propiedad */}
-                        <TableCell>
-                          <span className="text-sm">
-                            {inq.property ?? (
-                              <span className="field-value empty"></span>
-                            )}
-                          </span>
-                        </TableCell>
-
-                        {/* Contrato */}
-                        <TableCell>
-                          {inq.contrato ? (
-                            <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
-                              {inq.contrato.numero}
-                            </span>
-                          ) : (
-                            <span className="field-value empty"></span>
-                          )}
-                        </TableCell>
-
-                        {/* Vencimiento */}
-                        <TableCell>
-                          {inq.contrato?.endDate ? (
-                            <span className="text-sm">
-                              {formatFecha(inq.contrato.endDate)}
-                            </span>
-                          ) : (
-                            <span className="field-value empty"></span>
-                          )}
-                        </TableCell>
-
-                        {/* Último pago */}
-                        <TableCell>
-                          {inq.ultimoPago ? (
-                            <span className="text-sm">
-                              {formatFecha(inq.ultimoPago)}
-                            </span>
-                          ) : (
-                            <span className="field-value empty"></span>
-                          )}
-                        </TableCell>
-
-                        {/* Completitud */}
-                        <TableCell>
-                          {inq.contrato?.completitud != null ? (
-                            <ProgressBar value={inq.contrato.completitud} />
-                          ) : (
-                            <span className="field-value empty"></span>
-                          )}
-                        </TableCell>
-
-                        {/* Estado */}
-                        <TableCell>
-                          <EstadoBadge
-                            estado={inq.estado}
-                            diasMora={inq.diasMora}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                {groups.length > 0 ? (
+                  groups.map((group) => (
+                    <TenantGroupRow
+                      key={group.primary.id}
+                      group={group}
+                      onNavigate={(id) => router.push(`/inquilinos/${id}`)}
+                    />
+                  ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center">
+                    <TableCell colSpan={8} className="h-32 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Users className="size-8" />
                         <p className="text-sm">No hay inquilinos para mostrar.</p>
@@ -580,7 +678,7 @@ export function TenantsList() {
                   pagination.page * pagination.limit,
                   pagination.total
                 )}{" "}
-                de {pagination.total} tenant
+                de {pagination.total} grupo
                 {pagination.total !== 1 ? "s" : ""}
               </p>
             </div>
