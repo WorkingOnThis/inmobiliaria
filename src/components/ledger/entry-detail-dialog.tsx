@@ -89,6 +89,19 @@ function parsePeriodDisplay(display: string): string {
   return display;
 }
 
+function formatPeriodInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 6);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+}
+
+function formatDueDateInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4)}`;
+}
+
 const ESTADO_LABEL: Record<string, string> = {
   proyectado:          "Proyectado",
   pendiente:           "Pendiente",
@@ -194,7 +207,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
               <Label className="text-xs text-muted-foreground">Fecha de período</Label>
               <Input
                 value={period}
-                onChange={(e) => setPeriod(e.target.value)}
+                onChange={(e) => setPeriod(formatPeriodInput(e.target.value))}
                 placeholder="MM-YYYY"
                 className="h-9"
                 disabled={!isEditable}
@@ -204,7 +217,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
               <Label className="text-xs text-muted-foreground">Fecha de vencimiento</Label>
               <Input
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={(e) => setDueDate(formatDueDateInput(e.target.value))}
                 placeholder="DD-MM-YYYY"
                 className="h-9"
                 disabled={!isEditable}
