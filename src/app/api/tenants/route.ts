@@ -10,8 +10,9 @@ import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
-import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { calculateStatus } from "@/lib/tenants/status";
+import { groupTenants, type TenantGroup, type EstadoInquilino } from "@/lib/tenants/grouping";
 
 function calcularCompletitud(startDate: string, endDate: string): number {
   const start = new Date(startDate).getTime();
@@ -63,19 +64,6 @@ export async function GET(request: NextRequest) {
 
     const agencyCondition = eq(client.agencyId, agencyId);
 
-    const searchCondition = search
-      ? and(
-          agencyCondition,
-          tenantCondition,
-          or(
-            ilike(client.firstName, `%${search}%`),
-            ilike(client.lastName, `%${search}%`),
-            ilike(client.dni, `%${search}%`),
-            ilike(client.phone, `%${search}%`)
-          )
-        )
-      : and(agencyCondition, tenantCondition);
-
     const allTenants = await db
       .select({
         id: client.id,
@@ -87,18 +75,32 @@ export async function GET(request: NextRequest) {
         createdAt: client.createdAt,
       })
       .from(client)
-      .where(searchCondition)
+      .where(and(agencyCondition, tenantCondition))
       .orderBy(desc(client.createdAt));
 
     if (allTenants.length === 0) {
       return NextResponse.json({
-        tenants: [],
+        groups: [],
         pagination: { total: 0, page, limit, totalPages: 0 },
-        stats: { total: 0, conContratoActivo: 0, enMora: 0, porVencer: 0, sinContrato: 0, pendienteFirma: 0, historico: 0 },
+        stats: { total: 0, conContratoActivo: 0, enMora: 0, pendiente: 0, porVencer: 0, sinContrato: 0, pendienteFirma: 0, historico: 0 },
       });
     }
 
     const ids = allTenants.map((t) => t.id);
+
+    // Fetch contract_participant createdAt to determine group primary order
+    const participantDates = await db
+      .select({ clientId: contractParticipant.clientId, createdAt: contractParticipant.createdAt })
+      .from(contractParticipant)
+      .where(and(
+        eq(contractParticipant.agencyId, agencyId),
+        eq(contractParticipant.role, "tenant"),
+        inArray(contractParticipant.clientId, ids),
+      ));
+
+    const participantOrder = new Map<string, Date | null>(
+      participantDates.map((p) => [p.clientId, p.createdAt])
+    );
 
     // All contracts for these tenants (any status)
     const contracts = await db
@@ -199,7 +201,7 @@ export async function GET(request: NextRequest) {
         lastPayment
       );
       const flags = ledgerByTenant.get(tenant.id);
-      let estado = estadoBase;
+      let estado = estadoBase as EstadoInquilino;
       if (!["historico", "sin_contrato", "pendiente_firma"].includes(estadoBase)) {
         if (flags?.hasPunitorio) estado = "en_mora";
         else if (estadoBase === "activo" && flags?.hasPending) estado = "pendiente";
@@ -234,28 +236,47 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const stats = {
-      total: enriched.length,
-      conContratoActivo: enriched.filter((t) => ["activo", "pendiente", "por_vencer", "en_mora"].includes(t.estado)).length,
-      enMora: enriched.filter((t) => t.estado === "en_mora").length,
-      pendiente: enriched.filter((t) => t.estado === "pendiente").length,
-      porVencer: enriched.filter((t) => t.estado === "por_vencer").length,
-      sinContrato: enriched.filter((t) => t.estado === "sin_contrato").length,
-      pendienteFirma: enriched.filter((t) => t.estado === "pendiente_firma").length,
-      historico: enriched.filter((t) => t.estado === "historico").length,
-    };
+    const groups = groupTenants(enriched, participantOrder);
+
+    function groupMatchesSearch(g: TenantGroup, term: string): boolean {
+      const t = term.toLowerCase();
+      return [g.primary, ...g.coTenants].some(
+        (m) =>
+          m.firstName.toLowerCase().includes(t) ||
+          (m.lastName?.toLowerCase().includes(t) ?? false) ||
+          (m.dni?.toLowerCase().includes(t) ?? false) ||
+          (m.phone?.toLowerCase().includes(t) ?? false)
+      );
+    }
+
+    const searched = search
+      ? groups.filter((g) => groupMatchesSearch(g, search))
+      : groups;
 
     const filtered =
       estadoFilter === "todos"
-        ? enriched
-        : enriched.filter((t) => t.estado === estadoFilter);
+        ? searched
+        : searched.filter((g) => g.groupEstado === estadoFilter);
+
+    const stats = {
+      total: groups.length,
+      conContratoActivo: groups.filter((g) =>
+        ["activo", "pendiente", "por_vencer", "en_mora"].includes(g.groupEstado)
+      ).length,
+      enMora:        groups.filter((g) => g.groupEstado === "en_mora").length,
+      pendiente:     groups.filter((g) => g.groupEstado === "pendiente").length,
+      porVencer:     groups.filter((g) => g.groupEstado === "por_vencer").length,
+      sinContrato:   groups.filter((g) => g.groupEstado === "sin_contrato").length,
+      pendienteFirma: groups.filter((g) => g.groupEstado === "pendiente_firma").length,
+      historico:     groups.filter((g) => g.groupEstado === "historico").length,
+    };
 
     const total = filtered.length;
     const offset = (page - 1) * limit;
     const paginated = filtered.slice(offset, offset + limit);
 
     return NextResponse.json({
-      tenants: paginated,
+      groups: paginated,
       pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
       stats,
     });
