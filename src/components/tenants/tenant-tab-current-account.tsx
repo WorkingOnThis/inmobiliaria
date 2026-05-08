@@ -93,7 +93,10 @@ function calcSplitBreakdown(
 export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Props) {
   const queryClient = useQueryClient();
 
-  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(["overdue", "pending"]));
+  const [activeFilter, setActiveFilter] = useState<string>("present");
+  const activeFilters: Set<string> = activeFilter === "present"
+    ? new Set(["overdue", "pending"])
+    : new Set([activeFilter]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [montoOverrides, setMontoOverrides] = useState<Record<string, string>>({});
   const [beneficiarioOverrides, setBeneficiarioOverrides] = useState<Record<string, string>>({});
@@ -601,13 +604,12 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 px-4">
         <ToggleGroup
-          type="multiple"
-          value={[...activeFilters]}
-          onValueChange={(v) => setActiveFilters(new Set(v))}
+          type="single"
+          value={activeFilter}
+          onValueChange={(v) => { if (v) setActiveFilter(v); }}
         >
-          <ToggleGroupItem value="overdue" className="text-xs h-8 px-3">En mora</ToggleGroupItem>
-          <ToggleGroupItem value="pending" className="text-xs h-8 px-3">Pendientes</ToggleGroupItem>
           <ToggleGroupItem value="paid" className="text-xs h-8 px-3">Pagados</ToggleGroupItem>
+          <ToggleGroupItem value="present" className="text-xs h-8 px-3">Presentes</ToggleGroupItem>
           <ToggleGroupItem value="future" className="text-xs h-8 px-3">Futuros</ToggleGroupItem>
         </ToggleGroup>
         <div className="flex items-center gap-2">
