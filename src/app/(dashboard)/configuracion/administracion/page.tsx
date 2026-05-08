@@ -92,7 +92,7 @@ async function resizeImage(file: File, maxSize = 512): Promise<string> {
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);
         canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.85));
+        resolve(canvas.toDataURL("image/png"));
       };
       img.src = e.target!.result as string;
     };
