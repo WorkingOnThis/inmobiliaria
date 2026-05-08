@@ -129,7 +129,7 @@ export async function loadComprobanteData(
     const rawBruto = Number(entry.monto ?? 0);
     const sign = (entry.tipo === "descuento" || entry.tipo === "bonificacion") ? -1 : 1;
     const bruto = rawBruto * sign;
-    const commission = rawCommission * sign;
+    const commission = -(rawCommission * sign);
     const net = rawNet * sign;
 
     items.push({
