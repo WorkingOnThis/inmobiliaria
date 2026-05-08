@@ -623,7 +623,7 @@ export function TenantsList() {
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead className="w-8" />
-                  <TableHead className="font-semibold">Tenant</TableHead>
+                  <TableHead className="font-semibold">Inquilino</TableHead>
                   <TableHead className="font-semibold">Propiedad</TableHead>
                   <TableHead className="font-semibold">Contrato</TableHead>
                   <TableHead className="font-semibold">Vencimiento</TableHead>
