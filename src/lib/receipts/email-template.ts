@@ -88,6 +88,7 @@ export function buildReceiptEmailHTML(data: ReceiptData): string {
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <td style="vertical-align:top;">
+            ${agency?.logoUrl ? `<img src="${agency.logoUrl}" alt="${agencyName}" style="display:block;max-height:56px;max-width:160px;object-fit:contain;margin-bottom:8px;" />` : ""}
             <div style="font-size:20px;font-weight:700;letter-spacing:-.01em;">${agencyName}</div>
             ${agency?.cuit || agency?.vatStatus
               ? `<div style="font-size:12px;color:${MUTED};margin-top:2px;">${[agency?.cuit ? `CUIT ${agency.cuit}` : "", agency?.vatStatus || ""].filter(Boolean).join(" · ")}</div>`
