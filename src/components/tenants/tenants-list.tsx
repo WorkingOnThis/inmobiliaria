@@ -187,6 +187,9 @@ function TenantGroupRow({
         <TableCell className="w-8 p-2 text-center">
           {hasCoTenants && (
             <button
+              type="button"
+              aria-label={open ? "Ocultar co-inquilinos" : "Ver co-inquilinos"}
+              aria-expanded={open}
               onClick={(e) => {
                 e.stopPropagation();
                 setOpen((v) => !v);
@@ -302,6 +305,7 @@ function TenantGroupRow({
               <TableCell className="w-8 p-2" />
               <TableCell className="border-l-2 border-primary/40 pl-10">
                 <button
+                  type="button"
                   className="flex items-center gap-2 text-left hover:underline underline-offset-2"
                   onClick={() => onNavigate(ct.id)}
                 >
@@ -409,9 +413,7 @@ export function TenantsList() {
     searchParams.get("search") || ""
   );
   const [search, setSearch] = useState(searchInput);
-  const [estadoFilter, setEstadoFilter] = useState<string>(
-    searchParams.get("estado") || "todos"
-  );
+  const estadoFilter = searchParams.get("estado") ?? "todos";
 
   // Debounce de búsqueda: espera 300ms antes de lanzar la query
   useEffect(() => {
@@ -441,7 +443,6 @@ export function TenantsList() {
   };
 
   const handleFiltroChange = (filtro: string) => {
-    setEstadoFilter(filtro);
     const params = new URLSearchParams(searchParams.toString());
     params.set("estado", filtro);
     params.set("page", "1");
@@ -582,6 +583,7 @@ export function TenantsList() {
         <div className="flex rounded-lg border p-1 gap-0.5">
           {FILTROS.map((f) => (
             <button
+              type="button"
               key={f.key}
               onClick={() => handleFiltroChange(f.key)}
               className={cn(
