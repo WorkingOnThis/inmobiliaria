@@ -4,6 +4,54 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-07 — Fix de días de gracia en punitorios
+
+### Qué hice
+
+**Bug**: el contrato de Paggi tiene día de pago = 1 y 10 días de gracia, lo que significa que la mora empieza recién el día 11. El sistema generaba punitorios desde el día 1 porque ignoraba los días de gracia por completo.
+
+**Fix en el backend** (`src/lib/ledger/mora.ts` y `cuenta-corriente/route.ts`):
+- `calcDaysMora()` ahora acepta un parámetro opcional `graceDays` que desplaza la fecha efectiva de mora
+- El filtro SQL que detecta alquileres vencidos pasó de `dueDate < hoy` a `dueDate + graceDays < hoy`
+- El cálculo de días de mora en el loop de punitorios usa `graceDays = 0` si ya hubo un pago parcial (porque el período de gracia ya había pasado cuando se hizo el pago)
+- Los KPIs (capital en mora, intereses) también respetan los días de gracia
+- Se agregó un paso de auto-limpieza: en cada carga de página, el sistema cancela automáticamente punitorios generados incorrectamente para inquilinos que aún están en período de gracia
+
+**Fix en el frontend** (`src/components/tenants/ledger-table.tsx`):
+- Nuevo helper `isEffectivelyOverdue()` que considera los días de gracia al determinar si una entrada está en mora
+- `getDueDateSubtext()` ahora muestra "X días de gracia" o "Último día de gracia" en lugar de "X días de mora" cuando el inquilino está dentro del período de tolerancia
+- Las filas en período de gracia ya no se pintan de rojo ni se clasifican como "en mora" en los filtros
+
+---
+
+### Por qué lo hice así y no de otra forma
+
+**Auto-limpieza en el GET**: en lugar de migrar datos, el sistema se auto-sana en cada carga. Así funciona aunque haya datos históricos incorrectos — no hay que correr un script por separado.
+
+**`graceDays = 0` con pago parcial**: si alguien hizo un pago parcial, la mora del saldo restante corre desde la fecha de ese pago (no desde el vencimiento original + gracia). El período de gracia ya estaba vigente cuando se hizo el pago; aplicarlo otra vez sería incorrecto.
+
+**Dos capas del mismo bug**: el backend generaba mal los punitorios Y el frontend coloreaba mal las filas. Cada capa tenía su propia lógica de "¿está en mora?", duplicada y sin gracia. El fix tuvo que ir en las dos. La lección: cuando una regla de negocio aparece en dos lugares, conviene centralizarla.
+
+---
+
+### Conceptos que aparecieron
+
+- **Período de gracia**: días de tolerancia después del vencimiento antes de que empiece a correr la mora. Es un concepto contractual argentino común — el inquilino tiene X días extra sin penalización.
+- **Auto-limpieza (self-healing)**: patrón donde el sistema corrige sus propios datos incorrectos al ejecutarse, sin necesidad de scripts de migración. Funciona bien cuando la corrección es barata y no tiene efectos secundarios.
+- **Dato compuesto (dueDate + graceDays)**: la fecha efectiva de mora no está guardada en la DB — se computa combinando dos campos. Cada vez que se necesita saber "¿está en mora?", hay que usar los dos. Si solo usás uno, el resultado es incorrecto.
+
+### Preguntas para reflexionar
+
+1. ¿Cuándo conviene corregir datos mediante auto-limpieza en el GET versus un script de migración que corra una sola vez?
+2. ¿Por qué el período de gracia no aplica una segunda vez cuando hay pago parcial?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Bug: **Punitorios ignoraban días de gracia** — causa raíz (lógica duplicada en backend y frontend sin considerar `graceDays`), fix (calcDaysMora con parámetro + SQL `dueDate + graceDays < hoy` + auto-limpieza), dónde mirar si vuelve (`mora.ts`, `cuenta-corriente/route.ts`, `ledger-table.tsx`)
+- [ ] Patrón: **Self-healing en GET** — corregir datos incorrectos como efecto secundario de una lectura, evita scripts de migración
+
+---
+
 ## 2026-05-07 — Co-inquilinos, cuenta corriente compartida y mejoras de UI
 
 ### Qué hice
