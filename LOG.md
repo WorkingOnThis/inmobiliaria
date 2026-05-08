@@ -4,6 +4,92 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-08 — Split modality: recibo, caja y flujo completo propietario
+
+### Qué hice
+
+**Contexto**: El sistema tenía varios bugs acumulados para contratos en modalidad "split" (el inquilino paga directamente al propietario y a la inmobiliaria por separado). Los corregimos uno por uno siguiendo el flujo real de cobro.
+
+---
+
+**Bug 1 — Honorarios calculados al 10% en lugar del 5% del contrato**
+
+El componente `TenantTabCurrentAccount` tenía `honorariosPct = 10` como default del prop. Al emitir el recibo, enviaba ese valor hardcodeado al endpoint, ignorando el porcentaje real del contrato (5%). Fix: en la función `mutate`, usar `currentSplitMeta?.managementCommissionPct ?? honorariosPct`.
+
+**Bug 2 — Emit route creaba 3 movimientos para split (igual que Modalidad A)**
+
+Para Modalidad A (agencia cobra todo y después liquida al propietario) se crean 3 movimientos:
+1. `alquiler` income agencia — lo que cobró la agencia
+2. `ingreso_inquilino` income propietario — en tránsito para el dueño
+3. `honorarios_administracion` expense agencia — comisión retenida
+
+Para split, la agencia nunca toca el dinero del propietario. Solo corresponde 1 movimiento: `honorarios_administracion` income agencia. Fix en `src/app/api/receipts/emit/route.ts`: bifurcación por `paymentModality === "split"`.
+
+**Bug 3 — Recibo del inquilino mostraba $40.000 como total en lugar de $756.175**
+
+El recibo usaba `movimiento.amount` como total. Para split ese movimiento es el de honorarios ($40K). Pero el inquilino pagó $756K en total. Fix: sumar los `ledgerItems` con sus signos (descuentos negativos) para obtener el total real. Para mostrar el desglose, se agrega la sección "Distribución del pago" con propietario + administración y sus CBU/alias.
+
+También fix colateral: los descuentos y bonificaciones ahora aparecen en rojo y negativo en la tabla del recibo (antes aparecían positivos).
+
+**Bug 4 — KPIs de Caja General con doble conteo**
+
+El total de ingresos sumaba todos los movimientos `income`, incluyendo `ingreso_inquilino` (propietario). Para Modalidad A eso duplicaba la cifra. Fix en `src/app/api/cash/movimientos/route.ts`: cambio de 3 KPIs (ingresos/egresos/saldo) a 3 con significado real:
+- **Bruto cobrado** = income donde `tipoFondo = "agencia"`
+- **A liquidar a propietarios** = income propietario − honorarios retenidos
+- **Neto agencia** = bruto − a liquidar
+
+**Bug 5 — Badge REC-XXXX en cuenta del propietario navegaba al recibo del inquilino**
+
+En la cuenta corriente del propietario, el badge del número de recibo iba a `/recibos/n/[numero]` (vista del inquilino). Debería ir a `/comprobantes/[id]` (Constancia de Cobro Distribuido). Había dos causas encadenadas:
+
+1. La query en `owners/[id]/cuenta-corriente/route.ts` buscaba el `cashMovementId` filtrando `categoria = "alquiler"`. Para split ese movimiento no existe. Fix: filtrar por `tipo = "income" + tipoFondo = "agencia"`, que cubre ambas modalidades.
+2. El badge en `ledger-table.tsx` siempre iba a `/recibos/n/...`. Fix: si `isOwnerView && entry.cashMovementId`, ir a `/comprobantes/${cashMovementId}`.
+
+**Limpieza de producción**
+
+Se borraron los 13 movimientos de caja de producción (REC-0001 a REC-0005, todos eran de prueba). También se resetearon las entradas del ledger a `pendiente`. El próximo recibo será REC-0001 automáticamente.
+
+---
+
+### Por qué lo hice así y no de otra forma
+
+**Split con 1 movimiento en vez de 3**: en split, la agencia nunca tuvo el dinero del propietario en su cuenta. Crear `ingreso_inquilino` sería registrar una deuda que no existe. Menos movimientos = menos superficie de error y cálculos más simples.
+
+**Total del recibo desde ledger items**: el `movimiento.amount` para split es la comisión, no el total pagado. Calcular el total sumando los ledger items es lo correcto porque ahí viven los conceptos reales con sus montos exactos. El mismo dato ya existía, solo faltaba usarlo bien.
+
+**KPIs desde la API, no el frontend**: los cálculos de bruto/a_liquidar/neto requieren conocer el `tipoFondo` y `categoria` de cada movimiento. Hacerlo en el servidor centraliza esa lógica y el frontend solo muestra.
+
+**`cashMovementId` como puente**: el ledger no tiene referencia directa al comprobante del propietario. El `cashMovementId` actúa como ese puente — el ledger guarda el reciboNumero, la API busca el movimiento de caja correspondiente, y ese ID es lo que necesita la URL del comprobante.
+
+---
+
+### Conceptos que aparecieron
+
+- **Modalidad split**: el inquilino hace dos transferencias simultáneas — una al propietario y otra a la inmobiliaria. La agencia solo registra lo que le corresponde (la comisión), no el total.
+- **tipoFondo**: campo en `cash_movement` que indica a quién pertenece el dinero: `"agencia"` (plata de la inmobiliaria) o `"propietario"` (plata en tránsito del dueño).
+- **Double-counting**: contar el mismo dinero dos veces porque aparece en dos registros diferentes (alquiler agencia + ingreso_inquilino propietario son el mismo flujo visto desde dos ángulos).
+- **Env vars en Next.js**: `.env` es el archivo base. `.env.local` lo sobreescribe y nunca se sube a git. Se usa para que el entorno local apunte a la base de datos de dev, no producción.
+- **Neon branches**: la DB de producción y dev son "ramas" de la misma base de datos. Se puede hacer `reset_from_parent` para copiar producción a dev. El endpoint de conexión cambia según la rama.
+- **cashMovementId como puente entre ledger y comprobante**: el ledger no sabe nada del comprobante del propietario. La API de la cuenta corriente del propietario hace la búsqueda inversa: reciboNumero → movimiento de caja → ID del comprobante.
+
+---
+
+### Preguntas para reflexionar
+
+1. ¿Por qué en Modalidad A se crean 3 movimientos pero en split solo 1? ¿Qué representa cada uno de los 3 de Modalidad A desde el punto de vista contable?
+2. Si mañana quisieras saber cuánto le debes liquidar a un propietario sin mirar la cuenta corriente, ¿qué movimientos de caja tendrías que sumar y restar?
+
+---
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: **Modalidad split en inmobiliaria** — dos transferencias directas del inquilino, la agencia solo registra su comisión
+- [ ] Patrón: **tipoFondo como separación de fondos en caja** — "agencia" vs "propietario" evita el double-counting en los KPIs
+- [ ] Bug: **KPIs de caja con doble conteo** — causa (sum de todos los income sin filtrar tipoFondo), fix (filtrar por agencia para bruto, propietario para en tránsito)
+- [ ] Decisión técnica: **cashMovementId como puente ledger → comprobante** — por qué el ledger no linkea directo y cómo la API hace la búsqueda
+
+---
+
 ## 2026-05-08 — Fix de signos en la liquidación (comprobante)
 
 ### Qué hice
