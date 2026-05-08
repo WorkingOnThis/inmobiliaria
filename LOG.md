@@ -4,6 +4,69 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-07 — Co-inquilinos, cuenta corriente compartida y mejoras de UI
+
+### Qué hice
+
+**1. Agrupación de co-inquilinos en la lista de inquilinos**
+Implementé el sistema de grupos de inquilinos (vía subagent-driven development, 3 tareas):
+- Nuevo archivo `src/lib/tenants/grouping.ts` con funciones puras `groupTenants()` y `resolveGroupEstado()`
+- La ruta `/api/tenants` ya no filtra por nombre en la DB (para que buscar por el nombre del co-inquilino encuentre todo el grupo), sino que agrupa los resultados en memoria
+- `tenants-list.tsx` muestra una fila expandible por grupo: el inquilino principal más visible, los co-inquilinos aparecen al desplegar
+
+**2. Fix de orden del inquilino principal**
+Paggi Malena debía ser la principal pero aparecía Guido porque ambos tenían exactamente el mismo timestamp en `contract_participant.createdAt` (habían sido creados en el mismo seed). Agregué el `client.createdAt` como segundo criterio de ordenamiento — primero se compara cuándo fue agregado al contrato, y si es igual, cuándo fue creado el cliente.
+
+**3. Cuenta corriente compartida entre co-inquilinos**
+Un co-inquilino que entra a su ficha ahora ve los mismos movimientos que el inquilino principal. Antes el filtro de la DB era solo `inquilinoId = yo`, ahora es `inquilinoId = yo OR contratoId = contrato-compartido`.
+
+**4. Simplificación de filtros en cuenta corriente**
+Reemplazé los 4 filtros independientes (En mora / Pendientes / Pagados / Futuros) por 3 exclusivos (Pagados / Presentes / Futuros), con "Presentes" como valor por defecto. "Presentes" agrupa todo lo pendiente y en mora — que es lo que se quiere ver normalmente.
+
+**5. Fix del diálogo de confirmación de cobro**
+El total del recibo era incorrecto cuando había descuentos: el código sumaba todos los montos como positivos. Agregué `getSignedMonto()` que devuelve negativo cuando el tipo es `descuento` o `bonificacion`.
+
+**6. Formato de moneda en vivo en el diálogo de detalle**
+El campo "Monto ($)" ahora formatea al tipear: puntos de miles y coma decimal al estilo argentino. Al guardar, el parser deshace el formato para enviar un número limpio al servidor.
+
+**7. Campos de fecha en el diálogo de detalle de movimiento**
+- Agregué campo "Fecha de período" editable (formato MM-YYYY)
+- Cambié "Fecha de vencimiento" a formato DD-MM-YYYY (se convierte automáticamente al guardar)
+- Ambos campos insertan el guión automáticamente al tipear solo dígitos
+
+---
+
+### Por qué lo hice así y no de otra forma
+
+**Búsqueda en memoria (no en DB)**: si el filtro de búsqueda estuviera en la DB, buscar "Malena" encontraría solo la fila de Malena, sin Guido ni el grupo completo. Mover la búsqueda a después de la agrupación garantiza que siempre se devuelva el grupo entero.
+
+**OR con contratoId**: el filtro alternativo podría haber sido copiar los movimientos a ambos inquilinos en la DB, pero eso crea duplicados. Un OR en la query es más limpio — un solo registro, leído por dos inquilinos distintos.
+
+**ToggleGroup single**: los 3 filtros de cuenta corriente son excluyentes (no tiene sentido ver Pagados + Futuros al mismo tiempo), así que `type="single"` es el modelo correcto; antes era `type="multiple"` que permitía cualquier combinación.
+
+---
+
+### Conceptos que aparecieron
+
+- **Subagent-driven development**: patrón donde cada tarea del plan se delega a un sub-agente fresco (sin memoria del contexto previo) y pasa por dos revisiones: ¿cumple la especificación? y ¿tiene buena calidad de código? Reduce el riesgo de acumulación de deuda técnica por contexto contaminado.
+- **Tiebreaker de ordenamiento**: cuando dos filas tienen el mismo valor en el criterio principal, se necesita un segundo (y tercero) criterio para que el orden sea determinista. Sin él, el orden puede cambiar entre ejecuciones.
+- **OR filter en Drizzle**: `or(eq(tabla.campoA, valorA), eq(tabla.campoB, valorB))` — permite matchear filas que cumplan cualquiera de las dos condiciones.
+- **Monto con signo**: el estilo de guardar valores positivos en la DB y aplicar el signo en la lógica de negocio es más flexible — el mismo registro puede interpretarse de distinta forma según el contexto (liquidación, recibo, total).
+
+### Preguntas para reflexionar
+
+1. ¿Por qué conviene guardar los montos siempre positivos en la base de datos y manejar el signo en código, en lugar de guardarlos negativos directamente?
+2. ¿Qué desventaja tendría hacer el filtro de búsqueda de inquilinos en la DB en lugar de en memoria?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Patrón: **Subagent-Driven Development** — sub-agente por tarea + revisión spec + revisión calidad, sin contaminar el contexto del agente coordinador
+- [ ] Concepto: **OR filter en Drizzle ORM** — `or(eq(...), eq(...))` para matchear cualquiera de dos condiciones
+- [ ] Bug: **Orden no determinista por timestamps iguales** — causa raíz (seed creó dos registros en el mismo instante), fix (segundo criterio de ordenamiento: `client.createdAt`)
+- [ ] Concepto: **Montos con signo en lógica de negocio** — BD guarda positivo, el código aplica `getSignedMonto()` según el tipo del movimiento
+
+---
+
 ## 2026-05-07 — Flujo de trabajo, base de datos de dev y fix de descuento
 
 ### Qué hice
