@@ -81,7 +81,14 @@ export function groupTenants(
     const sorted = [...members].sort((a, b) => {
       const aDate = participantOrder.get(a.id);
       const bDate = participantOrder.get(b.id);
-      if (aDate && bDate) return aDate.getTime() - bDate.getTime();
+      if (aDate && bDate) {
+        const diff = aDate.getTime() - bDate.getTime();
+        if (diff !== 0) return diff;
+        // Tiebreak by client.createdAt when participant timestamps are equal
+        const aClient = new Date(a.createdAt).getTime();
+        const bClient = new Date(b.createdAt).getTime();
+        if (!isNaN(aClient) && !isNaN(bClient)) return aClient - bClient;
+      }
       if (aDate) return -1;
       if (bDate) return 1;
       return a.firstName.localeCompare(b.firstName);
