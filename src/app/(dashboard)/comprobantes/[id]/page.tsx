@@ -28,6 +28,8 @@ const PALETTE = {
   muted: "var(--paper-muted)",
   border: "var(--paper-border)",
   mono: "var(--paper-mono)",
+  negative: "#dc2626",
+  honorarios: "#2563eb",
 };
 
 export default function ComprobantePage() {
@@ -609,6 +611,7 @@ export default function ComprobantePage() {
                         borderBottom: `1px dashed ${PALETTE.border}`,
                         textAlign: "right",
                         fontFamily: PALETTE.mono,
+                        color: it.bruto < 0 ? PALETTE.negative : PALETTE.text,
                       }}
                     >
                       {formatMonto(it.bruto)}
@@ -630,10 +633,10 @@ export default function ComprobantePage() {
                         borderBottom: `1px dashed ${PALETTE.border}`,
                         textAlign: "right",
                         fontFamily: PALETTE.mono,
-                        color: PALETTE.muted,
+                        color: it.comision !== 0 ? PALETTE.honorarios : PALETTE.muted,
                       }}
                     >
-                      {it.comision > 0 ? formatMonto(it.comision) : "—"}
+                      {it.comision !== 0 ? formatMonto(it.comision) : "—"}
                     </td>
                     <td
                       style={{
@@ -641,6 +644,7 @@ export default function ComprobantePage() {
                         borderBottom: `1px dashed ${PALETTE.border}`,
                         textAlign: "right",
                         fontFamily: PALETTE.mono,
+                        color: it.neto < 0 ? PALETTE.negative : PALETTE.text,
                       }}
                     >
                       {formatMonto(it.neto)}
@@ -666,6 +670,7 @@ export default function ComprobantePage() {
                       textAlign: "right",
                       fontFamily: PALETTE.mono,
                       fontWeight: 600,
+                      color: totales.bruto < 0 ? PALETTE.negative : PALETTE.text,
                     }}
                   >
                     {formatMonto(totales.bruto)}
@@ -677,10 +682,10 @@ export default function ComprobantePage() {
                       textAlign: "right",
                       fontFamily: PALETTE.mono,
                       fontWeight: 600,
-                      color: PALETTE.muted,
+                      color: totales.comision !== 0 ? PALETTE.honorarios : PALETTE.muted,
                     }}
                   >
-                    {totales.comision > 0 ? formatMonto(totales.comision) : "—"}
+                    {totales.comision !== 0 ? formatMonto(totales.comision) : "—"}
                   </td>
                   <td
                     style={{
@@ -688,6 +693,7 @@ export default function ComprobantePage() {
                       textAlign: "right",
                       fontFamily: PALETTE.mono,
                       fontWeight: 600,
+                      color: totales.neto < 0 ? PALETTE.negative : PALETTE.text,
                     }}
                   >
                     {formatMonto(totales.neto)}

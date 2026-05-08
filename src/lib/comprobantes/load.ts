@@ -46,6 +46,7 @@ export type ComprobanteData = {
     id: string;
     descripcion: string;
     period: string | null;
+    tipo: string;
     bruto: number;
     comisionPct: number;
     comision: number;
@@ -124,13 +125,18 @@ export async function loadComprobanteData(
 
   for (const { entry, managementCommissionPct } of ledgerRows) {
     const pct = Number(managementCommissionPct ?? 10);
-    const { net, commission, effectivePct } = computeNetAndCommission(entry, pct);
-    const bruto = Number(entry.monto ?? 0);
+    const { net: rawNet, commission: rawCommission, effectivePct } = computeNetAndCommission(entry, pct);
+    const rawBruto = Number(entry.monto ?? 0);
+    const sign = (entry.tipo === "descuento" || entry.tipo === "bonificacion") ? -1 : 1;
+    const bruto = rawBruto * sign;
+    const commission = rawCommission * sign;
+    const net = rawNet * sign;
 
     items.push({
       id: entry.id,
       descripcion: entry.descripcion,
       period: entry.period,
+      tipo: entry.tipo,
       bruto,
       comisionPct: effectivePct,
       comision: commission,
