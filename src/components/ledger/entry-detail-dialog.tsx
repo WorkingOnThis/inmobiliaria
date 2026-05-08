@@ -20,6 +20,7 @@ export type EntryEditData = {
   descripcion?: string;
   monto?: number;
   dueDate?: string;
+  period?: string;
   impactaPropietario?: boolean;
   incluirEnBaseComision?: boolean;
   impactaCaja?: boolean;
@@ -80,6 +81,14 @@ function parseDueDateDisplay(display: string): string {
   return display;
 }
 
+function parsePeriodDisplay(display: string): string {
+  const parts = display.split("-");
+  if (parts.length === 2 && parts[1].length === 4) {
+    return `${parts[1]}-${parts[0]}`;
+  }
+  return display;
+}
+
 const ESTADO_LABEL: Record<string, string> = {
   proyectado:          "Proyectado",
   pendiente:           "Pendiente",
@@ -96,6 +105,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
   const [dueDate, setDueDate] = useState("");
   const [impactaPropietario, setImpactaPropietario] = useState(true);
   const [incluirEnBaseComision, setIncluirEnBaseComision] = useState(true);
+  const [period, setPeriod] = useState("");
   const [impactaCaja, setImpactaCaja] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -105,6 +115,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
     if (entry) {
       setDescripcion(entry.descripcion);
       setMonto(entry.monto ? formatInitialMonto(entry.monto) : "");
+      setPeriod(entry.period ? formatPeriod(entry.period) : "");
       setDueDate(entry.dueDate ? formatDueDateDisplay(entry.dueDate) : "");
       setImpactaPropietario(entry.impactaPropietario);
       setIncluirEnBaseComision(entry.incluirEnBaseComision);
@@ -129,6 +140,7 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
         descripcion: descripcion.trim(),
         monto: montoNum,
         ...(dueDate ? { dueDate: parseDueDateDisplay(dueDate) } : {}),
+        ...(period ? { period: parsePeriodDisplay(period) } : {}),
         impactaPropietario,
         incluirEnBaseComision,
         impactaCaja,
@@ -178,12 +190,16 @@ export function EntryDetailDialog({ entry, onOpenChange, onSave, isSplitContract
                 disabled={!isEditable}
               />
             </div>
-            {entry.period && (
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Fecha de período</Label>
-                <p className="h-9 flex items-center text-sm px-3">{formatPeriod(entry.period)}</p>
-              </div>
-            )}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Fecha de período</Label>
+              <Input
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+                placeholder="MM-YYYY"
+                className="h-9"
+                disabled={!isEditable}
+              />
+            </div>
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Fecha de vencimiento</Label>
               <Input

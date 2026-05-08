@@ -14,6 +14,7 @@ const patchSchema = z.object({
   descripcion: z.string().min(1).optional(),
   estado: z.enum(["pendiente", "registrado", "cancelado"]).optional(),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  period: z.string().regex(/^\d{4}-\d{2}$/).optional(),
   cancellationReason: z.string().optional(),
   impactaPropietario: z.boolean().optional(),
   incluirEnBaseComision: z.boolean().optional(),
@@ -59,6 +60,7 @@ export async function PATCH(
       data.monto !== undefined ||
       data.descripcion !== undefined ||
       data.dueDate !== undefined ||
+      data.period !== undefined ||
       data.impactaPropietario !== undefined ||
       data.incluirEnBaseComision !== undefined ||
       data.impactaCaja !== undefined;
@@ -78,6 +80,7 @@ export async function PATCH(
           ...(data.descripcion !== undefined && { descripcion: data.descripcion }),
           ...(data.estado !== undefined && { estado: data.estado }),
           ...(data.dueDate !== undefined && { dueDate: data.dueDate }),
+          ...(data.period !== undefined && { period: data.period }),
           ...(data.cancellationReason !== undefined && data.estado === "cancelado" && { cancellationReason: data.cancellationReason }),
           ...(data.impactaPropietario !== undefined && { impactaPropietario: data.impactaPropietario }),
           ...(data.incluirEnBaseComision !== undefined && { incluirEnBaseComision: data.incluirEnBaseComision }),
