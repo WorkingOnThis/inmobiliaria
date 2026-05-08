@@ -6,6 +6,7 @@ import { contract } from "@/db/schema/contract";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { property } from "@/db/schema/property";
 import { cajaMovimiento } from "@/db/schema/caja";
+import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
@@ -109,6 +110,7 @@ export async function GET(request: NextRequest) {
         startDate: contract.startDate,
         endDate: contract.endDate,
         paymentDay: contract.paymentDay,
+        graceDays: contract.graceDays,
         propertyAddress: property.address,
         propertyFloorUnit: property.floorUnit,
       })
@@ -137,6 +139,33 @@ export async function GET(request: NextRequest) {
       )
       .orderBy(desc(cajaMovimiento.date));
 
+    // Pending ledger entries for status override (punitorios → en_mora; extras → pendiente)
+    const now = new Date();
+    const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevPeriod = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
+
+    const pendingLedger = await db
+      .select({ inquilinoId: tenantLedger.inquilinoId, tipo: tenantLedger.tipo, period: tenantLedger.period })
+      .from(tenantLedger)
+      .where(and(
+        eq(tenantLedger.agencyId, agencyId),
+        inArray(tenantLedger.inquilinoId, ids),
+        eq(tenantLedger.estado, "pendiente"),
+        inArray(tenantLedger.tipo, ["punitorio", "servicio", "gasto", "deposito"])
+      ));
+
+    const ledgerByTenant = new Map<string, { hasPunitorio: boolean; hasPending: boolean }>();
+    for (const entry of pendingLedger) {
+      const flags = ledgerByTenant.get(entry.inquilinoId) ?? { hasPunitorio: false, hasPending: false };
+      if (entry.tipo === "punitorio") {
+        flags.hasPunitorio = true;
+      } else if (entry.period === currentPeriod || entry.period === prevPeriod || entry.period === null) {
+        flags.hasPending = true;
+      }
+      ledgerByTenant.set(entry.inquilinoId, flags);
+    }
+
     // Best contract per client (by status priority)
     const bestContractByClient = new Map<string, (typeof contracts)[0]>();
     for (const c of contracts) {
@@ -158,16 +187,23 @@ export async function GET(request: NextRequest) {
     const enriched = allTenants.map((tenant) => {
       const bestContract = bestContractByClient.get(tenant.id) ?? null;
       const lastPayment = lastPaymentByClient.get(tenant.id) ?? null;
-      const { estado, diasMora } = calculateStatus(
+      const { estado: estadoBase, diasMora } = calculateStatus(
         bestContract
           ? {
               endDate: bestContract.endDate,
               paymentDay: bestContract.paymentDay,
               contractStatus: bestContract.contractStatus,
+              graceDays: bestContract.graceDays,
             }
           : null,
         lastPayment
       );
+      const flags = ledgerByTenant.get(tenant.id);
+      let estado = estadoBase;
+      if (!["historico", "sin_contrato", "pendiente_firma"].includes(estadoBase)) {
+        if (flags?.hasPunitorio) estado = "en_mora";
+        else if (estadoBase === "activo" && flags?.hasPending) estado = "pendiente";
+      }
       const completitud =
         bestContract && ["active", "expiring_soon"].includes(bestContract.contractStatus)
           ? calcularCompletitud(bestContract.startDate, bestContract.endDate)
@@ -200,8 +236,9 @@ export async function GET(request: NextRequest) {
 
     const stats = {
       total: enriched.length,
-      conContratoActivo: enriched.filter((t) => ["activo", "por_vencer", "en_mora"].includes(t.estado)).length,
+      conContratoActivo: enriched.filter((t) => ["activo", "pendiente", "por_vencer", "en_mora"].includes(t.estado)).length,
       enMora: enriched.filter((t) => t.estado === "en_mora").length,
+      pendiente: enriched.filter((t) => t.estado === "pendiente").length,
       porVencer: enriched.filter((t) => t.estado === "por_vencer").length,
       sinContrato: enriched.filter((t) => t.estado === "sin_contrato").length,
       pendienteFirma: enriched.filter((t) => t.estado === "pendiente_firma").length,

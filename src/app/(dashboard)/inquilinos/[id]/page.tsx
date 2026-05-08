@@ -95,7 +95,8 @@ function getInitials(firstName: string, lastName: string | null) {
 type Tab = "datos" | "contrato" | "propiedad" | "cuenta-corriente" | "documentos" | "historial";
 
 const estadoVariantMap: Record<string, { variant: "active" | "suspended" | "baja" | "draft" | "expiring" | "reserved"; label: string }> = {
-  activo:       { variant: "active",    label: "Activo" },
+  activo:       { variant: "active",    label: "Al día" },
+  pendiente:    { variant: "suspended", label: "Pendiente" },
   en_mora:      { variant: "baja",      label: "En mora" },
   por_vencer:   { variant: "expiring",  label: "Por vencer" },
   sin_contrato: { variant: "draft",     label: "Sin contrato" },

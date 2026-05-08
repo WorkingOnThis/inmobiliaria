@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-type EstadoInquilino = "activo" | "en_mora" | "por_vencer" | "sin_contrato" | "pendiente_firma" | "historico";
+type EstadoInquilino = "activo" | "pendiente" | "en_mora" | "por_vencer" | "sin_contrato" | "pendiente_firma" | "historico";
 
 interface ContratoInfo {
   id: string;
@@ -106,7 +106,10 @@ function EstadoBadge({
   diasMora: number;
 }) {
   if (estado === "activo") {
-    return <StatusBadge variant="active">Activo</StatusBadge>;
+    return <StatusBadge variant="active">Al día</StatusBadge>;
+  }
+  if (estado === "pendiente") {
+    return <StatusBadge variant="suspended">Pendiente</StatusBadge>;
   }
   if (estado === "en_mora") {
     return (
@@ -152,7 +155,8 @@ function ProgressBar({ value }: { value: number }) {
 
 const FILTROS = [
   { key: "todos", label: "Todos" },
-  { key: "activo", label: "Activos" },
+  { key: "activo", label: "Al día" },
+  { key: "pendiente", label: "Pendiente" },
   { key: "en_mora", label: "En mora" },
   { key: "por_vencer", label: "Por vencer" },
   { key: "pendiente_firma", label: "Por firmar" },
@@ -174,7 +178,8 @@ function exportarCSV(inquilinos: TenantRow[]) {
     "Estado",
   ];
   const estadoLabel: Record<EstadoInquilino, string> = {
-    activo: "Activo",
+    activo: "Al día",
+    pendiente: "Pendiente",
     en_mora: "En mora",
     por_vencer: "Por vencer",
     sin_contrato: "Postulante",

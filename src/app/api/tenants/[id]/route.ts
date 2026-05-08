@@ -6,6 +6,7 @@ import { contract } from "@/db/schema/contract";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { property } from "@/db/schema/property";
 import { cajaMovimiento } from "@/db/schema/caja";
+import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
@@ -134,6 +135,7 @@ export async function GET(
       agencyCommission: contract.agencyCommission,
       managementCommissionPct: contract.managementCommissionPct,
       paymentDay: contract.paymentDay,
+      graceDays: contract.graceDays,
       paymentModality: contract.paymentModality,
       adjustmentIndex: contract.adjustmentIndex,
       adjustmentFrequency: contract.adjustmentFrequency,
@@ -214,16 +216,42 @@ export async function GET(
       .leftJoin(client, eq(client.id, guarantee.personClientId))
       .where(and(eq(guarantee.agencyId, agencyId), eq(guarantee.tenantClientId, id)));
 
-    const { estado, diasMora } = calculateStatus(
+    const { estado: estadoBase, diasMora } = calculateStatus(
       bestContract
         ? {
             endDate: bestContract.endDate,
             paymentDay: bestContract.paymentDay,
             contractStatus: bestContract.status,
+            graceDays: bestContract.graceDays,
           }
         : null,
       lastPayment?.date ?? null
     );
+
+    const now = new Date();
+    const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevPeriod = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
+
+    const pendingLedgerEntries = await db
+      .select({ tipo: tenantLedger.tipo, period: tenantLedger.period })
+      .from(tenantLedger)
+      .where(and(
+        eq(tenantLedger.agencyId, agencyId),
+        eq(tenantLedger.inquilinoId, id),
+        eq(tenantLedger.estado, "pendiente"),
+        inArray(tenantLedger.tipo, ["punitorio", "servicio", "gasto", "deposito"])
+      ));
+
+    let estado = estadoBase;
+    if (!["historico", "sin_contrato", "pendiente_firma"].includes(estadoBase)) {
+      const hasPunitorio = pendingLedgerEntries.some(e => e.tipo === "punitorio");
+      const hasPending = pendingLedgerEntries.some(
+        e => e.tipo !== "punitorio" && (e.period === currentPeriod || e.period === prevPeriod || e.period === null)
+      );
+      if (hasPunitorio) estado = "en_mora";
+      else if (estadoBase === "activo" && hasPending) estado = "pendiente";
+    }
 
     return NextResponse.json({
       tenant: { ...tenant, estado, diasMora },
