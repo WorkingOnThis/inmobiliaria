@@ -84,6 +84,9 @@ export async function GET(
 
     const cashMovementByRecibo = new Map<string, string>();
     if (conciliatedReciboNumeros.length > 0) {
+      // Pick the agency income movement for each receipt:
+      // Modality A → categoria="alquiler" income; Split → categoria="honorarios_administracion" income.
+      // Filtering by tipo="income" + tipoFondo="agencia" covers both without hard-coding the categoria.
       const cashRows = await db
         .select({
           id: cajaMovimiento.id,
@@ -94,7 +97,7 @@ export async function GET(
           and(
             eq(cajaMovimiento.agencyId, agencyId),
             inArray(cajaMovimiento.reciboNumero, conciliatedReciboNumeros),
-            eq(cajaMovimiento.categoria, "alquiler"),
+            eq(cajaMovimiento.tipo, "income"),
             eq(cajaMovimiento.tipoFondo, "agencia")
           )
         );

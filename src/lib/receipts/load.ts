@@ -23,6 +23,12 @@ export type ReceiptData = {
     emailDefault: boolean;
     trustedEmails: TrustedEmail[];
   } | null;
+  propietario: {
+    firstName: string;
+    lastName: string | null;
+    cbu: string | null;
+    alias: string | null;
+  } | null;
   propiedad: { address: string; floorUnit: string | null } | null;
   contrato: { contractNumber: string; paymentModality: string | null } | null;
   serviceItems: {
@@ -37,6 +43,7 @@ export type ReceiptData = {
     descripcion: string;
     period: string | null;
     monto: string;
+    tipo: string;
   }[];
   agency: {
     name: string;
@@ -87,7 +94,7 @@ export async function loadReceiptData(
   const ledgerEntryIds = allocations.map((a) => a.ledgerEntryId);
   const ledgerRows = ledgerEntryIds.length > 0
     ? await db
-        .select({ id: tenantLedger.id, descripcion: tenantLedger.descripcion, period: tenantLedger.period })
+        .select({ id: tenantLedger.id, descripcion: tenantLedger.descripcion, period: tenantLedger.period, tipo: tenantLedger.tipo })
         .from(tenantLedger)
         .where(and(inArray(tenantLedger.id, ledgerEntryIds), eq(tenantLedger.agencyId, agencyId)))
     : [];
@@ -98,9 +105,10 @@ export async function loadReceiptData(
     descripcion: row.descripcion,
     period: row.period,
     monto: montoByEntry[row.id] ?? "0",
+    tipo: row.tipo,
   }));
 
-  const [inqRow, propRow, contratoRow, serviceItems, agencyRow] = await Promise.all([
+  const [inqRow, propRow, contratoRow, serviceItems, agencyRow, propietarioRow] = await Promise.all([
     movimiento.inquilinoId
       ? db.select({
           firstName: client.firstName,
@@ -138,6 +146,14 @@ export async function loadReceiptData(
       servicioId: receiptServiceItem.servicioId,
     }).from(receiptServiceItem).where(eq(receiptServiceItem.movimientoId, movimientoId)),
     db.select().from(agency).where(eq(agency.id, agencyId)).limit(1),
+    movimiento.propietarioId
+      ? db.select({
+          firstName: client.firstName,
+          lastName: client.lastName,
+          cbu: client.cbu,
+          alias: client.alias,
+        }).from(client).where(and(eq(client.id, movimiento.propietarioId), eq(client.agencyId, agencyId))).limit(1)
+      : Promise.resolve([]),
   ]);
 
   const inq = inqRow[0] ?? null;
@@ -185,5 +201,7 @@ export async function loadReceiptData(
       }
     : null;
 
-  return { movimiento, inquilino, propiedad, contrato, serviceItems, ledgerItems, agency: agencyData };
+  const propietarioCBU = propietarioRow[0] ?? null;
+
+  return { movimiento, inquilino, propietario: propietarioCBU, propiedad, contrato, serviceItems, ledgerItems, agency: agencyData };
 }

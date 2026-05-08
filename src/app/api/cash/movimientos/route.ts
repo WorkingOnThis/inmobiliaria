@@ -95,20 +95,38 @@ export async function GET(request: NextRequest) {
     // Calcular totales del período
     const movimientosActivos = movimientos.filter((m) => m.anuladoAt === null);
 
-    const totalIngresos = movimientosActivos
-      .filter((m) => m.tipo === "income")
+    // Bruto: cash the agency actually received (agencia fund income)
+    const bruto = movimientosActivos
+      .filter((m) => m.tipo === "income" && m.tipoFondo === "agencia")
       .reduce((acc, m) => acc + parseFloat(m.monto ?? "0"), 0);
 
-    const totalEgresos = movimientosActivos
-      .filter((m) => m.tipo === "expense")
+    // Owner in-transit income (before commission deduction)
+    const ingresosPropietario = movimientosActivos
+      .filter((m) => m.tipo === "income" && m.tipoFondo === "propietario")
       .reduce((acc, m) => acc + parseFloat(m.monto ?? "0"), 0);
+
+    // Commission retained by agency from Modality-A receipts (deducted from owner payout)
+    const honorariosRetenidos = movimientosActivos
+      .filter((m) => m.tipo === "expense" && m.categoria === "honorarios_administracion")
+      .reduce((acc, m) => acc + parseFloat(m.monto ?? "0"), 0);
+
+    // What will be forwarded to owners = in-transit minus retained commission
+    const aLiquidar = ingresosPropietario - honorariosRetenidos;
+
+    // Other agency expenses (manual, operational — not commission retention)
+    const otrosEgresos = movimientosActivos
+      .filter((m) => m.tipo === "expense" && m.categoria !== "honorarios_administracion")
+      .reduce((acc, m) => acc + parseFloat(m.monto ?? "0"), 0);
+
+    const neto = bruto - aLiquidar - otrosEgresos;
 
     return NextResponse.json({
       movimientos,
       totales: {
-        ingresos: totalIngresos,
-        egresos: totalEgresos,
-        saldo: totalIngresos - totalEgresos,
+        bruto,
+        aLiquidar,
+        neto,
+        otrosEgresos,
       },
       periodo: { anio, mes, fechaInicio, fechaFin },
     });

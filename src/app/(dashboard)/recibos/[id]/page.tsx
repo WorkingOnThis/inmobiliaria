@@ -86,7 +86,7 @@ export default function ReciboPage() {
     );
   }
 
-  const { movimiento, inquilino, propiedad, contrato, serviceItems = [], ledgerItems = [], agency } = data;
+  const { movimiento, inquilino, propietario, propiedad, contrato, serviceItems = [], ledgerItems = [], agency } = data;
 
   // Build email recipient list from inquilino data (safe after early returns)
   const allRecipients: { email: string; label: string; key: string }[] = [];
@@ -132,8 +132,21 @@ export default function ReciboPage() {
   const signatoryName = agency?.signatory;
   const signatoryTitle = agency?.signatoryTitle || "Administrador";
 
-  const montoNum = Number(movimiento.amount);
+  const isSplit = contrato?.paymentModality === "split" || movimiento.paymentModality === "split";
+
+  function signedLedgerAmount(l: { monto: string; tipo: string }): number {
+    return (l.tipo === "descuento" || l.tipo === "bonificacion" ? -1 : 1) * Number(l.monto);
+  }
+
+  const ledgerTotal = ledgerItems.length > 0
+    ? ledgerItems.reduce((s, l) => s + signedLedgerAmount(l), 0)
+    : null;
+
+  // For split: total the tenant paid = sum of ledger items (not just agency commission)
+  const montoNum = isSplit && ledgerTotal !== null ? ledgerTotal : Number(movimiento.amount);
   const totalDisplay = isFinite(montoNum) ? formatMonto(montoNum) : "—";
+  const agenciaAmount = Number(movimiento.amount);
+  const propietarioAmount = isSplit && ledgerTotal !== null ? ledgerTotal - agenciaAmount : null;
 
   const nombreInquilino = inquilino
     ? inquilino.lastName
@@ -146,17 +159,22 @@ export default function ReciboPage() {
     ? `${propiedad.address}${propiedad.floorUnit ? ` ${propiedad.floorUnit}` : ""}`
     : null;
 
-  const tableRows: { concepto: string; periodo: string | null; monto: string }[] =
+  const tableRows: { concepto: string; periodo: string | null; monto: string; isNegative: boolean }[] =
     ledgerItems.length > 0
-      ? ledgerItems.map((l) => ({
-          concepto: l.descripcion,
-          periodo: l.period,
-          monto: formatMonto(l.monto),
-        }))
+      ? ledgerItems.map((l) => {
+          const signed = signedLedgerAmount(l);
+          return {
+            concepto: l.descripcion,
+            periodo: l.period,
+            monto: formatMonto(signed),
+            isNegative: signed < 0,
+          };
+        })
       : [{
           concepto: movimiento.description,
           periodo: movimiento.period,
           monto: totalDisplay,
+          isNegative: false,
         }];
 
   const serviciosCobrados = serviceItems.filter((s) => s.monto != null && Number(s.monto) > 0);
@@ -417,7 +435,7 @@ export default function ReciboPage() {
                         <span style={{ color: PALETTE.muted, marginLeft: "6px" }}>· {formatPeriodo(row.periodo)}</span>
                       )}
                     </td>
-                    <td style={{ padding: "9px 6px", borderBottom: `1px dashed ${PALETTE.border}`, textAlign: "right", fontFamily: PALETTE.mono }}>
+                    <td style={{ padding: "9px 6px", borderBottom: `1px dashed ${PALETTE.border}`, textAlign: "right", fontFamily: PALETTE.mono, color: row.isNegative ? "#dc2626" : undefined }}>
                       {row.monto}
                     </td>
                   </tr>
@@ -446,6 +464,37 @@ export default function ReciboPage() {
             <div style={{ textAlign: "right", marginTop: "4px", fontSize: "11px", fontStyle: "italic", color: PALETTE.muted }}>
               Son: {montoEnLetras(montoNum)}
             </div>
+
+            {/* Distribución — solo split */}
+            {isSplit && propietarioAmount !== null && (
+              <div style={{ marginTop: "20px", paddingTop: "12px", borderTop: `1px solid ${PALETTE.border}`, fontSize: "12px" }}>
+                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: ".05em", color: PALETTE.muted, marginBottom: "6px" }}>
+                  Distribución del pago
+                </div>
+                <div style={{ marginBottom: "4px" }}>
+                  <strong>Propietario:</strong> {formatMonto(propietarioAmount)}
+                  {(propietario?.cbu || propietario?.alias) && (
+                    <span style={{ color: PALETTE.muted, marginLeft: "6px" }}>
+                      →{propietario?.cbu ? ` CBU ${propietario.cbu}` : ""}
+                      {propietario?.cbu && propietario?.alias ? " · " : " "}
+                      {propietario?.alias ? `Alias ${propietario.alias}` : ""}
+                    </span>
+                  )}
+                </div>
+                {agenciaAmount > 0 && (
+                  <div>
+                    <strong>Administración:</strong> {formatMonto(agenciaAmount)}
+                    {(agency?.bancoCBU || agency?.bancoAlias) && (
+                      <span style={{ color: PALETTE.muted, marginLeft: "6px" }}>
+                        →{agency?.bancoCBU ? ` CBU ${agency.bancoCBU}` : ""}
+                        {agency?.bancoCBU && agency?.bancoAlias ? " · " : " "}
+                        {agency?.bancoAlias ? `Alias ${agency.bancoAlias}` : ""}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Constancia de servicios pagados directo */}
             {serviciosConstancia.length > 0 && (

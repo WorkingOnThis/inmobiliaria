@@ -177,57 +177,48 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Agency income movement (total collected from tenant)
-      const [movAgencia] = await tx
-        .insert(cajaMovimiento)
-        .values({
-          agencyId,
-          tipo: "income",
-          description: `Recibo ${reciboNumero} — ${nombreInquilino}`,
-          amount: String(totalRecibo),
-          date: fecha,
-          categoria: "alquiler",
-          reciboNumero,
-          inquilinoId,
-          propietarioId,
-          contratoId,
-          propiedadId,
-          tipoFondo: "agencia",
-          source: "contract",
-          paymentModality,
-          createdBy: session!.user.id,
-        })
-        .returning();
+      let movimientoAgenciaId: string | null = null;
 
-      if (trasladarAlPropietario) {
-        // Owner in-transit income (to be settled later)
-        await tx.insert(cajaMovimiento).values({
-          agencyId,
-          tipo: "income",
-          description: `Ingreso inquilino — ${reciboNumero}`,
-          amount: String(totalRecibo),
-          date: fecha,
-          categoria: "ingreso_inquilino",
-          reciboNumero,
-          propietarioId,
-          contratoId,
-          propiedadId,
-          tipoFondo: "propietario",
-          source: "contract",
-          paymentModality,
-          createdBy: session!.user.id,
-        });
-
-        // Agency commission expense
+      if (paymentModality === "split") {
+        // Split: tenant pays owner directly. Agency only receives its management commission.
+        // No alquiler movement (agency never held the full amount).
+        // No ingreso_inquilino movement (owner received their portion directly from tenant).
         if (montoHonorarios > 0) {
-          await tx.insert(cajaMovimiento).values({
+          const [movComision] = await tx
+            .insert(cajaMovimiento)
+            .values({
+              agencyId,
+              tipo: "income",
+              description: `Honorarios administración — ${reciboNumero} — ${nombreInquilino}`,
+              amount: String(montoHonorarios),
+              date: fecha,
+              categoria: "honorarios_administracion",
+              reciboNumero,
+              inquilinoId,
+              propietarioId,
+              contratoId,
+              propiedadId,
+              tipoFondo: "agencia",
+              source: "contract",
+              paymentModality,
+              createdBy: session!.user.id,
+            })
+            .returning();
+          movimientoAgenciaId = movComision.id;
+        }
+      } else {
+        // Modality A: agency collects full rent, then settles to owner later.
+        const [movAgencia] = await tx
+          .insert(cajaMovimiento)
+          .values({
             agencyId,
-            tipo: "expense",
-            description: `Honorarios administración — ${reciboNumero}`,
-            amount: String(montoHonorarios),
+            tipo: "income",
+            description: `Recibo ${reciboNumero} — ${nombreInquilino}`,
+            amount: String(totalRecibo),
             date: fecha,
-            categoria: "honorarios_administracion",
+            categoria: "alquiler",
             reciboNumero,
+            inquilinoId,
             propietarioId,
             contratoId,
             propiedadId,
@@ -235,11 +226,52 @@ export async function POST(request: NextRequest) {
             source: "contract",
             paymentModality,
             createdBy: session!.user.id,
+          })
+          .returning();
+        movimientoAgenciaId = movAgencia.id;
+
+        if (trasladarAlPropietario) {
+          // Owner in-transit income (to be settled later)
+          await tx.insert(cajaMovimiento).values({
+            agencyId,
+            tipo: "income",
+            description: `Ingreso inquilino — ${reciboNumero}`,
+            amount: String(totalRecibo),
+            date: fecha,
+            categoria: "ingreso_inquilino",
+            reciboNumero,
+            propietarioId,
+            contratoId,
+            propiedadId,
+            tipoFondo: "propietario",
+            source: "contract",
+            paymentModality,
+            createdBy: session!.user.id,
           });
+
+          // Agency commission expense (deducted from owner settlement)
+          if (montoHonorarios > 0) {
+            await tx.insert(cajaMovimiento).values({
+              agencyId,
+              tipo: "expense",
+              description: `Honorarios administración — ${reciboNumero}`,
+              amount: String(montoHonorarios),
+              date: fecha,
+              categoria: "honorarios_administracion",
+              reciboNumero,
+              propietarioId,
+              contratoId,
+              propiedadId,
+              tipoFondo: "agencia",
+              source: "contract",
+              paymentModality,
+              createdBy: session!.user.id,
+            });
+          }
         }
       }
 
-      return { reciboNumero, movimientoAgenciaId: movAgencia.id, totalRecibo, montoHonorarios };
+      return { reciboNumero, movimientoAgenciaId, totalRecibo, montoHonorarios };
     });
 
     return NextResponse.json(txResult, { status: 201 });

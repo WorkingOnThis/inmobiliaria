@@ -40,7 +40,7 @@ interface Movimiento {
 
 interface RespuestaMovimientos {
   movimientos: Movimiento[];
-  totales: { ingresos: number; egresos: number; saldo: number };
+  totales: { bruto: number; aLiquidar: number; neto: number; otrosEgresos: number };
   periodo: { anio: number; mes: number };
 }
 
@@ -282,7 +282,7 @@ export function CajaGeneralClient() {
   }
 
   const movimientos = data?.movimientos ?? [];
-  const totales = data?.totales ?? { ingresos: 0, egresos: 0, saldo: 0 };
+  const totales = data?.totales ?? { bruto: 0, aLiquidar: 0, neto: 0, otrosEgresos: 0 };
   const movFiltrados = movimientos.filter((m) => {
     if (filtro === "ingresos" && m.tipo !== "income") return false;
     if (filtro === "egresos" && m.tipo !== "expense") return false;
@@ -360,24 +360,24 @@ export function CajaGeneralClient() {
       {/* ── KPIs ── */}
       <div className="grid grid-cols-3 gap-3">
         <KpiCard
-          label="Ingresos del período"
-          valor={formatMonto(totales.ingresos)}
-          sub={`${movimientos.filter(m => m.tipo === "income").length} movimientos`}
+          label="Bruto cobrado"
+          valor={formatMonto(totales.bruto)}
+          sub="Cash recibido de inquilinos"
           variante="success"
           isLoading={isLoading}
         />
         <KpiCard
-          label="Egresos del período"
-          valor={formatMonto(totales.egresos)}
-          sub={`${movimientos.filter(m => m.tipo === "expense").length} movimientos`}
-          variante="error"
+          label="A liquidar a propietarios"
+          valor={formatMonto(totales.aLiquidar)}
+          sub="Pendiente de transferir a dueños"
+          variante="neutral"
           isLoading={isLoading}
         />
         <KpiCard
-          label="Saldo neto"
-          valor={formatMonto(totales.saldo)}
-          sub={totales.saldo > 0 ? "Resultado positivo" : totales.saldo < 0 ? "Resultado negativo" : "Sin movimientos"}
-          variante={totales.saldo > 0 ? "success" : totales.saldo < 0 ? "error" : "neutral"}
+          label="Neto agencia"
+          valor={formatMonto(totales.neto)}
+          sub={totales.neto > 0 ? "Resultado positivo" : totales.neto < 0 ? "Resultado negativo" : "Sin movimientos"}
+          variante={totales.neto > 0 ? "success" : totales.neto < 0 ? "error" : "neutral"}
           isLoading={isLoading}
         />
       </div>
@@ -544,10 +544,10 @@ export function CajaGeneralClient() {
 
             <div className="flex" style={{ ...S.surfaceLow, borderTop: S.border }}>
               {[
-                { label: "Total ingresos", valor: formatMonto(totales.ingresos), color: C_INGRESO },
-                { label: "Total egresos",  valor: formatMonto(totales.egresos),  color: C_EGRESO  },
-                { label: "Saldo neto",     valor: formatMonto(totales.saldo),
-                  color: totales.saldo > 0 ? C_INGRESO : totales.saldo < 0 ? C_EGRESO : C_NEUTRO },
+                { label: "Bruto cobrado",       valor: formatMonto(totales.bruto),     color: C_INGRESO },
+                { label: "A liquidar",           valor: formatMonto(totales.aLiquidar), color: C_NEUTRO  },
+                { label: "Neto agencia",         valor: formatMonto(totales.neto),
+                  color: totales.neto > 0 ? C_INGRESO : totales.neto < 0 ? C_EGRESO : C_NEUTRO },
               ].map((t, i, arr) => (
                 <div
                   key={t.label}

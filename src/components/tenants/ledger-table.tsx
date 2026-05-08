@@ -551,15 +551,28 @@ export function LedgerTable({
                       </span>
                     )}
                     {entry.reciboNumero && !selected && (
-                      <a
-                        href={`/recibos/n/${entry.reciboNumero}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-[10px] font-mono text-muted-foreground hover:text-primary hover:underline leading-none"
-                      >
-                        {entry.reciboNumero}
-                      </a>
+                      isOwnerView && entry.cashMovementId ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/comprobantes/${entry.cashMovementId}`);
+                          }}
+                          className="text-[10px] font-mono text-muted-foreground hover:text-primary hover:underline leading-none"
+                        >
+                          {entry.reciboNumero}
+                        </button>
+                      ) : (
+                        <a
+                          href={`/recibos/n/${entry.reciboNumero}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[10px] font-mono text-muted-foreground hover:text-primary hover:underline leading-none"
+                        >
+                          {entry.reciboNumero}
+                        </a>
+                      )
                     )}
                   </div>
 

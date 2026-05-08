@@ -152,7 +152,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
         body: JSON.stringify({
           ledgerEntryIds: [...selectedIds],
           fecha: new Date().toISOString().slice(0, 10),
-          honorariosPct,
+          honorariosPct: currentSplitMeta?.managementCommissionPct ?? honorariosPct,
           trasladarAlPropietario: true,
           montoOverrides,
           ...(Object.keys(splitBreakdowns).length > 0 && { splitBreakdowns }),
