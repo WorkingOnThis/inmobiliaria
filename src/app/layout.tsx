@@ -28,7 +28,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Arce Administración",
+  title: {
+    template: "%s — Arce Administración",
+    default: "Arce Administración",
+  },
   description: "Sistema de gestión inmobiliaria",
 };
 

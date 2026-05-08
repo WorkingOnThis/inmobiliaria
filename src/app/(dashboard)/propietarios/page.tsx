@@ -1,8 +1,11 @@
-"use client";
-
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { OwnersList } from "@/components/owners/owners-list";
 import { Loader2 } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Propietarios",
+};
 
 export default function OwnersPage() {
   return (

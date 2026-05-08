@@ -1,8 +1,11 @@
-"use client";
-
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ContractsList } from "@/components/contracts/contracts-list";
 import { Loader2 } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Contratos",
+};
 
 export default function ContratosPage() {
   return (

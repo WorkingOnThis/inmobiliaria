@@ -4,6 +4,54 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-08 — Título dinámico por módulo en la pestaña del navegador
+
+### Qué hice
+
+Implementé títulos dinámicos en la pestaña del navegador para que cada módulo muestre su nombre (ej: "Inquilinos — Arce Administración") en lugar del genérico "Arce Administración".
+
+**Cambios principales:**
+
+1. **Root layout** (`src/app/layout.tsx`): cambié `title: "Arce Administración"` por un objeto con `template: "%s — Arce Administración"` y `default: "Arce Administración"`. El template es un molde: Next.js reemplaza `%s` con el título que defina cada página. Si ninguna página define título, usa el default.
+
+2. **Páginas de lista** (`page.tsx` de cada módulo): agregué `export const metadata` con el nombre del módulo. Para los que tenían `"use client"` innecesario (propietarios, inquilinos, propiedades, contratos, servicios, tareas), saqué esa directiva y convertí las páginas en Server Components — podían importar los componentes cliente igual, sin ser clientes ellas mismas.
+
+3. **Páginas de detalle** (`[id]/page.tsx`): esas sí necesitan `"use client"` por sus hooks. La solución fue crear un `layout.tsx` dentro de cada carpeta `[id]/` que exporta la metadata del módulo. Ese layout aplica a todas las sub-rutas anidadas (ej: `/propietarios/[id]/liquidacion` también hereda "Propietarios").
+
+**Archivos modificados/creados:**
+- `src/app/layout.tsx` — template de título
+- `src/app/(dashboard)/tablero/page.tsx` — simplificado el título
+- `src/app/(dashboard)/caja/page.tsx` — simplificado el título
+- `src/app/(dashboard)/inquilinos/page.tsx`, `propietarios/page.tsx`, `propiedades/page.tsx`, `contratos/page.tsx`, `servicios/page.tsx`, `tareas/page.tsx` — removido `"use client"` + metadata agregada
+- `src/app/(dashboard)/generador-documentos/page.tsx` — metadata agregada
+- `src/app/(dashboard)/clientes/layout.tsx` — metadata agregada al layout existente
+- `src/app/(dashboard)/inquilinos/[id]/layout.tsx`, `propietarios/[id]/layout.tsx`, `contratos/[id]/layout.tsx`, `propiedades/[id]/layout.tsx`, `generador-documentos/[id]/layout.tsx` — layouts nuevos con metadata
+
+### Por qué lo hice así y no de otra forma
+
+**Alternativa descartada — `generateMetadata` dinámico**: Next.js permite una función `generateMetadata({ params })` que puede hacer un fetch a la DB para mostrar el nombre real del inquilino en la pestaña (ej: "Paggi Malena — Arce Administración"). No lo hice porque el usuario pidió el nombre del módulo, no el nombre de la persona. Y hubiera requerido convertir las páginas de detalle en Server Components, lo cual es un refactor mayor.
+
+**Por qué el `layout.tsx` en `[id]/` funciona**: en Next.js App Router, los layouts envuelven todo lo que esté anidado bajo ellos. Un layout en `/inquilinos/[id]/` aplica tanto a `/inquilinos/[id]` como a `/inquilinos/[id]/cualquier-subruta`. La metadata del layout se merge con la del root layout: el template del root toma el título del layout hijo y lo formatea.
+
+### Conceptos que aparecieron
+
+- **`<title>` del HTML**: etiqueta que controla el texto que aparece en la pestaña del navegador o en la barra de la PWA. No es parte del contenido visual de la página.
+- **`metadata` en Next.js App Router**: export especial (solo en Server Components) que Next.js lee para generar el `<head>` del HTML antes de enviarlo al navegador. No puede usarse en archivos con `"use client"`.
+- **template de metadata**: patrón `"%s — Arce Administración"` donde `%s` es un placeholder que Next.js reemplaza con el título de la página hija. Evita repetir el sufijo en cada archivo.
+- **Server Component vs Client Component**: un Server Component se ejecuta en el servidor y puede exportar metadata, acceder a la DB, etc. Un Client Component (con `"use client"`) se ejecuta en el navegador y puede usar hooks. Un Server Component puede renderizar Client Components adentro, pero no al revés sin un boundary explícito.
+- **`layout.tsx` como capa de metadata**: en Next.js, si una `page.tsx` no puede exportar metadata (porque tiene `"use client"`), se puede crear un `layout.tsx` en el mismo directorio que sí la exporte. El layout envuelve la página silenciosamente.
+
+### Preguntas para reflexionar
+1. ¿Por qué `"use client"` en un `page.tsx` que no usa ningún hook propio es innecesario, aunque adentro renderice componentes que sí los usan?
+2. Si quisiera mostrar el nombre real del inquilino (ej: "Paggi Malena") en la pestaña, ¿qué tendría que hacer diferente con `generateMetadata`?
+
+### Qué debería anotar en Obsidian
+- [ ] Concepto: `metadata` y `generateMetadata` en Next.js App Router
+- [ ] Concepto: Server Components vs Client Components — cuándo cada uno
+- [ ] Patrón: layout.tsx como proxy de metadata para rutas con `"use client"`
+
+---
+
 ## 2026-05-08 — Split modality: recibo, caja y flujo completo propietario
 
 ### Qué hice

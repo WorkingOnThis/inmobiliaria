@@ -1,8 +1,11 @@
-"use client";
-
+import type { Metadata } from "next";
 import { ServicesControlPanel } from "@/components/services/services-control-panel";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Servicios",
+};
 
 export default function ServiciosPage() {
   return (

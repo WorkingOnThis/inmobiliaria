@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { DocumentTemplatesList } from "./document-templates-list";
+
+export const metadata: Metadata = {
+  title: "Generador de documentos",
+};
 
 export default function GeneradorDocumentosPage() {
   return (
