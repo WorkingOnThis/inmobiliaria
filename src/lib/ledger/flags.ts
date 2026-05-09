@@ -13,7 +13,7 @@ const FLAGS: Record<string, LedgerFlags> = {
   gasto:         { impactaPropietario: false, incluirEnBaseComision: false, impactaCaja: true  },
   punitorio:     { impactaPropietario: false, incluirEnBaseComision: false, impactaCaja: true  },
   deposito:      { impactaPropietario: false, incluirEnBaseComision: false, impactaCaja: true  },
-  ajuste_indice: { impactaPropietario: true,  incluirEnBaseComision: true,  impactaCaja: false },
+  ajuste_indice: { impactaPropietario: false, incluirEnBaseComision: false, impactaCaja: false },
 };
 
 export function defaultFlagsForTipo(tipo: string): LedgerFlags {
