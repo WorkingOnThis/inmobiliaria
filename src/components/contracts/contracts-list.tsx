@@ -9,6 +9,7 @@ import { differenceInDays, format } from "date-fns";
 import { ClientPagination } from "@/components/clients/client-pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { IndexValuesPanel } from "@/components/contracts/index-values-panel";
 
 /* ──────────────────────────────────────────────────────────
    HELPERS
@@ -287,6 +288,11 @@ export function ContractsList() {
               <p className="text-[0.68rem] text-muted-foreground mt-1.5">sin renovar ni rescindir</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Panel de índices */}
+        <div className="mb-4">
+          <IndexValuesPanel />
         </div>
 
         {/* ── Toolbar ───────────────────────────────────── */}
