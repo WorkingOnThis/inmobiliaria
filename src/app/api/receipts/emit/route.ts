@@ -183,31 +183,29 @@ export async function POST(request: NextRequest) {
 
       if (paymentModality === "split") {
         // Split: tenant pays owner directly. Agency only receives its management commission.
-        // No alquiler movement (agency never held the full amount).
-        // No ingreso_inquilino movement (owner received their portion directly from tenant).
-        if (montoHonorarios > 0) {
-          const [movComision] = await tx
-            .insert(cajaMovimiento)
-            .values({
-              agencyId,
-              tipo: "income",
-              description: `Honorarios administración — ${reciboNumero} — ${nombreInquilino}`,
-              amount: String(montoHonorarios),
-              date: fecha,
-              categoria: "honorarios_administracion",
-              reciboNumero,
-              inquilinoId,
-              propietarioId,
-              contratoId,
-              propiedadId,
-              tipoFondo: "agencia",
-              source: "contract",
-              paymentModality,
-              createdBy: session!.user.id,
-            })
-            .returning();
-          movimientoAgenciaId = movComision.id;
-        }
+        // Always create this movement (even when montoHonorarios = 0) so the receipt
+        // lookup page can find an anchor row via reciboNumero + tipoFondo = "agencia".
+        const [movComision] = await tx
+          .insert(cajaMovimiento)
+          .values({
+            agencyId,
+            tipo: "income",
+            description: `Honorarios administración — ${reciboNumero} — ${nombreInquilino}`,
+            amount: String(montoHonorarios),
+            date: fecha,
+            categoria: "honorarios_administracion",
+            reciboNumero,
+            inquilinoId,
+            propietarioId,
+            contratoId,
+            propiedadId,
+            tipoFondo: "agencia",
+            source: "contract",
+            paymentModality,
+            createdBy: session!.user.id,
+          })
+          .returning();
+        movimientoAgenciaId = movComision.id;
       } else {
         // Modality A: agency collects full rent, then settles to owner later.
         const [movAgencia] = await tx
