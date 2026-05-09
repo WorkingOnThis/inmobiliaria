@@ -41,6 +41,8 @@ export const tenantLedger = pgTable("tenant_ledger", {
 
   // null = amount not yet determined (post-adjustment or variable service)
   monto: decimal("monto", { precision: 15, scale: 2 }),
+  montoOriginal: decimal("montoOriginal", { precision: 15, scale: 2 }),
+  montoManual: decimal("montoManual", { precision: 15, scale: 2 }),
 
   // Pago parcial — acumulado cobrado. null si nunca hubo pago parcial.
   montoPagado: decimal("montoPagado", { precision: 15, scale: 2 }),
