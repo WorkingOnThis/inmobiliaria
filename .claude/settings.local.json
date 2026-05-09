@@ -171,7 +171,11 @@
       "Bash(findstr /i \"GMAIL\")",
       "mcp__neon__list_branch_computes",
       "Bash(Write-Host \"done\")",
-      "Bash(Get-Content *)"
+      "Bash(Get-Content *)",
+      "Bash(ls drizzle/)",
+      "Bash(dir drizzle *)",
+      "Bash(ls migrations/)",
+      "Bash(dir migrations *)"
     ]
   },
   "enableAllProjectMcpServers": true,
