@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { MoreHorizontal, FileText, HelpCircle } from "lucide-react";
+import { MoreHorizontal, FileText, HelpCircle, Pencil, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,8 @@ export type LedgerEntry = {
   tipo: string;
   descripcion: string;
   monto: string | null;
+  montoOriginal: string | null;    // ← nueva
+  montoManual: string | null;      // ← nueva
   estado: string;
   installmentOf: string | null;
   reciboNumero: string | null;
@@ -62,6 +64,7 @@ type Props = {
   onSelectMonth: (period: string) => void;
   onDeselectMonth: (period: string) => void;
   onMontoChange: (id: string, value: string) => void;
+  onMontoManualChange: (id: string, value: string | null) => void;  // ← nueva
   onCancelEntry: (entry: LedgerEntry) => void;
   onAnularRecibo: (reciboNumero: string) => void;
   onViewDetail: (entry: LedgerEntry) => void;
@@ -108,6 +111,8 @@ function isSelectable(entry: LedgerEntry): boolean {
 // States that allow cancellation. Includes "pendiente_revision" because
 // the user may want to discard an entry stuck in revision rather than fix it.
 const CANCELABLE_STATES = ["pendiente", "registrado", "pendiente_revision", "pago_parcial"];
+
+const MONTO_MANUAL_EDITABLE_STATES = ["proyectado", "pendiente", "pendiente_revision", "registrado"];
 
 function isCancelable(entry: LedgerEntry): boolean {
   return CANCELABLE_STATES.includes(entry.estado);
@@ -276,6 +281,7 @@ export function LedgerTable({
   onSelectMonth,
   onDeselectMonth,
   onMontoChange,
+  onMontoManualChange,
   onCancelEntry,
   onAnularRecibo,
   onViewDetail,
@@ -286,6 +292,8 @@ export function LedgerTable({
 }: Props) {
   const showDestino = isSplitContract || isOwnerView;
   const router = useRouter();
+  const [editingMontoId, setEditingMontoId] = useState<string | null>(null);
+  const [editingMontoValue, setEditingMontoValue] = useState<string>("");
   const gridCols = showDestino
     ? "grid-cols-[28px_1fr_80px_110px_110px_220px_90px]"
     : "grid-cols-[28px_1fr_80px_110px_110px_90px]";
@@ -545,10 +553,73 @@ export function LedgerTable({
                         min="0"
                         className="h-7 w-24 text-right text-xs font-mono"
                       />
+                    ) : editingMontoId === entry.id ? (
+                      <Input
+                        autoFocus
+                        value={editingMontoValue}
+                        onChange={(e) => setEditingMontoValue(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const val = editingMontoValue.trim();
+                            if (val && Number(val) > 0) onMontoManualChange(entry.id, val);
+                            setEditingMontoId(null);
+                          }
+                          if (e.key === "Escape") setEditingMontoId(null);
+                        }}
+                        onBlur={() => {
+                          const val = editingMontoValue.trim();
+                          if (val && Number(val) > 0) onMontoManualChange(entry.id, val);
+                          setEditingMontoId(null);
+                        }}
+                        type="number"
+                        min="0"
+                        className="h-7 w-24 text-right text-xs font-mono"
+                      />
                     ) : (
-                      <span className="font-mono text-xs">
-                        ${Number(entry.monto).toLocaleString("es-AR")}
-                      </span>
+                      <div className="group/monto flex items-center gap-0.5">
+                        <span className="font-mono text-xs">
+                          ${Number(entry.montoManual ?? entry.monto).toLocaleString("es-AR")}
+                        </span>
+                        {MONTO_MANUAL_EDITABLE_STATES.includes(entry.estado) && !isOwnerView && !entry.isSynthetic && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 opacity-0 group-hover/monto:opacity-100 transition-opacity"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingMontoValue(entry.montoManual ?? entry.monto ?? "");
+                                  setEditingMontoId(entry.id);
+                                }}
+                              >
+                                <Pencil size={12} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left">Editar monto</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    )}
+                    {entry.montoManual !== null && !selected && editingMontoId !== entry.id && (
+                      <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                        <span className="text-[10px] text-muted-foreground">
+                          original: ${Number(entry.montoOriginal ?? entry.monto).toLocaleString("es-AR")}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onMontoManualChange(entry.id, null);
+                          }}
+                        >
+                          <X size={10} />
+                        </Button>
+                      </div>
                     )}
                     {entry.reciboNumero && !selected && (
                       isOwnerView && entry.cashMovementId ? (
