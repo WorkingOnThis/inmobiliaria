@@ -19,6 +19,7 @@ const patchSchema = z.object({
   impactaPropietario: z.boolean().optional(),
   incluirEnBaseComision: z.boolean().optional(),
   impactaCaja: z.boolean().optional(),
+  montoManual: z.string().regex(/^\d+(\.\d{1,2})?$/).nullable().optional(),
 });
 
 export async function PATCH(
@@ -56,6 +57,16 @@ export async function PATCH(
     }
 
     const data = result.data;
+
+    if (data.montoManual !== undefined) {
+      const nonEditableStates = ["conciliado", "cancelado", "pago_parcial"];
+      if (nonEditableStates.includes(existing.estado)) {
+        return NextResponse.json(
+          { error: "No se puede modificar el monto en este estado" },
+          { status: 422 }
+        );
+      }
+    }
     const editingProtectedFields =
       data.monto !== undefined ||
       data.descripcion !== undefined ||
@@ -85,6 +96,7 @@ export async function PATCH(
           ...(data.impactaPropietario !== undefined && { impactaPropietario: data.impactaPropietario }),
           ...(data.incluirEnBaseComision !== undefined && { incluirEnBaseComision: data.incluirEnBaseComision }),
           ...(data.impactaCaja !== undefined && { impactaCaja: data.impactaCaja }),
+          ...(data.montoManual !== undefined && { montoManual: data.montoManual }),
           updatedAt: new Date(),
         })
         .where(and(
