@@ -19,7 +19,12 @@ const patchSchema = z.object({
   impactaPropietario: z.boolean().optional(),
   incluirEnBaseComision: z.boolean().optional(),
   impactaCaja: z.boolean().optional(),
-  montoManual: z.string().regex(/^\d+(\.\d{1,2})?$/).nullable().optional(),
+  montoManual: z
+    .string()
+    .regex(/^\d+(\.\d{1,2})?$/)
+    .refine((v) => Number(v) > 0, { message: "El monto debe ser mayor a cero" })
+    .nullable()
+    .optional(),
 });
 
 export async function PATCH(
@@ -59,7 +64,7 @@ export async function PATCH(
     const data = result.data;
 
     if (data.montoManual !== undefined) {
-      const nonEditableStates = ["conciliado", "cancelado", "pago_parcial"];
+      const nonEditableStates = ["cancelado", "pago_parcial"];
       if (nonEditableStates.includes(existing.estado)) {
         return NextResponse.json(
           { error: "No se puede modificar el monto en este estado" },
