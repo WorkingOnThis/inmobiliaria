@@ -151,7 +151,8 @@ export async function POST(request: NextRequest) {
         const effectiveAmount = getEffectiveAmount(entry, montoOverrides);
         const prevPagado = Number(entry.montoPagado ?? 0);
         const newMontoPagado = round2(prevPagado + effectiveAmount);
-        const isFullyPaid = newMontoPagado >= Number(entry.monto);
+        const effectiveBase = Number(entry.montoManual ?? entry.monto);
+        const isFullyPaid = newMontoPagado >= effectiveBase;
 
         await tx
           .update(tenantLedger)
