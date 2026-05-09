@@ -69,9 +69,9 @@ function getMonto(entry: LedgerEntry, overrides: Record<string, string>): number
     return Number(overrides[entry.id]);
   }
   if (entry.estado === "pago_parcial" && entry.montoPagado !== null) {
-    return Math.max(0, Number(entry.monto ?? 0) - Number(entry.montoPagado));
+    return Math.max(0, Number(entry.montoManual ?? entry.monto) - Number(entry.montoPagado));
   }
-  return Number(entry.monto ?? 0);
+  return Number(entry.montoManual ?? entry.monto ?? 0);
 }
 
 function getSignedMonto(entry: LedgerEntry, overrides: Record<string, string>): number {
@@ -309,6 +309,28 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
     },
   });
+
+  const montoManualMutation = useMutation({
+    mutationFn: async ({ entryId, montoManual }: { entryId: string; montoManual: string | null }) => {
+      const res = await fetch(`/api/tenants/${inquilinoId}/ledger/${entryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ montoManual }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Error al actualizar el monto");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
+    },
+  });
+
+  function handleMontoManualChange(entryId: string, montoManual: string | null) {
+    montoManualMutation.mutate({ entryId, montoManual });
+  }
 
   const changeModalityMutation = useMutation({
     mutationFn: async ({ contractId, modality }: { contractId: string; modality: "A" | "split" }) => {
@@ -693,6 +715,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           onSelectMonth={handleSelectMonth}
           onDeselectMonth={handleDeselectMonth}
           onMontoChange={handleMontoChange}
+          onMontoManualChange={handleMontoManualChange}
           onAnularRecibo={(reciboNumero) => { setVoidError(null); setVoidConfirm({ reciboNumero }); }}
           onCancelEntry={handleCancelEntry}
           onViewDetail={setSelectedDetailEntry}
