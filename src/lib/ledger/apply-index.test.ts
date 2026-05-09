@@ -29,21 +29,21 @@ describe("nextTramoStart", () => {
   test("contrato trimestral — calcula el primer tramo futuro desde hoy", () => {
     // startDate = 2024-01-01, freq = 3
     // Si today es 2024-05-15 → monthsFromStart=4, currentTramoIndex=1, next=2024-07-01
-    const result = nextTramoStart("2024-01-01", 3, new Date("2024-05-15"));
+    const result = nextTramoStart("2024-01-01", 3, new Date("2024-05-15T00:00:00"));
     expect(result).toBe("2024-07");
   });
 
   test("contrato anual — calcula el primer tramo futuro", () => {
     // startDate = 2024-01-01, freq = 12
     // today = 2024-06-01 → monthsFromStart=5, currentTramoIndex=0, next=2025-01
-    const result = nextTramoStart("2024-01-01", 12, new Date("2024-06-01"));
+    const result = nextTramoStart("2024-01-01", 12, new Date("2024-06-01T00:00:00"));
     expect(result).toBe("2025-01");
   });
 
   test("exactamente al inicio de un tramo nuevo", () => {
     // startDate = 2024-01-01, freq = 3
     // today = 2024-07-01 → monthsFromStart=6, currentTramoIndex=2, next=2024-10
-    const result = nextTramoStart("2024-01-01", 3, new Date("2024-07-01"));
+    const result = nextTramoStart("2024-01-01", 3, new Date("2024-07-01T00:00:00"));
     expect(result).toBe("2024-10");
   });
 });
