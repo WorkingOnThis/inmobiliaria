@@ -300,6 +300,7 @@ export function LedgerTable({
 
   const todayPeriod = new Date().toISOString().slice(0, 7);
   const currentRef = useRef<HTMLDivElement>(null);
+  const editingCommittedRef = useRef(false);
 
   useEffect(() => {
     if (currentRef.current) {
@@ -563,12 +564,19 @@ export function LedgerTable({
                           if (e.key === "Enter") {
                             e.preventDefault();
                             const val = editingMontoValue.trim();
-                            if (val && Number(val) > 0) onMontoManualChange(entry.id, val);
+                            if (val && Number(val) > 0) {
+                              editingCommittedRef.current = true;
+                              onMontoManualChange(entry.id, val);
+                            }
                             setEditingMontoId(null);
                           }
                           if (e.key === "Escape") setEditingMontoId(null);
                         }}
                         onBlur={() => {
+                          if (editingCommittedRef.current) {
+                            editingCommittedRef.current = false;
+                            return;
+                          }
                           const val = editingMontoValue.trim();
                           if (val && Number(val) > 0) onMontoManualChange(entry.id, val);
                           setEditingMontoId(null);
@@ -608,17 +616,23 @@ export function LedgerTable({
                         <span className="text-[10px] text-muted-foreground">
                           original: ${Number(entry.montoOriginal ?? entry.monto).toLocaleString("es-AR")}
                         </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onMontoManualChange(entry.id, null);
-                          }}
-                        >
-                          <X size={10} />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4"
+                              aria-label="Revertir al monto original"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMontoManualChange(entry.id, null);
+                              }}
+                            >
+                              <X size={10} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">Revertir al monto original</TooltipContent>
+                        </Tooltip>
                       </div>
                     )}
                     {entry.reciboNumero && !selected && (
