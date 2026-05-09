@@ -7,6 +7,8 @@
 export * from "./better-auth";
 
 // Business domain schemas
+export * from "./adjustment-application";
+export * from "./adjustment-index-value";
 export * from "./agency";
 export * from "./caja";
 export * from "./clause";
