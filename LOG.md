@@ -4,6 +4,60 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-09 — Ajuste de alquileres por índice (ICL / IPC / CER / UVA)
+
+### Qué hice
+
+Implementé el sistema completo de actualización de alquileres por índice. Desde cero: diseño, spec, plan de implementación en 5 tareas, código, tests, y deploy a `main`.
+
+**Lo que se construyó:**
+
+1. **Dos tablas nuevas en la DB** (`adjustment_index_value` y `adjustment_application`) — una guarda los valores mensuales de cada índice (ej: "IPC Mayo 2026 = 3%"), la otra guarda el historial de cada ajuste aplicado a cada contrato (factor compuesto, períodos usados, monto anterior → nuevo).
+
+2. **Lógica central** (`src/lib/ledger/apply-index.ts`) — al cargar un valor de índice, el sistema busca todos los contratos activos con ese tipo de índice, calcula el tramo de ajuste siguiente, multiplica los N valores mensuales previos, y actualiza `contract.monthlyAmount` + entries del ledger.
+
+3. **Caso provisorio** — si faltan valores para completar el cálculo, aplica el monto actual como "provisorio" con un badge. Cuando llega el valor faltante, recalcula y genera un ajuste correctivo.
+
+4. **API REST** — 4 rutas: GET/POST `/api/index-values`, DELETE `/api/index-values/[id]`, GET `/api/index-values/adjustments`, DELETE `/api/index-values/adjustments/[id]`.
+
+5. **UI** — panel colapsable en la página de contratos. Formulario de carga, tabla de valores con revert, historial de ajustes.
+
+6. **10 tests unitarios** para las 3 funciones puras del módulo.
+
+### Por qué lo hice así y no de otra forma
+
+**Una tabla central de valores vs. porcentaje directo en el contrato:** la tabla central permite que cargar un valor actualice automáticamente todos los contratos afectados de una vez. Si fuera por contrato, el usuario tendría que entrar a cada uno.
+
+**Multiplicación encadenada, no suma:** la ley argentina de alquileres usa factor compuesto. Sumar 2% + 3% + 2% = 7% está mal; la inflación acumula sobre sí misma. La fórmula correcta es 1,02 × 1,03 × 1,02 = 1,0712 (7,12%). La diferencia crece cuanto mayor es la inflación.
+
+**`adjustment_application` es append-only:** cada ajuste (y cada corrección) crea un registro nuevo. El histórico nunca se modifica. Esto es auditoría real — en contabilidad, nunca se borra un asiento; se genera un contra-asiento.
+
+**Tests solo para funciones puras:** las funciones con DB requieren una base de datos real (los mocks probados el año pasado fallaron en producción porque la realidad no coincidía con el mock). Las funciones puras (`calculateFactor`, `nextTramoStart`, `requiredMonthsForTramo`) no tienen efectos secundarios, así que los tests son confiables.
+
+**Panel dentro de Contratos, sin ítem de menú separado:** los índices son una herramienta de gestión de contratos, no un módulo de negocio propio. No tiene sentido que los usuarios entren a "Índices" como sección principal.
+
+### Conceptos que aparecieron
+
+- **factor compuesto**: manera de calcular inflación acumulada. Si cada mes la inflación es x%, no sumás los porcentajes — multiplicás los factores. (1 + x/100) para cada mes. Funciona igual que el interés compuesto.
+- **append-only audit log**: tabla de historial donde nunca modificás una fila existente. Cada evento (incluso una corrección) es un registro nuevo. Permite reconstruir el estado exacto en cualquier momento pasado.
+- **`pendiente_revision`**: estado del ledger que significa "el monto todavía no se sabe". Es el puente entre "el contrato existe" y "el índice está cargado". El sistema resuelve estos estados al cargar un valor.
+- **bug de timezone en tests**: `new Date("2024-07-01")` en JavaScript trata el string ISO como UTC. En Argentina (UTC-3), eso significa que la "medianoche del 1 de julio UTC" ya es las 21:00 del 30 de junio en Argentina — así que `getMonth()` devuelve 5 (junio) en vez de 6 (julio). Fix: agregar `T00:00:00` para forzar hora local.
+- **TanStack Query con `enabled: open`**: las queries no se disparan cuando el panel está cerrado. Lazy loading: cargá los datos recién cuando el usuario abre la sección, no antes.
+
+### Preguntas para reflexionar
+
+1. Si cada mes hay que cargar un valor manualmente, ¿cuál sería el flujo más rápido para no olvidarse? ¿Un recordatorio, un dashboard, una alerta?
+2. ¿Por qué el IPC de julio "no puede entrar en su propio cálculo"? ¿Qué pasaría si lo incluyeras?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Concepto**: factor compuesto — qué es, por qué se usa en alquileres, analogía con interés compuesto, ejemplo con IPC
+- [ ] **Bug**: timezone en `new Date()` con strings ISO — cómo reconocerlo (mes desfasado en UTC-3), fix con `T00:00:00`
+- [ ] **Patrón**: append-only audit log — cuándo usarlo, qué hace imposible, cómo se diferencia de soft delete
+- [ ] **Decisión técnica**: tabla central de índices vs. campo por contrato — contexto, alternativas, por qué la central escala mejor
+
+---
+
 ## 2026-05-08 — Título dinámico por módulo en la pestaña del navegador
 
 ### Qué hice

@@ -6,6 +6,22 @@ Funcionalidades completadas, de más reciente a más antigua.
 
 ## 2026-05
 
+### Ajuste de alquileres por índice (ICL / IPC / CER / UVA)
+
+Sistema completo de actualización de alquileres por índice. Permite cargar manualmente los valores mensuales de cada índice (ICL, IPC, CER, UVA) y el sistema aplica automáticamente el ajuste a todos los contratos activos que correspondan.
+
+**Regla central de cálculo:** multiplicación encadenada de factores `(1 + valor/100)` de los N meses previos al tramo, nunca suma de porcentajes. La base de cada tramo es el monto resultante del tramo anterior.
+
+**Caso provisorio:** si algún mes del tramo aún no fue publicado, el sistema aplica el monto del período anterior con `isProvisional = true`. Cuando se carga el índice faltante, recalcula y genera una entrada correctiva en el ledger.
+
+**Trazabilidad completa:** tabla `adjustment_application` registra factor compuesto, períodos y valores usados, monto anterior y nuevo, por contrato y por tramo. No se modifica el historial — cada corrección es un registro nuevo.
+
+**Revert:** eliminar un valor de índice deshace el ajuste en contratos afectados: revierte `contract.monthlyAmount`, restaura entries a `pendiente_revision`, cancela la entrada `ajuste_indice` del ledger.
+
+**UI:** panel colapsable en la página de contratos con formulario de carga, tabla de valores con botón Revertir, historial de ajustes con detalle expandible por contrato.
+
+Archivos clave: `src/db/schema/adjustment-index-value.ts` · `src/db/schema/adjustment-application.ts` · `src/lib/ledger/apply-index.ts` · `src/app/api/index-values/route.ts` · `src/app/api/index-values/[id]/route.ts` · `src/app/api/index-values/adjustments/route.ts` · `src/app/api/index-values/adjustments/[id]/route.ts` · `src/components/contracts/index-values-panel.tsx`
+
 ### Comprobante de liquidación al propietario
 Nueva página `/comprobantes/[id]` (HTML imprimible vía `@media print`) que el propietario puede guardar/imprimir o recibir por email. Título dinámico según modalidad de pago: "COMPROBANTE DE LIQUIDACIÓN" en modalidad A (la administradora cobró y liquidó), "CONSTANCIA DE COBRO DISTRIBUIDO" en modalidad split (el inquilino transfirió directamente al propietario y a la administradora). Tabla con bruto/comisión/neto por concepto cobrado, totales destacados, distribución de fondos según modalidad, firma de la administradora y sello "ANULADO" diagonal cuando el recibo subyacente fue anulado. Botón "Enviar por email" manda link al propietario usando Resend. Acceso desde menú `···` en filas conciliadas de la cuenta corriente del propietario; el ID de la URL es el `cash_movement.id`, agregado al response de la API CC propietario para vincular cada entrada con su recibo. Refactor: `computeNetAndCommission` extraída de la API CC propietario a `src/lib/owners/commission.ts` para reuso compartido entre módulos.
 
