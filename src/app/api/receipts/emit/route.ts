@@ -27,19 +27,20 @@ function round2(n: number): number {
 }
 
 function getEffectiveAmount(
-  entryId: string,
-  originalMonto: string,
+  entry: { id: string; monto: string | null; montoManual: string | null },
   overrides: Record<string, string>
 ): number {
-  const override = overrides[entryId];
-  return override !== undefined ? Number(override) : Number(originalMonto);
+  const override = overrides[entry.id];
+  if (override !== undefined) return Number(override);
+  if (entry.montoManual !== null) return Number(entry.montoManual);
+  return Number(entry.monto);
 }
 
 function getSignedEffectiveAmount(
-  entry: { id: string; monto: string | null; tipo: string },
+  entry: { id: string; monto: string | null; montoManual: string | null; tipo: string },
   overrides: Record<string, string>
 ): number {
-  const raw = getEffectiveAmount(entry.id, entry.monto!, overrides);
+  const raw = getEffectiveAmount(entry, overrides);
   return entry.tipo === "descuento" || entry.tipo === "bonificacion" ? -raw : raw;
 }
 
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
       const reciboNumero = await nextReciboNumero(agencyId, tx);
 
       for (const entry of entries) {
-        const effectiveAmount = getEffectiveAmount(entry.id, entry.monto!, montoOverrides);
+        const effectiveAmount = getEffectiveAmount(entry, montoOverrides);
         const prevPagado = Number(entry.montoPagado ?? 0);
         const newMontoPagado = round2(prevPagado + effectiveAmount);
         const isFullyPaid = newMontoPagado >= Number(entry.monto);
