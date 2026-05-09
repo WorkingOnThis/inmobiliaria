@@ -137,6 +137,7 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
                       onSelectMonth={() => {}}
                       onDeselectMonth={() => {}}
                       onMontoChange={() => {}}
+                      onMontoManualChange={() => {}}
                       onAnularRecibo={() => {}}
                       onCancelEntry={() => {}}
                       onViewDetail={setSelectedDetailEntry}
@@ -158,6 +159,7 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
           onSelectMonth={() => {}}
           onDeselectMonth={() => {}}
           onMontoChange={() => {}}
+          onMontoManualChange={() => {}}
           onAnularRecibo={() => {}}
           onCancelEntry={() => {}}
           onViewDetail={setSelectedDetailEntry}
