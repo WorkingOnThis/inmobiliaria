@@ -18,6 +18,7 @@ import { LedgerTable, NO_PERIOD_KEY, type LedgerEntry } from "./ledger-table";
 import { CobroPanel } from "./cobro-panel";
 import { AddManualChargeDialog, type ManualChargeData } from "@/components/ledger/add-manual-charge-dialog";
 import { EntryDetailDialog, type EntryEditData } from "@/components/ledger/entry-detail-dialog";
+import { RentProjectionPanel } from "./rent-projection-panel";
 
 type KPIs = {
   estadoCuenta: "al_dia" | "en_mora";
@@ -627,6 +628,9 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           </Alert>
         </div>
       )}
+
+      {/* Rent projection panel */}
+      {contractId && <RentProjectionPanel tenantId={inquilinoId} />}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 px-4">
