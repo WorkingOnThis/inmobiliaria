@@ -175,7 +175,13 @@
       "Bash(ls drizzle/)",
       "Bash(dir drizzle *)",
       "Bash(ls migrations/)",
-      "Bash(dir migrations *)"
+      "Bash(dir migrations *)",
+      "mcp__neon__describe_branch",
+      "Bash(sed -n '10,37p' \"[id]/route.ts\")",
+      "Bash(sed -n '8,32p' adjustments/[id]/route.ts)",
+      "Bash(npx shadcn@latest add collapsible)",
+      "WebFetch(domain:datosestadistica.cba.gov.ar)",
+      "Bash(echo \"exit: $?\")"
     ]
   },
   "enableAllProjectMcpServers": true,
