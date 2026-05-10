@@ -4,6 +4,41 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-10 — IPC Córdoba: cron, backfill histórico y proyección de alquiler
+
+### Qué hice
+
+- Renombré `"IPC"` → `"IPC (Córdoba)"` en código y DB (2 contratos migrados en producción vía Neon MCP)
+- Agregué cron diario (`/api/cron/fetch-ipc`) que llama a la API de estadísticas de Córdoba y carga el IPC del mes anterior si falta; protegido por `CRON_SECRET`; el proxy lo excluyó del guard de sesión (fix)
+- Descubrí que la API del gobierno bloquea IPs fuera de Argentina (Vercel está en EE.UU.) → el cron falla por timeout; manejado con try/catch que devuelve 200 + mensaje en lugar de 500
+- Cargué 36 meses de IPC histórico (abr-2023 a mar-2026) directamente en Neon con `run_sql_transaction` porque el backfill script corrió contra la DB local en lugar de producción
+- Construí `RentProjectionPanel`: tabla colapsable en la cuenta corriente del inquilino que muestra mes a mes cómo evoluciona el alquiler dentro del tramo actual (y los siguientes hasta vencimiento), usando valores reales del IPC donde existen y el último conocido como proyección donde no
+
+### Por qué lo hice así y no de otra forma
+
+- La proyección es puro cálculo en el servidor (sin estado, sin escritura a DB) → endpoint GET simple, no mutation
+- Mostramos hasta 3 tramos máximo para no abrumar; con tabs para navegar entre ellos
+- Los meses proyectados se marcan con `~` para que sea claro qué es real y qué es estimación
+
+### Conceptos que aparecieron
+
+- **CKAN API**: formato de datos abiertos del gobierno; devuelve registros en formato ancho (cada mes = columna)
+- **ConnectTimeoutError desde Vercel**: servidores en EE.UU./Europa, muchas APIs gubernamentales argentinas bloquean IPs extranjeras
+- **`run_sql_transaction` vs `run_sql`**: Neon MCP no permite múltiples statements en un solo `run_sql`; hay que usar el de transacciones
+- **Backfill contra DB equivocada**: el script corre con el `.env` local; si ese no apunta a Neon sino a postgres local, los datos no llegan a producción
+
+### Preguntas para reflexionar
+
+1. ¿Cómo haría para que el backfill script sepa que está corriendo contra producción y pida confirmación?
+2. ¿Qué estrategia usarías para cargar índices de una API gubernamental que bloquea IPs extranjeras sin tener que hacerlo manualmente?
+
+### Qué debería anotar en Obsidian
+- [ ] Patrón: proyección de serie financiera mes a mes con factor compuesto (calcular, no guardar)
+- [ ] Bug: script de carga corrió contra DB equivocada — cómo verificar antes de ejecutar
+- [ ] Concepto: CKAN API — formato de datos abiertos gubernamentales
+
+---
+
 ## 2026-05-09 — Ajuste de alquileres por índice (ICL / IPC / CER / UVA)
 
 ### Qué hice

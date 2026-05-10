@@ -30,6 +30,12 @@ Antes de subir el proyecto online. Orden: barato primero → migración grande �
 
 ## 🔴 Prioridad alta
 
+- [ ] **Panel de proyección de alquiler — completar funcionalidad** — base implementada (`RentProjectionPanel` colapsable en cuenta corriente del inquilino + endpoint `/api/tenants/[id]/proyeccion`). Lo que falta, en orden:
+  1. **Verificar en dev** que la tabla muestra los valores correctos para contratos reales con IPC (Córdoba)
+  2. **Catálogo de índices mejorado** — en el panel `/contratos` (IndexValuesPanel), mostrar los valores como grilla: índice × mes, con colores para identificar meses faltantes. Hoy la tabla es una lista plana difícil de leer.
+  3. **Explicación de aumento pasado** — cuando ya se aplicó un ajuste, mostrar en la cuenta corriente el desglose: qué meses del índice se compusieron, cada % y el factor total. La data ya está en `adjustment_application.periodsUsed` y `valuesUsed` (JSON). Solo falta exponerla en la UI junto a la entrada `ajuste_indice` del ledger.
+  4. **Panel equivalente en cuenta corriente del propietario** — mismo panel de proyección para el propietario (con el neto después de honorarios).
+  5. **Cron de IPC inaccesible desde Vercel** — la API del gobierno de Córdoba bloquea IPs fuera de Argentina. Alternativa: usuario baja CSV mensual y lo sube desde la UI (drag & drop), o lo carga manualmente campo a campo. · [contabilidad](docs/decisions/contabilidad.md)
 
 - [x] **PDF del recibo** — implementado como mejora de estilos de impresión (`@media print`): sidebar y header ocultos, fondo blanco, tamaño A4, `print-color-adjust: exact`. Sin dependencias nuevas.
 
