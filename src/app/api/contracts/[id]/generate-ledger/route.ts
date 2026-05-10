@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { contract } from "@/db/schema/contract";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
+import { adjustmentApplication } from "@/db/schema/adjustment-application";
 import { servicio } from "@/db/schema/servicio";
 import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
@@ -61,6 +62,10 @@ export async function POST(
         await db
           .delete(tenantLedger)
           .where(and(inArray(tenantLedger.id, deletableIds), eq(tenantLedger.agencyId, agencyId)));
+        // Also clear adjustment history so catch-up reruns and re-applies notas
+        await db
+          .delete(adjustmentApplication)
+          .where(and(eq(adjustmentApplication.contratoId, contractId), eq(adjustmentApplication.agencyId, agencyId)));
       }
 
       // If force=true but every existing entry was cobrado, nothing was deleted.
