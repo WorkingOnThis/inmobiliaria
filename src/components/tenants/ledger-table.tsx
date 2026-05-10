@@ -52,6 +52,8 @@ export type LedgerEntry = {
   impactaCaja: boolean;
   beneficiario: string | null;
   splitBreakdown: string | null;
+  notas: string | null;
+  notasImprimir: boolean;
   isSynthetic?: boolean;
   cashMovementId?: string | null;
 };
@@ -391,7 +393,12 @@ export function LedgerTable({
       </div>
 
       {periods.map((period) => {
-        const periodEntries = grouped.get(period) ?? [];
+        const rawEntries = grouped.get(period) ?? [];
+        // Hide ajuste_indice rows once the alquiler for that period is paid
+        const alquilerCobrado = rawEntries.some((e) => e.tipo === "alquiler" && e.estado === "conciliado");
+        const periodEntries = alquilerCobrado
+          ? rawEntries.filter((e) => e.tipo !== "ajuste_indice")
+          : rawEntries;
         const current = isCurrent(period === NO_PERIOD_KEY ? null : period);
         const selectableIds = periodEntries.filter(isSelectable).map((e) => e.id);
         const isMonthSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));

@@ -396,6 +396,10 @@ export async function applyCatchUpForContract(
           )
         );
 
+      const fallbackNotas = substitutedPeriod
+        ? `Ajuste ${c.adjustmentIndex}: el índice de ${substitutedPeriod.slice(5, 7)}/${substitutedPeriod.slice(0, 4)} no estaba disponible al liquidar. Se usó el valor de ${requiredPeriods[requiredPeriods.length - 2].slice(5, 7)}/${requiredPeriods[requiredPeriods.length - 2].slice(0, 4)} en su lugar. Se actualizará cuando el dato real esté publicado.`
+        : null;
+
       for (const entry of tramoEntries) {
         const isPast = (entry.period ?? "") <= todayPeriod;
         await tx
@@ -404,6 +408,7 @@ export async function applyCatchUpForContract(
             monto: newAmount.toString(),
             montoOriginal: newAmount.toString(),
             estado: isPast ? "pendiente" : "proyectado",
+            ...(fallbackNotas !== null && { notas: fallbackNotas, notasImprimir: true }),
             updatedAt: new Date(),
           })
           .where(eq(tenantLedger.id, entry.id));

@@ -744,7 +744,16 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           montoOverrides={montoOverrides}
           honorariosPct={splitMeta?.managementCommissionPct ?? honorariosPct}
           onClearSelection={() => { setSelectedIds(new Set()); setMontoOverrides({}); setBeneficiarioOverrides({}); }}
-          onEmitirRecibo={() => { setEmitError(null); setShowEmit(true); }}
+          onEmitirRecibo={() => {
+            setEmitError(null);
+            // Pre-fill observations from selected entries with notasImprimir=true
+            const notasPrintables = selectedEntries
+              .filter((e) => e.notasImprimir && e.notas)
+              .map((e) => e.notas!)
+              .join("\n\n");
+            setObservations(notasPrintables);
+            setShowEmit(true);
+          }}
           isEmitting={emitirMutation.isPending}
           beneficiarioOverrides={beneficiarioOverrides}
           splitMeta={splitMeta ?? null}
