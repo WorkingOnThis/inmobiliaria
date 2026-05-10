@@ -120,6 +120,7 @@ interface ContractDetail extends PropertyServices {
   startDate: string;
   endDate: string;
   monthlyAmount: string;
+  baseMonthlyAmount: string | null;
   depositAmount: string | null;
   agencyCommission: string | null;
   managementCommissionPct: string | null;
@@ -902,13 +903,19 @@ export function ContractDetail({ id }: { id: string }) {
         {/* ── KPI cards ─────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="rounded-[18px] border border-border bg-surface px-[18px] py-4">
-            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Alquiler base</p>
+            <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Canon vigente</p>
             <p className="font-headline text-[1.4rem] font-bold text-primary leading-none">
               {formatMoney(data.monthlyAmount)}
             </p>
-            <p className="text-[0.68rem] text-muted-foreground mt-1.5">
-              Ajuste {data.adjustmentIndex} · {frequencyLabel.toLowerCase()}
-            </p>
+            {data.baseMonthlyAmount && data.baseMonthlyAmount !== data.monthlyAmount ? (
+              <p className="text-[0.68rem] text-muted-foreground mt-1.5">
+                Inicial: {formatMoney(data.baseMonthlyAmount)} · {adjustmentLabel}
+              </p>
+            ) : (
+              <p className="text-[0.68rem] text-muted-foreground mt-1.5">
+                Ajuste {data.adjustmentIndex} · {frequencyLabel.toLowerCase()}
+              </p>
+            )}
           </div>
 
           <div className="rounded-[18px] border border-border bg-surface px-[18px] py-4">
@@ -1168,7 +1175,10 @@ export function ContractDetail({ id }: { id: string }) {
                   { label: "Propiedad", value: data.propertyAddress || "—" },
                   { label: "Tipo", value: contractTypeLabel },
                   { label: "Período", value: `${format(parseDate(data.startDate), "dd/MM/yyyy", { locale: es })} → ${format(parseDate(data.endDate), "dd/MM/yyyy", { locale: es })}` },
-                  { label: "Canon", value: formatMoney(data.monthlyAmount) },
+                  { label: "Canon vigente", value: formatMoney(data.monthlyAmount) },
+                  ...(data.baseMonthlyAmount && data.baseMonthlyAmount !== data.monthlyAmount
+                    ? [{ label: "Canon inicial", value: formatMoney(data.baseMonthlyAmount) }]
+                    : []),
                   { label: "Índice", value: adjustmentLabel },
                   { label: "Frecuencia", value: frequencyLabel },
                   { label: "Vto. pago", value: `Día ${data.paymentDay}` },

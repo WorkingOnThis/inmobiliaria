@@ -61,6 +61,7 @@ export async function GET(
         startDate: contract.startDate,
         endDate: contract.endDate,
         monthlyAmount: contract.monthlyAmount,
+        baseMonthlyAmount: contract.baseMonthlyAmount,
         depositAmount: contract.depositAmount,
         agencyCommission: contract.agencyCommission,
         managementCommissionPct: contract.managementCommissionPct,

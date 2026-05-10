@@ -308,17 +308,13 @@ export async function applyCatchUpForContract(
   let baseAmount = parseFloat(c.monthlyAmount);
   let tramoIndex = 1;
 
-  console.log(`[catch-up] contrato=${contractId} índice=${c.adjustmentIndex} freq=${c.adjustmentFrequency} startDate=${c.startDate} baseAmount=${baseAmount} todayPeriod=${todayPeriod}`);
-
   while (true) {
     // Período de inicio de este tramo
     const tramoDate = new Date(start.getFullYear(), start.getMonth() + tramoIndex * c.adjustmentFrequency, 1);
     const tramoPeriod = `${tramoDate.getFullYear()}-${String(tramoDate.getMonth() + 1).padStart(2, "0")}`;
 
-    console.log(`[catch-up] tramoIndex=${tramoIndex} tramoPeriod=${tramoPeriod}`);
-
     // Solo procesamos tramos que ya empezaron (inclusive el mes actual)
-    if (tramoPeriod > todayPeriod) { console.log(`[catch-up] tramo futuro, saliendo`); break; }
+    if (tramoPeriod > todayPeriod) break;
 
     // Si ya existe un ajuste para este tramo, tomamos su monto y continuamos
     const [existingApp] = await db
@@ -334,7 +330,6 @@ export async function applyCatchUpForContract(
       .limit(1);
 
     if (existingApp) {
-      console.log(`[catch-up] tramo ${tramoPeriod} ya tiene ajuste registrado (newAmount=${existingApp.newAmount}), saltando`);
       baseAmount = parseFloat(existingApp.newAmount);
       tramoIndex++;
       continue;
@@ -354,12 +349,9 @@ export async function applyCatchUpForContract(
       );
 
     const valueMap = new Map(indexValues.map((v) => [v.period, parseFloat(v.value)]));
-    const missingPeriods = requiredPeriods.filter((p) => !valueMap.has(p));
-    console.log(`[catch-up] tramo ${tramoPeriod}: requiere ${JSON.stringify(requiredPeriods)}, encontrados ${indexValues.length}, faltantes ${JSON.stringify(missingPeriods)}`);
 
     const resolved = resolveIndexValues(requiredPeriods, valueMap);
-    if (resolved === null) { console.log(`[catch-up] 2+ meses faltantes, saliendo`); break; }
-    console.log(`[catch-up] aplicando tramo ${tramoPeriod}${resolved.substitutedPeriod ? ` (fallback: ${resolved.substitutedPeriod} usa mes anterior)` : ""}`);
+    if (resolved === null) break;
 
     const valuesUsed = resolved.values;
     const substitutedPeriod = resolved.substitutedPeriod;
@@ -396,8 +388,13 @@ export async function applyCatchUpForContract(
           )
         );
 
+      const prevPeriod = requiredPeriods[requiredPeriods.length - 2];
       const fallbackNotas = substitutedPeriod
-        ? `Ajuste ${c.adjustmentIndex}: el índice de ${substitutedPeriod.slice(5, 7)}/${substitutedPeriod.slice(0, 4)} no estaba disponible al liquidar. Se usó el valor de ${requiredPeriods[requiredPeriods.length - 2].slice(5, 7)}/${requiredPeriods[requiredPeriods.length - 2].slice(0, 4)} en su lugar. Se actualizará cuando el dato real esté publicado.`
+        ? [
+            `Ajuste ${c.adjustmentIndex}: ${requiredPeriods.map((p, i) => `${p.slice(5, 7)}/${p.slice(2, 4)}: ${valuesUsed[i]}%`).join(" · ")}`,
+            `Factor × ${factor.toFixed(5)} — De $${baseAmount.toLocaleString("es-AR")} → $${newAmount.toLocaleString("es-AR")}`,
+            `*${substitutedPeriod.slice(5, 7)}/${substitutedPeriod.slice(0, 4)} sin publicar al momento de la liquidación. Se tomó el valor de ${prevPeriod.slice(5, 7)}/${prevPeriod.slice(2, 4)} en forma provisoria. Se corregirá cuando el índice oficial esté disponible.`,
+          ].join("\n")
         : null;
 
       for (const entry of tramoEntries) {

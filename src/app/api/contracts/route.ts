@@ -254,6 +254,7 @@ export async function POST(request: NextRequest) {
           startDate: data.startDate,
           endDate: data.endDate,
           monthlyAmount: data.monthlyAmount.toString(),
+          baseMonthlyAmount: data.monthlyAmount.toString(),
           depositAmount: data.depositAmount?.toString() ?? null,
           agencyCommission: data.agencyCommission?.toString() ?? null,
           managementCommissionPct: data.managementCommissionPct?.toString() ?? "10",
