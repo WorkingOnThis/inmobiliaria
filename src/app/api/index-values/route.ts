@@ -9,7 +9,7 @@ import { applyIndexToContracts } from "@/lib/ledger/apply-index";
 import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
 
-const VALID_INDEX_TYPES = ["ICL", "IPC", "CER", "UVA"] as const;
+const VALID_INDEX_TYPES = ["ICL", "IPC (Córdoba)", "CER", "UVA"] as const;
 
 const postSchema = z.object({
   indexType: z.enum(VALID_INDEX_TYPES),
