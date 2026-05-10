@@ -59,7 +59,13 @@ export async function GET(request: NextRequest) {
   }
 
   // Llamar a la API una sola vez
-  const apiValues = await fetchIPCCordobaValues();
+  let apiValues;
+  try {
+    apiValues = await fetchIPCCordobaValues();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ ok: false, message: `Error al contactar la API de IPC: ${msg}` }, { status: 200 });
+  }
   if (apiValues.length === 0) {
     return NextResponse.json({ ok: true, message: "La API no devolvió valores" });
   }
