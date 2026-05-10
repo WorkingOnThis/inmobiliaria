@@ -7,6 +7,7 @@ import { adjustmentIndexValue } from "@/db/schema/adjustment-index-value";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { nextTramoStart } from "@/lib/ledger/apply-index";
+import { adjustmentApplication } from "@/db/schema/adjustment-application";
 import { eq, and, gte } from "drizzle-orm";
 
 export type ProyeccionMonth = {
@@ -19,11 +20,13 @@ export type ProyeccionMonth = {
 export type ProyeccionTramo = {
   tramoStart: string;   // "YYYY-MM" — primer mes que rige con este monto
   tramoEnd: string;     // "YYYY-MM" — último mes antes del próximo ajuste
+  tramoNumber: number;  // posición 1-based desde el inicio del contrato
   baseAmount: number;
   newAmount: number;
   totalPct: number;
   months: ProyeccionMonth[];
   hasProjected: boolean;
+  isPast: boolean;      // true = tramo ya terminado (histórico)
 };
 
 export type ProyeccionResponse = {
@@ -43,6 +46,14 @@ function addMonths(period: string, n: number): string {
 /** Resta 1 mes a un período "YYYY-MM". */
 function subOneMonth(period: string): string {
   return addMonths(period, -1);
+}
+
+/** Número de tramo 1-based desde el inicio del contrato. */
+function tramoNumberOf(tramoStart: string, contractStart: string, frequency: number): number {
+  const [sy, sm] = contractStart.split("-").map(Number);
+  const [ty, tm] = tramoStart.split("-").map(Number);
+  const monthsFromStart = (ty - sy) * 12 + (tm - sm);
+  return Math.floor(monthsFromStart / frequency) + 1;
 }
 
 export async function GET(
@@ -111,24 +122,77 @@ export async function GET(
 
     // Determine current tramo start (first upcoming adjustment, then work backwards)
     const today = new Date();
-    const todayPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
     const nextAdjPeriod = nextTramoStart(c.startDate, c.adjustmentFrequency, today);
     const contractEndPeriod = c.endDate.slice(0, 7);
+    const contractStartPeriod = c.startDate.slice(0, 7);
 
     // Current tramo started `adjustmentFrequency` months before the next one
     const currentTramoStart = addMonths(nextAdjPeriod, -c.adjustmentFrequency);
     const currentBaseAmount = parseFloat(c.monthlyAmount);
 
-    // Build tramos from current to contract end
     const tramos: ProyeccionTramo[] = [];
+
+    // Include the previous tramo if it falls within the contract
+    // (e.g. contract started Feb, current tramo is May → show Feb-Apr as past tramo)
+    const prevTramoStart = addMonths(currentTramoStart, -c.adjustmentFrequency);
+    let currentTramoBase = currentBaseAmount;
+
+    if (prevTramoStart >= contractStartPeriod) {
+      // Use previousAmount from the adjustment that triggered the current tramo, if it exists.
+      // If no adjustment was applied yet, currentBaseAmount IS the original amount.
+      const [lastApp] = await db
+        .select({ previousAmount: adjustmentApplication.previousAmount })
+        .from(adjustmentApplication)
+        .where(and(
+          eq(adjustmentApplication.contratoId, participation.contractId),
+          eq(adjustmentApplication.adjustmentPeriod, currentTramoStart),
+          eq(adjustmentApplication.agencyId, agencyId),
+        ))
+        .limit(1);
+
+      const prevBase = lastApp ? parseFloat(lastApp.previousAmount) : currentBaseAmount;
+      const prevTramoEnd = subOneMonth(currentTramoStart);
+      const months: ProyeccionMonth[] = [];
+      let accumulated = prevBase;
+      let hasProjected = false;
+
+      for (let i = 0; i < c.adjustmentFrequency; i++) {
+        const mPeriod = addMonths(prevTramoStart, i);
+        if (mPeriod >= currentTramoStart) break;
+        const hasPct = valueMap.has(mPeriod);
+        const pct = hasPct ? valueMap.get(mPeriod)! : lastKnownPct;
+        const isProjected = !hasPct;
+        if (isProjected) hasProjected = true;
+        accumulated = Math.round(accumulated * (1 + pct / 100) * 100) / 100;
+        months.push({ period: mPeriod, pct, amount: accumulated, isProjected });
+      }
+
+      const prevNewAmount = months.length > 0 ? months[months.length - 1].amount : prevBase;
+      tramos.push({
+        tramoStart: prevTramoStart,
+        tramoEnd: prevTramoEnd,
+        tramoNumber: tramoNumberOf(prevTramoStart, contractStartPeriod, c.adjustmentFrequency),
+        baseAmount: prevBase,
+        newAmount: prevNewAmount,
+        totalPct: prevBase > 0 ? ((prevNewAmount / prevBase - 1) * 100) : 0,
+        months,
+        hasProjected,
+        isPast: true,
+      });
+
+      // If the adjustment wasn't applied yet, cascade the projected amount as current tramo base
+      if (!lastApp) currentTramoBase = prevNewAmount;
+    }
+
+    // Build current tramo + next 2
     let tramoStart = currentTramoStart;
-    let baseAmount = currentBaseAmount;
+    let baseAmount = currentTramoBase;
+    let futureCount = 0;
 
-    while (tramoStart <= contractEndPeriod) {
-      const tramoEndExcl = addMonths(tramoStart, c.adjustmentFrequency); // first month of NEXT tramo
-      const tramoEnd = subOneMonth(tramoEndExcl); // last month of THIS tramo
+    while (tramoStart <= contractEndPeriod && futureCount < 3) {
+      const tramoEndExcl = addMonths(tramoStart, c.adjustmentFrequency);
+      const tramoEnd = subOneMonth(tramoEndExcl);
 
-      // Months in this tramo
       const months: ProyeccionMonth[] = [];
       let accumulated = baseAmount;
       let hasProjected = false;
@@ -137,21 +201,10 @@ export async function GET(
         const mPeriod = addMonths(tramoStart, i);
         if (mPeriod > contractEndPeriod) break;
 
-        const isCurrentTramo = tramoStart === currentTramoStart;
-        const isFutureMonth = mPeriod > todayPeriod;
-
-        let pct: number;
-        let isProjected: boolean;
-
-        if (valueMap.has(mPeriod)) {
-          pct = valueMap.get(mPeriod)!;
-          // Mark as projected if it's a future month using a known value
-          isProjected = isFutureMonth && isCurrentTramo ? false : false;
-        } else {
-          pct = lastKnownPct;
-          isProjected = true;
-          hasProjected = true;
-        }
+        const hasPct = valueMap.has(mPeriod);
+        const pct = hasPct ? valueMap.get(mPeriod)! : lastKnownPct;
+        const isProjected = !hasPct;
+        if (isProjected) hasProjected = true;
 
         accumulated = Math.round(accumulated * (1 + pct / 100) * 100) / 100;
         months.push({ period: mPeriod, pct, amount: accumulated, isProjected });
@@ -163,19 +216,18 @@ export async function GET(
       tramos.push({
         tramoStart,
         tramoEnd,
+        tramoNumber: tramoNumberOf(tramoStart, contractStartPeriod, c.adjustmentFrequency),
         baseAmount,
         newAmount,
         totalPct,
         months,
         hasProjected,
+        isPast: false,
       });
 
-      // Move to next tramo
       tramoStart = tramoEndExcl;
       baseAmount = newAmount;
-
-      // Only show current + next 2 tramos max to keep it readable
-      if (tramos.length >= 3) break;
+      futureCount++;
     }
 
     const response: ProyeccionResponse = {

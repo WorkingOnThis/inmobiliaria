@@ -4,6 +4,47 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-10 — Mejoras al panel de proyección de alquiler
+
+### Qué hice
+
+1. **Visibilidad del panel**: cambié el fondo del botón de colapso de `bg-surface-low` a `bg-surface-mid`, agregué borde izquierdo con acento de color (`border-l-2 border-l-primary/40`), el ícono de tendencia pasó a color primario, y el chevron ahora rota 180° con transición CSS en lugar de intercambiar dos íconos.
+
+2. **Tramo anterior visible**: el endpoint `/api/tenants/[id]/proyeccion` ahora incluye el tramo inmediatamente anterior al actual cuando cae dentro del contrato. Ejemplo: contrato que arrancó en Feb 2026 con frecuencia trimestral → ahora muestra el tramo Feb-Abr (que alimenta el ajuste de Mayo) además del tramo actual May-Jul.
+
+3. **Fix del monto base del tramo actual**: antes, el tramo actual tomaba `c.monthlyAmount` de la DB como base. Cuando el ajuste de índice no fue aplicado todavía (porque el contrato se creó después de que los valores de IPC ya estaban cargados), ese monto es el original sin ajustar. Ahora: si no hay registro en `adjustment_application` para ese tramo, la base del tramo actual se calcula desde el `newAmount` proyectado del tramo anterior.
+
+4. **Numeración y agrupación por año**: todos los tramos tienen un número secuencial (Tramo 1, Tramo 2...) calculado desde el inicio del contrato. El tramo actual dice "Tramo actual (N)". Los tabs se agrupan por año del contrato con una etiqueta "Año 1", "Año 2", etc.
+
+5. **Filas proyectadas con estética diferenciada**: los meses sin valor real de IPC ahora tienen fondo ámbar oscuro (`bg-amber-950/30`) y un círculo "!" en lugar del tilde gris anterior. Los tabs muestran "!" en amarillo cuando algún mes del tramo es proyectado.
+
+6. **Defensa ante cache stale en dev**: el componente filtra tramos sin `tramoNumber` definido (artefacto del hot-reload de Next.js que mezcla datos viejos en caché con nuevos del fetch).
+
+### Por qué lo hice así y no de otra forma
+
+- El tramo anterior lo construimos en el endpoint (no en el cliente) porque necesitamos la query a `adjustment_application` para saber si el ajuste ya fue aplicado y cuál era el monto anterior — esa lógica pertenece al servidor.
+- No guardamos `prevNewAmount` en la DB; lo calculamos on-the-fly cada vez porque es puro cálculo determinístico a partir de IPC + monto base.
+- El fix del base usa la proyección del tramo anterior (no el monto real de la DB) cuando no hay ajuste aplicado, para mostrar lo que *debería* ser la base — útil para que el usuario entienda qué esperar.
+
+### Conceptos que aparecieron
+
+- **`NaN !== NaN` en JavaScript**: cuando `tramoNumber` es `undefined`, `Math.ceil(undefined / 4)` da `NaN`, y como `NaN !== NaN` siempre, el `Array.find()` nunca encuentra el grupo y crea uno nuevo por cada elemento. Solución: filtrar antes de agrupar.
+- **Hot-reload + TanStack Query en dev**: Next.js recarga módulos sin perder el estado del cliente React. TanStack Query guarda respuestas en memoria; si el endpoint cambia su estructura de respuesta, el cache viejo (con formato distinto) puede mezclarse visualmente durante el render intermedio. Hard-refresh del browser limpia el cache.
+- **`stale-while-revalidate`**: patrón de React Query — muestra datos viejos inmediatamente mientras busca datos frescos en background. Evita pantallas de carga, pero requiere que el componente sea robusto ante datos de versiones anteriores.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué el ajuste de Mayo no se aplicó automáticamente cuando se creó el contrato de Pancho, si los valores de IPC de Febrero y Marzo ya estaban cargados?
+2. ¿Cómo detectarías, al crear un contrato, que hay tramos pasados que ya tienen valores de índice disponibles y que deberían ajustarse de inmediato?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Bug: `NaN !== NaN` — por qué no podés usar `find()` con un valor NaN y cómo protegerte
+- [ ] Patrón: cascade de monto base entre tramos — cómo propagar el proyectado cuando el ajuste real no se aplicó
+- [ ] Concepto: stale-while-revalidate y por qué los componentes deben ser defensivos ante datos de versiones anteriores de un endpoint
+
+---
+
 ## 2026-05-10 — IPC Córdoba: cron, backfill histórico y proyección de alquiler
 
 ### Qué hice
