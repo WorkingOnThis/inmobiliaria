@@ -47,7 +47,7 @@ export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
 
 export const ADJUSTMENT_INDEXES = [
   "ICL",
-  "IPC",
+  "IPC (Córdoba)",
   "CER",
   "UVA",
   "manual",
@@ -58,7 +58,7 @@ export type AdjustmentIndex = (typeof ADJUSTMENT_INDEXES)[number];
 
 export const ADJUSTMENT_INDEX_LABELS: Record<AdjustmentIndex, string> = {
   ICL: "ICL — Índice de Contratos de Locación",
-  IPC: "IPC — Índice de Precios al Consumidor",
+  "IPC (Córdoba)": "IPC (Córdoba) — Índice de Precios al Consumidor",
   CER: "CER — Coeficiente de Estabilización de Referencia",
   UVA: "UVA — Unidad de Valor Adquisitivo",
   manual: "Ajuste manual",

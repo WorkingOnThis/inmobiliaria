@@ -52,7 +52,7 @@ type AdjustmentRow = {
 
 // ── Helpers ──────────────────────────────────────────────
 
-const INDEX_TYPES = ["ICL", "IPC", "CER", "UVA"] as const;
+const INDEX_TYPES = ["ICL", "IPC (Córdoba)", "CER", "UVA"] as const;
 
 /** Convierte "YYYY-MM" → "MM/YYYY" */
 function formatPeriod(p: string): string {
