@@ -105,6 +105,7 @@ const PENDING_STATES = ["pendiente", "registrado", "pendiente_revision", "pago_p
 // States that allow issuing a receipt. Excludes "pendiente_revision" because
 // an entry stuck in revision needs cleanup before it can be billed.
 function isSelectable(entry: LedgerEntry): boolean {
+  if (entry.tipo === "ajuste_indice") return false;
   return ["pendiente", "registrado", "pago_parcial"].includes(entry.estado);
 }
 

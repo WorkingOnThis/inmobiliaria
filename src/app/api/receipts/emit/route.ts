@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const notReady = entries.filter(
-      (e) => !["pendiente", "registrado", "pago_parcial"].includes(e.estado)
+      (e) => e.tipo === "ajuste_indice" || !["pendiente", "registrado", "pago_parcial"].includes(e.estado)
     );
     if (notReady.length > 0) {
       return NextResponse.json(

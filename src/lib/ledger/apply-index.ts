@@ -5,7 +5,7 @@ import { adjustmentIndexValue } from "@/db/schema/adjustment-index-value";
 import { adjustmentApplication } from "@/db/schema/adjustment-application";
 import { contractParticipant } from "@/db/schema/contract-participant";
 import { defaultFlagsForTipo } from "./flags";
-import { eq, and, inArray, gte } from "drizzle-orm";
+import { eq, and, inArray, gte, lt } from "drizzle-orm";
 
 // ─── Pure helpers (no DB) ────────────────────────────────
 
@@ -52,6 +52,34 @@ export function requiredMonthsForTramo(
     );
   }
   return result;
+}
+
+/**
+ * Resuelve los valores de índice para los períodos requeridos aplicando la regla
+ * de fallback: si exactamente 1 período falta (IPC publicado tarde), usa el valor
+ * del mes anterior disponible. Si faltan 2+, devuelve null.
+ */
+function resolveIndexValues(
+  requiredPeriods: string[],
+  valueMap: Map<string, number>,
+): { values: number[]; substitutedPeriod: string | null } | null {
+  const missing = requiredPeriods.filter((p) => !valueMap.has(p));
+  if (missing.length === 0) {
+    return { values: requiredPeriods.map((p) => valueMap.get(p)!), substitutedPeriod: null };
+  }
+  if (missing.length > 1) return null;
+
+  // Exactamente 1 faltante — usar el valor del período más reciente disponible
+  const lastAvailablePeriod = requiredPeriods
+    .filter((p) => valueMap.has(p))
+    .at(-1)!;
+  const fallbackValue = valueMap.get(lastAvailablePeriod)!;
+  const resolvedMap = new Map(valueMap);
+  resolvedMap.set(missing[0], fallbackValue);
+  return {
+    values: requiredPeriods.map((p) => resolvedMap.get(p)!),
+    substitutedPeriod: missing[0],
+  };
 }
 
 // ─── Aplicación a contratos ───────────────────────────────
@@ -126,7 +154,7 @@ export async function applyIndexToContracts(
       );
 
     const valueMap = new Map(indexValues.map((v) => [v.period, parseFloat(v.value)]));
-    const allAvailable = requiredPeriods.every((p) => valueMap.has(p));
+    const resolved = resolveIndexValues(requiredPeriods, valueMap);
 
     const baseAmount = parseFloat(c.monthlyAmount);
     let newAmount: number;
@@ -134,15 +162,17 @@ export async function applyIndexToContracts(
     let isProvisional: boolean;
     let periodsUsed: string[];
     let valuesUsed: number[];
+    let substitutedPeriod: string | null = null;
 
-    if (allAvailable) {
-      valuesUsed = requiredPeriods.map((p) => valueMap.get(p)!);
+    if (resolved !== null) {
+      valuesUsed = resolved.values;
+      substitutedPeriod = resolved.substitutedPeriod;
       factor = calculateFactor(valuesUsed);
       newAmount = Math.round(baseAmount * factor * 100) / 100;
       periodsUsed = requiredPeriods;
       isProvisional = false;
     } else {
-      // Provisorio: usar el monto actual
+      // 2+ meses faltantes — provisorio, sin cambio de monto
       valuesUsed = requiredPeriods.map((p) => valueMap.get(p) ?? 0);
       factor = 1;
       newAmount = baseAmount;
@@ -200,10 +230,13 @@ export async function applyIndexToContracts(
       const descLines = isProvisional
         ? [
             `Ajuste ${indexType} (Provisorio) — rige desde ${tramo.slice(5, 7)}/${tramo.slice(0, 4)}`,
-            `Índice incompleto. Se usa valor del período anterior: $${baseAmount.toLocaleString("es-AR")}`,
+            `Faltan 2 o más períodos de índice. Se mantiene el monto actual: $${baseAmount.toLocaleString("es-AR")}`,
           ]
         : [
             `Ajuste ${indexType} — rige desde ${tramo.slice(5, 7)}/${tramo.slice(0, 4)}`,
+            ...(substitutedPeriod
+              ? [`Nota: índice ${substitutedPeriod.slice(5, 7)}/${substitutedPeriod.slice(0, 4)} no disponible, se usó el mes anterior`]
+              : []),
             `Valores: ${periodsUsed.map((p, i) => `${p.slice(5, 7)}/${p.slice(0, 4)} ${valuesUsed[i]}%`).join(" · ")}`,
             `Factor: × ${factor.toFixed(5)} | De $${baseAmount.toLocaleString("es-AR")} → $${newAmount.toLocaleString("es-AR")}`,
           ];
@@ -243,6 +276,181 @@ export async function applyIndexToContracts(
   }
 
   return { contractsAffected, provisionalCount };
+}
+
+// ─── Catch-up: aplicar tramos pasados al generar un ledger ──
+
+type CatchUpContractData = {
+  startDate: string;
+  adjustmentFrequency: number;
+  adjustmentIndex: string;
+  monthlyAmount: string;
+  ownerId: string;
+  propertyId: string;
+};
+
+/**
+ * Aplica todos los tramos de ajuste que ya deberían haberse ejecutado pero no fueron
+ * registrados. Usado al generar el ledger de un contrato con fecha de inicio en el pasado.
+ * Itera tramos en orden cronológico; si un tramo no tiene sus valores de IPC disponibles,
+ * se detiene (no puede aplicar tramos posteriores sin ese base).
+ */
+export async function applyCatchUpForContract(
+  contractId: string,
+  c: CatchUpContractData,
+  agencyId: string,
+  userId: string,
+): Promise<void> {
+  const today = new Date();
+  const todayPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
+  const start = new Date(c.startDate + "T00:00:00");
+  let baseAmount = parseFloat(c.monthlyAmount);
+  let tramoIndex = 1;
+
+  console.log(`[catch-up] contrato=${contractId} índice=${c.adjustmentIndex} freq=${c.adjustmentFrequency} startDate=${c.startDate} baseAmount=${baseAmount} todayPeriod=${todayPeriod}`);
+
+  while (true) {
+    // Período de inicio de este tramo
+    const tramoDate = new Date(start.getFullYear(), start.getMonth() + tramoIndex * c.adjustmentFrequency, 1);
+    const tramoPeriod = `${tramoDate.getFullYear()}-${String(tramoDate.getMonth() + 1).padStart(2, "0")}`;
+
+    console.log(`[catch-up] tramoIndex=${tramoIndex} tramoPeriod=${tramoPeriod}`);
+
+    // Solo procesamos tramos que ya empezaron (inclusive el mes actual)
+    if (tramoPeriod > todayPeriod) { console.log(`[catch-up] tramo futuro, saliendo`); break; }
+
+    // Si ya existe un ajuste para este tramo, tomamos su monto y continuamos
+    const [existingApp] = await db
+      .select({ newAmount: adjustmentApplication.newAmount })
+      .from(adjustmentApplication)
+      .where(
+        and(
+          eq(adjustmentApplication.contratoId, contractId),
+          eq(adjustmentApplication.agencyId, agencyId),
+          eq(adjustmentApplication.adjustmentPeriod, tramoPeriod),
+        )
+      )
+      .limit(1);
+
+    if (existingApp) {
+      console.log(`[catch-up] tramo ${tramoPeriod} ya tiene ajuste registrado (newAmount=${existingApp.newAmount}), saltando`);
+      baseAmount = parseFloat(existingApp.newAmount);
+      tramoIndex++;
+      continue;
+    }
+
+    // Verificar si están disponibles los valores de IPC para este tramo
+    const requiredPeriods = requiredMonthsForTramo(tramoPeriod, c.adjustmentFrequency);
+    const indexValues = await db
+      .select({ period: adjustmentIndexValue.period, value: adjustmentIndexValue.value })
+      .from(adjustmentIndexValue)
+      .where(
+        and(
+          eq(adjustmentIndexValue.agencyId, agencyId),
+          eq(adjustmentIndexValue.indexType, c.adjustmentIndex),
+          inArray(adjustmentIndexValue.period, requiredPeriods),
+        )
+      );
+
+    const valueMap = new Map(indexValues.map((v) => [v.period, parseFloat(v.value)]));
+    const missingPeriods = requiredPeriods.filter((p) => !valueMap.has(p));
+    console.log(`[catch-up] tramo ${tramoPeriod}: requiere ${JSON.stringify(requiredPeriods)}, encontrados ${indexValues.length}, faltantes ${JSON.stringify(missingPeriods)}`);
+
+    const resolved = resolveIndexValues(requiredPeriods, valueMap);
+    if (resolved === null) { console.log(`[catch-up] 2+ meses faltantes, saliendo`); break; }
+    console.log(`[catch-up] aplicando tramo ${tramoPeriod}${resolved.substitutedPeriod ? ` (fallback: ${resolved.substitutedPeriod} usa mes anterior)` : ""}`);
+
+    const valuesUsed = resolved.values;
+    const substitutedPeriod = resolved.substitutedPeriod;
+    const factor = calculateFactor(valuesUsed);
+    const newAmount = Math.round(baseAmount * factor * 100) / 100;
+
+    // Límite superior del rango de este tramo
+    const nextTramoDate = new Date(start.getFullYear(), start.getMonth() + (tramoIndex + 1) * c.adjustmentFrequency, 1);
+    const nextTramoPeriod = `${nextTramoDate.getFullYear()}-${String(nextTramoDate.getMonth() + 1).padStart(2, "0")}`;
+
+    const [tenant] = await db
+      .select({ clientId: contractParticipant.clientId })
+      .from(contractParticipant)
+      .where(and(eq(contractParticipant.contractId, contractId), eq(contractParticipant.role, "tenant")))
+      .limit(1);
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(contract)
+        .set({ monthlyAmount: newAmount.toString(), updatedAt: new Date() })
+        .where(and(eq(contract.id, contractId), eq(contract.agencyId, agencyId)));
+
+      const tramoEntries = await tx
+        .select({ id: tenantLedger.id, period: tenantLedger.period })
+        .from(tenantLedger)
+        .where(
+          and(
+            eq(tenantLedger.contratoId, contractId),
+            eq(tenantLedger.agencyId, agencyId),
+            eq(tenantLedger.tipo, "alquiler"),
+            inArray(tenantLedger.estado, ["pendiente", "proyectado", "pendiente_revision"]),
+            gte(tenantLedger.period, tramoPeriod),
+            lt(tenantLedger.period, nextTramoPeriod),
+          )
+        );
+
+      for (const entry of tramoEntries) {
+        const isPast = (entry.period ?? "") <= todayPeriod;
+        await tx
+          .update(tenantLedger)
+          .set({
+            monto: newAmount.toString(),
+            montoOriginal: newAmount.toString(),
+            estado: isPast ? "pendiente" : "proyectado",
+            updatedAt: new Date(),
+          })
+          .where(eq(tenantLedger.id, entry.id));
+      }
+
+      const descLines = [
+        `Ajuste ${c.adjustmentIndex} — rige desde ${tramoPeriod.slice(5, 7)}/${tramoPeriod.slice(0, 4)}`,
+        ...(substitutedPeriod
+          ? [`Nota: índice ${substitutedPeriod.slice(5, 7)}/${substitutedPeriod.slice(0, 4)} no disponible, se usó el mes anterior`]
+          : []),
+        `Valores: ${requiredPeriods.map((p, i) => `${p.slice(5, 7)}/${p.slice(0, 4)} ${valuesUsed[i]}%`).join(" · ")}`,
+        `Factor: × ${factor.toFixed(5)} | De $${baseAmount.toLocaleString("es-AR")} → $${newAmount.toLocaleString("es-AR")}`,
+      ];
+
+      await tx.insert(tenantLedger).values({
+        agencyId,
+        contratoId: contractId,
+        inquilinoId: tenant?.clientId ?? c.ownerId,
+        propietarioId: c.ownerId,
+        propiedadId: c.propertyId,
+        period: tramoPeriod,
+        tipo: "ajuste_indice",
+        descripcion: descLines.join("\n"),
+        monto: undefined,
+        estado: "registrado",
+        isAutoGenerated: true,
+        createdBy: userId,
+        ...defaultFlagsForTipo("ajuste_indice"),
+      });
+
+      await tx.insert(adjustmentApplication).values({
+        agencyId,
+        contratoId: contractId,
+        adjustmentPeriod: tramoPeriod,
+        previousAmount: baseAmount.toString(),
+        newAmount: newAmount.toString(),
+        factor: factor.toFixed(8),
+        periodsUsed: JSON.stringify(requiredPeriods),
+        valuesUsed: JSON.stringify(valuesUsed),
+        isProvisional: false,
+        appliedBy: userId,
+      });
+    });
+
+    baseAmount = newAmount;
+    tramoIndex++;
+  }
 }
 
 // ─── Revertir un ajuste ───────────────────────────────────

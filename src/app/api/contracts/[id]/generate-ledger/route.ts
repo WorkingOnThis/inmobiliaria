@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { buildLedgerEntries } from "@/lib/ledger/generate-contract-ledger";
+import { applyCatchUpForContract } from "@/lib/ledger/apply-index";
 import { eq, and, inArray } from "drizzle-orm";
 
 export async function POST(
@@ -126,6 +127,30 @@ export async function POST(
       const batch = entries.slice(i, i + BATCH);
       await db.insert(tenantLedger).values(batch);
       inserted += batch.length;
+    }
+
+    // Apply any past tramo adjustments whose IPC values already exist.
+    // Needed when generating a ledger for a contract with a past start date.
+    const noAdjustment =
+      !contractRow.adjustmentIndex ||
+      contractRow.adjustmentIndex === "none" ||
+      contractRow.adjustmentIndex === "manual" ||
+      contractRow.adjustmentFrequency <= 0;
+
+    if (!noAdjustment) {
+      await applyCatchUpForContract(
+        contractId,
+        {
+          startDate: contractRow.startDate,
+          adjustmentFrequency: contractRow.adjustmentFrequency,
+          adjustmentIndex: contractRow.adjustmentIndex,
+          monthlyAmount: contractRow.monthlyAmount,
+          ownerId: contractRow.ownerId,
+          propertyId: contractRow.propertyId,
+        },
+        agencyId,
+        session!.user.id,
+      );
     }
 
     return NextResponse.json({ inserted }, { status: 201 });
