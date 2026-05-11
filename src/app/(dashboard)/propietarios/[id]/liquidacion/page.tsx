@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -120,6 +120,9 @@ export default function LiquidacionPreviewPage() {
   const [isEmitido, setIsEmitido] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [observations, setObservations] = useState("");
+  const [busyAction, setBusyAction] = useState<"print" | "email" | "confirm" | null>(null);
+  const [liquidacionNumero, setLiquidacionNumero] = useState<string | null>(null);
+  const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
 
   const { data: agencyData } = useQuery<{ agency: AgencyData | null }>({
     queryKey: ["agency"],
@@ -170,21 +173,40 @@ export default function LiquidacionPreviewPage() {
     ? propietario.lastName ? `${propietario.firstName} ${propietario.lastName}` : propietario.firstName
     : "—";
 
-  const handleEmitir = async () => {
-    setIsEmitido(true);
-    setShowWatermark(false);
-    // Auto-increment the receipt number
+  const today = new Date().toISOString().split("T")[0];
+
+  async function emit(action: "print" | "email" | "confirm") {
+    setBusyAction(action);
     try {
-      await fetch("/api/agency", {
-        method: "PATCH",
+      const res = await fetch(`/api/owners/${id}/liquidacion/emit`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ incrementarNumero: true }),
+        body: JSON.stringify({
+          periodo,
+          movimientoIds: movimientos.map((m) => m.id),
+          honorariosPct: 7,
+          fecha: today,
+          observaciones: observations || undefined,
+          idempotencyKey,
+          action,
+        }),
       });
-    } catch {
-      // Non-critical: continue even if increment fails
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Error al emitir liquidación");
+      }
+      const result = await res.json();
+      setIsEmitido(true);
+      setShowWatermark(false);
+      setLiquidacionNumero(result.liquidacionNumero);
+      toast.success(`Liquidación ${result.liquidacionNumero} emitida`);
+      if (action === "print") window.print();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusyAction(null);
     }
-    toast.success(`Liquidación ${periodLabel(periodo)} emitida`);
-  };
+  }
 
   if (isLoading) {
     return (
@@ -193,8 +215,6 @@ export default function LiquidacionPreviewPage() {
       </div>
     );
   }
-
-  const today = new Date().toISOString().split("T")[0];
 
   const items: PaperItem[] = movimientos.map((m) => ({
     fecha: fmtDate(m.fecha),
@@ -226,12 +246,12 @@ export default function LiquidacionPreviewPage() {
           isEmitido={isEmitido}
           zoom={zoom}
           onZoom={(d) => setZoom((z) => Math.min(1.5, Math.max(0.5, z + d)))}
-          onPrint={() => window.print()}
+          onPrint={() => emit("print")}
           onDownloadPdf={() => toast.info("Descarga de PDF próximamente")}
-          onSendEmail={() => toast.info(`Enviado a ${propietario?.email ?? "destinatario"}`)}
-          onConfirm={handleEmitir}
+          onSendEmail={() => emit("email")}
+          onConfirm={() => emit("confirm")}
           emailDisabled={!propietario?.email}
-          busyAction={null}
+          busyAction={busyAction}
         />
       }
       paper={
@@ -252,7 +272,7 @@ export default function LiquidacionPreviewPage() {
               logoUrl: agency?.logoUrl ?? null,
             }}
             receiptType="LIQUIDACIÓN"
-            numero={`${agency?.invoicePoint ?? "0001"} - ${(agency?.nextNumber ?? "00000001").padStart(8, "0")}`}
+            numero={liquidacionNumero ?? `${agency?.invoicePoint ?? "0001"} - ${(agency?.nextNumber ?? "00000001").padStart(8, "0")}`}
             fechaEmision={fmtDate(today)}
           />
           <PaperMetaBlock
