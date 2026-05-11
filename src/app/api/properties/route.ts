@@ -13,7 +13,8 @@ import { count, desc, eq, ilike, or, and, inArray, isNotNull } from "drizzle-orm
 
 const createPropertySchema = z.object({
   title: z.string().optional().nullable(),
-  address: z.string().min(1, "La dirección es requerida"),
+  addressStreet: z.string().min(1, "La calle es requerida"),
+  addressNumber: z.string().optional().nullable(),
   type: z.enum(PROPERTY_TYPES, {
     errorMap: () => ({ message: "El tipo de propiedad no es válido" }),
   }),
@@ -28,7 +29,7 @@ const createPropertySchema = z.object({
   rooms: z.coerce.number().int().min(0).optional().nullable(),
   bathrooms: z.coerce.number().int().min(0).optional().nullable(),
   surface: z.coerce.number().optional().nullable(),
-  ownerId: z.string().min(1, "El dueño es requerido"),
+  ownerId: z.string().optional().nullable(),
 });
 
 const ACTIVE_CONTRACT_STATUSES = ["active", "expiring_soon", "pending_signature", "draft"] as const;
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
       conditions.push(
         or(
           ilike(property.title, term),
-          ilike(property.address, term),
+          ilike(property.addressStreet, term),
           ilike(property.zone, term),
           ilike(client.firstName, term),
           ilike(client.lastName, term)
@@ -86,7 +87,8 @@ export async function GET(request: NextRequest) {
         .select({
           id: property.id,
           title: property.title,
-          address: property.address,
+          addressStreet: property.addressStreet,
+          addressNumber: property.addressNumber,
           rentalPrice: property.rentalPrice,
           rentalPriceCurrency: property.rentalPriceCurrency,
           salePrice: property.salePrice,
@@ -220,13 +222,16 @@ export async function POST(request: NextRequest) {
 
     const data = result.data;
 
-    const [existingClient] = await db
-      .select()
-      .from(client)
-      .where(and(eq(client.id, data.ownerId), eq(client.agencyId, agencyId)))
-      .limit(1);
-    if (!existingClient) {
-      return NextResponse.json({ error: "El dueño especificado no existe" }, { status: 400 });
+    // Owner validation — only if provided
+    if (data.ownerId) {
+      const [existingClient] = await db
+        .select()
+        .from(client)
+        .where(and(eq(client.id, data.ownerId), eq(client.agencyId, agencyId)))
+        .limit(1);
+      if (!existingClient) {
+        return NextResponse.json({ error: "El dueño especificado no existe" }, { status: 400 });
+      }
     }
 
     const propertyId = generateId();
@@ -237,8 +242,9 @@ export async function POST(request: NextRequest) {
       .values({
         id: propertyId,
         agencyId,
-        title: data.title || data.address.split(",")[0],
-        address: data.address,
+        title: data.title || data.addressStreet,
+        addressStreet: data.addressStreet,
+        addressNumber: data.addressNumber ?? null,
         type: data.type,
         rentalStatus: data.rentalStatus,
         saleStatus: data.saleStatus ?? null,
@@ -251,7 +257,7 @@ export async function POST(request: NextRequest) {
         rooms: data.rooms,
         bathrooms: data.bathrooms,
         surface: data.surface?.toString() || null,
-        ownerId: data.ownerId,
+        ownerId: data.ownerId ?? null,
         createdBy: session!.user.id,
         createdAt: now,
         updatedAt: now,
