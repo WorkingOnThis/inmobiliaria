@@ -4,6 +4,57 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-11 — Navegación instantánea con loading.tsx + animaciones en índices
+
+### Qué hice
+
+Dos mejoras en esta parte de la sesión:
+
+**1. Barra de progreso de navegación (`loading.tsx`)**
+Creé `src/app/(dashboard)/loading.tsx` con una barra de progreso terracota de 2px que aparece en la parte superior de la pantalla en el instante en que el usuario hace clic en un link del sidebar. La barra avanza hasta el 92% mientras el servidor responde, y desaparece cuando la nueva página está lista.
+
+**2. Animaciones en el panel de índices de ajuste**
+En `src/components/contracts/index-values-panel.tsx` agregué dos animaciones:
+- **Stagger al abrir el panel**: cada vez que el usuario expande el acordeón, los 12 cards de meses aparecen de izquierda a derecha con 28ms de separación.
+- **Flash verde en el card recién cargado**: cuando el usuario guarda un nuevo valor con "+ Cargar mes", ese card específico hace un pulso de luz verde durante 750ms.
+
+También corregí un bug que introdujo el agente de contratos: `formatAddress()` estaba dentro del `.select()` de Drizzle, lo que causa un crash en runtime porque Drizzle solo acepta referencias a columnas en ese método, no funciones JavaScript.
+
+### Por qué lo hice así y no de otra forma
+
+**`loading.tsx` en lugar de nprogress o librerías similares**: `loading.tsx` es el mecanismo nativo de Next.js App Router para este problema. Las librerías externas (next-nprogress-bar, etc.) agregan JS al bundle del cliente y requieren un componente que escucha eventos del router. El `loading.tsx` no agrega nada al cliente — es solo un Server Component que Next.js muestra automáticamente.
+
+**La barra llega al 92% y no al 100%**: si llegara al 100% antes de que el servidor respondiera, el usuario vería que "terminó" pero la pantalla no cambió. El 92% dice "estoy en eso" sin mentir. El 100% real ocurre cuando Next.js reemplaza el `loading.tsx` con la página nueva.
+
+**Flash verde solo en el card nuevo, no en todos**: el usuario imaginó que los cards se "van poniendo verdes de a uno" al abrir el panel. Eso sería deshonesto — los datos llegan todos juntos desde la API, no mes a mes. El único momento honesto para un flash verde es cuando un dato *realmente* acaba de llegar al servidor: cuando el usuario carga un mes manualmente.
+
+**El bug de Drizzle**: Drizzle es un query builder que traduce JavaScript a SQL. Su `.select()` construye la cláusula `SELECT` de la query. Ahí solo pueden ir cosas que SQL entiende: columnas, expresiones SQL, subqueries. Una función JavaScript como `formatAddress()` no existe en SQL, entonces falla en runtime. La solución: seleccionar las columnas crudas desde Drizzle y llamar `formatAddress()` en el `map()` de JavaScript, después de que la DB ya respondió.
+
+**TDZ (Temporal Dead Zone)**: el bug de `Cannot access 'open' before initialization` ocurrió porque puse un `useEffect` que referenciaba `open` antes de que `const [open, setOpen] = useState()` fuera declarado. En JavaScript, `const` y `let` existen desde el inicio de la función pero no se pueden leer hasta que el código pasa por su declaración. Ese período se llama zona muerta temporal. El fix: mover todos los `useState` juntos al tope de la función, y los `useEffect` después.
+
+### Conceptos que aparecieron
+
+- **`loading.tsx` en Next.js App Router**: archivo especial que Next.js muestra automáticamente entre el clic en un link y la llegada de la respuesta del servidor. Crea un Suspense boundary implícito alrededor del `page.tsx`. Sin él, el browser se ve congelado durante ese intervalo.
+- **Congelamiento de navegación**: el browser no actualiza visualmente la pantalla mientras espera la respuesta del servidor para una navegación. El usuario lo interpreta como lentitud aunque el servidor sea rápido. `loading.tsx` rompe esa ilusión mostrando feedback inmediato.
+- **Temporal Dead Zone (TDZ)**: período en el que una variable `const`/`let` existe en el scope pero no se puede leer. Ocurre entre el inicio de la función y la línea de declaración. Acceder antes genera `ReferenceError`. Con `var` esto no pasa (se "eleva" a `undefined`), pero con `const`/`let` es un error explícito.
+- **Query builder vs transformación de datos**: en Drizzle (y cualquier ORM/query builder), el `.select()` construye el SQL que se envía a la base de datos. Solo acepta expresiones que SQL entiende. La transformación de los datos (formatear, calcular, combinar) va en JavaScript, después de que la DB respondió.
+- **Honestidad en animaciones**: una animación que muestra algo que no ocurrió (datos "llegando" cuando ya estaban todos) confunde al usuario cuando se rompe o cambia el timing. Las animaciones más efectivas están atadas a eventos reales: el panel se abre → cards aparecen; un dato llega → ese card parpadea.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué el `loading.tsx` a nivel `(dashboard)` cubre todas las rutas del dashboard y no solo algunas?
+2. Si el servidor respondiera en 50ms (muy rápido), ¿el usuario llegaría a ver la barra de progreso? ¿Importa si no la ve?
+3. ¿Cuál es la diferencia entre el `<Suspense>` que ya teníamos en `page.tsx` y el `loading.tsx`? ¿Hacen lo mismo?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: **`loading.tsx` en Next.js App Router** — qué es, cuándo se muestra, diferencia con `<Suspense>` manual
+- [ ] Concepto: **Temporal Dead Zone (TDZ)** — qué es, por qué ocurre con `const`/`let`, ejemplo del bug de `open`
+- [ ] Bug: **Drizzle + función JavaScript en `.select()`** — el error, por qué pasa, cómo reconocerlo, solución (seleccionar columnas crudas y transformar en JS)
+- [ ] Decisión técnica: **Honestidad en animaciones** — cuándo animar refleja realidad vs. cuándo engaña, el caso de "poner verde de a uno"
+
+---
+
 ## 2026-05-11 — Animaciones de carga en listados (skeleton + stagger)
 
 ### Qué hice

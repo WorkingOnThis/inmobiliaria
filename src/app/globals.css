@@ -1171,6 +1171,18 @@
   z-index: 1;
 }
 
+/* ── Barra de progreso de navegación ── */
+@keyframes nav-progress {
+  0%   { width: 0%;   opacity: 1; }
+  60%  { width: 75%;  opacity: 1; }
+  100% { width: 92%;  opacity: 1; }
+}
+
+@keyframes nav-progress-fade {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* ── Entrada escalonada de cards de índice ── */
 @keyframes card-in {
   from {
