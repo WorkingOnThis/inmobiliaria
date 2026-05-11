@@ -20,23 +20,6 @@ export function Paper({ watermark = false, zoom = 1, children }: PaperProps) {
       >
         {children}
       </div>
-      <style jsx global>{`
-        .preview-watermark::before {
-          content: 'BORRADOR';
-          position: absolute;
-          top: 50%; left: 50%;
-          transform: translate(-50%, -50%) rotate(-22deg);
-          font-size: 140px;
-          font-weight: 900;
-          color: rgba(232, 90, 60, 0.1);
-          letter-spacing: .05em;
-          pointer-events: none;
-          z-index: 1;
-        }
-        @media print {
-          .preview-watermark::before { display: none; }
-        }
-      `}</style>
     </div>
   );
 }

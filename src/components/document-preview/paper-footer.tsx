@@ -33,7 +33,7 @@ export function PaperFooter({ bank, signatory, clauses, showQR = true }: Props) 
         </div>
         {showQR && (
           <div>
-            <div className="w-[100px] h-[100px] ml-auto border-2 border-[#1a1614] bg-[#f7f5ef] relative" style={{
+            <div aria-hidden="true" className="w-[100px] h-[100px] ml-auto border-2 border-[#1a1614] bg-[#f7f5ef] relative" style={{
               backgroundImage: "linear-gradient(90deg, #1a1614 0 2px, transparent 2px 6px), linear-gradient(0deg, #1a1614 0 2px, transparent 2px 6px)",
               backgroundSize: "6px 6px",
             }} />

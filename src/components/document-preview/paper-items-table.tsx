@@ -5,9 +5,7 @@ export type PaperItem = {
   importe: number;     // signed
 };
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(n));
-}
+import { formatARS } from "./format";
 
 type Props = {
   title?: string;
@@ -35,7 +33,7 @@ export function PaperItemsTable({ title = "Detalle de movimientos", items }: Pro
                 {it.meta && <div className="text-[10px] text-[#5a514c] mt-[2px]">{it.meta}</div>}
               </td>
               <td className={`p-[7px_6px] border-b border-dashed border-[#d9d1c3] align-top text-right font-mono whitespace-nowrap ${it.importe >= 0 ? "text-[#2a6a3a]" : "text-[#9a2a1a]"}`}>
-                {it.importe >= 0 ? "+ " : "− "}{fmt(it.importe)}
+                {it.importe >= 0 ? "+ " : "− "}{formatARS(it.importe)}
               </td>
             </tr>
           ))}

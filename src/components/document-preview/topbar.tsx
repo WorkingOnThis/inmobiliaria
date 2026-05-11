@@ -45,9 +45,9 @@ export function PreviewTopbar({
 
       <div className="ml-auto flex items-center gap-2">
         <div className="flex items-center rounded-[7px] border border-border bg-surface-mid overflow-hidden">
-          <button onClick={() => onZoom(-0.1)} className="px-2 py-1.5 text-muted-foreground hover:text-on-surface hover:bg-surface transition-colors"><Minus size={13} /></button>
+          <button type="button" onClick={() => onZoom(-0.1)} className="px-2 py-1.5 text-muted-foreground hover:text-on-surface hover:bg-surface transition-colors"><Minus size={13} /></button>
           <span className="px-2.5 py-1 font-mono text-[12px] border-x border-border text-on-surface select-none">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => onZoom(0.1)} className="px-2 py-1.5 text-muted-foreground hover:text-on-surface hover:bg-surface transition-colors"><Plus size={13} /></button>
+          <button type="button" onClick={() => onZoom(0.1)} className="px-2 py-1.5 text-muted-foreground hover:text-on-surface hover:bg-surface transition-colors"><Plus size={13} /></button>
         </div>
         <Button variant="ghost" size="sm" onClick={onPrint} disabled={lock} className="gap-1.5"><Printer size={14} /> Imprimir</Button>
         <Button variant="outline" size="sm" onClick={onDownloadPdf} disabled={lock} className="gap-1.5"><Download size={14} /> Descargar PDF</Button>
