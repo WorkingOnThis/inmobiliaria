@@ -55,4 +55,4 @@ claude.local.md
 .superpowers/
 
 # private uploads (served only via authenticated API)
-/private-uploads/
+/private-uploads/.tmp_design/
