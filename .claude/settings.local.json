@@ -190,7 +190,9 @@
       "PowerShell(New-Item *)",
       "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && cat \"{}\"')",
       "Bash(python -m json.tool)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(Select-Object -First 20)",
+      "Bash(C:\\\\Users\\\\guill\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\5.1.0\\\\skills\\\\brainstorming\\\\scripts\\\\start-server.sh *)"
     ]
   },
   "enableAllProjectMcpServers": true,
