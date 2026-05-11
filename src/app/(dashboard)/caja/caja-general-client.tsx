@@ -7,6 +7,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth/hooks";
 import { AnnulReceiptModal } from "@/components/caja/annul-receipt-modal";
+import { formatAddress } from "@/lib/properties/format-address";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -159,7 +160,7 @@ export function CajaGeneralClient() {
   });
 
   const { data: dataPropiedades } = useQuery<{
-    properties: Array<{ id: string; address: string }>;
+    properties: Array<{ id: string; addressStreet: string; addressNumber: string | null }>;
   }>({
     queryKey: ["selector-propiedades"],
     queryFn: async () => {
@@ -202,7 +203,7 @@ export function CajaGeneralClient() {
   const opcionesInquilinos   = clientesAOpciones(dataInquilinos?.clients);
   const opcionesPropiedades: Opcion[] = (dataPropiedades?.properties ?? []).map((p) => ({
     value: p.id,
-    label: p.address,
+    label: formatAddress(p),
   }));
   const opcionesContratos: Opcion[] = (dataContratos?.contracts ?? []).map((c) => {
     const propPart = c.propertyAddress ? ` · ${c.propertyAddress}` : "";

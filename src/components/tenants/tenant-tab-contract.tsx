@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { GuaranteeCard } from "@/components/guarantees/guarantee-card";
 import { AddGuaranteeModal } from "@/components/guarantees/add-guarantee-modal";
 import type { GuaranteeKind } from "@/lib/guarantees/constants";
+import { formatAddress } from "@/lib/properties/format-address";
 
 interface Contrato {
   id: string;
@@ -31,7 +32,8 @@ interface Contrato {
 
 interface PropiedadData {
   id: string;
-  address: string;
+  addressStreet: string;
+  addressNumber: string | null;
   type: string;
   rentalStatus: string;
   saleStatus: string | null;
@@ -59,7 +61,7 @@ interface GuaranteeRow {
     depositHeldBy: string | null;
     depositNotes: string | null;
   };
-  property: { id: string; address: string; type: string } | null;
+  property: { id: string; addressStreet: string; addressNumber: string | null; type: string } | null;
   personClient: { id: string; firstName: string; lastName: string | null; dni: string | null; phone: string | null; email: string | null } | null;
   salaryInfo: { employerName: string | null; jobTitle: string | null } | null;
 }
@@ -236,7 +238,7 @@ export function TenantTabContract({ contrato, contratos, property, owner, tenant
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[13.5px] font-medium text-on-surface truncate">
-                {property.floorUnit ? `${property.address}, ${property.floorUnit}` : property.address}
+                {formatAddress(property)}
               </div>
               <div className="text-[11.5px] text-muted-foreground mt-0.5">
                 {tipoLabel[property.type] ?? property.type}

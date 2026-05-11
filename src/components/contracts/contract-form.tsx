@@ -20,6 +20,7 @@ import { MoneyInput } from "@/components/ui/money-input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { formatAddress } from "@/lib/properties/format-address";
 import { X, Users, Search, Plus, Loader2 as Spin, Shield, ChevronDown, Check } from "lucide-react";
 import {
   CONTRACT_TYPES,
@@ -244,9 +245,9 @@ export function ContractForm() {
 
   const properties: PropertyOption[] =
     propertiesData?.properties?.map(
-      (p: { id: string; address: string; ownerId: string | null }) => ({
+      (p: { id: string; addressStreet: string; addressNumber: string | null; ownerId: string | null }) => ({
         id: p.id,
-        label: p.address,
+        label: formatAddress(p),
         ownerId: p.ownerId ?? null,
       })
     ) ?? [];

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Building2, Banknote, User, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatAddress } from "@/lib/properties/format-address";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,7 +24,8 @@ type KindStep = "select" | GuaranteeKind;
 
 interface PropertyResult {
   id: string;
-  address: string;
+  addressStreet: string;
+  addressNumber: string | null;
   floorUnit: string | null;
   type: string;
   ownerFirstName: string | null;
@@ -275,7 +277,7 @@ export function AddGuaranteeModal({
                       className="w-full flex flex-col px-3.5 py-2.5 hover:bg-surface-mid text-left border-b border-border last:border-b-0 transition-colors"
                     >
                       <span className="text-[13px] font-medium text-on-surface">
-                        {p.floorUnit ? `${p.address}, ${p.floorUnit}` : p.address}
+                        {formatAddress(p)}
                       </span>
                       <span className="text-[11px] text-muted-foreground">
                         {TIPO_PROPIEDAD[p.type] ?? p.type}
@@ -296,9 +298,7 @@ export function AddGuaranteeModal({
                   </button>
                 </div>
                 <div className="text-[13.5px] font-semibold text-on-surface">
-                  {selectedProperty.floorUnit
-                    ? `${selectedProperty.address}, ${selectedProperty.floorUnit}`
-                    : selectedProperty.address}
+                  {formatAddress(selectedProperty)}
                 </div>
                 <div className="text-[11.5px] text-muted-foreground">
                   {TIPO_PROPIEDAD[selectedProperty.type] ?? selectedProperty.type}

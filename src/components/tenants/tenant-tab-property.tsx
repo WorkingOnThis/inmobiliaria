@@ -3,10 +3,12 @@
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+import { formatAddress } from "@/lib/properties/format-address";
 
 interface PropiedadData {
   id: string;
-  address: string;
+  addressStreet: string;
+  addressNumber: string | null;
   type: string;
   rentalStatus: string;
   saleStatus: string | null;
@@ -66,9 +68,7 @@ export function TenantTabProperty({ property, ownerName, onVerOwner }: Props) {
     variant: "draft" as StatusBadgeVariant,
   };
 
-  const direccionCompleta = property.floorUnit
-    ? `${property.address}, ${property.floorUnit}`
-    : property.address;
+  const direccionCompleta = formatAddress(property);
 
   return (
     <div className="p-7 flex flex-col gap-5">

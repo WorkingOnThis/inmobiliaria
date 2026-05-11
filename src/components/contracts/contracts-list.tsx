@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Loader2, Search, XCircle, Download, SlidersHorizontal, ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { Search, XCircle, Download, SlidersHorizontal, ArrowUpDown, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { differenceInDays, format } from "date-fns";
 import { ClientPagination } from "@/components/clients/client-pagination";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,64 @@ function getCountForFilter(filterValue: string, counts: Record<string, number>):
   if (filterValue === "") return Object.values(counts).reduce((sum, v) => sum + (v ?? 0), 0);
   if (filterValue === "activos") return (counts.active ?? 0) + (counts.expiring_soon ?? 0);
   return counts[filterValue] ?? 0;
+}
+
+/* ── Skeleton de carga ────────────────────────────────────── */
+
+const SKELETON_WIDTHS = [
+  ["w-16", "w-48", "w-32", "w-28"],
+  ["w-14", "w-52", "w-28", "w-24"],
+  ["w-20", "w-44", "w-36", "w-32"],
+  ["w-12", "w-56", "w-24", "w-20"],
+  ["w-16", "w-40", "w-32", "w-28"],
+] as const;
+
+function SkeletonContractRow({ index }: { index: number }) {
+  const widths = SKELETON_WIDTHS[index % SKELETON_WIDTHS.length];
+  return (
+    <tr className="pointer-events-none">
+      {/* Nº */}
+      <td className="px-[16px] py-[14px] border-b border-border align-middle">
+        <Skeleton className={`h-3 rounded-sm ${widths[0]}`} />
+      </td>
+      {/* Propiedad */}
+      <td className="px-[16px] py-[14px] border-b border-border align-middle">
+        <Skeleton className={`h-3 rounded-sm ${widths[1]}`} />
+      </td>
+      {/* Inquilino */}
+      <td className="px-[16px] py-[14px] border-b border-border align-middle">
+        <div className="flex items-center gap-[10px]">
+          <Skeleton className="w-7 h-7 rounded-[7px] shrink-0" />
+          <Skeleton className={`h-3 rounded-sm ${widths[2]}`} />
+        </div>
+      </td>
+      {/* Propietario */}
+      <td className="px-[16px] py-[14px] border-b border-border align-middle">
+        <div className="flex items-center gap-[10px]">
+          <Skeleton className="w-7 h-7 rounded-[7px] shrink-0" />
+          <Skeleton className={`h-3 rounded-sm ${widths[3]}`} />
+        </div>
+      </td>
+      {/* Vigencia */}
+      <td className="px-[16px] py-[14px] border-b border-border align-middle">
+        <Skeleton className="h-3 rounded-sm w-36 mb-1.5" />
+        <Skeleton className="h-2.5 rounded-sm w-24" />
+      </td>
+      {/* Monto */}
+      <td className="px-[16px] py-[14px] border-b border-border align-middle">
+        <Skeleton className="h-3.5 rounded-sm w-28 mb-1.5" />
+        <Skeleton className="h-2.5 rounded-sm w-16" />
+      </td>
+      {/* Estado */}
+      <td className="px-[16px] py-[14px] border-b border-border align-middle">
+        <Skeleton className="h-5 rounded-full w-20" />
+      </td>
+      {/* Acciones */}
+      <td className="px-[16px] py-[14px] border-b border-border align-middle text-right">
+        <Skeleton className="w-[30px] h-[30px] rounded-[7px]" />
+      </td>
+    </tr>
+  );
 }
 
 /* ── Types ────────────────────────────────────────────────── */
@@ -317,10 +376,6 @@ export function ContractsList() {
             <p className="text-error mb-4 text-sm">{(error as Error).message}</p>
             <Button variant="outline" size="sm" onClick={() => refetch()}>Reintentar</Button>
           </div>
-        ) : isLoading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
         ) : (
           <div className="bg-surface border border-border rounded-[18px] overflow-hidden">
 
@@ -362,8 +417,12 @@ export function ContractsList() {
                 </tr>
               </thead>
               <tbody>
-                {contracts.length > 0 ? (
-                  contracts.map((c) => {
+                {isLoading ? (
+                  Array.from({ length: 5 }, (_, i) => (
+                    <SkeletonContractRow key={i} index={i} />
+                  ))
+                ) : contracts.length > 0 ? (
+                  contracts.map((c, i) => {
                     const dias = validityDays(c.startDate, c.endDate, c.status);
                     const { pill, dot } = statusTagClasses(c.status);
                     const tenantName = c.tenantNames[0] ?? "";
@@ -377,7 +436,8 @@ export function ContractsList() {
                     return (
                       <tr
                         key={c.id}
-                        className={`group cursor-pointer transition-colors hover:bg-surface-low ${isTerminated ? "opacity-60 hover:opacity-100" : ""}`}
+                        className={`group cursor-pointer transition-colors hover:bg-surface-low row-animate ${isTerminated ? "opacity-60 hover:opacity-100" : ""}`}
+                        style={{ "--row-delay": `${i * 45}ms` } as React.CSSProperties}
                         onClick={() => router.push(`/contratos/${c.id}`)}
                       >
                         {/* Nº */}

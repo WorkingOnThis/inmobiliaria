@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LedgerTable, type LedgerEntry } from "@/components/tenants/ledger-table";
+import { formatAddress } from "@/lib/properties/format-address";
 import { EntryDetailDialog } from "@/components/ledger/entry-detail-dialog";
 
 type Props = {
@@ -15,7 +16,7 @@ type Props = {
 type CuentaCorrienteData = {
   kpis: { totalLiquidadoYTD: number; totalPendiente: number };
   ledgerEntries: LedgerEntry[];
-  properties: { id: string; address: string }[];
+  properties: { id: string; addressStreet: string; addressNumber: string | null }[];
 };
 
 const currentYear = new Date().getFullYear().toString();
@@ -122,7 +123,7 @@ export function OwnerTabCurrentAccount({ propietarioId }: Props) {
                 <AccordionItem key={p.id} value={p.id} className="border rounded-[var(--radius-lg)] px-3">
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center justify-between flex-1 mr-2">
-                      <span className="text-sm font-medium">{p.address}</span>
+                      <span className="text-sm font-medium">{formatAddress(p)}</span>
                       <span className="text-xs text-muted-foreground font-mono">
                         Liquidado {currentYear}: ${propNet.toLocaleString("es-AR")}
                       </span>

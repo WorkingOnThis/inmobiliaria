@@ -5,11 +5,13 @@ import { Building2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
+import { formatAddress } from "@/lib/properties/format-address";
 
 interface PropertyData {
   id: string;
   title: string | null;
-  address: string;
+  addressStreet: string;
+  addressNumber: string | null;
   rentalPrice: string | null;
   rentalPriceCurrency: string;
   salePrice: string | null;
@@ -98,7 +100,8 @@ interface CoOwnerProperty {
   sharePercent: string | null;
   property?: {
     id: string;
-    address: string;
+    addressStreet: string;
+    addressNumber: string | null;
     type: string;
     status: string;
     zone: string | null;
@@ -174,12 +177,12 @@ export function OwnerTabProperties({
               className="block bg-surface border border-border rounded-[10px] overflow-hidden hover:border-primary/30 hover:shadow-sm transition-all group"
             >
               {/* Thumbnail */}
-              <PropertyInitial address={prop.address} />
+              <PropertyInitial address={formatAddress(prop)} />
 
               {/* Body */}
               <div className="p-3 flex flex-col gap-2">
                 <h4 className="text-[14px] font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
-                  {prop.address}
+                  {formatAddress(prop)}
                 </h4>
 
                 {subtitle && (
@@ -234,10 +237,10 @@ export function OwnerTabProperties({
                   href={`/propiedades/${p.id}`}
                   className="block bg-surface border border-border rounded-[10px] overflow-hidden hover:border-primary/30 hover:shadow-sm transition-all group"
                 >
-                  <PropertyInitial address={p.address} />
+                  <PropertyInitial address={formatAddress(p)} />
                   <div className="p-3 flex flex-col gap-2">
                     <h4 className="text-[14px] font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
-                      {p.address}
+                      {formatAddress(p)}
                     </h4>
                     {subtitle && <p className="text-[12px] text-text-secondary">{subtitle}</p>}
                     <div className="flex items-center justify-between gap-2">

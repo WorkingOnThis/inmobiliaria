@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, TrendingUp, Plus, ShieldCheck, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,9 +50,16 @@ function formatPeriod(p: string): string {
 
 export function IndexValuesPanel() {
   const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [revealKey, setRevealKey] = useState(0);
+  const [newlyAddedPeriod, setNewlyAddedPeriod] = useState<string | null>(null);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => { setMounted(true); }, []);
 
-  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (open) setRevealKey(k => k + 1);
+  }, [open]);
   const [selectedIndex, setSelectedIndex] = useState<IndexType>(INDEX_TYPES[0]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -95,8 +102,11 @@ export function IndexValuesPanel() {
         if (!r.ok) throw new Error((await r.json()).error);
         return r.json();
       }),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       qc.invalidateQueries({ queryKey: ["index-values"] });
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      setNewlyAddedPeriod(variables.period);
+      flashTimerRef.current = setTimeout(() => setNewlyAddedPeriod(null), 900);
       closeLoadDialog();
       if (data.contractsAffected > 0) {
         alert(`Índice cargado. ${data.contractsAffected} contrato(s) actualizado(s)${data.provisionalCount > 0 ? `, ${data.provisionalCount} de forma provisoria` : ""}.`);
@@ -365,7 +375,7 @@ export function IndexValuesPanel() {
                     </div>
 
                     {/* 12-month grid */}
-                    <div className="grid gap-[8px]" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
+                    <div key={revealKey} className="grid gap-[8px]" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
                       {Array.from({ length: 12 }, (_, i) => {
                         const month = i + 1;
                         const v = monthMap[month];
@@ -376,12 +386,14 @@ export function IndexValuesPanel() {
                         const isAudited = !!v?.auditedAt;
                         const isManual = v?.source === "manual" && !isAudited;
                         const isPending = auditMutation.isPending && auditMutation.variables === v?.id;
+                        const isNewlyAdded = period === newlyAddedPeriod;
 
                         return (
                           <div
                             key={month}
                             onClick={() => isClickable && handleCellClick(v, month)}
-                            className={`group relative rounded-[7px] p-[9px_10px] transition-colors select-none ${
+                            style={{ "--card-delay": `${i * 28}ms` } as React.CSSProperties}
+                            className={`card-animate group relative rounded-[7px] p-[9px_10px] transition-colors select-none ${isNewlyAdded ? "card-flash" : ""} ${
                               isAudited
                                 ? "border border-green/40 bg-green/5 cursor-pointer hover:border-green/60"
                                 : isManual

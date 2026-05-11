@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Search, User, Loader2 } from "lucide-react";
+import { Search, User } from "lucide-react";
 import { OwnerSlidePanel } from "./owner-slide-panel";
 import { NewOwnerModal } from "./new-owner-modal";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,56 @@ function ownerStatusLabel(status: string): string {
   if (status === "suspended" || status === "suspendido") return "Suspendido";
   if (status === "inactive"  || status === "inactivo")   return "Inactivo";
   return "Baja";
+}
+
+// ─── Skeleton de carga ────────────────────────────────────────────────────────
+
+const SKELETON_WIDTHS = [
+  ["w-28", "w-20"],
+  ["w-24", "w-16"],
+  ["w-32", "w-24"],
+  ["w-20", "w-20"],
+  ["w-28", "w-16"],
+] as const;
+
+function SkeletonRow({ index }: { index: number }) {
+  const widths = SKELETON_WIDTHS[index % SKELETON_WIDTHS.length];
+  return (
+    <tr className="pointer-events-none">
+      {/* Owner */}
+      <td className="px-3.5 py-3 align-middle">
+        <div className="flex items-center gap-2.5">
+          <Skeleton className="size-9 rounded-[10px] shrink-0" />
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className={cn("h-3 rounded-sm", widths[0])} />
+            <Skeleton className="h-2.5 rounded-sm w-14" />
+          </div>
+        </div>
+      </td>
+      {/* Teléfono */}
+      <td className="px-3.5 py-3 align-middle">
+        <Skeleton className={cn("h-3 rounded-sm", widths[1])} />
+      </td>
+      {/* Propiedades */}
+      <td className="px-3.5 py-3 align-middle text-center">
+        <Skeleton className="h-6 w-6 rounded-[6px] mx-auto" />
+      </td>
+      {/* Contratos activos */}
+      <td className="px-3.5 py-3 align-middle text-center">
+        <Skeleton className="h-6 w-6 rounded-[6px] mx-auto" />
+      </td>
+      {/* Estado */}
+      <td className="px-3.5 py-3 align-middle">
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </td>
+      {/* Acciones */}
+      <td className="px-3.5 py-3 align-middle">
+        <div className="flex justify-end">
+          <Skeleton className="size-7 rounded-[6px]" />
+        </div>
+      </td>
+    </tr>
+  );
 }
 
 export function OwnersList() {
@@ -261,21 +312,6 @@ export function OwnersList() {
           <div className="p-8 text-center text-destructive text-sm">
             Error al cargar los propietarios
           </div>
-        ) : isLoading ? (
-          <div className="flex items-center justify-center h-48">
-            <Loader2 size={24} className="animate-spin text-muted-foreground" />
-          </div>
-        ) : propietarios.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-2 text-muted-foreground">
-            <User size={32} strokeWidth={1.5} />
-            <div className="text-sm">No hay propietarios registrados</div>
-            <button
-              onClick={() => setModalOpen(true)}
-              className="mt-2 text-[0.72rem] text-primary hover:underline"
-            >
-              Agregar el primero
-            </button>
-          </div>
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -303,108 +339,130 @@ export function OwnersList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {propietarios.map((p, i) => {
-                    const isNew = p.id === newlyCreatedId;
-                    const isSelected = selectedProp?.id === p.id && panelOpen;
-                    return (
-                      <tr
-                        key={p.id}
-                        onClick={() => handleRowClick(p.id)}
-                        className={cn(
-                          "cursor-pointer transition-all hover:bg-primary-dim",
-                          i % 2 === 1 && "bg-foreground/[0.02]",
-                          isSelected && "!bg-primary-dim border-l-2 border-primary",
-                          isNew && "bg-primary/[0.06]"
-                        )}
-                        style={
-                          p.status === "inactive" || p.status === "suspended"
-                            ? { opacity: 0.65 }
-                            : undefined
-                        }
-                      >
-                        <td className="px-3.5 py-3 align-middle">
-                          <div className="flex items-center gap-2.5">
-                            <EntityAvatar
-                              initials={getInitials(p.firstName, p.lastName)}
-                              size="md"
-                              colorSeed={p.firstName}
-                            />
-                            <div>
-                              <div className="font-semibold text-foreground whitespace-nowrap flex items-center gap-1.5">
-                                {p.lastName
-                                  ? `${p.lastName}, ${p.firstName}`
-                                  : p.firstName}
-                                {isNew && (
-                                  <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full bg-primary-dim border border-border-accent text-primary tracking-[0.06em]">
-                                    ✦ Nuevo
-                                  </span>
+                  {isLoading ? (
+                    Array.from({ length: 5 }, (_, i) => (
+                      <SkeletonRow key={i} index={i} />
+                    ))
+                  ) : propietarios.length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>
+                        <div className="flex flex-col items-center justify-center h-48 gap-2 text-muted-foreground">
+                          <User size={32} strokeWidth={1.5} />
+                          <div className="text-sm">No hay propietarios registrados</div>
+                          <button
+                            onClick={() => setModalOpen(true)}
+                            className="mt-2 text-[0.72rem] text-primary hover:underline"
+                          >
+                            Agregar el primero
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    propietarios.map((p, i) => {
+                      const isNew = p.id === newlyCreatedId;
+                      const isSelected = selectedProp?.id === p.id && panelOpen;
+                      return (
+                        <tr
+                          key={p.id}
+                          onClick={() => handleRowClick(p.id)}
+                          className={cn(
+                            "cursor-pointer transition-all hover:bg-primary-dim row-animate",
+                            i % 2 === 1 && "bg-foreground/[0.02]",
+                            isSelected && "!bg-primary-dim border-l-2 border-primary",
+                            isNew && "bg-primary/[0.06]"
+                          )}
+                          style={{
+                            "--row-delay": `${i * 45}ms`,
+                            ...(p.status === "inactive" || p.status === "suspended"
+                              ? { opacity: 0.65 }
+                              : {}),
+                          } as React.CSSProperties}
+                        >
+                          <td className="px-3.5 py-3 align-middle">
+                            <div className="flex items-center gap-2.5">
+                              <EntityAvatar
+                                initials={getInitials(p.firstName, p.lastName)}
+                                size="md"
+                                colorSeed={p.firstName}
+                              />
+                              <div>
+                                <div className="font-semibold text-foreground whitespace-nowrap flex items-center gap-1.5">
+                                  {p.lastName
+                                    ? `${p.lastName}, ${p.firstName}`
+                                    : p.firstName}
+                                  {isNew && (
+                                    <span className="text-[0.55rem] font-bold px-1.5 py-0.5 rounded-full bg-primary-dim border border-border-accent text-primary tracking-[0.06em]">
+                                      ✦ Nuevo
+                                    </span>
+                                  )}
+                                </div>
+                                {p.dni && (
+                                  <div className="text-[0.68rem] text-muted-foreground mt-0.5">
+                                    DNI {p.dni}
+                                  </div>
+                                )}
+                                {p.matchedProperty && (
+                                  <div className="text-[0.65rem] text-primary mt-0.5">
+                                    📍 {p.matchedProperty}
+                                  </div>
                                 )}
                               </div>
-                              {p.dni && (
-                                <div className="text-[0.68rem] text-muted-foreground mt-0.5">
-                                  DNI {p.dni}
-                                </div>
-                              )}
-                              {p.matchedProperty && (
-                                <div className="text-[0.65rem] text-primary mt-0.5">
-                                  📍 {p.matchedProperty}
-                                </div>
-                              )}
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-3.5 py-3 align-middle text-[0.8rem] text-muted-foreground whitespace-nowrap">
-                          {p.phone ?? "—"}
-                        </td>
-                        <td className="px-3.5 py-3 align-middle text-center">
-                          <span
-                            className={cn(
-                              "inline-flex items-center justify-center min-w-[24px] h-6 rounded-[6px] text-[0.72rem] font-bold px-1.5 border",
-                              p.propiedadesCount > 0
-                                ? "bg-primary-dim border-border-accent text-primary"
-                                : "bg-muted border-border text-muted-foreground"
-                            )}
-                          >
-                            {p.propiedadesCount}
-                          </span>
-                        </td>
-                        <td className="px-3.5 py-3 align-middle text-center">
-                          <span
-                            className={cn(
-                              "inline-flex items-center justify-center min-w-[24px] h-6 rounded-[6px] text-[0.72rem] font-bold px-1.5 border",
-                              p.contratosActivosCount > 0
-                                ? "bg-primary-dim border-border-accent text-primary"
-                                : "bg-muted border-border text-muted-foreground"
-                            )}
-                          >
-                            {p.contratosActivosCount}
-                          </span>
-                        </td>
-                        <td className="px-3.5 py-3 align-middle">
-                          <StatusBadge variant={ownerStatusVariant(p.status)}>
-                            {ownerStatusLabel(p.status)}
-                          </StatusBadge>
-                        </td>
-                        <td className="px-3.5 py-3 align-middle">
-                          <div className="flex gap-1 justify-end">
-                            <button
-                              onClick={(e) => handleSlideClick(e, p)}
-                              title="Ver ficha completa"
-                              className="size-7 bg-transparent border border-border rounded-[6px] flex items-center justify-center text-muted-foreground text-[11px] hover:bg-primary-dim hover:text-primary hover:border-border-accent transition-all"
+                          </td>
+                          <td className="px-3.5 py-3 align-middle text-[0.8rem] text-muted-foreground whitespace-nowrap">
+                            {p.phone ?? "—"}
+                          </td>
+                          <td className="px-3.5 py-3 align-middle text-center">
+                            <span
+                              className={cn(
+                                "inline-flex items-center justify-center min-w-[24px] h-6 rounded-[6px] text-[0.72rem] font-bold px-1.5 border",
+                                p.propiedadesCount > 0
+                                  ? "bg-primary-dim border-border-accent text-primary"
+                                  : "bg-muted border-border text-muted-foreground"
+                              )}
                             >
-                              <User size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                              {p.propiedadesCount}
+                            </span>
+                          </td>
+                          <td className="px-3.5 py-3 align-middle text-center">
+                            <span
+                              className={cn(
+                                "inline-flex items-center justify-center min-w-[24px] h-6 rounded-[6px] text-[0.72rem] font-bold px-1.5 border",
+                                p.contratosActivosCount > 0
+                                  ? "bg-primary-dim border-border-accent text-primary"
+                                  : "bg-muted border-border text-muted-foreground"
+                              )}
+                            >
+                              {p.contratosActivosCount}
+                            </span>
+                          </td>
+                          <td className="px-3.5 py-3 align-middle">
+                            <StatusBadge variant={ownerStatusVariant(p.status)}>
+                              {ownerStatusLabel(p.status)}
+                            </StatusBadge>
+                          </td>
+                          <td className="px-3.5 py-3 align-middle">
+                            <div className="flex gap-1 justify-end">
+                              <button
+                                onClick={(e) => handleSlideClick(e, p)}
+                                title="Ver ficha completa"
+                                className="size-7 bg-transparent border border-border rounded-[6px] flex items-center justify-center text-muted-foreground text-[11px] hover:bg-primary-dim hover:text-primary hover:border-border-accent transition-all"
+                              >
+                                <User size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
 
             {/* Paginación */}
-            {totalPages > 1 && (
+            {!isLoading && totalPages > 1 && (
               <div className="bg-card border-t border-border px-5 py-2.5 flex items-center gap-3">
                 <span className="text-[0.72rem] text-muted-foreground">
                   Página {page} de {totalPages}

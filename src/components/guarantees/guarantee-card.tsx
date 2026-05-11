@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Building2, Banknote, User, Trash2, ExternalLink } from "lucide-react";
 import { GUARANTEE_KIND_LABELS, type GuaranteeKind } from "@/lib/guarantees/constants";
 import { Badge } from "@/components/ui/badge";
+import { formatAddress } from "@/lib/properties/format-address";
 import { Button } from "@/components/ui/button";
 
 interface GuaranteeCardProps {
@@ -17,7 +18,7 @@ interface GuaranteeCardProps {
     depositCurrency: string | null;
     depositHeldBy: string | null;
   };
-  property?: { address: string; type: string } | null;
+  property?: { addressStreet: string; addressNumber: string | null; type: string } | null;
   personClient?: { id: string; firstName: string; lastName: string | null; dni: string | null } | null;
   salaryInfo?: { employerName: string | null; jobTitle: string | null } | null;
   onDelete?: (id: string) => void;
@@ -47,7 +48,7 @@ export function GuaranteeCard({
   const kindLabel = GUARANTEE_KIND_LABELS[guarantee.kind] ?? guarantee.kind;
 
   const title = (() => {
-    if (guarantee.kind === "propertyOwner" && property) return property.address;
+    if (guarantee.kind === "propertyOwner" && property) return formatAddress(property);
     if (guarantee.kind === "deposit") return formatDeposit(guarantee.depositAmount, guarantee.depositCurrency);
     if (guarantee.kind === "salaryReceipt" && personClient) {
       return personClient.lastName

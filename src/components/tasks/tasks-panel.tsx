@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { formatAddress } from "@/lib/properties/format-address";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -96,7 +97,8 @@ type ClientSummary = {
 
 type PropertySimple = {
   id: string;
-  address: string;
+  addressStreet: string;
+  addressNumber: string | null;
   title: string | null;
   zone: string | null;
 };
@@ -567,7 +569,7 @@ function SidePanel({
 
   const propiedadOptions: ComboOption[] = propiedades.map(p => ({
     id: p.id,
-    label: p.address,
+    label: formatAddress(p),
     sublabel: [p.title, p.zone].filter(Boolean).join(" · ") || undefined,
   }));
 
