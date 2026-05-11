@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { canManageCash } from "@/lib/permissions";
 import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
+import { formatAddress } from "@/lib/properties/format-address";
 import { alias } from "drizzle-orm/pg-core";
 
 /**
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
         contratoNumero: contract.contractNumber,
         // Propiedad vinculada
         propiedadId: cajaMovimiento.propiedadId,
-        propiedadDireccion: property.address,
+        propiedadDireccion: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
         // Propietario vinculado
         propietarioId: cajaMovimiento.propietarioId,
         propietarioNombre: sql<string | null>`

@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { and, eq, inArray } from "drizzle-orm";
+import { formatAddress } from "@/lib/properties/format-address";
 import { computeNetAndCommission, round2 } from "@/lib/owners/commission";
 import { cajaMovimiento } from "@/db/schema/caja";
 
@@ -108,7 +109,7 @@ export async function GET(
 
     // Fetch unique properties
     const propertyRows = await db
-      .selectDistinct({ id: property.id, address: property.address })
+      .selectDistinct({ id: property.id, addressStreet: property.addressStreet, addressNumber: property.addressNumber, floorUnit: property.floorUnit })
       .from(property)
       .innerJoin(tenantLedger, eq(tenantLedger.propiedadId, property.id))
       .where(
@@ -181,7 +182,7 @@ export async function GET(
         totalPendiente: round2(totalPendiente),
       },
       ledgerEntries,
-      properties: propertyRows,
+      properties: propertyRows.map((p) => ({ ...p, address: formatAddress({ addressStreet: p.addressStreet ?? "", addressNumber: p.addressNumber, floorUnit: p.floorUnit }) })),
     });
   } catch (error) {
     const resp = handleAgencyError(error);

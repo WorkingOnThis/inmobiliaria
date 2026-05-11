@@ -11,6 +11,7 @@ import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { CONTRACT_TYPES } from "@/lib/clients/constants";
 import { z } from "zod";
 import { count, desc, eq, and, inArray, or, ilike } from "drizzle-orm";
+import { formatAddress } from "@/lib/properties/format-address";
 
 const createContractSchema = z.object({
   propertyId: z.string().min(1, "La propiedad es requerida"),
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
       conditions.push(
         or(
           ilike(contract.contractNumber, `%${q}%`),
-          ilike(property.address, `%${q}%`)
+          ilike(property.addressStreet, `%${q}%`)
         )
       );
     }
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest) {
           adjustmentFrequency: contract.adjustmentFrequency,
           paymentModality: contract.paymentModality,
           createdAt: contract.createdAt,
-          propertyAddress: property.address,
+          propertyAddress: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
           propertyType: property.type,
           ownerId: contract.ownerId,
           propertyId: contract.propertyId,

@@ -9,6 +9,7 @@ import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
 import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { formatAddress } from "@/lib/properties/format-address";
 
 const createPropietarioSchema = z.object({
   firstName: z.string().min(1, "El nombre es requerido"),
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
 
       // Matches por dirección de propiedad asociada
       const propMatches = await db
-        .select({ ownerId: property.ownerId, address: property.address })
+        .select({ ownerId: property.ownerId, addressStreet: property.addressStreet, addressNumber: property.addressNumber, floorUnit: property.floorUnit })
         .from(property)
         .innerJoin(client, eq(property.ownerId, client.id))
         .where(
@@ -92,13 +93,13 @@ export async function GET(request: NextRequest) {
             eq(client.agencyId, agencyId),
             eq(client.type, "owner"),
             statusCondition,
-            ilike(property.address, likeQ)
+            ilike(property.addressStreet, likeQ)
           )
         );
 
       for (const pm of propMatches) {
         if (!directMatchIds.includes(pm.ownerId)) {
-          propMatchMap[pm.ownerId] = pm.address;
+          propMatchMap[pm.ownerId] = formatAddress({ addressStreet: pm.addressStreet ?? "", addressNumber: pm.addressNumber, floorUnit: pm.floorUnit });
         }
       }
     }

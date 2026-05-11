@@ -10,6 +10,7 @@ import { contract } from "@/db/schema/contract";
 import { client } from "@/db/schema/client";
 import { user } from "@/db/schema/better-auth";
 import { and, count, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
+import { formatAddress } from "@/lib/properties/format-address";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
         categoria: tarea.category,
         dueDate: tarea.dueDate,
         propertyId: tarea.propertyId,
-        propertyAddress: property.address,
+        propertyAddress: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
         contractId: tarea.contractId,
         contractNumber: contract.contractNumber,
         tenantId: tarea.tenantId,

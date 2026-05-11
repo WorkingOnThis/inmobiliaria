@@ -6,6 +6,7 @@ import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { canManageServices } from "@/lib/permissions";
 import { servicio, servicioComprobante, servicioOmision, property, contract, contractParticipant, client } from "@/db/schema";
 import { eq, and, desc, sql, inArray, or, ilike } from "drizzle-orm";
+import { formatAddress } from "@/lib/properties/format-address";
 import { z } from "zod";
 import { calculateServiceStatus, getPeriodDays } from "@/lib/services/constants";
 
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
     const conditions = [
       eq(servicio.agencyId, agencyId),
       propertyId ? eq(servicio.propertyId, propertyId) : null,
-      addressSearch ? ilike(property.address, `%${addressSearch}%`) : null,
+      addressSearch ? ilike(property.addressStreet, `%${addressSearch}%`) : null,
     ].filter(Boolean) as ReturnType<typeof eq>[];
 
     const servicios = await db
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
         dueDay: servicio.dueDay,
         triggersBlock: servicio.triggersBlock,
         createdAt: servicio.createdAt,
-        propertyAddress: property.address,
+        propertyAddress: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
         propertyType: property.type,
         comprobanteId: servicioComprobante.id,
         comprobanteMonto: servicioComprobante.monto,

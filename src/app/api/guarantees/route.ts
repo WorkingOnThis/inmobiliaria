@@ -66,7 +66,9 @@ export async function GET(request: NextRequest) {
         salaryInfo: guaranteeSalaryInfo,
         property: {
           id: property.id,
-          address: property.address,
+          addressStreet: property.addressStreet,
+          addressNumber: property.addressNumber,
+          floorUnit: property.floorUnit,
           type: property.type,
         },
         personClient: {

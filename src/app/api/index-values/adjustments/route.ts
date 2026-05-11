@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { canManageContracts } from "@/lib/permissions";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { eq, and, desc } from "drizzle-orm";
+import { formatAddress } from "@/lib/properties/format-address";
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
         id: adjustmentApplication.id,
         contratoId: adjustmentApplication.contratoId,
         contractNumber: contract.contractNumber,
-        propertyAddress: property.address,
+        propertyAddress: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
         adjustmentPeriod: adjustmentApplication.adjustmentPeriod,
         previousAmount: adjustmentApplication.previousAmount,
         newAmount: adjustmentApplication.newAmount,

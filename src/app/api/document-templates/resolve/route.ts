@@ -172,7 +172,9 @@ export async function GET(request: NextRequest) {
                 id: property.id,
                 ownerId: property.ownerId,
                 ownerRole: property.ownerRole,
-                address: property.address,
+                addressStreet: property.addressStreet,
+                addressNumber: property.addressNumber,
+                floorUnit: property.floorUnit,
                 cadastralRef: property.cadastralRef,
                 registryNumber: property.registryNumber,
                 surfaceLand: property.surfaceLand,
@@ -182,7 +184,7 @@ export async function GET(request: NextRequest) {
               .where(inArray(property.id, internalGuaranteePropertyIds))
           : Promise.resolve([] as {
               id: string; ownerId: string; ownerRole: string;
-              address: string | null; cadastralRef: string | null;
+              addressStreet: string | null; addressNumber: string | null; floorUnit: string | null; cadastralRef: string | null;
               registryNumber: string | null; surfaceLand: string | null;
               surfaceBuilt: string | null;
             }[]),

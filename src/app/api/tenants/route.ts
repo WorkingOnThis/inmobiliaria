@@ -12,6 +12,7 @@ import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { calculateStatus } from "@/lib/tenants/status";
+import { formatAddress } from "@/lib/properties/format-address";
 import { groupTenants, type TenantGroup, type EstadoInquilino } from "@/lib/tenants/grouping";
 
 function calcularCompletitud(startDate: string, endDate: string): number {
@@ -124,7 +125,7 @@ export async function GET(request: NextRequest) {
         endDate: contract.endDate,
         paymentDay: contract.paymentDay,
         graceDays: contract.graceDays,
-        propertyAddress: property.address,
+        propertyAddress: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
         propertyFloorUnit: property.floorUnit,
       })
       .from(contractParticipant)

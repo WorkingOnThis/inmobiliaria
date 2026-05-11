@@ -8,6 +8,7 @@ import { property } from "@/db/schema/property";
 import { cajaMovimiento } from "@/db/schema/caja";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { auth } from "@/lib/auth";
+import { formatAddress } from "@/lib/properties/format-address";
 import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { z } from "zod";
@@ -155,12 +156,12 @@ export async function GET(
     const contractPropIds = [...new Set(tenantContractsRaw.map((c) => c.propertyId))];
     const contractProps = contractPropIds.length > 0
       ? await db
-          .select({ id: property.id, address: property.address })
+          .select({ id: property.id, addressStreet: property.addressStreet, addressNumber: property.addressNumber, floorUnit: property.floorUnit })
           .from(property)
           .where(and(eq(property.agencyId, agencyId), inArray(property.id, contractPropIds)))
       : [];
     const contractPropMap: Record<string, string> = {};
-    for (const p of contractProps) contractPropMap[p.id] = p.address;
+    for (const p of contractProps) contractPropMap[p.id] = formatAddress({ addressStreet: p.addressStreet ?? "", addressNumber: p.addressNumber, floorUnit: p.floorUnit });
 
     const tenantContracts = tenantContractsRaw.map((c) => ({
       ...c,
@@ -198,7 +199,9 @@ export async function GET(
         salaryInfo: guaranteeSalaryInfo,
         property: {
           id: property.id,
-          address: property.address,
+          addressStreet: property.addressStreet,
+          addressNumber: property.addressNumber,
+          floorUnit: property.floorUnit,
           type: property.type,
         },
         personClient: {
