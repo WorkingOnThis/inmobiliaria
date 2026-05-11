@@ -14,6 +14,7 @@ import { agency } from "@/db/schema/agency";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { canManageDocumentTemplates } from "@/lib/permissions";
+import { formatAddress } from "@/lib/properties/format-address";
 import { eq, and, inArray, or } from "drizzle-orm";
 import {
   VARIABLES_CATALOG,
@@ -266,7 +267,7 @@ export async function GET(request: NextRequest) {
             ownerAddress: owner?.address ?? null,
             ownerEmail: owner?.email ?? null,
             ownerPhone: owner?.phone ?? null,
-            propertyAddress: prop.address,
+            propertyAddress: formatAddress({ addressStreet: prop.addressStreet ?? "", addressNumber: prop.addressNumber, floorUnit: prop.floorUnit }),
             propertyCadastralRef: prop.cadastralRef,
             propertyRegistryNumber: prop.registryNumber,
             propertySurfaceLand: prop.surfaceLand,
