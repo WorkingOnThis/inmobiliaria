@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Loader2, Search, XCircle } from "lucide-react";
+import { Loader2, Search, XCircle, Download, SlidersHorizontal, ArrowUpDown, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { differenceInDays, format } from "date-fns";
 import { ClientPagination } from "@/components/clients/client-pagination";
@@ -11,38 +11,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IndexValuesPanel } from "@/components/contracts/index-values-panel";
 
-/* ──────────────────────────────────────────────────────────
-   HELPERS
-   ────────────────────────────────────────────────────────── */
+/* ── Helpers ──────────────────────────────────────────────── */
 
 function getInitials(name: string): string {
-  return name
-    .split(/[\s,]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((n) => n[0]?.toUpperCase() ?? "")
-    .join("");
+  return name.split(/[\s,]+/).filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase() ?? "").join("");
 }
 
-const AVATAR_PALETTE = [
-  "bg-primary-dark text-white",
-  "bg-[#3a2a6b] text-white",
-  "bg-[#1a4a4a] text-white",
-  "bg-[#1a2a4a] text-white",
-  "bg-[#3a3a1a] text-white",
+const AVATAR_GRADIENTS = [
+  "linear-gradient(135deg, oklch(0.62 0.13 30), oklch(0.46 0.12 25))",
+  "linear-gradient(135deg, oklch(0.62 0.14 50), oklch(0.46 0.13 45))",
+  "linear-gradient(135deg, oklch(0.55 0.13 270), oklch(0.42 0.13 265))",
+  "linear-gradient(135deg, oklch(0.60 0.13 155), oklch(0.45 0.12 150))",
+  "linear-gradient(135deg, oklch(0.60 0.13 200), oklch(0.45 0.12 205))",
+  "linear-gradient(135deg, oklch(0.60 0.13 320), oklch(0.45 0.13 315))",
 ];
 
-function avatarColor(name: string): string {
-  const idx = (name.charCodeAt(0) || 0) % AVATAR_PALETTE.length;
-  return AVATAR_PALETTE[idx];
+function avatarGradient(name: string): string {
+  return AVATAR_GRADIENTS[(name.charCodeAt(0) || 0) % AVATAR_GRADIENTS.length];
 }
 
-const FREQ_SHORT: Record<number, string> = {
-  1: "mens.",
-  3: "trim.",
-  6: "sem.",
-  12: "anual",
-};
+const FREQ_SHORT: Record<number, string> = { 1: "mens.", 3: "trim.", 6: "sem.", 12: "anual" };
 
 function freqShort(freq: number): string {
   return FREQ_SHORT[freq] ?? `c/${freq}m`;
@@ -56,9 +44,7 @@ function validityDays(startDate: string, endDate: string, status: string): Valid
   const end = parseDate(endDate);
   const start = parseDate(startDate);
 
-  if (status === "terminated") {
-    return { text: "Rescindido", variant: "normal" };
-  }
+  if (status === "terminated") return { text: "Rescindido", variant: "normal" };
   if (status === "draft") {
     const days = Math.abs(differenceInDays(today, start));
     return { text: `Creado hace ${days} día${days !== 1 ? "s" : ""}`, variant: "normal" };
@@ -68,18 +54,12 @@ function validityDays(startDate: string, endDate: string, status: string): Valid
     const ago = Math.abs(daysToEnd);
     return { text: `Venció hace ${ago} día${ago !== 1 ? "s" : ""}`, variant: "vencida" };
   }
-  if (status === "pending_signature") {
-    return { text: `Inicio en ${daysToEnd} días`, variant: "normal" };
-  }
-  if (daysToEnd <= 60) {
-    return { text: `⚠ Vence en ${daysToEnd} días`, variant: "alerta" };
-  }
+  if (status === "pending_signature") return { text: `Inicio en ${daysToEnd} días`, variant: "normal" };
+  if (daysToEnd <= 60) return { text: `Vence en ${daysToEnd} días`, variant: "alerta" };
   return { text: `Vence en ${daysToEnd} días`, variant: "normal" };
 }
 
-/* ──────────────────────────────────────────────────────────
-   STATUS CONFIG
-   ────────────────────────────────────────────────────────── */
+/* ── Status config ────────────────────────────────────────── */
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Vigente",
@@ -92,58 +72,35 @@ const STATUS_LABELS: Record<string, string> = {
 
 function statusTagClasses(status: string): { pill: string; dot: string } {
   switch (status) {
-    case "active":
-      return {
-        pill: "bg-green-dim text-green",
-        dot: "bg-green",
-      };
-    case "expiring_soon":
-      return {
-        pill: "bg-mustard-dim text-mustard",
-        dot: "bg-mustard",
-      };
-    case "expired":
-      return {
-        pill: "bg-error-dim text-error",
-        dot: "bg-error",
-      };
-    case "terminated":
-      return {
-        pill: "bg-surface-highest text-muted-foreground border border-border",
-        dot: "bg-text-muted",
-      };
-    case "draft":
-      return {
-        pill: "bg-info-dim text-info",
-        dot: "bg-info",
-      };
-    case "pending_signature":
-      return {
-        pill: "bg-primary-dim text-primary",
-        dot: "bg-primary",
-      };
-    default:
-      return { pill: "bg-surface-highest text-muted-foreground", dot: "bg-text-muted" };
+    case "active": return { pill: "bg-green-dim text-green", dot: "bg-green" };
+    case "expiring_soon": return { pill: "bg-mustard-dim text-mustard", dot: "bg-mustard" };
+    case "expired": return { pill: "bg-error-dim text-error", dot: "bg-error" };
+    case "terminated": return { pill: "bg-surface-highest text-muted-foreground border border-border", dot: "bg-muted-foreground" };
+    case "draft": return { pill: "bg-info-dim text-info", dot: "bg-info" };
+    case "pending_signature": return { pill: "bg-primary-dim text-primary", dot: "bg-primary" };
+    default: return { pill: "bg-surface-highest text-muted-foreground", dot: "bg-muted-foreground" };
   }
 }
 
-/* ──────────────────────────────────────────────────────────
-   FILTER CHIPS CONFIG
-   ────────────────────────────────────────────────────────── */
+/* ── Filter config ────────────────────────────────────────── */
 
 const STATUS_FILTERS = [
-  { value: "", label: "Todos", activeClasses: "bg-primary-dim text-primary border-border-accent" },
-  { value: "activos", label: "Activos", activeClasses: "bg-primary-dim text-primary border-border-accent" },
-  { value: "expiring_soon", label: "Por vencer", activeClasses: "bg-mustard-dim text-mustard border-mustard/25" },
-  { value: "draft", label: "En redacción", activeClasses: "bg-info-dim text-info border-info/25" },
-  { value: "pending_signature", label: "Pend. firma", activeClasses: "bg-primary-dim text-primary border-border-accent" },
-  { value: "expired", label: "Vencidos", activeClasses: "bg-error-dim text-error border-error/25" },
-  { value: "terminated", label: "Rescindidos", activeClasses: "bg-surface-highest text-muted-foreground border-border" },
+  { value: "", label: "Todos" },
+  { value: "activos", label: "Activos" },
+  { value: "expiring_soon", label: "Por vencer" },
+  { value: "draft", label: "En redacción" },
+  { value: "pending_signature", label: "Pend. firma" },
+  { value: "expired", label: "Vencidos" },
+  { value: "terminated", label: "Rescindidos" },
 ];
 
-/* ──────────────────────────────────────────────────────────
-   COMPONENT
-   ────────────────────────────────────────────────────────── */
+function getCountForFilter(filterValue: string, counts: Record<string, number>): number {
+  if (filterValue === "") return Object.values(counts).reduce((sum, v) => sum + (v ?? 0), 0);
+  if (filterValue === "activos") return (counts.active ?? 0) + (counts.expiring_soon ?? 0);
+  return counts[filterValue] ?? 0;
+}
+
+/* ── Types ────────────────────────────────────────────────── */
 
 interface ContractRow {
   id: string;
@@ -159,6 +116,8 @@ interface ContractRow {
   adjustmentFrequency: number | null;
 }
 
+/* ── Component ────────────────────────────────────────────── */
+
 export function ContractsList() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -172,10 +131,7 @@ export function ContractsList() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["contracts", page, statusFilter, searchQuery],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (statusFilter) params.set("status", statusFilter);
       if (searchQuery) params.set("q", searchQuery);
       const response = await fetch(`/api/contracts?${params.toString()}`);
@@ -218,7 +174,7 @@ export function ContractsList() {
   return (
     <div className="flex flex-1 flex-col">
 
-      {/* ── Page Header ─────────────────────────────────── */}
+      {/* ── Page Header ──────────────────────────────────── */}
       <div className="flex items-start justify-between px-7 pt-6 pb-5">
         <div>
           <h1 className="font-headline text-[1.35rem] font-bold text-on-bg tracking-tight leading-tight">
@@ -228,41 +184,48 @@ export function ContractsList() {
             Gestión del ciclo de vida contractual
           </p>
         </div>
-        <Link href="/contratos/nuevo">
-          <Button size="sm" className="text-[0.72rem] font-semibold">
-            + Nuevo contrato
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="text-[0.72rem] font-medium gap-[7px]">
+            <Download className="h-[14px] w-[14px]" />
+            Exportar
           </Button>
-        </Link>
+          <Link href="/contratos/nuevo">
+            <Button size="sm" className="text-[0.72rem] font-semibold gap-[7px]">
+              + Nuevo contrato
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-col gap-4 px-7 pb-7">
 
         {/* ── KPI Grid ─────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <Card className="rounded-xl border py-0 gap-0" style={{ borderColor: "var(--border-accent)", background: "linear-gradient(135deg, var(--surface) 0%, rgba(107,23,2,0.08) 100%)" }}>
+
+          <Card className="rounded-xl border py-0 gap-0">
             <CardContent className="p-4 px-[18px]">
               <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Vigentes</p>
-              <p className="font-headline text-[1.6rem] font-bold text-primary leading-none">
+              <p className="font-headline text-[1.875rem] font-bold text-green leading-none">
                 {isLoading ? "—" : counts.active ?? 0}
               </p>
               <p className="text-[0.68rem] text-muted-foreground mt-1.5">contratos activos</p>
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border py-0 gap-0" style={{ borderColor: "rgba(253,222,168,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--mustard-dim) 100%)" }}>
+          <Card className="rounded-xl border py-0 gap-0">
             <CardContent className="p-4 px-[18px]">
               <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Por vencer</p>
-              <p className="font-headline text-[1.6rem] font-bold text-mustard leading-none">
+              <p className="font-headline text-[1.875rem] font-bold text-mustard leading-none">
                 {isLoading ? "—" : counts.expiring_soon ?? 0}
               </p>
               <p className="text-[0.68rem] text-muted-foreground mt-1.5">vencen en ≤ 60 días</p>
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border py-0 gap-0" style={{ borderColor: "rgba(147,197,253,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--info-dim) 100%)" }}>
+          <Card className="rounded-xl border py-0 gap-0">
             <CardContent className="p-4 px-[18px]">
               <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">En redacción</p>
-              <p className="font-headline text-[1.6rem] font-bold text-info leading-none">
+              <p className="font-headline text-[1.875rem] font-bold text-info leading-none">
                 {isLoading ? "—" : counts.draft ?? 0}
               </p>
               <p className="text-[0.68rem] text-muted-foreground mt-1.5">borradores activos</p>
@@ -272,17 +235,17 @@ export function ContractsList() {
           <Card className="rounded-xl border py-0 gap-0">
             <CardContent className="p-4 px-[18px]">
               <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Pend. de firma</p>
-              <p className="font-headline text-[1.6rem] font-bold text-on-bg leading-none">
+              <p className="font-headline text-[1.875rem] font-bold text-primary leading-none">
                 {isLoading ? "—" : counts.pending_signature ?? 0}
               </p>
               <p className="text-[0.68rem] text-muted-foreground mt-1.5">esperando firmas</p>
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border py-0 gap-0" style={{ borderColor: "rgba(255,180,171,0.2)", background: "linear-gradient(135deg, var(--surface) 0%, var(--error-dim) 100%)" }}>
+          <Card className="rounded-xl border py-0 gap-0">
             <CardContent className="p-4 px-[18px]">
               <p className="text-[0.67rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2">Vencidos</p>
-              <p className="font-headline text-[1.6rem] font-bold text-error leading-none">
+              <p className="font-headline text-[1.875rem] font-bold text-error leading-none">
                 {isLoading ? "—" : counts.expired ?? 0}
               </p>
               <p className="text-[0.68rem] text-muted-foreground mt-1.5">sin renovar ni rescindir</p>
@@ -290,15 +253,15 @@ export function ContractsList() {
           </Card>
         </div>
 
-        {/* Panel de índices */}
-        <div className="mb-4">
-          <IndexValuesPanel />
-        </div>
+        {/* ── Índices de ajuste ────────────────────────── */}
+        <IndexValuesPanel />
 
-        {/* ── Toolbar ───────────────────────────────────── */}
-        <div className="flex items-center gap-[10px] bg-surface border border-border rounded-xl px-[14px] py-[10px]">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Search className="h-[0.85rem] w-[0.85rem] text-muted-foreground flex-shrink-0" />
+        {/* ── Toolbar ──────────────────────────────────── */}
+        <div className="flex items-center gap-3 flex-wrap">
+
+          {/* Search */}
+          <div className="flex items-center gap-2 flex-1 min-w-[280px] max-w-[480px] bg-surface-low border border-border rounded-lg px-3 py-[8px] focus-within:border-primary transition-colors">
+            <Search className="h-[14px] w-[14px] text-muted-foreground flex-shrink-0" />
             <input
               type="text"
               value={searchInput}
@@ -308,7 +271,7 @@ export function ContractsList() {
                 if (e.key === "Escape") { setSearchInput(""); handleSearch(""); }
               }}
               placeholder="Buscar por propiedad, inquilino, propietario, N° contrato…"
-              className="flex-1 bg-transparent outline-none text-[0.82rem] text-on-surface placeholder:text-muted-foreground min-w-0"
+              className="flex-1 bg-transparent outline-none text-[13px] text-on-surface placeholder:text-muted-foreground min-w-0"
             />
             {searchInput && (
               <button
@@ -321,26 +284,34 @@ export function ContractsList() {
             )}
           </div>
 
-          <div className="w-px h-[22px] bg-border flex-shrink-0" />
-
-          <div className="flex gap-1.5 flex-wrap flex-shrink-0">
-            {STATUS_FILTERS.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => handleStatusFilter(f.value)}
-                className={`px-3 py-1 text-[0.68rem] font-semibold border rounded-full cursor-pointer transition-all ${
-                  statusFilter === f.value
-                    ? f.activeClasses
-                    : "bg-surface-high text-text-secondary border-border hover:text-on-surface hover:border-white/15"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          {/* Segmented filter */}
+          <div className="inline-flex bg-surface-low border border-border rounded-lg p-[3px] gap-[1px] overflow-x-auto">
+            {STATUS_FILTERS.map((f) => {
+              const isActive = statusFilter === f.value;
+              const count = getCountForFilter(f.value, counts);
+              return (
+                <button
+                  key={f.value}
+                  onClick={() => handleStatusFilter(f.value)}
+                  className={`inline-flex items-center gap-[6px] px-[11px] py-[6px] rounded-[5px] text-[12.5px] font-medium cursor-pointer transition-all whitespace-nowrap ${
+                    isActive ? "bg-primary-dim text-primary" : "text-muted-foreground hover:text-on-surface"
+                  }`}
+                >
+                  {f.label}
+                  <span
+                    className={`font-mono text-[10.5px] px-[5px] py-[1px] rounded-[3px] border leading-[1.3] transition-all ${
+                      isActive ? "bg-primary-dim text-primary border-transparent" : "bg-surface border-border text-muted-foreground"
+                    }`}
+                  >
+                    {isLoading ? "·" : count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* ── Tabla ─────────────────────────────────────── */}
+        {/* ── Tabla ────────────────────────────────────── */}
         {error ? (
           <div className="rounded-xl bg-error-dim border border-error/20 p-6 text-center">
             <p className="text-error mb-4 text-sm">{(error as Error).message}</p>
@@ -352,44 +323,42 @@ export function ContractsList() {
           </div>
         ) : (
           <div className="bg-surface border border-border rounded-[18px] overflow-hidden">
-            {/* Tabla header */}
-            <div className="flex items-center justify-between px-[18px] py-[14px] border-b border-border">
+
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-[18px] py-[13px] border-b border-border">
               <div className="flex items-center gap-2">
-                <span className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   Contratos
                 </span>
-                <span className="text-[0.72rem] text-muted-foreground">{total} resultado{total !== 1 ? "s" : ""}</span>
+                <span className="text-[12px] text-muted-foreground">{total} resultado{total !== 1 ? "s" : ""}</span>
               </div>
-              <button className="px-2 py-1 text-[0.67rem] font-semibold border border-border rounded-md text-text-secondary bg-transparent hover:bg-surface-high transition-colors">
-                ↓ Exportar
-              </button>
+              <div className="flex items-center gap-[8px]">
+                <button className="flex items-center gap-[6px] px-[10px] py-[6px] text-[12.5px] font-medium border border-border rounded-md text-muted-foreground bg-transparent hover:bg-surface-low hover:text-on-surface transition-colors">
+                  <SlidersHorizontal className="h-3 w-3" />
+                  Filtros
+                </button>
+                <button className="flex items-center gap-[6px] px-[10px] py-[6px] text-[12.5px] font-medium border border-border rounded-md text-muted-foreground bg-transparent hover:bg-surface-low hover:text-on-surface transition-colors">
+                  <ArrowUpDown className="h-3 w-3" />
+                  Ordenar
+                </button>
+                <button className="flex items-center gap-[6px] px-[10px] py-[6px] text-[12.5px] font-medium border border-border rounded-md text-muted-foreground bg-transparent hover:bg-surface-low hover:text-on-surface transition-colors">
+                  <Download className="h-3 w-3" />
+                  Exportar
+                </button>
+              </div>
             </div>
 
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="w-20 px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
-                    N°
-                  </th>
-                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
-                    Propiedad
-                  </th>
-                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
-                    Inquilino
-                  </th>
-                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
-                    Propietario
-                  </th>
-                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border cursor-pointer hover:text-on-surface">
-                    Vigencia
-                  </th>
-                  <th className="px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
-                    Monto actual
-                  </th>
-                  <th className="w-32 px-[14px] py-[10px] text-left text-[0.67rem] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">
-                    Estado
-                  </th>
-                  <th className="w-16 px-[14px] py-[10px] bg-surface-low border-b border-border" />
+                  <th className="w-[90px] px-[16px] py-[11px] text-left text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">Nº</th>
+                  <th className="px-[16px] py-[11px] text-left text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">Propiedad</th>
+                  <th className="px-[16px] py-[11px] text-left text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">Inquilino</th>
+                  <th className="px-[16px] py-[11px] text-left text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">Propietario</th>
+                  <th className="w-[200px] px-[16px] py-[11px] text-left text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">Vigencia</th>
+                  <th className="w-[180px] px-[16px] py-[11px] text-left text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">Monto actual</th>
+                  <th className="w-[110px] px-[16px] py-[11px] text-left text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground bg-surface-low border-b border-border">Estado</th>
+                  <th className="w-10 px-[16px] py-[11px] bg-surface-low border-b border-border" />
                 </tr>
               </thead>
               <tbody>
@@ -408,135 +377,128 @@ export function ContractsList() {
                     return (
                       <tr
                         key={c.id}
-                        className={`group cursor-pointer transition-all ${isTerminated ? "opacity-60 hover:opacity-100" : ""}`}
+                        className={`group cursor-pointer transition-colors hover:bg-surface-low ${isTerminated ? "opacity-60 hover:opacity-100" : ""}`}
                         onClick={() => router.push(`/contratos/${c.id}`)}
                       >
-                        {/* N° — with status left-border for por-vencer/vencido */}
+                        {/* Nº */}
                         <td
-                          className="px-[14px] py-[11px] text-[0.78rem] text-on-surface border-b border-border align-middle"
+                          className="px-[16px] py-[14px] border-b border-border align-middle"
                           style={{
-                            borderLeft: isExpiring
-                              ? "2px solid var(--mustard)"
-                              : isExpired
-                              ? "2px solid var(--error)"
-                              : undefined,
+                            borderLeft: isExpiring ? "2px solid var(--mustard)" : isExpired ? "2px solid var(--error)" : undefined,
                           }}
                         >
-                          <span className="font-mono text-[0.67rem] text-muted-foreground">
+                          <span className="font-mono text-[11.5px] text-muted-foreground">
                             {c.contractNumber}
                           </span>
                         </td>
 
                         {/* Propiedad */}
-                        <td className="px-[14px] py-[11px] border-b border-border align-middle">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-semibold text-[0.82rem] text-on-surface leading-tight">
-                              {c.propertyAddress || <span className="text-muted-foreground italic">Sin dirección</span>}
-                            </span>
+                        <td className="px-[16px] py-[14px] border-b border-border align-middle">
+                          <div className="font-medium text-[13px] text-on-surface leading-tight">
+                            {c.propertyAddress || <span className="text-muted-foreground italic">Sin dirección</span>}
                           </div>
                         </td>
 
                         {/* Inquilino */}
-                        <td className="px-[14px] py-[11px] border-b border-border align-middle">
+                        <td className="px-[16px] py-[14px] border-b border-border align-middle">
                           {tenantName ? (
-                            <div className="flex items-center gap-2">
-                              <div className={`w-7 h-7 rounded-md flex items-center justify-center text-[0.62rem] font-bold flex-shrink-0 ${avatarColor(tenantName)}`}>
+                            <div className="flex items-center gap-[10px]">
+                              <div
+                                className="w-7 h-7 rounded-[7px] flex items-center justify-center text-[10.5px] font-semibold flex-shrink-0 text-white"
+                                style={{ background: avatarGradient(tenantName), boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.10)" }}
+                              >
                                 {tenantInitials}
                               </div>
-                              <span className="text-[0.78rem] font-medium text-on-surface">
-                                {tenantName}
-                              </span>
+                              <span className="text-[13px] font-medium text-on-surface">{tenantName}</span>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground text-[0.78rem]">—</span>
+                            <span className="text-muted-foreground text-[13px]">—</span>
                           )}
                         </td>
 
                         {/* Propietario */}
-                        <td className="px-[14px] py-[11px] border-b border-border align-middle">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-7 h-7 rounded-md flex items-center justify-center text-[0.62rem] font-bold flex-shrink-0 ${avatarColor(c.ownerName ?? "")}`}>
+                        <td className="px-[16px] py-[14px] border-b border-border align-middle">
+                          <div className="flex items-center gap-[10px]">
+                            <div
+                              className="w-7 h-7 rounded-[7px] flex items-center justify-center text-[10.5px] font-semibold flex-shrink-0 text-white"
+                              style={{ background: avatarGradient(c.ownerName || "O"), boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.10)" }}
+                            >
                               {ownerInitials}
                             </div>
-                            <span className="text-[0.78rem] font-medium text-on-surface">
-                              {c.ownerName || "—"}
-                            </span>
+                            <span className="text-[13px] font-medium text-on-surface">{c.ownerName || "—"}</span>
                           </div>
                         </td>
 
                         {/* Vigencia */}
-                        <td className="px-[14px] py-[11px] border-b border-border align-middle">
-                          <div className="flex flex-col gap-0.5">
+                        <td className="px-[16px] py-[14px] border-b border-border align-middle">
+                          <div className="font-mono text-[12px] text-on-surface whitespace-nowrap">
                             {isDraft ? (
-                              <span className="text-[0.75rem] text-muted-foreground">A definir</span>
+                              <span className="font-sans text-[0.75rem] text-muted-foreground">A definir</span>
                             ) : (
-                              <span className="text-[0.75rem] text-on-surface whitespace-nowrap">
+                              <>
                                 {format(new Date(c.startDate + "T00:00:00"), "dd/MM/yyyy")} →{" "}
                                 {format(new Date(c.endDate + "T00:00:00"), "dd/MM/yyyy")}
-                              </span>
+                              </>
                             )}
-                            <span
-                              className={`text-[0.65rem] font-bold ${
-                                dias.variant === "alerta"
-                                  ? "text-mustard"
-                                  : dias.variant === "vencida"
-                                  ? "text-error"
-                                  : "text-muted-foreground"
-                              }`}
-                            >
-                              {dias.text}
-                            </span>
+                          </div>
+                          <div className={`text-[11.5px] mt-[3px] ${
+                            dias.variant === "alerta" ? "text-mustard" :
+                            dias.variant === "vencida" ? "text-error" :
+                            "text-muted-foreground"
+                          }`}>
+                            {dias.text}
                           </div>
                         </td>
 
-                        {/* Monto actual */}
-                        <td className="px-[14px] py-[11px] border-b border-border align-middle">
+                        {/* Monto */}
+                        <td className="px-[16px] py-[14px] border-b border-border align-middle">
                           {c.monthlyAmount && !isDraft ? (
-                            <div>
-                              <div className="font-headline font-semibold text-[0.9rem] text-on-bg whitespace-nowrap">
-                                ${parseFloat(c.monthlyAmount).toLocaleString("es-AR")}
+                            <>
+                              <div className="font-mono font-semibold text-[13.5px] text-on-bg whitespace-nowrap">
+                                $ {parseFloat(c.monthlyAmount).toLocaleString("es-AR")}
                               </div>
-                              <div className="text-[0.65rem] text-muted-foreground mt-0.5">
-                                {c.adjustmentIndex ?? "—"}{c.adjustmentFrequency ? ` · ${freqShort(c.adjustmentFrequency)}` : ""}
+                              <div className="flex items-center gap-[6px] mt-[3px]">
+                                {c.adjustmentIndex && c.adjustmentIndex !== "none" && (
+                                  <span className="font-mono text-[10px] px-[5px] py-[1px] rounded-[3px] bg-surface-low border border-border text-muted-foreground tracking-[0.02em]">
+                                    {c.adjustmentIndex}
+                                  </span>
+                                )}
+                                <span className="font-mono text-[11px] text-muted-foreground">
+                                  {c.adjustmentFrequency ? freqShort(c.adjustmentFrequency) : ""}
+                                </span>
                               </div>
-                            </div>
+                            </>
                           ) : (
-                            <div>
-                              <div className="font-headline font-semibold text-[0.9rem] text-muted-foreground">—</div>
-                              <div className="text-[0.65rem] text-muted-foreground mt-0.5">Pendiente</div>
-                            </div>
+                            <>
+                              <div className="font-mono font-semibold text-[13.5px] text-muted-foreground">—</div>
+                              <div className="text-[11px] text-muted-foreground mt-[3px]">Pendiente</div>
+                            </>
                           )}
                         </td>
 
                         {/* Estado */}
-                        <td className="px-[14px] py-[11px] border-b border-border align-middle">
-                          <span
-                            className={`inline-flex items-center gap-[5px] px-[9px] py-[3px] rounded-full text-[0.67rem] font-bold tracking-[0.02em] whitespace-nowrap ${pill}`}
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
+                        <td className="px-[16px] py-[14px] border-b border-border align-middle">
+                          <span className={`inline-flex items-center gap-[6px] px-[9px] py-[4px] rounded-full text-[11px] font-semibold uppercase tracking-[0.05em] whitespace-nowrap ${pill}`}>
+                            <span className={`w-[6px] h-[6px] rounded-full flex-shrink-0 ${dot}`} />
                             {STATUS_LABELS[c.status] ?? c.status}
                           </span>
                         </td>
 
-                        {/* Acciones (hover) */}
-                        <td className="px-[14px] py-[11px] border-b border-border align-middle">
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              title="Descargar PDF"
-                              disabled={isDraft}
-                              onClick={(e) => e.stopPropagation()}
-                              className="px-2 py-1 text-[0.67rem] font-semibold border border-border rounded text-text-secondary bg-transparent hover:bg-surface-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            >
-                              ↓
-                            </button>
-                          </div>
+                        {/* Acciones */}
+                        <td className="px-[16px] py-[14px] border-b border-border align-middle text-right">
+                          <button
+                            className="w-[30px] h-[30px] rounded-[7px] border border-border bg-surface-low inline-flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 transition-all hover:text-on-surface hover:bg-surface-high"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-[14px] w-[14px]" />
+                          </button>
                         </td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="h-24 text-center text-[0.82rem] text-muted-foreground">
+                    <td colSpan={8} className="h-24 text-center text-[13px] text-muted-foreground">
                       No hay contratos registrados.
                     </td>
                   </tr>
@@ -544,7 +506,6 @@ export function ContractsList() {
               </tbody>
             </table>
 
-            {/* Paginación */}
             {data?.pagination && data.pagination.totalPages > 1 && (
               <div className="border-t border-border px-[18px] py-3">
                 <ClientPagination

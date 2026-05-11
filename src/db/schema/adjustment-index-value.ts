@@ -25,6 +25,9 @@ export const adjustmentIndexValue = pgTable(
     loadedBy: text("loadedBy")
       .notNull()
       .references(() => user.id, { onDelete: "restrict" }),
+    auditedAt: timestamp("auditedAt"),
+    auditedBy: text("auditedBy").references(() => user.id, { onDelete: "set null" }),
+    source: text("source").notNull().default("cron"), // "cron" | "manual"
   },
   (t) => [unique().on(t.agencyId, t.indexType, t.period)]
 );

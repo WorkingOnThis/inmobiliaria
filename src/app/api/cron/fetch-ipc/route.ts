@@ -9,13 +9,6 @@ import { eq, and } from "drizzle-orm";
 
 const INDEX_TYPE = "IPC (Córdoba)";
 
-/** "YYYY-MM" del mes anterior a hoy */
-function previousMonth(): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
 export async function GET(request: NextRequest) {
   const expected = process.env.CRON_SECRET;
   if (!expected) return NextResponse.json({ error: "Cron disabled" }, { status: 503 });
@@ -33,33 +26,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, message: "No hay contratos con IPC (Córdoba)" });
   }
 
-  const agencyIds = agencyRows.map((r) => r.agencyId);
-  const expected_period = previousMonth();
-
-  // Si todas las agencias ya tienen el mes anterior cargado, no llamamos a la API
-  const alreadyLoaded = await Promise.all(
-    agencyIds.map((agencyId) =>
-      db
-        .select({ id: adjustmentIndexValue.id })
-        .from(adjustmentIndexValue)
-        .where(
-          and(
-            eq(adjustmentIndexValue.agencyId, agencyId),
-            eq(adjustmentIndexValue.indexType, INDEX_TYPE),
-            eq(adjustmentIndexValue.period, expected_period),
-          )
-        )
-        .limit(1)
-        .then((rows) => rows.length > 0),
-    )
-  );
-
-  if (alreadyLoaded.every(Boolean)) {
-    return NextResponse.json({ ok: true, message: `${expected_period} ya cargado en todas las agencias` });
-  }
-
-  // Llamar a la API una sola vez
-  let apiValues;
+  // Llamar a la API externa
+  let apiValues: { period: string; value: number }[];
   try {
     apiValues = await fetchIPCCordobaValues();
   } catch (err) {
@@ -70,28 +38,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, message: "La API no devolvió valores" });
   }
 
-  const summary: Record<string, { inserted: number; contractsUpdated: number }> = {};
+  const summary: Record<string, { inserted: number; updated: number; skipped: number; contractsUpdated: number }> = {};
 
-  for (const agencyId of agencyIds) {
-    // Períodos ya cargados para esta agencia
+  for (const { agencyId } of agencyRows) {
+    // Cargar todos los valores existentes para esta agencia + índice
     const existing = await db
-      .select({ period: adjustmentIndexValue.period })
+      .select({
+        id: adjustmentIndexValue.id,
+        period: adjustmentIndexValue.period,
+        auditedAt: adjustmentIndexValue.auditedAt,
+      })
       .from(adjustmentIndexValue)
-      .where(
-        and(
-          eq(adjustmentIndexValue.agencyId, agencyId),
-          eq(adjustmentIndexValue.indexType, INDEX_TYPE),
-        )
-      );
-    const loadedPeriods = new Set(existing.map((r) => r.period));
+      .where(and(
+        eq(adjustmentIndexValue.agencyId, agencyId),
+        eq(adjustmentIndexValue.indexType, INDEX_TYPE),
+      ));
 
-    const toInsert = apiValues.filter((v) => !loadedPeriods.has(v.period));
-    if (toInsert.length === 0) {
-      summary[agencyId] = { inserted: 0, contractsUpdated: 0 };
-      continue;
-    }
+    const existingMap = new Map(existing.map(r => [r.period, r]));
 
-    // Usar el ownerId de la agencia como loadedBy (contexto sin sesión)
     const [agencyData] = await db
       .select({ ownerId: agency.ownerId })
       .from(agency)
@@ -99,21 +63,47 @@ export async function GET(request: NextRequest) {
       .limit(1);
 
     const userId = agencyData.ownerId;
-    let contractsUpdated = 0;
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+    let anyChange = false;
 
-    for (const { period, value } of toInsert) {
-      await db.insert(adjustmentIndexValue).values({
-        agencyId,
-        indexType: INDEX_TYPE,
-        period,
-        value: value.toFixed(4),
-        loadedBy: userId,
-      });
-      const result = await applyIndexToContracts(INDEX_TYPE, agencyId, userId);
-      contractsUpdated += result.contractsAffected;
+    for (const { period, value } of apiValues) {
+      const row = existingMap.get(period);
+
+      if (!row) {
+        // No existe → insertar
+        await db.insert(adjustmentIndexValue).values({
+          agencyId,
+          indexType: INDEX_TYPE,
+          period,
+          value: value.toFixed(4),
+          loadedBy: userId,
+          source: "cron",
+        });
+        inserted++;
+        anyChange = true;
+      } else if (row.auditedAt === null) {
+        // Existe pero no está auditado → actualizar con el valor fresco de la API
+        await db
+          .update(adjustmentIndexValue)
+          .set({ value: value.toFixed(4), source: "cron" })
+          .where(eq(adjustmentIndexValue.id, row.id));
+        updated++;
+        anyChange = true;
+      } else {
+        // Auditado → respetar el valor manual confirmado
+        skipped++;
+      }
     }
 
-    summary[agencyId] = { inserted: toInsert.length, contractsUpdated };
+    let contractsUpdated = 0;
+    if (anyChange) {
+      const result = await applyIndexToContracts(INDEX_TYPE, agencyId, userId);
+      contractsUpdated = result.contractsAffected;
+    }
+
+    summary[agencyId] = { inserted, updated, skipped, contractsUpdated };
   }
 
   return NextResponse.json({ ok: true, summary });

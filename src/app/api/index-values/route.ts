@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
       period,
       value: value.toString(),
       loadedBy: session!.user.id,
+      source: "manual",
     });
 
     // Aplicar a contratos automáticamente
