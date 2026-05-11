@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, TrendingUp, Plus, ShieldCheck, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,9 @@ function formatPeriod(p: string): string {
 // ── Component ─────────────────────────────────────────────
 
 export function IndexValuesPanel() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<IndexType>(INDEX_TYPES[0]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -232,6 +235,21 @@ export function IndexValuesPanel() {
 
   const isMutating = loadMutation.isPending || editMutation.isPending;
   const mutationError = (loadMutation.error ?? editMutation.error) as Error | null;
+
+  if (!mounted) {
+    // SSR-safe placeholder matching the closed-state header dimensions exactly.
+    // Avoids hydration mismatches in Radix `useId` when an ancestor Suspense
+    // boundary causes the server tree to differ from the client tree.
+    return (
+      <div className="bg-surface border border-border rounded-[10px] overflow-hidden">
+        <div className="flex w-full items-center gap-3 px-[18px] py-[14px]">
+          <TrendingUp className="h-4 w-4 flex-shrink-0 text-primary" />
+          <span className="text-[13.5px] font-semibold text-on-surface">Índices de ajuste</span>
+          <ChevronDown className="h-[14px] w-[14px] ml-auto text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
