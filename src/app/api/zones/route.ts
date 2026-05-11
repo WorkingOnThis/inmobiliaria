@@ -5,7 +5,8 @@ import { zone } from "@/db/schema/zone";
 import { auth } from "@/lib/auth";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { canManageProperties } from "@/lib/permissions";
-import { eq, ilike, and } from "drizzle-orm";
+import { eq, ilike, and, count, desc } from "drizzle-orm";
+import { property } from "@/db/schema/property";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,16 +14,24 @@ export async function GET(request: NextRequest) {
     const agencyId = requireAgencyId(session);
 
     const search = request.nextUrl.searchParams.get("search")?.trim() ?? "";
+    const all = request.nextUrl.searchParams.get("all") === "true";
 
-    const rows = await db
-      .select({ id: zone.id, name: zone.name })
+    const query = db
+      .select({ id: zone.id, name: zone.name, usageCount: count(property.id) })
       .from(zone)
+      .leftJoin(
+        property,
+        and(eq(property.zone, zone.name), eq(property.agencyId, zone.agencyId))
+      )
       .where(
         search
           ? and(eq(zone.agencyId, agencyId), ilike(zone.name, `%${search}%`))
           : eq(zone.agencyId, agencyId)
       )
-      .limit(5);
+      .groupBy(zone.id, zone.name)
+      .orderBy(desc(count(property.id)));
+
+    const rows = await (all ? query : query.limit(5));
 
     return NextResponse.json({ zones: rows });
   } catch (error) {

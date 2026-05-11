@@ -8,6 +8,9 @@ interface ZoneComboboxProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  showCreate?: boolean;
+  /** Carga todas las zonas al montar y filtra en el cliente. Ideal para datasets chicos. */
+  eager?: boolean;
 }
 
 export function ZoneCombobox({
@@ -15,11 +18,20 @@ export function ZoneCombobox({
   onChange,
   placeholder = "Ej: Nueva Córdoba",
   className,
+  showCreate = true,
+  eager = false,
 }: ZoneComboboxProps) {
   const [zones, setZones] = useState<string[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
+  useEffect(() => {
+    if (!eager) return;
+    fetch("/api/zones?search=&all=true")
+      .then((r) => r.ok ? r.json() : { zones: [] })
+      .then((data) => setZones((data.zones ?? []).map((z: { name: string }) => z.name)));
+  }, [eager]);
 
   const fetchZones = useCallback(async (q: string) => {
     const res = await fetch(`/api/zones?search=${encodeURIComponent(q)}`);
@@ -30,6 +42,7 @@ export function ZoneCombobox({
   }, []);
 
   const handleQueryChange = (q: string) => {
+    if (eager) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchZones(q), 250);
   };
@@ -50,9 +63,8 @@ export function ZoneCombobox({
       value={value}
       onChange={onChange}
       options={zones}
-      onSearch={(_, opts) => opts}
-      onQueryChange={handleQueryChange}
-      onCreate={handleCreate}
+      {...(eager ? {} : { onSearch: (_, opts) => opts, onQueryChange: handleQueryChange })}
+      {...(showCreate ? { onCreate: handleCreate } : {})}
       placeholder={placeholder}
       className={className}
     />

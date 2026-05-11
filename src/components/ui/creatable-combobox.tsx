@@ -149,7 +149,7 @@ export function CreatableCombobox({
               </span>
             </button>
           ))}
-          {isNew && (
+          {isNew && onCreate && (
             <button
               type="button"
               disabled={creating}

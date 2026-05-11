@@ -30,6 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ZoneCombobox } from "@/components/ui/zone-combobox";
 import { QuickPropertyForm } from "@/components/properties/quick-property-form";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
@@ -390,9 +391,7 @@ function PropertyListContent() {
   const zoneFilter = searchParams.get("zone") || "";
 
   const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
-  const [zoneInput, setZoneInput] = useState(zoneFilter);
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const zoneDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const queryKey = [
     "properties",
@@ -441,15 +440,11 @@ function PropertyListContent() {
 
   const handleZoneFilter = useCallback(
     (value: string) => {
-      setZoneInput(value);
-      if (zoneDebounce.current) clearTimeout(zoneDebounce.current);
-      zoneDebounce.current = setTimeout(() => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("page", "1");
-        if (value.trim()) params.set("zone", value.trim());
-        else params.delete("zone");
-        router.push(`/propiedades?${params.toString()}`);
-      }, 350);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", "1");
+      if (value) params.set("zone", value);
+      else params.delete("zone");
+      router.push(`/propiedades?${params.toString()}`);
     },
     [searchParams, router]
   );
@@ -641,26 +636,14 @@ function PropertyListContent() {
           <span className="text-[10px] font-bold uppercase tracking-[0.1em] flex-shrink-0 text-muted-foreground">
             Barrio:
           </span>
-          <Input
-            type="text"
+          <ZoneCombobox
+            value={zoneFilter}
+            onChange={handleZoneFilter}
             placeholder="Filtrar por barrio o zona…"
-            value={zoneInput}
-            onChange={(e) => handleZoneFilter(e.target.value)}
-            className="flex-1 border-0 bg-transparent text-[12px] h-9 px-0"
+            showCreate={false}
+            eager
+            className="flex-1"
           />
-          {zoneInput && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-6 flex-shrink-0"
-              onClick={() => handleZoneFilter("")}
-            >
-              <X size={13} />
-            </Button>
-          )}
-          <span className="text-[10px] ml-auto flex-shrink-0 text-muted-foreground">
-            Filtro por zona
-          </span>
         </div>
       </div>
 
