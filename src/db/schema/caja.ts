@@ -89,6 +89,17 @@ export const cajaMovimiento = pgTable("cash_movement", {
   annulmentId: text("annulment_id"),
   // Sin FK para evitar import circular. La integridad se mantiene en la transacción de anulación.
 
+  // Idempotencia: evita duplicar movimientos cuando la misma operación de
+  // emisión se reintenta (doble click, network blip). Mismo valor en todos
+  // los movimientos de un mismo recibo/liquidación.
+  idempotencyKey: text("idempotencyKey"),
+
+  // Liquidación al propietario: agrupa los movimientos incluidos en una
+  // misma corrida de liquidación. NULL hasta que el período se liquida.
+  settlementBatchId: text("settlementBatchId"),
+  liquidadoAt: timestamp("liquidadoAt"),
+  liquidadoPor: text("liquidadoPor").references(() => user.id, { onDelete: "set null" }),
+
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

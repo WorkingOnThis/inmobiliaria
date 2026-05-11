@@ -47,6 +47,7 @@ export const agency = pgTable("agency", {
   settlementPrefix: text("settlementPrefix"),
   currency: text("currency"),
   decimals: integer("decimals"),
+  liquidacionUltimoNumero: integer("liquidacionUltimoNumero").notNull().default(0),
 
   // 5. Datos bancarios de la agencia (para recibir de inquilinos)
   bancoNombre: text("bancoNombre"),
