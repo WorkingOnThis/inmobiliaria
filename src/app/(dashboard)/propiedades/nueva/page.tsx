@@ -4,24 +4,15 @@ import { QuickPropertyForm } from "@/components/properties/quick-property-form";
 import { auth } from "@/lib/auth";
 import { canManageProperties } from "@/lib/permissions";
 
-// Forzar renderizado dinámico para prevenir cache
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-/**
- * Create Property Page
- *
- * Página para registrar nuevas propiedades en el sistema.
- * Verifica permisos antes de mostrar el formulario.
- */
 export default async function CreatePropertyPage({
   searchParams,
 }: {
   searchParams: Promise<{ ownerId?: string }>;
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) {
     redirect("/login?callbackUrl=/propiedades/nueva");
@@ -34,18 +25,14 @@ export default async function CreatePropertyPage({
   const { ownerId } = await searchParams;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <div className="flex flex-col gap-2 w-full items-center mx-auto mb-4">
-        <h1 className="text-2xl font-bold">Agregar nueva propiedad</h1>
-        <p className="text-muted-foreground text-center max-w-lg">
-          Completa los detalles de la propiedad para registrarla en el inventario.
+    <div className="flex flex-1 flex-col gap-6 p-6 max-w-2xl mx-auto w-full">
+      <div>
+        <h1 className="text-2xl font-bold">Nueva propiedad</h1>
+        <p className="text-muted-foreground mt-1">
+          Completá los datos mínimos para crear la ficha. Podés agregar más información después.
         </p>
       </div>
-      <div className="flex flex-col items-center">
-        <div className="w-full max-w-lg bg-[#1a1d1e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-          <QuickPropertyForm inline defaultOwnerId={ownerId} />
-        </div>
-      </div>
+      <QuickPropertyForm defaultOwnerId={ownerId} />
     </div>
   );
 }

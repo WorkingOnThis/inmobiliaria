@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Building2,
   Home,
@@ -14,34 +14,29 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  Loader2,
   X,
   ArrowRight,
   Key,
   CheckCircle2,
   Tag,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ZoneCombobox } from "@/components/ui/zone-combobox";
-import { QuickPropertyForm } from "@/components/properties/quick-property-form";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
 import { cn } from "@/lib/utils";
+import { formatAddress } from "@/lib/properties/format-address";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface PropertyRow {
   id: string;
   title: string;
-  address: string;
+  addressStreet: string;
+  addressNumber: string | null;
   rentalPrice: string | null;
   rentalPriceCurrency: string;
   salePrice: string | null;
@@ -297,6 +292,59 @@ function ContratoCell({ prop }: { prop: PropertyRow }) {
   );
 }
 
+// ── Skeleton de carga ─────────────────────────────────────────────────────────
+
+const SKELETON_WIDTHS = [
+  ["w-36", "w-24", "w-20"],
+  ["w-44", "w-28", "w-16"],
+  ["w-32", "w-20", "w-24"],
+  ["w-40", "w-32", "w-18"],
+  ["w-28", "w-24", "w-20"],
+] as const;
+
+function SkeletonPropertyRow({ index }: { index: number }) {
+  const widths = SKELETON_WIDTHS[index % SKELETON_WIDTHS.length];
+  return (
+    <div
+      className="grid px-4 py-3 pointer-events-none"
+      style={{
+        gridTemplateColumns: "minmax(220px,2fr) minmax(140px,1fr) minmax(170px,1fr) 150px 60px 64px",
+        borderBottom: "1px solid rgba(160,132,126,0.07)",
+        borderLeft: "2px solid transparent",
+      }}
+    >
+      {/* Propiedad */}
+      <div className="flex items-center gap-3 min-w-0">
+        <Skeleton className="size-8 rounded-sm flex-shrink-0" />
+        <div className="flex flex-col gap-1.5">
+          <Skeleton className={cn("h-3 rounded-sm", widths[0])} />
+          <Skeleton className="h-2.5 rounded-sm w-24" />
+        </div>
+      </div>
+      {/* Propietario */}
+      <div className="flex items-center gap-2 min-w-0">
+        <Skeleton className="size-6 rounded-full flex-shrink-0" />
+        <Skeleton className={cn("h-3 rounded-sm", widths[1])} />
+      </div>
+      {/* Contrato */}
+      <div className="flex flex-col gap-1 justify-center">
+        <Skeleton className={cn("h-3 rounded-sm", widths[2])} />
+        <Skeleton className="h-2.5 rounded-sm w-16" />
+      </div>
+      {/* Estado */}
+      <div className="flex flex-col gap-1 justify-center">
+        <Skeleton className="h-5 rounded-full w-20" />
+      </div>
+      {/* Tareas */}
+      <div className="flex items-center justify-center">
+        <Skeleton className="h-3 w-3 rounded-sm" />
+      </div>
+      {/* Acción */}
+      <div />
+    </div>
+  );
+}
+
 // ── Property row ──────────────────────────────────────────────────────────────
 
 function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boolean; onClick: () => void }) {
@@ -322,7 +370,7 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
         </span>
         <div className="min-w-0">
           <p className="text-[13px] font-semibold leading-snug truncate font-headline text-foreground">
-            {prop.title || prop.address}
+            {prop.title || formatAddress(prop)}
           </p>
           <p className="text-[11px] leading-none mt-0.5 truncate text-muted-foreground">
             {buildSubtitle(prop)}
@@ -381,9 +429,6 @@ function PropertyRowItem({ prop, even, onClick }: { prop: PropertyRow; even: boo
 function PropertyListContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  const [dialogOpen, setDialogOpen] = useState(false);
 
   const page = parseInt(searchParams.get("page") || "1");
   const rentalStatusFilter = searchParams.get("rentalStatus") || "";
@@ -465,12 +510,6 @@ function PropertyListContent() {
     router.push(`/propiedades?${params.toString()}`);
   };
 
-  const handleFormSuccess = (propertyId: string) => {
-    setDialogOpen(false);
-    queryClient.invalidateQueries({ queryKey: ["properties"] });
-    router.push(`/propiedades/${propertyId}`);
-  };
-
   const counts = data?.counts;
   const pagination = data?.pagination;
   const properties = data?.properties ?? [];
@@ -481,34 +520,6 @@ function PropertyListContent() {
 
   return (
     <div className="flex flex-col min-h-full" style={{ background: "var(--background)" }}>
-
-      {/* Modal — Nueva propiedad */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent
-          className="max-w-lg p-0 gap-0 border-border overflow-hidden"
-          style={{ background: "var(--card)" }}
-        >
-          <DialogHeader className="px-6 pt-6 pb-2 border-b border-border">
-            <div className="flex items-start justify-between">
-              <div>
-                <DialogTitle className="text-xl font-bold text-white font-headline">
-                  Nueva propiedad
-                </DialogTitle>
-                <p className="text-[12px] text-muted-foreground mt-1">
-                  Los campos con <span className="text-primary">*</span> son obligatorios.
-                </p>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="overflow-y-auto max-h-[80vh]">
-            <QuickPropertyForm
-              onSuccess={handleFormSuccess}
-              onCancel={() => setDialogOpen(false)}
-              inline
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Page header */}
       <div className="px-8 pt-7 pb-5">
@@ -527,7 +538,7 @@ function PropertyListContent() {
 
           {/* Botón prominente */}
           <Button
-            onClick={() => setDialogOpen(true)}
+            onClick={() => router.push("/propiedades/nueva")}
             size="lg"
           >
             <Plus size={18} />
@@ -688,18 +699,11 @@ function PropertyListContent() {
         </div>
 
         {/* Loading */}
-        {isLoading && (
-          <div
-            className="flex items-center justify-center py-20"
-            style={{ background: "var(--background)" }}
-          >
-            <Loader2
-              size={28}
-              className="animate-spin"
-              style={{ color: "var(--muted-foreground)" }}
-            />
-          </div>
-        )}
+        {isLoading &&
+          Array.from({ length: 5 }, (_, i) => (
+            <SkeletonPropertyRow key={i} index={i} />
+          ))
+        }
 
         {/* Error */}
         {error && !isLoading && (
@@ -732,12 +736,17 @@ function PropertyListContent() {
         {!isLoading &&
           !error &&
           properties.map((prop, i) => (
-            <PropertyRowItem
+            <div
               key={prop.id}
-              prop={prop}
-              even={i % 2 === 1}
-              onClick={() => router.push(`/propiedades/${prop.id}`)}
-            />
+              className="row-animate"
+              style={{ "--row-delay": `${i * 45}ms` } as React.CSSProperties}
+            >
+              <PropertyRowItem
+                prop={prop}
+                even={i % 2 === 1}
+                onClick={() => router.push(`/propiedades/${prop.id}`)}
+              />
+            </div>
           ))}
 
         {/* Pagination */}
@@ -810,11 +819,10 @@ export function PropertyList() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-64 items-center justify-center">
-          <Loader2
-            className="animate-spin"
-            style={{ color: "var(--muted-foreground)" }}
-          />
+        <div className="px-8 pt-4">
+          {Array.from({ length: 5 }, (_, i) => (
+            <SkeletonPropertyRow key={i} index={i} />
+          ))}
         </div>
       }
     >
