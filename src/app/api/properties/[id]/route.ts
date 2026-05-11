@@ -15,7 +15,6 @@ import { z } from "zod";
 
 const updatePropertySchema = z.object({
   title: z.string().optional().nullable(),
-  address: z.string().min(1).optional(),
   type: z.string().optional(),
   rentalStatus: z.enum(RENTAL_STATUSES).optional(),
   saleStatus: z.enum(SALE_STATUSES).optional().nullable(),
@@ -71,7 +70,6 @@ export async function GET(
         .select({
           id: property.id,
           title: property.title,
-          address: property.address,
           rentalPrice: property.rentalPrice,
           rentalPriceCurrency: property.rentalPriceCurrency,
           salePrice: property.salePrice,
@@ -192,7 +190,6 @@ export async function PATCH(
     const data = result.data;
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (data.title !== undefined) updateData.title = data.title;
-    if (data.address !== undefined) updateData.address = data.address;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.rentalStatus !== undefined) updateData.rentalStatus = data.rentalStatus;
     if (data.saleStatus !== undefined) updateData.saleStatus = data.saleStatus;
