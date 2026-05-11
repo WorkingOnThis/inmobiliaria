@@ -181,7 +181,13 @@
       "Bash(sed -n '8,32p' adjustments/[id]/route.ts)",
       "Bash(npx shadcn@latest add collapsible)",
       "WebFetch(domain:datosestadistica.cba.gov.ar)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(pip --version)",
+      "Bash(python3 -m pip --version)",
+      "Bash(python3 *)",
+      "Bash(C:/Users/guill/AppData/Local/Python/pythoncore-3.14-64/Scripts/graphify.exe install *)",
+      "Bash(not exist *)",
+      "PowerShell(New-Item *)"
     ]
   },
   "enableAllProjectMcpServers": true,
