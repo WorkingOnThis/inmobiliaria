@@ -10,17 +10,9 @@ import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { nextReciboNumero } from "@/lib/receipts/numbering";
+import { isUniqueViolation } from "@/lib/receipts/db-errors";
 import { z } from "zod";
 import { and, eq, inArray } from "drizzle-orm";
-
-function isUniqueViolation(err: unknown, indexName?: string): boolean {
-  if (!err || typeof err !== "object") return false;
-  const e = err as { code?: string; constraint?: string; cause?: { code?: string; constraint?: string } };
-  const code = e.code ?? e.cause?.code;
-  const constraint = e.constraint ?? e.cause?.constraint;
-  if (code !== "23505") return false;
-  return indexName ? constraint === indexName : true;
-}
 
 const emitSchema = z.object({
   ledgerEntryIds: z.array(z.string().min(1)).min(1),
