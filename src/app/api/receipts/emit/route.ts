@@ -80,6 +80,11 @@ export async function POST(request: NextRequest) {
 
     // Early return: si ya emitimos un recibo con esta idempotencyKey,
     // devolver el resultado anterior sin duplicar movimientos.
+    // Filtramos por tipoFondo = "agencia" porque hoy idempotencyKey solo se
+    // escribe en movimientos del lado agencia (anchor del recibo) y los
+    // satélites tipoFondo="propietario" copian la misma key. Si en el futuro
+    // se usa idempotencyKey en flujos donde no hay movimiento "agencia",
+    // revisar este filtro.
     if (idempotencyKey) {
       const existing = await db
         .select({
