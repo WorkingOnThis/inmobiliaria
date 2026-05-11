@@ -14,7 +14,6 @@ export const property = pgTable("property", {
     .notNull()
     .references(() => agency.id, { onDelete: "cascade" }),
   title: text("title"), // Opcional, se puede completar luego en la ficha
-  address: text("address").notNull(),
   type: text("type").notNull(), // casa, depto, terreno, local, etc.
   rentalStatus: text("rentalStatus").notNull().default("available"), // available, rented, reserved, maintenance
   saleStatus: text("saleStatus"), // null | "for_sale" | "sold"
@@ -43,8 +42,7 @@ export const property = pgTable("property", {
   serviceStateTax: text("serviceStateTax").notNull().default("inquilino"),
   serviceHoa: text("serviceHoa").notNull().default("na"),
 
-  // Domicilio desglosado (complementa address que queda como legado)
-  addressStreet: text("addressStreet"),
+  addressStreet: text("addressStreet").notNull(),
   addressNumber: text("addressNumber"),
   city: text("city"),
   province: text("province"),
@@ -68,7 +66,6 @@ export const property = pgTable("property", {
   isManaged: boolean("isManaged").notNull().default(true),
 
   ownerId: text("ownerId")
-    .notNull()
     .references(() => client.id, { onDelete: "cascade" }),
   createdBy: text("createdBy")
     .notNull()
