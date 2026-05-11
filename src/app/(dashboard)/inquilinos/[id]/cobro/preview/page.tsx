@@ -36,6 +36,7 @@ type LedgerEntry = {
   monto: string | null;
   montoManual: string | null;
   period: string | null;
+  beneficiario?: string | null;
 };
 
 type SplitMeta = {
@@ -166,11 +167,18 @@ export default function CobroPreviewPage() {
       if (splitMeta) {
         for (const e of selectedEntries) {
           const monto = draft.montoOverrides?.[e.id] !== undefined ? Number(draft.montoOverrides[e.id]) : Number(e.montoManual ?? e.monto ?? 0);
-          const propietarioPct = 100 - (splitMeta.managementCommissionPct ?? 0);
-          splitBreakdowns[e.id] = {
-            propietario: Math.round(monto * propietarioPct) / 100,
-            administracion: Math.round(monto * (splitMeta.managementCommissionPct ?? 0)) / 100,
-          };
+          // Respetar el beneficiario override del usuario (en el draft) o el
+          // del propio ledger entry. Valores: "split" (default por %) |
+          // "administracion" (100% agencia) | otro (100% propietario).
+          const dest = draft.beneficiarioOverrides?.[e.id] ?? e.beneficiario ?? "split";
+          if (dest === "administracion") {
+            splitBreakdowns[e.id] = { propietario: 0, administracion: monto };
+          } else if (dest === "split") {
+            const adm = Math.round(monto * (splitMeta.managementCommissionPct ?? 0)) / 100;
+            splitBreakdowns[e.id] = { propietario: monto - adm, administracion: adm };
+          } else {
+            splitBreakdowns[e.id] = { propietario: monto, administracion: 0 };
+          }
         }
       }
 
