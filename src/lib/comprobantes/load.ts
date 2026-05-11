@@ -26,7 +26,8 @@ export type ComprobanteData = {
     managementCommissionPct: number;
   };
   propiedad: {
-    address: string;
+    addressStreet: string | null;
+    addressNumber: string | null;
     floorUnit: string | null;
   };
   inquilino: {
@@ -277,7 +278,8 @@ export async function loadComprobanteData(
       managementCommissionPct: Number(contratoRow.managementCommissionPct ?? 10),
     },
     propiedad: {
-      address: propRow.address,
+      addressStreet: propRow.addressStreet,
+      addressNumber: propRow.addressNumber,
       floorUnit: propRow.floorUnit,
     },
     inquilino: inqRow ?? null,

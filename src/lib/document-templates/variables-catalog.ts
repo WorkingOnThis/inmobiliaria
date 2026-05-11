@@ -4,6 +4,7 @@ import type { client } from "@/db/schema/client";
 import type { contract } from "@/db/schema/contract";
 import type { agency } from "@/db/schema/agency";
 import { numeroEnLetras, montoEnLetras } from "./num-to-words";
+import { formatAddress } from "@/lib/properties/format-address";
 
 export type VariableCategory =
   | "propiedad"
@@ -84,7 +85,7 @@ export const VARIABLES_CATALOG: TemplateVariable[] = [
     path: "domicilio_propiedad_completo",
     label: "Dirección completa",
     category: "propiedad",
-    resolver: (ctx) => ctx.property?.address ?? null,
+    resolver: (ctx) => ctx.property ? formatAddress({ addressStreet: ctx.property.addressStreet ?? "", addressNumber: ctx.property.addressNumber, floorUnit: ctx.property.floorUnit }) : null,
   },
   {
     path: "domicilio_propiedad_barrio",

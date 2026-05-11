@@ -1,5 +1,6 @@
 import type { ComprobanteData } from "./load";
 import { formatMonto, formatFecha, formatPeriodo, agencyDisplayName } from "@/lib/receipts/format";
+import { formatAddress } from "@/lib/properties/format-address";
 
 export function buildComprobanteEmailHTML(data: ComprobanteData, baseUrl: string): string {
   const { movimiento, contrato, propiedad, propietario, totales, agency } = data;
@@ -14,7 +15,7 @@ export function buildComprobanteEmailHTML(data: ComprobanteData, baseUrl: string
     .filter(Boolean)
     .join(" ");
   const periodoLabel = movimiento.period ? formatPeriodo(movimiento.period) : "";
-  const direccion = `${propiedad.address}${propiedad.floorUnit ? ` ${propiedad.floorUnit}` : ""}`;
+  const direccion = formatAddress({ addressStreet: propiedad.addressStreet ?? "", addressNumber: propiedad.addressNumber, floorUnit: propiedad.floorUnit });
 
   const link = `${baseUrl}/comprobantes/${movimiento.id}`;
 

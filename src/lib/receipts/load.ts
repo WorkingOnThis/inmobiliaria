@@ -10,6 +10,7 @@ import { receiptAllocation } from "@/db/schema/receipt-allocation";
 import { tenantLedger } from "@/db/schema/tenant-ledger";
 import { and, eq, inArray } from "drizzle-orm";
 import { parseTrustedEmails } from "./format";
+import { formatAddress } from "@/lib/properties/format-address";
 
 export type TrustedEmail = { email: string; label?: string; sendDefault: boolean };
 
@@ -29,7 +30,7 @@ export type ReceiptData = {
     cbu: string | null;
     alias: string | null;
   } | null;
-  propiedad: { address: string; floorUnit: string | null } | null;
+  propiedad: { addressStreet: string | null; addressNumber: string | null; floorUnit: string | null } | null;
   contrato: { contractNumber: string; paymentModality: string | null } | null;
   serviceItems: {
     id: string;
@@ -120,7 +121,7 @@ export async function loadReceiptData(
         }).from(client).where(and(eq(client.id, movimiento.inquilinoId), eq(client.agencyId, agencyId))).limit(1)
       : Promise.resolve([]),
     movimiento.propiedadId
-      ? db.select({ address: property.address, floorUnit: property.floorUnit })
+      ? db.select({ addressStreet: property.addressStreet, addressNumber: property.addressNumber, floorUnit: property.floorUnit })
           .from(property).where(and(eq(property.id, movimiento.propiedadId), eq(property.agencyId, agencyId))).limit(1)
       : Promise.resolve([]),
     movimiento.contratoId

@@ -1,5 +1,6 @@
 import type { ReceiptData } from "./load";
 import { formatMonto as fmt, formatFecha as fecha, formatPeriodo as periodo, montoEnLetras, agencyDisplayName } from "./format";
+import { formatAddress } from "@/lib/properties/format-address";
 
 export function buildReceiptEmailHTML(data: ReceiptData): string {
   const { movimiento, inquilino, propiedad, contrato, ledgerItems, serviceItems, agency } = data;
@@ -14,7 +15,7 @@ export function buildReceiptEmailHTML(data: ReceiptData): string {
 
   const periodoLabel = periodo(movimiento.period) ?? "";
   const direccion = propiedad
-    ? `${propiedad.address}${propiedad.floorUnit ? ` ${propiedad.floorUnit}` : ""}`
+    ? formatAddress({ addressStreet: propiedad.addressStreet ?? "", addressNumber: propiedad.addressNumber, floorUnit: propiedad.floorUnit })
     : "";
 
   const tableRows: { concepto: string; per: string | null; monto: string }[] =
