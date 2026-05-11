@@ -13,6 +13,15 @@ import { nextReciboNumero } from "@/lib/receipts/numbering";
 import { z } from "zod";
 import { and, eq, inArray } from "drizzle-orm";
 
+function isUniqueViolation(err: unknown, indexName?: string): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; constraint?: string; cause?: { code?: string; constraint?: string } };
+  const code = e.code ?? e.cause?.code;
+  const constraint = e.constraint ?? e.cause?.constraint;
+  if (code !== "23505") return false;
+  return indexName ? constraint === indexName : true;
+}
+
 const emitSchema = z.object({
   ledgerEntryIds: z.array(z.string().min(1)).min(1),
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -50,9 +59,12 @@ function getSignedEffectiveAmount(
 }
 
 export async function POST(request: NextRequest) {
+  let capturedIdempotencyKey: string | undefined;
+  let capturedAgencyId: string | undefined;
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     const agencyId = requireAgencyId(session);
+    capturedAgencyId = agencyId;
     if (!canManageClients(session!.user.role)) {
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
@@ -64,6 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario, montoOverrides, splitBreakdowns, idempotencyKey, observaciones, action } = parsed.data;
+    capturedIdempotencyKey = idempotencyKey;
 
     // Early return: si ya emitimos un recibo con esta idempotencyKey,
     // devolver el resultado anterior sin duplicar movimientos.
@@ -316,6 +329,35 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(txResult, { status: 201 });
   } catch (error) {
+    // Race condition: another request with the same idempotencyKey beat us
+    // to the insert. Replay the deduplicated response.
+    if (
+      capturedIdempotencyKey &&
+      capturedAgencyId &&
+      isUniqueViolation(error, "cash_movement_idempotency_key_idx")
+    ) {
+      try {
+        const existing = await db
+          .select({ reciboNumero: cajaMovimiento.reciboNumero, movimientoAgenciaId: cajaMovimiento.id })
+          .from(cajaMovimiento)
+          .where(and(
+            eq(cajaMovimiento.idempotencyKey, capturedIdempotencyKey),
+            eq(cajaMovimiento.agencyId, capturedAgencyId),
+            eq(cajaMovimiento.tipoFondo, "agencia"),
+          ))
+          .limit(1);
+        if (existing.length > 0 && existing[0].reciboNumero) {
+          return NextResponse.json({
+            reciboNumero: existing[0].reciboNumero,
+            movimientoAgenciaId: existing[0].movimientoAgenciaId,
+            deduplicated: true,
+          }, { status: 200 });
+        }
+      } catch {
+        // Si el replay falla, dejar fluir al handler de error genérico.
+      }
+    }
+
     const resp = handleAgencyError(error);
     if (resp) return resp;
     console.error("Error POST /api/receipts/emit:", error);
