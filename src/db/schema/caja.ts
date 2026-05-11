@@ -96,6 +96,9 @@ export const cajaMovimiento = pgTable("cash_movement", {
 
   // Liquidación al propietario: agrupa los movimientos incluidos en una
   // misma corrida de liquidación. NULL hasta que el período se liquida.
+  // (settlementBatchId/liquidadoAt/liquidadoPor son la fuente de verdad de
+  //  la liquidación; settledAt arriba es solo el TTL de visualización de 90
+  //  días y se setea aparte cuando aplica.)
   settlementBatchId: text("settlementBatchId"),
   liquidadoAt: timestamp("liquidadoAt"),
   liquidadoPor: text("liquidadoPor").references(() => user.id, { onDelete: "set null" }),
