@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { ServiceTabProperty } from "@/components/services/service-tab-property";
 import { SectionLabel } from "@/components/ui/section-label";
 import { RENTAL_STATUS_LABELS, SALE_STATUS_LABELS } from "@/lib/properties/constants";
+import { formatAddress } from "@/lib/properties/format-address";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -98,7 +99,6 @@ interface ClientOption {
 interface PropertyDetail {
   id: string;
   title: string | null;
-  address: string;
   rentalPrice: string | null;
   rentalPriceCurrency: string;
   salePrice: string | null;
@@ -125,7 +125,7 @@ interface PropertyDetail {
   serviceCouncil: string;
   serviceStateTax: string;
   serviceHoa: string;
-  addressStreet: string | null;
+  addressStreet: string;
   addressNumber: string | null;
   city: string | null;
   province: string | null;
@@ -1135,7 +1135,7 @@ function PropiedadFichaContent() {
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [savedForm, setSavedForm] = useState({
-    address: "", type: "", rentalStatus: "", saleStatus: "",
+    type: "", rentalStatus: "", saleStatus: "",
     rentalPrice: "", rentalPriceCurrency: "ARS", salePrice: "", salePriceCurrency: "USD",
     zone: "", floorUnit: "", rooms: "", bedrooms: "", bathrooms: "", floors: "",
     surface: "", surfaceBuilt: "", surfaceLand: "", yearBuilt: "",
@@ -1145,7 +1145,6 @@ function PropiedadFichaContent() {
   });
   const [savedTieneExpensas, setSavedTieneExpensas] = useState(false);
   const [form, setForm] = useState({
-    address: "",
     type: "",
     rentalStatus: "",
     saleStatus: "",
@@ -1181,7 +1180,6 @@ function PropiedadFichaContent() {
   const startEdit = () => {
     if (!prop) return;
     const newForm = {
-      address: prop.address,
       type: prop.type,
       rentalStatus: prop.rentalStatus,
       saleStatus: prop.saleStatus ?? "",
@@ -1231,7 +1229,6 @@ function PropiedadFichaContent() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          address: form.address || undefined,
           type: form.type || undefined,
           rentalStatus: form.rentalStatus || undefined,
           saleStatus: form.saleStatus || null,
@@ -1438,7 +1435,7 @@ function PropiedadFichaContent() {
           </Button>
           <span className="text-muted-foreground">›</span>
           <span className="text-[0.8rem] font-semibold text-foreground truncate max-w-xs">
-            {prop.address}
+            {prop.title || formatAddress(prop)}
           </span>
         </div>
 
@@ -1460,8 +1457,7 @@ function PropiedadFichaContent() {
               <h1
                 className="text-[1.15rem] font-bold leading-tight text-foreground font-headline tracking-[-0.02em] mb-1"
               >
-                {prop.address}
-                {prop.floorUnit ? ` — ${prop.floorUnit}` : ""}
+                {formatAddress(prop)}
               </h1>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[0.75rem] text-muted-foreground">{buildSubtitle(prop)}</span>
@@ -1700,11 +1696,8 @@ function PropiedadFichaContent() {
                       Identificación y ubicación
                     </SectionLabel>
                     <div className="grid grid-cols-3 gap-3">
-                      <div className="col-span-2">
-                        <EditInput label="Dirección completa" value={form.address} onChange={set("address")} placeholder="Av. Corrientes 1234" />
-                      </div>
                       <EditInput label="Piso / Unidad" value={form.floorUnit} onChange={set("floorUnit")} placeholder="3B" />
-                      <EditInput label="Calle" value={form.addressStreet} onChange={set("addressStreet")} placeholder="Av. Corrientes" />
+                      <EditInput label="Calle *" value={form.addressStreet} onChange={set("addressStreet")} placeholder="Av. Corrientes" />
                       <EditInput label="Número" value={form.addressNumber} onChange={set("addressNumber")} placeholder="1234" />
                       <div className="flex flex-col gap-1.5">
                         <Label className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">
@@ -1914,8 +1907,9 @@ function PropiedadFichaContent() {
                       Identificación y ubicación
                     </SectionLabel>
                     <div className="grid grid-cols-3 gap-2.5">
-                      <div className="col-span-2">
-                        <AnnotatableField label="Dirección" value={prop.address} fieldName="address" entityType="property" entityId={prop.id} />
+                      <div className="col-span-2 flex flex-col gap-1">
+                        <span className="text-[0.6rem] font-bold uppercase tracking-[0.09em] text-muted-foreground">Dirección</span>
+                        <span className="text-sm font-medium text-foreground">{formatAddress(prop)}</span>
                       </div>
                       <AnnotatableField label="Piso / Unidad" value={prop.floorUnit} fieldName="floorUnit" entityType="property" entityId={prop.id} />
                       <AnnotatableField label="Calle" value={prop.addressStreet} fieldName="addressStreet" entityType="property" entityId={prop.id} />
