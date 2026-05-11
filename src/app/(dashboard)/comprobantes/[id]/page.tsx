@@ -12,6 +12,7 @@ import {
   montoEnLetras,
   agencyDisplayName,
 } from "@/lib/receipts/format";
+import { formatAddress } from "@/lib/properties/format-address";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -124,9 +125,7 @@ export default function ComprobantePage() {
     : null;
 
   const periodoLabel = movimiento.period ? formatPeriodo(movimiento.period) : null;
-  const direccionPropiedad = `${propiedad.address}${
-    propiedad.floorUnit ? ` ${propiedad.floorUnit}` : ""
-  }`;
+  const direccionPropiedad = formatAddress(propiedad);
 
   const signatoryName = agency?.signatory;
   const signatoryTitle = agency?.signatoryTitle || "Administrador";

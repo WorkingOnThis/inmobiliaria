@@ -7,6 +7,7 @@ import { Loader2, Printer, ArrowLeft, Mail, Check } from "lucide-react";
 import type { ReceiptData } from "@/lib/receipts/load";
 import { formatMonto, formatFecha, formatPeriodo, montoEnLetras, agencyDisplayName } from "@/lib/receipts/format";
 import { useSession } from "@/lib/auth/hooks";
+import { formatAddress } from "@/lib/properties/format-address";
 import { AnnulReceiptModal } from "@/components/caja/annul-receipt-modal";
 import { Button } from "@/components/ui/button";
 import {
@@ -155,9 +156,7 @@ export default function ReciboPage() {
     : "—";
 
   const periodoLabel = formatPeriodo(movimiento.period);
-  const direccionPropiedad = propiedad
-    ? `${propiedad.address}${propiedad.floorUnit ? ` ${propiedad.floorUnit}` : ""}`
-    : null;
+  const direccionPropiedad = propiedad ? formatAddress(propiedad) : null;
 
   const tableRows: { concepto: string; periodo: string | null; monto: string; isNegative: boolean }[] =
     ledgerItems.length > 0
