@@ -8,8 +8,8 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { setWithTTL } from "@/lib/utils/local-storage-ttl";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertCircle, CalendarClock, TrendingUp, PlusCircle, AlertTriangle, X, ChevronDown, Check } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -65,36 +65,6 @@ function formatPeriod(period: string): string {
   return `${month}/${year}`;
 }
 
-function getMonto(entry: LedgerEntry, overrides: Record<string, string>): number {
-  if (overrides[entry.id] !== undefined) {
-    return Number(overrides[entry.id]);
-  }
-  if (entry.estado === "pago_parcial" && entry.montoPagado !== null) {
-    return Math.max(0, Number(entry.montoManual ?? entry.monto) - Number(entry.montoPagado));
-  }
-  return Number(entry.montoManual ?? entry.monto ?? 0);
-}
-
-function getSignedMonto(entry: LedgerEntry, overrides: Record<string, string>): number {
-  const raw = getMonto(entry, overrides);
-  return entry.tipo === "descuento" || entry.tipo === "bonificacion" ? -raw : raw;
-}
-
-function calcSplitBreakdown(
-  entry: LedgerEntry,
-  monto: number,
-  beneficiarioOverrides: Record<string, string>,
-  splitMeta: SplitMeta | null
-): { propietario: number; administracion: number } | undefined {
-  if (!splitMeta) return undefined;
-  const dest = beneficiarioOverrides[entry.id] ?? entry.beneficiario ?? "split";
-  if (dest === "split") {
-    const adm = Math.round(monto * (splitMeta.managementCommissionPct / 100));
-    return { propietario: monto - adm, administracion: adm };
-  }
-  if (dest === "administracion") return { propietario: 0, administracion: monto };
-  return { propietario: monto, administracion: 0 };
-}
 
 export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Props) {
   const queryClient = useQueryClient();
@@ -107,11 +77,6 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   const [montoOverrides, setMontoOverrides] = useState<Record<string, string>>({});
   const [beneficiarioOverrides, setBeneficiarioOverrides] = useState<Record<string, string>>({});
   const [ajusteDismissed, setAjusteDismissed] = useState(false);
-
-  // Emit dialog
-  const [showEmit, setShowEmit] = useState(false);
-  const [observations, setObservations] = useState("");
-  const [emitError, setEmitError] = useState<string | null>(null);
 
   // Void receipt dialog
   const [voidConfirm, setVoidConfirm] = useState<{ reciboNumero: string } | null>(null);
@@ -132,53 +97,6 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
       const r = await fetch(`/api/tenants/${inquilinoId}/cuenta-corriente`);
       if (!r.ok) throw new Error("Error al obtener la cuenta corriente");
       return r.json() as Promise<CuentaCorrienteData>;
-    },
-  });
-
-  const emitirMutation = useMutation({
-    mutationFn: async () => {
-      const currentSplitMeta = data?.splitMeta ?? null;
-      const currentSelectedEntries = (data?.ledgerEntries ?? []).filter((e) => selectedIds.has(e.id));
-      const splitBreakdowns: Record<string, { propietario: number; administracion: number }> = {};
-      if (currentSplitMeta) {
-        for (const entry of currentSelectedEntries) {
-          const monto = getMonto(entry, montoOverrides);
-          const breakdown = calcSplitBreakdown(entry, monto, beneficiarioOverrides, currentSplitMeta);
-          if (breakdown) splitBreakdowns[entry.id] = breakdown;
-        }
-      }
-      const response = await fetch("/api/receipts/emit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ledgerEntryIds: [...selectedIds],
-          fecha: new Date().toISOString().slice(0, 10),
-          honorariosPct: currentSplitMeta?.managementCommissionPct ?? honorariosPct,
-          trasladarAlPropietario: true,
-          montoOverrides,
-          ...(Object.keys(splitBreakdowns).length > 0 && { splitBreakdowns }),
-        }),
-      });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error ?? "Error al emitir el recibo");
-      }
-      return response.json();
-    },
-    onSuccess: (result: { reciboNumero: string; movimientoAgenciaId: string }) => {
-      setShowEmit(false);
-      setSelectedIds(new Set());
-      setMontoOverrides({});
-      setBeneficiarioOverrides({});
-      setObservations("");
-      setEmitError(null);
-      queryClient.invalidateQueries({ queryKey: ["tenant-ledger", inquilinoId] });
-      if (result?.movimientoAgenciaId) {
-        window.open(`/recibos/${result.movimientoAgenciaId}`, "_blank", "noopener,noreferrer");
-      }
-    },
-    onError: (error: Error) => {
-      setEmitError(error.message);
     },
   });
 
@@ -460,14 +378,6 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
   const { kpis, ledgerEntries = [], proximoAjuste, splitMeta, contractId, paymentModality } = data;
   const selectedEntries = ledgerEntries.filter((e) => selectedIds.has(e.id));
 
-  const effectiveHonorariosPct = splitMeta?.managementCommissionPct ?? honorariosPct;
-  const baseComision = selectedEntries
-    .filter((e) => e.tipo !== "punitorio" && e.tipo !== "descuento")
-    .reduce((s, e) => s + getMonto(e, montoOverrides), 0);
-  const receiptTotal = round2(selectedEntries.reduce((s, e) => s + getSignedMonto(e, montoOverrides), 0));
-  const feesAmount = round2(baseComision * (effectiveHonorariosPct / 100));
-  const ownerNet = round2(receiptTotal - feesAmount);
-
   const hasContract = ledgerEntries.length > 0;
 
   const pendingEntries = ledgerEntries.filter((e) => e.estado === "pendiente" || e.estado === "pago_parcial");
@@ -745,16 +655,23 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
           honorariosPct={splitMeta?.managementCommissionPct ?? honorariosPct}
           onClearSelection={() => { setSelectedIds(new Set()); setMontoOverrides({}); setBeneficiarioOverrides({}); }}
           onEmitirRecibo={() => {
-            setEmitError(null);
-            // Pre-fill observations from selected entries with notasImprimir=true
-            const notasPrintables = selectedEntries
-              .filter((e) => e.notasImprimir && e.notas)
-              .map((e) => e.notas!)
-              .join("\n\n");
-            setObservations(notasPrintables);
-            setShowEmit(true);
+            if (selectedIds.size === 0) return;
+            const draftId = crypto.randomUUID();
+            const idempotencyKey = crypto.randomUUID();
+            setWithTTL(`cobro-draft-${draftId}`, {
+              ledgerEntryIds: [...selectedIds],
+              montoOverrides,
+              beneficiarioOverrides,
+              honorariosPct: data?.splitMeta?.managementCommissionPct ?? honorariosPct,
+              fecha: new Date().toISOString().slice(0, 10),
+              idempotencyKey,
+            }, 30 * 60 * 1000);
+            window.open(`/inquilinos/${inquilinoId}/cobro/preview?draft=${draftId}`, "_blank", "noopener,noreferrer");
+            setSelectedIds(new Set());
+            setMontoOverrides({});
+            setBeneficiarioOverrides({});
           }}
-          isEmitting={emitirMutation.isPending}
+          isEmitting={false}
           beneficiarioOverrides={beneficiarioOverrides}
           splitMeta={splitMeta ?? null}
         />
@@ -764,68 +681,7 @@ export function TenantTabCurrentAccount({ inquilinoId, honorariosPct = 10 }: Pro
             Seleccioná ítems de la lista para emitir un recibo
           </p>
         )}
-
-        {emitError && <p className="text-xs text-destructive">{emitError}</p>}
       </div>
-
-      {/* ── Emit receipt dialog ── */}
-      <Dialog open={showEmit} onOpenChange={(open) => { if (!open && !emitirMutation.isPending) { setShowEmit(false); setEmitError(null); } }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirmar recibo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 text-sm">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Ítems a cobrar</p>
-              {selectedEntries.map((e) => (
-                <div key={e.id} className="flex justify-between">
-                  <span className="text-muted-foreground truncate max-w-[240px]">{e.descripcion}</span>
-                  <span className="font-mono ml-4">${getSignedMonto(e, montoOverrides).toLocaleString("es-AR")}</span>
-                </div>
-              ))}
-            </div>
-            <Separator />
-            <div className="space-y-1">
-              <div className="flex justify-between font-semibold">
-                <span>Total del recibo</span>
-                <span className="font-mono">${receiptTotal.toLocaleString("es-AR")}</span>
-              </div>
-              <div className="flex justify-between text-xs text-primary">
-                <span>Honorarios ({effectiveHonorariosPct}%)</span>
-                <span className="font-mono">${feesAmount.toLocaleString("es-AR")}</span>
-              </div>
-              <div className="flex justify-between text-xs text-income">
-                <span>Propietario recibe</span>
-                <span className="font-mono">${ownerNet.toLocaleString("es-AR")}</span>
-              </div>
-            </div>
-            <Separator />
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wide">
-                Observaciones (opcional)
-              </label>
-              <Textarea
-                value={observations}
-                onChange={(e) => setObservations(e.target.value)}
-                placeholder="Ej: pago parcial, acuerdo de fecha, seña…"
-                rows={3}
-                className="text-sm resize-none"
-              />
-            </div>
-            {emitError && (
-              <p className="text-xs text-destructive">{emitError}</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowEmit(false); setEmitError(null); }} disabled={emitirMutation.isPending}>
-              Cancelar
-            </Button>
-            <Button onClick={() => emitirMutation.mutate()} disabled={emitirMutation.isPending}>
-              {emitirMutation.isPending ? "Emitiendo..." : "Confirmar y emitir"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* ── Void receipt dialog ── */}
       <Dialog
