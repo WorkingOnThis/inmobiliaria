@@ -12,6 +12,7 @@ import { user } from "@/db/schema/better-auth";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
+import { formatAddress } from "@/lib/properties/format-address";
 
 const tenantAlias = alias(client, "tenantClient");
 const ownerAlias = alias(client, "ownerClient");
@@ -42,7 +43,9 @@ export async function GET(
         categoria: tarea.category,
         dueDate: tarea.dueDate,
         propertyId: tarea.propertyId,
-        propertyAddress: property.address,
+        propertyAddressStreet: property.addressStreet,
+        propertyAddressNumber: property.addressNumber,
+        propertyFloorUnit: property.floorUnit,
         contractId: tarea.contractId,
         contractNumber: contract.contractNumber,
         tenantId: tarea.tenantId,
@@ -108,7 +111,15 @@ export async function GET(
       .where(eq(tareaArchivo.taskId, id))
       .orderBy(desc(tareaArchivo.createdAt));
 
-    return NextResponse.json({ ...row, historial, comentarios, archivos });
+    return NextResponse.json({
+      ...row,
+      propertyAddress: row.propertyAddressStreet
+        ? formatAddress({ addressStreet: row.propertyAddressStreet, addressNumber: row.propertyAddressNumber, floorUnit: row.propertyFloorUnit })
+        : null,
+      historial,
+      comentarios,
+      archivos,
+    });
   } catch (error) {
     const resp = handleAgencyError(error);
     if (resp) return resp;

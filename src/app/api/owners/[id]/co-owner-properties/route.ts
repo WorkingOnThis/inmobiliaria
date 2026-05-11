@@ -28,7 +28,9 @@ export async function GET(
         sharePercent: propertyCoOwner.sharePercent,
         property: {
           id: property.id,
-          address: property.address,
+          addressStreet: property.addressStreet,
+          addressNumber: property.addressNumber,
+          floorUnit: property.floorUnit,
           type: property.type,
           rentalStatus: property.rentalStatus,
           saleStatus: property.saleStatus,

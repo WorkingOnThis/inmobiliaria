@@ -61,7 +61,9 @@ export async function GET(request: NextRequest) {
         contratoNumero: contract.contractNumber,
         // Propiedad vinculada
         propiedadId: cajaMovimiento.propiedadId,
-        propiedadDireccion: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
+        propiedadAddressStreet: property.addressStreet,
+        propiedadAddressNumber: property.addressNumber,
+        propiedadFloorUnit: property.floorUnit,
         // Propietario vinculado
         propietarioId: cajaMovimiento.propietarioId,
         propietarioNombre: sql<string | null>`
@@ -121,8 +123,15 @@ export async function GET(request: NextRequest) {
 
     const neto = bruto - aLiquidar - otrosEgresos;
 
+    const movimientosMapped = movimientos.map((m) => ({
+      ...m,
+      propiedadDireccion: m.propiedadAddressStreet
+        ? formatAddress({ addressStreet: m.propiedadAddressStreet, addressNumber: m.propiedadAddressNumber, floorUnit: m.propiedadFloorUnit })
+        : null,
+    }));
+
     return NextResponse.json({
-      movimientos,
+      movimientos: movimientosMapped,
       totales: {
         bruto,
         aLiquidar,

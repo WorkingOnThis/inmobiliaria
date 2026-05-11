@@ -38,7 +38,9 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
         salaryInfo: guaranteeSalaryInfo,
         property: {
           id: property.id,
-          address: property.address,
+          addressStreet: property.addressStreet,
+          addressNumber: property.addressNumber,
+          floorUnit: property.floorUnit,
           type: property.type,
           ownerId: property.ownerId,
         },

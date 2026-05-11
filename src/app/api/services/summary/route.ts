@@ -6,6 +6,7 @@ import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { servicio, servicioComprobante, servicioOmision, property } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { calculateServiceStatus, getPeriodDays } from "@/lib/services/constants";
+import { formatAddress } from "@/lib/properties/format-address";
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +25,9 @@ export async function GET(request: NextRequest) {
         id: servicio.id,
         propertyId: servicio.propertyId,
         activatesBlock: servicio.triggersBlock,
-        propertyAddress: property.address,
+        propertyAddressStreet: property.addressStreet,
+        propertyAddressNumber: property.addressNumber,
+        propertyFloorUnit: property.floorUnit,
         comprobanteId: servicioComprobante.id,
         omisionId: servicioOmision.id,
       })
@@ -50,7 +53,10 @@ export async function GET(request: NextRequest) {
         activatesBlock: s.activatesBlock,
         hasOmission,
       });
-      return { propertyId: s.propertyId, propertyAddress: s.propertyAddress, estado };
+      const propertyAddress = s.propertyAddressStreet
+        ? formatAddress({ addressStreet: s.propertyAddressStreet, addressNumber: s.propertyAddressNumber, floorUnit: s.propertyFloorUnit })
+        : null;
+      return { propertyId: s.propertyId, propertyAddress, estado };
     });
 
     const propiedadesMap = new Map<string, { propertyId: string; address: string | null; estados: string[] }>();

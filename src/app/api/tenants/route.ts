@@ -125,7 +125,8 @@ export async function GET(request: NextRequest) {
         endDate: contract.endDate,
         paymentDay: contract.paymentDay,
         graceDays: contract.graceDays,
-        propertyAddress: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
+        propertyAddressStreet: property.addressStreet,
+        propertyAddressNumber: property.addressNumber,
         propertyFloorUnit: property.floorUnit,
       })
       .from(contractParticipant)
@@ -224,10 +225,12 @@ export async function GET(request: NextRequest) {
           : null;
 
       let propertyDisplay: string | null = null;
-      if (bestContract?.propertyAddress) {
-        propertyDisplay = bestContract.propertyAddress;
-        if (bestContract.propertyFloorUnit)
-          propertyDisplay += `, ${bestContract.propertyFloorUnit}`;
+      if (bestContract?.propertyAddressStreet) {
+        propertyDisplay = formatAddress({
+          addressStreet: bestContract.propertyAddressStreet,
+          addressNumber: bestContract.propertyAddressNumber,
+          floorUnit: bestContract.propertyFloorUnit,
+        });
       }
 
       return {

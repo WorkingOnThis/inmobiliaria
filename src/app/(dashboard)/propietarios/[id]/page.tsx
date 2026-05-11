@@ -53,7 +53,9 @@ interface Owner {
 interface PropertyData {
   id: string;
   title: string | null;
-  address: string;
+  addressStreet: string;
+  addressNumber: string | null;
+  floorUnit: string | null;
   rentalPrice: string | null;
   rentalPriceCurrency: string;
   salePrice: string | null;
@@ -62,7 +64,6 @@ interface PropertyData {
   rentalStatus: string;
   saleStatus: string | null;
   zone: string | null;
-  floorUnit: string | null;
   rooms: number | null;
   bathrooms: number | null;
   surface: string | null;

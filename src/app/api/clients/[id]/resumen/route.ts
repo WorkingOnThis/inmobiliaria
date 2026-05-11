@@ -11,6 +11,7 @@ import { auth } from "@/lib/auth";
 import { canManageClients } from "@/lib/permissions";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { and, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
+import { formatAddress } from "@/lib/properties/format-address";
 
 function defaultPeriodRange() {
   const now = new Date();
@@ -87,7 +88,9 @@ export async function GET(
           .select({
             id: contract.id,
             contractNumber: contract.contractNumber,
-            propertyAddress: property.address,
+            propertyAddressStreet: property.addressStreet,
+            propertyAddressNumber: property.addressNumber,
+            propertyFloorUnit: property.floorUnit,
           })
           .from(contract)
           .leftJoin(property, eq(contract.propertyId, property.id))
@@ -139,7 +142,9 @@ export async function GET(
           return {
             contractId: c.id,
             contractNumber: c.contractNumber,
-            propertyAddress: c.propertyAddress ?? "",
+            propertyAddress: c.propertyAddressStreet
+              ? formatAddress({ addressStreet: c.propertyAddressStreet, addressNumber: c.propertyAddressNumber, floorUnit: c.propertyFloorUnit })
+              : "",
             periods,
             subtotal,
           };
@@ -155,7 +160,9 @@ export async function GET(
       .select({
         id: contract.id,
         contractNumber: contract.contractNumber,
-        propertyAddress: property.address,
+        propertyAddressStreet: property.addressStreet,
+        propertyAddressNumber: property.addressNumber,
+        propertyFloorUnit: property.floorUnit,
       })
       .from(contract)
       .leftJoin(property, eq(contract.propertyId, property.id))
@@ -241,7 +248,9 @@ export async function GET(
           return {
             contractId: c.id,
             contractNumber: c.contractNumber,
-            propertyAddress: c.propertyAddress ?? "",
+            propertyAddress: c.propertyAddressStreet
+              ? formatAddress({ addressStreet: c.propertyAddressStreet, addressNumber: c.propertyAddressNumber, floorUnit: c.propertyFloorUnit })
+              : "",
             tenantName,
             periods,
             subtotal,

@@ -61,7 +61,9 @@ export async function GET(request: NextRequest) {
         dueDay: servicio.dueDay,
         triggersBlock: servicio.triggersBlock,
         createdAt: servicio.createdAt,
-        propertyAddress: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
+        propertyAddressStreet: property.addressStreet,
+        propertyAddressNumber: property.addressNumber,
+        propertyFloorUnit: property.floorUnit,
         propertyType: property.type,
         comprobanteId: servicioComprobante.id,
         comprobanteMonto: servicioComprobante.monto,
@@ -149,7 +151,9 @@ export async function GET(request: NextRequest) {
         dueDay: s.dueDay,
         triggersBlock: s.triggersBlock,
         createdAt: s.createdAt,
-        propertyAddress: s.propertyAddress,
+        propertyAddress: s.propertyAddressStreet
+          ? formatAddress({ addressStreet: s.propertyAddressStreet, addressNumber: s.propertyAddressNumber, floorUnit: s.propertyFloorUnit })
+          : null,
         propertyType: s.propertyType,
         periodo,
         estado: estadoCalculado,

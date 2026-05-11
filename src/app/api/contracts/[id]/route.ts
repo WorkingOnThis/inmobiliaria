@@ -14,6 +14,7 @@ import { canManageContracts } from "@/lib/permissions";
 import { requireAgencyId, requireAgencyResource, handleAgencyError } from "@/lib/auth/agency";
 import { eq, inArray, and, ne, or } from "drizzle-orm";
 import { z } from "zod";
+import { formatAddress } from "@/lib/properties/format-address";
 import { ADJUSTMENT_INDEXES } from "@/lib/clients/constants";
 
 const patchContractSchema = z.object({
@@ -77,7 +78,8 @@ export async function GET(
         createdAt: contract.createdAt,
         ownerId: contract.ownerId,
         propertyId: contract.propertyId,
-        propertyAddress: property.address,
+        propertyAddressStreet: property.addressStreet,
+        propertyAddressNumber: property.addressNumber,
         propertyType: property.type,
         propertyFloorUnit: property.floorUnit,
         propertyZone: property.zone,
@@ -336,6 +338,9 @@ export async function GET(
 
     return NextResponse.json({
       ...row,
+      propertyAddress: row.propertyAddressStreet
+        ? formatAddress({ addressStreet: row.propertyAddressStreet, addressNumber: row.propertyAddressNumber, floorUnit: row.propertyFloorUnit ?? null })
+        : null,
       owner,
       tenants,
       participants,

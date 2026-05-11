@@ -67,11 +67,12 @@ interface Contrato {
 
 interface PropertyData {
   id: string;
-  address: string;
+  addressStreet: string;
+  addressNumber: string | null;
+  floorUnit: string | null;
   type: string;
   rentalStatus: string;
   saleStatus: string | null;
-  floorUnit: string | null;
   zone: string | null;
   rooms: number | null;
   bathrooms: number | null;

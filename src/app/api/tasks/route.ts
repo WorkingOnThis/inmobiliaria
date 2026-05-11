@@ -47,7 +47,9 @@ export async function GET(request: NextRequest) {
         categoria: tarea.category,
         dueDate: tarea.dueDate,
         propertyId: tarea.propertyId,
-        propertyAddress: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
+        propertyAddressStreet: property.addressStreet,
+        propertyAddressNumber: property.addressNumber,
+        propertyFloorUnit: property.floorUnit,
         contractId: tarea.contractId,
         contractNumber: contract.contractNumber,
         tenantId: tarea.tenantId,
@@ -89,7 +91,14 @@ export async function GET(request: NextRequest) {
       saludPortfolio = Math.round(((totalProps - alertProps.length) / totalProps) * 100);
     }
 
-    return NextResponse.json({ total: items.length, saludPortfolio, items });
+    const itemsMapped = items.map((item) => ({
+      ...item,
+      propertyAddress: item.propertyAddressStreet
+        ? formatAddress({ addressStreet: item.propertyAddressStreet, addressNumber: item.propertyAddressNumber, floorUnit: item.propertyFloorUnit })
+        : null,
+    }));
+
+    return NextResponse.json({ total: itemsMapped.length, saludPortfolio, items: itemsMapped });
   } catch (error) {
     const resp = handleAgencyError(error);
     if (resp) return resp;

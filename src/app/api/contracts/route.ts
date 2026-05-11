@@ -87,7 +87,9 @@ export async function GET(request: NextRequest) {
           adjustmentFrequency: contract.adjustmentFrequency,
           paymentModality: contract.paymentModality,
           createdAt: contract.createdAt,
-          propertyAddress: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
+          propertyAddressStreet: property.addressStreet,
+          propertyAddressNumber: property.addressNumber,
+          propertyFloorUnit: property.floorUnit,
           propertyType: property.type,
           ownerId: contract.ownerId,
           propertyId: contract.propertyId,
@@ -135,8 +137,14 @@ export async function GET(request: NextRequest) {
           `${t.firstName} ${t.lastName || ""}`.trim()
         );
 
+        const { propertyAddressStreet, propertyAddressNumber, propertyFloorUnit, ...rest } = c;
         return {
-          ...c,
+          ...rest,
+          propertyAddress: formatAddress({
+            addressStreet: propertyAddressStreet ?? "",
+            addressNumber: propertyAddressNumber,
+            floorUnit: propertyFloorUnit,
+          }),
           tenantNames,
           tenantIds: tenantsData.map((t) => t.clientId),
           ownerName: ownerData[0]

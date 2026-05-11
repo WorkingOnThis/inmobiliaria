@@ -4,6 +4,57 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-11 — Animaciones de carga en listados (skeleton + stagger)
+
+### Qué hice
+
+Apliqué un patrón de animación de carga a los 4 listados principales del sistema: inquilinos, propietarios, propiedades y contratos.
+
+El cambio tiene dos partes:
+
+1. **Skeleton de carga**: reemplacé el spinner (`Loader2` girando en un div vacío) por filas falsas que imitan la estructura real de cada tabla. Mientras los datos no llegan, la tabla aparece completa con formas grises animadas en lugar de datos reales.
+
+2. **Entrada escalonada (stagger)**: cuando los datos llegan, cada fila entra con una animación de `opacity 0→1` + `translateY(8px→0)` en 280ms. Cada fila espera 45ms más que la anterior (fila 0 = 0ms, fila 1 = 45ms, fila 2 = 90ms...). Eso da el efecto de "van apareciendo de a poco".
+
+También agregué soporte para `prefers-reduced-motion`: si el sistema operativo del usuario tiene activada esa opción de accesibilidad, la animación no ocurre.
+
+Para los tres listados adicionales (propietarios, propiedades, contratos), usé agentes en paralelo — cada uno trabajó en su propio archivo sin interferir con los otros.
+
+### Por qué lo hice así y no de otra forma
+
+**Skeleton en lugar de spinner**: el spinner deja un "hueco" visual — el espacio que va a ocupar la tabla no existe todavía, entonces cuando los datos llegan hay un salto de layout. El skeleton anticipa la forma del contenido; no hay salto.
+
+**CSS puro en lugar de Framer Motion**: para este caso alcanza con `@keyframes` + una variable CSS (`--row-delay`) para controlar el delay por fila. Framer Motion agrega ~30KB de bundle y su valor real aparece cuando necesitás animaciones coordinadas entre componentes o gestos. Acá era innecesario.
+
+**Variable CSS `--row-delay` en lugar de clases Tailwind**: Tailwind genera clases en tiempo de compilación; no puede generar `delay-[${i * 45}ms]` dinámico. Con `style={{ "--row-delay": "${i * 45}ms" }}` el valor se pasa directamente al DOM y el CSS lo lee desde ahí.
+
+**Agentes en paralelo para los 3 listados restantes**: los tres componentes eran independientes (archivos distintos, sin estado compartido). En lugar de hacerlos uno por uno y esperar 3x el tiempo, corrieron simultáneamente. El `globals.css` ya tenía el keyframe de la primera implementación — los agentes tenían instrucción explícita de no tocarlo.
+
+### Conceptos que aparecieron
+
+- **Perceived performance (rendimiento percibido)**: la pantalla no carga más rápido, pero se siente más rápida. El cerebro interpreta "ver algo" como "avance". Un skeleton activo engaña la espera mejor que un spinner porque anticipa la forma del contenido.
+- **Skeleton screen**: técnica de UX donde se muestran formas grises animadas que imitan la estructura del contenido real mientras se espera la respuesta del servidor. Inventada por Facebook en 2013.
+- **Staggered animation**: animación en la que múltiples elementos del mismo tipo entran con un pequeño delay entre sí. Crea sensación de fluidez y de que la UI "se está construyendo" ante tus ojos.
+- **`prefers-reduced-motion`**: media query de CSS que detecta si el sistema operativo del usuario tiene activada la opción de reducir movimiento (pensada para personas con epilepsia o sensibilidad vestibular). Buena práctica desactivar animaciones cuando está activa.
+- **CSS custom properties como argumentos de animación**: las variables CSS (`--row-delay`) se pueden setear desde el atributo `style` de React y leer desde cualquier regla CSS que aplique al elemento. Es la forma de pasar valores dinámicos a animaciones CSS sin JavaScript.
+- **Layout shift**: cuando un elemento aparece de golpe y empuja el resto del contenido hacia abajo. El skeleton lo evita porque ocupa el mismo espacio que los datos reales desde el principio.
+- **Agentes en paralelo**: en vez de ejecutar tareas independientes una por una, se despachan simultáneamente. Cada agente tiene contexto aislado y trabaja en su propio dominio. El tiempo total es el del agente más lento, no la suma de todos.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué el skeleton tiene que imitar la *estructura* del contenido real y no puede ser simplemente una barra genérica? ¿Qué cambia en la experiencia?
+2. Si tuvieras 50 filas en una tabla, ¿el stagger de 45ms por fila seguiría funcionando bien? ¿Cómo lo ajustarías?
+3. ¿En qué casos concretos usarías Framer Motion en lugar de CSS puro?
+
+### Qué debería anotar en Obsidian
+
+- [ ] Concepto: **Perceived performance** — qué es, cómo funciona psicológicamente, ejemplos (skeleton screen, optimistic UI, progress bars)
+- [ ] Patrón: **Skeleton screen + stagger en React** — receta con el código base (keyframe, clase CSS, variable `--row-delay`, componente SkeletonRow)
+- [ ] Concepto: **`prefers-reduced-motion`** — qué es, cómo se usa en CSS, por qué importa para accesibilidad
+- [ ] Decisión técnica: **CSS puro vs Framer Motion** — cuándo elegir cada uno
+
+---
+
 ## 2026-05-10 — Mejoras al panel de proyección de alquiler
 
 ### Qué hice

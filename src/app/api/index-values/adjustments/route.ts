@@ -30,7 +30,9 @@ export async function GET(request: NextRequest) {
         id: adjustmentApplication.id,
         contratoId: adjustmentApplication.contratoId,
         contractNumber: contract.contractNumber,
-        propertyAddress: formatAddress({ addressStreet: property.addressStreet ?? "", addressNumber: property.addressNumber, floorUnit: property.floorUnit }),
+        propertyAddressStreet: property.addressStreet,
+        propertyAddressNumber: property.addressNumber,
+        propertyFloorUnit: property.floorUnit,
         adjustmentPeriod: adjustmentApplication.adjustmentPeriod,
         previousAmount: adjustmentApplication.previousAmount,
         newAmount: adjustmentApplication.newAmount,
@@ -46,7 +48,14 @@ export async function GET(request: NextRequest) {
       .where(and(...conditions))
       .orderBy(desc(adjustmentApplication.appliedAt));
 
-    return NextResponse.json(rows);
+    const result = rows.map((r) => ({
+      ...r,
+      propertyAddress: r.propertyAddressStreet
+        ? formatAddress({ addressStreet: r.propertyAddressStreet, addressNumber: r.propertyAddressNumber, floorUnit: r.propertyFloorUnit })
+        : null,
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     const resp = handleAgencyError(error);
     if (resp) return resp;
