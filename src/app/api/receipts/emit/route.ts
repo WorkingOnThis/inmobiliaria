@@ -20,6 +20,11 @@ const emitSchema = z.object({
   trasladarAlPropietario: z.boolean().default(true),
   montoOverrides: z.record(z.string(), z.string()).default({}),
   splitBreakdowns: z.record(z.string(), z.object({ propietario: z.number(), administracion: z.number() })).optional(),
+  // idempotencyKey is optional during PR1+PR2 so the existing dialog flow still works.
+  // PR3 will always send it from the new preview screen.
+  idempotencyKey: z.string().uuid().optional(),
+  observaciones: z.string().max(500).optional(),
+  action: z.enum(["confirm", "print", "email"]).default("confirm"),
 });
 
 function round2(n: number): number {
@@ -58,7 +63,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
     }
 
-    const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario, montoOverrides, splitBreakdowns } = parsed.data;
+    const { ledgerEntryIds, fecha, honorariosPct, trasladarAlPropietario, montoOverrides, splitBreakdowns, idempotencyKey, observaciones, action } = parsed.data;
+
+    // Early return: si ya emitimos un recibo con esta idempotencyKey,
+    // devolver el resultado anterior sin duplicar movimientos.
+    if (idempotencyKey) {
+      const existing = await db
+        .select({
+          reciboNumero: cajaMovimiento.reciboNumero,
+          movimientoAgenciaId: cajaMovimiento.id,
+        })
+        .from(cajaMovimiento)
+        .where(and(
+          eq(cajaMovimiento.idempotencyKey, idempotencyKey),
+          eq(cajaMovimiento.agencyId, agencyId),
+          eq(cajaMovimiento.tipoFondo, "agencia"),
+        ))
+        .limit(1);
+      if (existing.length > 0 && existing[0].reciboNumero) {
+        return NextResponse.json({
+          reciboNumero: existing[0].reciboNumero,
+          movimientoAgenciaId: existing[0].movimientoAgenciaId,
+          deduplicated: true,
+        }, { status: 200 });
+      }
+    }
 
     // Cargar ledger entries scoped por agency. Si alguno pertenece a otra
     // agency, no aparecerá acá y se reportará como "no encontrado".
@@ -203,6 +232,8 @@ export async function POST(request: NextRequest) {
             source: "contract",
             paymentModality,
             createdBy: session!.user.id,
+            idempotencyKey: idempotencyKey ?? null,
+            note: observaciones ?? null,
           })
           .returning();
         movimientoAgenciaId = movComision.id;
@@ -226,6 +257,8 @@ export async function POST(request: NextRequest) {
             source: "contract",
             paymentModality,
             createdBy: session!.user.id,
+            idempotencyKey: idempotencyKey ?? null,
+            note: observaciones ?? null,
           })
           .returning();
         movimientoAgenciaId = movAgencia.id;
@@ -247,6 +280,7 @@ export async function POST(request: NextRequest) {
             source: "contract",
             paymentModality,
             createdBy: session!.user.id,
+            idempotencyKey: idempotencyKey ?? null,
           });
 
           // Agency commission expense (deducted from owner settlement)
@@ -266,6 +300,7 @@ export async function POST(request: NextRequest) {
               source: "contract",
               paymentModality,
               createdBy: session!.user.id,
+              idempotencyKey: idempotencyKey ?? null,
             });
           }
         }
@@ -273,6 +308,11 @@ export async function POST(request: NextRequest) {
 
       return { reciboNumero, movimientoAgenciaId, totalRecibo, montoHonorarios };
     });
+
+    if (action === "email") {
+      // TODO PR3: integrar con sistema de mails. Por ahora marker.
+      console.log(`[emit] Email solicitado para recibo ${txResult.reciboNumero}`);
+    }
 
     return NextResponse.json(txResult, { status: 201 });
   } catch (error) {
