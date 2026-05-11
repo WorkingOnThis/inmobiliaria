@@ -46,7 +46,8 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false, default
   const queryClient = useQueryClient();
 
   // Property form state
-  const [address, setAddress] = useState("");
+  const [addressStreet, setAddressStreet] = useState("");
+  const [addressNumber, setAddressNumber] = useState("");
   const [type, setType] = useState<PropertyType | "">("");
   const [zone, setZone] = useState("");
   const [floorUnit, setFloorUnit] = useState("");
@@ -117,7 +118,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false, default
 
   const handleCreateProperty = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!address || !type || !ownerId) {
+    if (!addressStreet || !type || !ownerId) {
       toast.error("Por favor completa los campos obligatorios (*)");
       return;
     }
@@ -128,7 +129,8 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false, default
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          address,
+          addressStreet,
+          addressNumber: addressNumber || null,
           type,
           zone: zone || null,
           floorUnit: floorUnit || null,
@@ -183,18 +185,33 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false, default
 
         <form onSubmit={handleCreateProperty} className="p-6 flex flex-col gap-5">
 
-          {/* Dirección */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="address" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Dirección <span className="text-primary">*</span>
-            </Label>
-            <Input
-              id="address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Ej: Godoy Cruz 2814, 3B"
-              className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground"
-            />
+          {/* Calle + Número */}
+          <div className="grid grid-cols-[2fr_1fr] gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="addressStreet" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Calle <span className="text-primary">*</span>
+              </Label>
+              <Input
+                id="addressStreet"
+                autoFocus
+                value={addressStreet}
+                onChange={(e) => setAddressStreet(e.target.value)}
+                placeholder="Ej: Godoy Cruz"
+                className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="addressNumber" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Número
+              </Label>
+              <Input
+                id="addressNumber"
+                value={addressNumber}
+                onChange={(e) => setAddressNumber(e.target.value)}
+                placeholder="Ej: 2814"
+                className="bg-surface-mid border-none text-on-surface h-12 rounded-xl focus-visible:ring-1 focus-visible:ring-primary placeholder:text-muted-foreground"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -331,7 +348,7 @@ export function QuickPropertyForm({ onSuccess, onCancel, inline = false, default
             </Button>
             <Button
               type="submit"
-              disabled={isPropertySaving || !ownerId}
+              disabled={isPropertySaving || !ownerId || !addressStreet}
               className="bg-primary text-primary-foreground hover:brightness-110 font-bold rounded-full px-8 h-12 flex items-center justify-center gap-2 group transition-all"
             >
               {isPropertySaving ? (
