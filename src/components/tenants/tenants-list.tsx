@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EntityAvatar } from "@/components/ui/entity-avatar";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -26,7 +27,6 @@ import {
   ChevronDown,
   ChevronRight,
   Download,
-  Loader2,
   PlusCircle,
   Search,
   Users,
@@ -163,13 +163,54 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
+// ─── Skeleton de carga ────────────────────────────────────────────────────────
+
+const SKELETON_WIDTHS = [
+  ["w-28", "w-48", "w-32"],
+  ["w-24", "w-52", "w-36"],
+  ["w-32", "w-44", "w-28"],
+  ["w-20", "w-56", "w-40"],
+  ["w-28", "w-40", "w-32"],
+] as const;
+
+function SkeletonGroupRow({ index }: { index: number }) {
+  const widths = SKELETON_WIDTHS[index % SKELETON_WIDTHS.length];
+  return (
+    <TableRow className="pointer-events-none">
+      <TableCell className="w-8 p-2" />
+      <TableCell>
+        <div className="flex items-center gap-3">
+          <Skeleton className="size-9 rounded-[10px] shrink-0" />
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className={cn("h-3 rounded-sm", widths[0])} />
+            <Skeleton className="h-2.5 rounded-sm w-16" />
+          </div>
+        </div>
+      </TableCell>
+      <TableCell><Skeleton className={cn("h-3 rounded-sm", widths[1])} /></TableCell>
+      <TableCell><Skeleton className="h-5 rounded w-16" /></TableCell>
+      <TableCell><Skeleton className="h-3 rounded-sm w-20" /></TableCell>
+      <TableCell><Skeleton className="h-3 rounded-sm w-20" /></TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2 min-w-[100px]">
+          <Skeleton className="h-1.5 flex-1 rounded-full" />
+          <Skeleton className="h-3 w-7 rounded-sm" />
+        </div>
+      </TableCell>
+      <TableCell><Skeleton className={cn("h-5 rounded-full", widths[2])} /></TableCell>
+    </TableRow>
+  );
+}
+
 // ─── Fila de grupo (primario + co-inquilinos colapsables) ─────────────────────
 
 function TenantGroupRow({
   group,
+  index,
   onNavigate,
 }: {
   group: TenantGroup;
+  index: number;
   onNavigate: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -180,7 +221,8 @@ function TenantGroupRow({
   return (
     <>
       <TableRow
-        className="cursor-pointer hover:bg-muted/30 transition-colors"
+        className="cursor-pointer hover:bg-muted/30 transition-colors row-animate"
+        style={{ "--row-delay": `${index * 45}ms` } as React.CSSProperties}
         onClick={() => onNavigate(primary.id)}
       >
         {/* Toggle */}
@@ -614,10 +656,6 @@ export function TenantsList() {
             Reintentar
           </Button>
         </div>
-      ) : isLoading ? (
-        <div className="flex h-64 items-center justify-center">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
-        </div>
       ) : (
         <>
           <div className="rounded-xl border overflow-hidden">
@@ -635,11 +673,16 @@ export function TenantsList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {groups.length > 0 ? (
-                  groups.map((group) => (
+                {isLoading ? (
+                  Array.from({ length: 5 }, (_, i) => (
+                    <SkeletonGroupRow key={i} index={i} />
+                  ))
+                ) : groups.length > 0 ? (
+                  groups.map((group, i) => (
                     <TenantGroupRow
                       key={group.primary.id}
                       group={group}
+                      index={i}
                       onNavigate={(id) => router.push(`/inquilinos/${id}`)}
                     />
                   ))
