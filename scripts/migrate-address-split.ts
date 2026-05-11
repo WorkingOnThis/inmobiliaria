@@ -9,7 +9,7 @@ async function main() {
     SET "addressStreet" = address
     WHERE "addressStreet" IS NULL OR "addressStreet" = ''
   `);
-  console.log("Migration complete.");
+  console.log(`Migration complete. Rows updated: ${(result as any).rowCount ?? "unknown"}`);
   process.exit(0);
 }
 
