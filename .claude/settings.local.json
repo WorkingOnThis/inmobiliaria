@@ -197,7 +197,12 @@
       "Bash(Select-String -Path \"src\\\\components\\\\owners\\\\owners-list.tsx\" -Pattern \"Loader2\")",
       "PowerShell(Get-Process *)",
       "Bash(Select-String \"property\\\\.address\" -n)",
-      "Bash(Select-String -Pattern '\\\\.address\\(?![A-Za-z]\\)' -Path \"src\\\\app\\\\\\(dashboard\\)\\\\propiedades\\\\[id]\\\\page.tsx\")"
+      "Bash(Select-String -Pattern '\\\\.address\\(?![A-Za-z]\\)' -Path \"src\\\\app\\\\\\(dashboard\\)\\\\propiedades\\\\[id]\\\\page.tsx\")",
+      "PowerShell(Get-ChildItem \"F:\\\\Documentos\\\\Proyectos\\\\inmobiliaria\\\\drizzle\\\\\" | Where-Object { $_.Name -match \"\\\\.sql$\" } | Sort-Object Name | Select-Object -Last 10 | Select-Object Name)",
+      "Bash(openssl dgst *)",
+      "Bash(sha256sum drizzle/0026_petite_gressill.sql)",
+      "Bash(certutil -hashfile drizzle/0026_petite_gressill.sql SHA256)",
+      "Skill(superpowers:systematic-debugging)"
     ]
   },
   "enableAllProjectMcpServers": true,

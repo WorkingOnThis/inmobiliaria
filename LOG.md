@@ -4,6 +4,61 @@ Registro de sesiones de trabajo. Más nueva arriba.
 
 ---
 
+## 2026-05-17 — Control de versiones, eliminación de propiedades, rescisión de contratos y rediseño de lista de contratos
+
+### Qué hice
+
+**1. Control de versiones con GitHub (ya existía, lo formalizamos)**
+Confirmamos que el proyecto ya tiene Git + GitHub configurado. Establecimos el flujo: trabajo diario en `dev-gaston` (antes `dev`), producción solo en `main`. Renombramos la rama `dev` a `dev-gaston` para cuando se sume un segundo programador.
+
+**2. Eliminación de propiedades**
+Agregué un botón de 3 puntos en la ficha de cada propiedad que abre un menú con la opción "Eliminar". Antes de borrar, verifica si la propiedad tiene contratos vinculados — si los tiene, bloquea la eliminación con un mensaje claro en lugar de dejar al usuario en un estado roto.
+
+**3. Rescisión de contratos**
+El botón "Rescindir contrato" no hacía nada (le faltaba el `onClick`). Lo conecté con la lógica existente de enmiendas (`POST /api/contracts/[id]/amendments`), agregué un `AlertDialog` con selector de fecha efectiva, y el estado del contrato cambia a `terminated` al confirmar.
+
+**4. Rediseño de la lista de contratos**
+- Filtros agrupados con sub-filtros: "Todos" / "Activos" / "En proceso" (borrador + pendiente de firma) / "Terminados" (vencidos + rescindidos)
+- Color semántico por grupo: verde para activos, azul tranquilo para en proceso, rojo grisáceo para terminados
+- Contratos terminados con opacidad reducida (45% en reposo, 80% al hover)
+- N° de contrato tintado levemente según el grupo al que pertenece
+- Sub-filtros aparecen con animación de entrada
+- Orden por defecto: en proceso → activos → terminados
+- Estado vacío contextual según el filtro activo
+
+### Por qué lo hice así y no de otra forma
+
+**Bloqueo en lugar de error silencioso para la eliminación**: si intentás borrar una propiedad con contratos, la base de datos la hubiera rechazado con un error críptico de FK violation. En cambio, la API verifica primero y devuelve un 409 con un mensaje que el usuario entiende. La verificación va en el servidor, no en el cliente, porque el cliente nunca es fuente de verdad.
+
+**`type: "termination"` en la enmienda**: el contrato ya tenía un sistema de historial de cambios (`amendments`). Rescisión es solo un cambio de estado — en lugar de crear una tabla nueva, usamos ese mecanismo y guardamos qué estado tenía antes y cuál tiene después.
+
+**CASE expression en SQL para el ordenamiento**: quería que los contratos "en proceso" aparecieran primero sin agregar una columna de orden a la base de datos. SQL tiene `CASE WHEN status = 'draft' THEN 0 ...` que asigna un número a cada estado solo al momento de la query, sin tocar el schema.
+
+**Colores OKLCH inline en vez de clases Tailwind**: las clases de Tailwind se compilan en build time — `oklch(0.58 0.07 245 / 0.11)` no es una clase Tailwind conocida, así que usé `style={{ background: "oklch(...)" }}` directamente. Para el verde de activos sí usé clases (`bg-income-dim`) porque ya existían definidas en el sistema de diseño.
+
+### Conceptos que aparecieron
+
+- **FK violation (Foreign Key)**: error de base de datos que ocurre cuando intentás borrar un registro que otros registros referencian. Como si quisieras borrar a un propietario que tiene propiedades — la DB lo rechaza porque quedarían propiedades "huérfanas". El bloqueo preventivo en la API da un mensaje útil en lugar del error técnico.
+- **HTTP 409 Conflict**: código de respuesta para "la operación no puede completarse porque el estado actual lo impide". Distinto de 400 (datos inválidos) o 500 (error inesperado). Es el código semánticamente correcto para "no podés borrar esto porque hay algo vinculado".
+- **CASE expression en SQL**: operador que asigna valores temporales durante una query. `CASE status WHEN 'draft' THEN 0 WHEN 'active' THEN 1 END` crea una columna virtual solo para ese `ORDER BY`, sin cambiar el schema.
+- **OKLCH**: sistema de color que funciona en términos de luminosidad, croma y matiz. A diferencia de `hsl`, los colores a igual luminosidad se ven perceptualmente iguales. Útil para ajustar colores con precisión quirúrgica desde el código.
+- **Rama personal por desarrollador**: cada programador trabaja en su propia rama (`dev-gaston`, `dev-[otro]`). Se integra a `main` cuando está estable. Evita que los cambios de uno bloqueen al otro mientras trabajan sobre cosas distintas.
+
+### Preguntas para reflexionar
+
+1. ¿Por qué la verificación de contratos vinculados va en el servidor y no en el cliente?
+2. Si tuvieras que agregar una "papelera" (borrado suave, no definitivo), ¿qué cambiaría en la DB y en la UI?
+3. ¿En qué se diferencia un `amendment` de un `event`? ¿Cuándo usarías uno y cuándo el otro?
+
+### Qué debería anotar en Obsidian
+
+- [ ] **Concepto**: FK violation — qué es, cuándo ocurre, cómo manejarlo con 409
+- [ ] **Decisión técnica**: por qué usar CASE expression en vez de columna de orden
+- [ ] **Patrón**: bloqueo preventivo en DELETE — verificar relaciones antes de borrar
+- [ ] **Decisión técnica**: rama personal por desarrollador vs rama compartida
+
+---
+
 ## 2026-05-11 — Navegación instantánea con loading.tsx + animaciones en índices
 
 ### Qué hice

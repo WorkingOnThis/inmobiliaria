@@ -56,3 +56,5 @@ claude.local.md
 
 # private uploads (served only via authenticated API)
 /private-uploads/.tmp_design/
+
+WORKFLOW.local.md
