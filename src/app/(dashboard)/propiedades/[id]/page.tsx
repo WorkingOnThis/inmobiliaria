@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, X, Save, ExternalLink, PlusCircle, Plus, Trash2, ChevronDown, RotateCcw, Pencil } from "lucide-react";
+import { ArrowLeft, Loader2, X, Save, ExternalLink, PlusCircle, Plus, Trash2, ChevronDown, RotateCcw, Pencil, MoreHorizontal } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
@@ -59,6 +59,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1130,6 +1136,29 @@ function PropiedadFichaContent() {
 
   const prop = data?.property;
 
+  // ── Delete state ─────────────────────────────────────────────────────────────
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/properties/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d.error || "Error al eliminar la propiedad");
+        return;
+      }
+      toast.success("Propiedad eliminada");
+      router.push("/propiedades");
+    } catch {
+      toast.error("Error al eliminar la propiedad");
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
+
   // ── Edit mode state ──────────────────────────────────────────────────────────
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1437,7 +1466,48 @@ function PropiedadFichaContent() {
           <span className="text-[0.8rem] font-semibold text-foreground truncate max-w-xs">
             {prop.title || formatAddress(prop)}
           </span>
+          <div className="ml-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="size-7">
+                  <MoreHorizontal size={15} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 size={14} className="mr-2" />
+                  Eliminar propiedad
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
+        <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar esta propiedad?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción no se puede deshacer. Se eliminará permanentemente{" "}
+                <strong>{prop.title || formatAddress(prop)}</strong> y todos sus datos asociados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={deleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* ── Ficha header ── */}
         <div className="flex-shrink-0 bg-card border-b border-border">

@@ -35,6 +35,16 @@ import {
   Pencil,
   ChevronRight,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format, differenceInCalendarMonths } from "date-fns";
 import { DatePicker } from "@/components/ui/date-picker";
 import { es } from "date-fns/locale";
@@ -547,6 +557,39 @@ export function ContractDetail({ id }: { id: string }) {
     },
     onSuccess: () => {
       toast.success("Contrato activado");
+      queryClient.invalidateQueries({ queryKey: ["contract", id] });
+      queryClient.invalidateQueries({ queryKey: ["contracts"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const [confirmRescission, setConfirmRescission] = useState(false);
+  const [rescissionDate, setRescissionDate] = useState("");
+
+  const rescindMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/contracts/${id}/amendments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "termination",
+          title: "Rescisión Consensuada",
+          effectiveDate: rescissionDate,
+          fieldsChanged: {
+            status: { before: data?.status, after: "terminated" },
+          },
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Error al rescindir el contrato");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Contrato rescindido");
+      setConfirmRescission(false);
+      setRescissionDate("");
       queryClient.invalidateQueries({ queryKey: ["contract", id] });
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
     },
@@ -1641,7 +1684,11 @@ export function ContractDetail({ id }: { id: string }) {
             <button className="px-[14px] py-[7px] text-[0.72rem] font-semibold border border-border rounded-xl text-text-secondary bg-transparent hover:bg-surface-high transition-colors">
               ↓ Vista previa PDF
             </button>
-            <button className="px-[14px] py-[7px] text-[0.72rem] font-semibold rounded-xl text-error bg-transparent border border-error/25 hover:bg-error-dim transition-colors">
+            <button
+              onClick={() => setConfirmRescission(true)}
+              disabled={!["active", "expiring_soon"].includes(data?.status ?? "")}
+              className="px-[14px] py-[7px] text-[0.72rem] font-semibold rounded-xl text-error bg-transparent border border-error/25 hover:bg-error-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
               Rescindir contrato
             </button>
           </div>
@@ -1664,6 +1711,36 @@ export function ContractDetail({ id }: { id: string }) {
         </div>
 
       </div>
+
+      <AlertDialog open={confirmRescission} onOpenChange={setConfirmRescission}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Rescindir este contrato?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción cambia el estado del contrato a <strong>rescindido</strong>. Ingresá la fecha efectiva de rescisión.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-1 py-2">
+            <Label className="text-xs text-muted-foreground mb-1.5 block">Fecha efectiva de rescisión</Label>
+            <DatePicker
+              value={rescissionDate}
+              onChange={(v) => setRescissionDate(v ?? "")}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={rescindMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!rescissionDate || rescindMutation.isPending}
+              onClick={(e) => { e.preventDefault(); rescindMutation.mutate(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {rescindMutation.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+              Rescindir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }

@@ -57,6 +57,10 @@ export async function GET(request: NextRequest) {
     const conditions = [eq(contract.agencyId, agencyId)];
     if (statusFilter === "activos") {
       conditions.push(inArray(contract.status, ["active", "expiring_soon"]));
+    } else if (statusFilter === "en_proceso") {
+      conditions.push(inArray(contract.status, ["draft", "pending_signature"]));
+    } else if (statusFilter === "terminados") {
+      conditions.push(inArray(contract.status, ["expired", "terminated"]));
     } else if (statusFilter) {
       conditions.push(eq(contract.status, statusFilter));
     }

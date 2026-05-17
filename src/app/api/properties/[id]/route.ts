@@ -246,3 +246,49 @@ export async function PATCH(
     return NextResponse.json({ error: "Error al actualizar la propiedad" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    const agencyId = requireAgencyId(session);
+
+    if (!canManageProperties(session!.user.role)) {
+      return NextResponse.json({ error: "No tienes permisos" }, { status: 403 });
+    }
+
+    const { id } = await params;
+    await requireAgencyResource(property, id, agencyId);
+
+    const [linkedContract] = await db
+      .select({ id: contract.id })
+      .from(contract)
+      .where(eq(contract.propertyId, id))
+      .limit(1);
+
+    if (linkedContract) {
+      return NextResponse.json(
+        { error: "No se puede eliminar una propiedad con contratos vinculados. Eliminá el contrato primero." },
+        { status: 409 }
+      );
+    }
+
+    const [deleted] = await db
+      .delete(property)
+      .where(and(eq(property.id, id), eq(property.agencyId, agencyId)))
+      .returning();
+
+    if (!deleted) {
+      return NextResponse.json({ error: "Propiedad no encontrada" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const resp = handleAgencyError(error);
+    if (resp) return resp;
+    console.error("Error deleting property:", error);
+    return NextResponse.json({ error: "Error al eliminar la propiedad" }, { status: 500 });
+  }
+}

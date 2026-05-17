@@ -63,42 +63,67 @@ function validityDays(startDate: string, endDate: string, status: string): Valid
 /* ── Status config ────────────────────────────────────────── */
 
 const STATUS_LABELS: Record<string, string> = {
-  active: "Vigente",
-  expiring_soon: "Por vencer",
-  expired: "Vencido",
-  terminated: "Rescindido",
-  draft: "En redacción",
+  // En proceso
+  draft:             "Borrador",
   pending_signature: "Pend. firma",
+  // Activo
+  active:            "Vigente",
+  expiring_soon:     "Por vencer",
+  // Inactivo
+  expired:           "Vencido",
+  terminated:        "Rescindido",
 };
 
 function statusTagClasses(status: string): { pill: string; dot: string } {
   switch (status) {
-    case "active": return { pill: "bg-green-dim text-green", dot: "bg-green" };
-    case "expiring_soon": return { pill: "bg-mustard-dim text-mustard", dot: "bg-mustard" };
-    case "expired": return { pill: "bg-error-dim text-error", dot: "bg-error" };
-    case "terminated": return { pill: "bg-surface-highest text-muted-foreground border border-border", dot: "bg-muted-foreground" };
-    case "draft": return { pill: "bg-info-dim text-info", dot: "bg-info" };
-    case "pending_signature": return { pill: "bg-primary-dim text-primary", dot: "bg-primary" };
-    default: return { pill: "bg-surface-highest text-muted-foreground", dot: "bg-muted-foreground" };
+    case "draft":
+    case "pending_signature":
+      return { pill: "bg-info-dim text-info", dot: "bg-info" };
+    case "active":
+      return { pill: "bg-green-dim text-green", dot: "bg-green" };
+    case "expiring_soon":
+      return { pill: "bg-mustard-dim text-mustard", dot: "bg-mustard" };
+    case "expired":
+    case "terminated":
+      return { pill: "bg-surface-highest text-muted-foreground border border-border", dot: "bg-muted-foreground" };
+    default:
+      return { pill: "bg-surface-highest text-muted-foreground", dot: "bg-muted-foreground" };
   }
 }
 
 /* ── Filter config ────────────────────────────────────────── */
 
-const STATUS_FILTERS = [
-  { value: "", label: "Todos" },
-  { value: "activos", label: "Activos" },
-  { value: "expiring_soon", label: "Por vencer" },
-  { value: "draft", label: "En redacción" },
-  { value: "pending_signature", label: "Pend. firma" },
-  { value: "expired", label: "Vencidos" },
-  { value: "terminated", label: "Rescindidos" },
+const FILTER_GROUPS = [
+  { value: "", label: "Todos", children: [] },
+  {
+    value: "activos", label: "Activos",
+    children: [
+      { value: "active", label: "Vigente" },
+      { value: "expiring_soon", label: "Por vencer" },
+    ],
+  },
+  {
+    value: "en_proceso", label: "En proceso",
+    children: [
+      { value: "draft", label: "Borrador" },
+      { value: "pending_signature", label: "Pend. firma" },
+    ],
+  },
+  {
+    value: "terminados", label: "Terminados",
+    children: [
+      { value: "expired", label: "Vencido" },
+      { value: "terminated", label: "Rescindido" },
+    ],
+  },
 ];
 
-function getCountForFilter(filterValue: string, counts: Record<string, number>): number {
-  if (filterValue === "") return Object.values(counts).reduce((sum, v) => sum + (v ?? 0), 0);
-  if (filterValue === "activos") return (counts.active ?? 0) + (counts.expiring_soon ?? 0);
-  return counts[filterValue] ?? 0;
+function getGroupCount(groupValue: string, counts: Record<string, number>): number {
+  if (groupValue === "") return Object.values(counts).reduce((s, v) => s + (v ?? 0), 0);
+  if (groupValue === "activos") return (counts.active ?? 0) + (counts.expiring_soon ?? 0);
+  if (groupValue === "en_proceso") return (counts.draft ?? 0) + (counts.pending_signature ?? 0);
+  if (groupValue === "terminados") return (counts.expired ?? 0) + (counts.terminated ?? 0);
+  return counts[groupValue] ?? 0;
 }
 
 /* ── Skeleton de carga ────────────────────────────────────── */
@@ -183,15 +208,19 @@ export function ContractsList() {
 
   const page = parseInt(searchParams.get("page") || "1");
   const limit = 10;
-  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "");
+  const [groupFilter, setGroupFilter] = useState("");
+  const [subFilter, setSubFilter] = useState("");
   const [searchInput, setSearchInput] = useState(searchParams.get("q") || "");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
 
+  // El parámetro efectivo para la API es el subfiltro si está activo, sino el grupo
+  const activeStatusParam = subFilter || groupFilter;
+
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["contracts", page, statusFilter, searchQuery],
+    queryKey: ["contracts", page, activeStatusParam, searchQuery],
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-      if (statusFilter) params.set("status", statusFilter);
+      if (activeStatusParam) params.set("status", activeStatusParam);
       if (searchQuery) params.set("q", searchQuery);
       const response = await fetch(`/api/contracts?${params.toString()}`);
       if (!response.ok) {
@@ -208,13 +237,13 @@ export function ContractsList() {
     router.push(`/contratos?${params.toString()}`);
   };
 
-  const handleStatusFilter = (status: string) => {
-    setStatusFilter(status);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", "1");
-    if (status) params.set("status", status);
-    else params.delete("status");
-    router.push(`/contratos?${params.toString()}`);
+  const handleGroupFilter = (group: string) => {
+    setGroupFilter(group);
+    setSubFilter("");
+  };
+
+  const handleSubFilter = (sub: string) => {
+    setSubFilter(sub === subFilter ? "" : sub);
   };
 
   const handleSearch = (value: string) => {
@@ -343,30 +372,64 @@ export function ContractsList() {
             )}
           </div>
 
-          {/* Segmented filter */}
-          <div className="inline-flex bg-surface-low border border-border rounded-lg p-[3px] gap-[1px] overflow-x-auto">
-            {STATUS_FILTERS.map((f) => {
-              const isActive = statusFilter === f.value;
-              const count = getCountForFilter(f.value, counts);
-              return (
-                <button
-                  key={f.value}
-                  onClick={() => handleStatusFilter(f.value)}
-                  className={`inline-flex items-center gap-[6px] px-[11px] py-[6px] rounded-[5px] text-[12.5px] font-medium cursor-pointer transition-all whitespace-nowrap ${
-                    isActive ? "bg-primary-dim text-primary" : "text-muted-foreground hover:text-on-surface"
-                  }`}
-                >
-                  {f.label}
-                  <span
-                    className={`font-mono text-[10.5px] px-[5px] py-[1px] rounded-[3px] border leading-[1.3] transition-all ${
-                      isActive ? "bg-primary-dim text-primary border-transparent" : "bg-surface border-border text-muted-foreground"
+          {/* Filtro de grupos */}
+          <div className="flex flex-col gap-[6px]">
+            <div className="inline-flex bg-surface-low border border-border rounded-lg p-[3px] gap-[1px] overflow-x-auto">
+              {FILTER_GROUPS.map((g) => {
+                const isActive = groupFilter === g.value;
+                const count = getGroupCount(g.value, counts);
+                return (
+                  <button
+                    key={g.value}
+                    onClick={() => handleGroupFilter(g.value)}
+                    className={`inline-flex items-center gap-[6px] px-[11px] py-[6px] rounded-[5px] text-[12.5px] font-medium cursor-pointer transition-all whitespace-nowrap ${
+                      isActive ? "bg-primary-dim text-primary" : "text-muted-foreground hover:text-on-surface"
                     }`}
                   >
-                    {isLoading ? "·" : count}
-                  </span>
-                </button>
+                    {g.label}
+                    <span
+                      className={`font-mono text-[10.5px] px-[5px] py-[1px] rounded-[3px] border leading-[1.3] transition-all ${
+                        isActive ? "bg-primary-dim text-primary border-transparent" : "bg-surface border-border text-muted-foreground"
+                      }`}
+                    >
+                      {isLoading ? "·" : count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Sub-filtros del grupo activo */}
+            {groupFilter !== "" && (() => {
+              const group = FILTER_GROUPS.find((g) => g.value === groupFilter);
+              if (!group || group.children.length === 0) return null;
+              return (
+                <div className="inline-flex bg-surface-low border border-border rounded-lg p-[3px] gap-[1px] overflow-x-auto">
+                  {group.children.map((child) => {
+                    const isActive = subFilter === child.value;
+                    const count = counts[child.value] ?? 0;
+                    return (
+                      <button
+                        key={child.value}
+                        onClick={() => handleSubFilter(child.value)}
+                        className={`inline-flex items-center gap-[6px] px-[11px] py-[6px] rounded-[5px] text-[12px] font-medium cursor-pointer transition-all whitespace-nowrap ${
+                          isActive ? "bg-surface text-on-surface" : "text-muted-foreground hover:text-on-surface"
+                        }`}
+                      >
+                        {child.label}
+                        <span
+                          className={`font-mono text-[10.5px] px-[5px] py-[1px] rounded-[3px] border leading-[1.3] transition-all ${
+                            isActive ? "bg-surface-high border-border text-on-surface" : "bg-surface border-border text-muted-foreground"
+                          }`}
+                        >
+                          {isLoading ? "·" : count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               );
-            })}
+            })()}
           </div>
         </div>
 
