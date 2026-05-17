@@ -80,7 +80,7 @@ function statusTagClasses(status: string): { pill: string; dot: string } {
     case "pending_signature":
       return { pill: "bg-info-dim text-info", dot: "bg-info" };
     case "active":
-      return { pill: "bg-green-dim text-green", dot: "bg-green" };
+      return { pill: "bg-income-dim text-income", dot: "bg-income" };
     case "expiring_soon":
       return { pill: "bg-mustard-dim text-mustard", dot: "bg-mustard" };
     case "expired":
@@ -88,6 +88,27 @@ function statusTagClasses(status: string): { pill: string; dot: string } {
       return { pill: "bg-surface-highest text-muted-foreground border border-border", dot: "bg-muted-foreground" };
     default:
       return { pill: "bg-surface-highest text-muted-foreground", dot: "bg-muted-foreground" };
+  }
+}
+
+function groupActiveClasses(groupValue: string): { button: string; count: string; style?: React.CSSProperties } {
+  switch (groupValue) {
+    case "activos":
+      return { button: "bg-income-dim text-income", count: "bg-income-dim text-income border-transparent" };
+    case "en_proceso":
+      return {
+        button: "",
+        count: "border-transparent",
+        style: { background: "oklch(0.58 0.07 245 / 0.11)", color: "oklch(0.70 0.09 245)" },
+      };
+    case "terminados":
+      return {
+        button: "",
+        count: "border-transparent",
+        style: { background: "oklch(0.52 0.06 18 / 0.11)", color: "oklch(0.64 0.08 18)" },
+      };
+    default:
+      return { button: "bg-primary-dim text-primary", count: "bg-primary-dim text-primary border-transparent" };
   }
 }
 
@@ -378,18 +399,21 @@ export function ContractsList() {
               {FILTER_GROUPS.map((g) => {
                 const isActive = groupFilter === g.value;
                 const count = getGroupCount(g.value, counts);
+                const activeClasses = groupActiveClasses(g.value);
                 return (
                   <button
                     key={g.value}
                     onClick={() => handleGroupFilter(g.value)}
-                    className={`inline-flex items-center gap-[6px] px-[11px] py-[6px] rounded-[5px] text-[12.5px] font-medium cursor-pointer transition-all whitespace-nowrap ${
-                      isActive ? "bg-primary-dim text-primary" : "text-muted-foreground hover:text-on-surface"
+                    style={isActive && activeClasses.style ? activeClasses.style : undefined}
+                    className={`inline-flex items-center gap-[6px] px-[11px] py-[6px] rounded-[5px] text-[12.5px] font-medium cursor-pointer transition-all duration-150 whitespace-nowrap ${
+                      isActive ? activeClasses.button : "text-muted-foreground hover:text-on-surface"
                     }`}
                   >
                     {g.label}
                     <span
-                      className={`font-mono text-[10.5px] px-[5px] py-[1px] rounded-[3px] border leading-[1.3] transition-all ${
-                        isActive ? "bg-primary-dim text-primary border-transparent" : "bg-surface border-border text-muted-foreground"
+                      style={isActive && activeClasses.style ? activeClasses.style : undefined}
+                      className={`font-mono text-[10.5px] px-[5px] py-[1px] rounded-[3px] border leading-[1.3] transition-all duration-150 ${
+                        isActive ? activeClasses.count : "bg-surface border-border text-muted-foreground"
                       }`}
                     >
                       {isLoading ? "·" : count}
@@ -403,8 +427,9 @@ export function ContractsList() {
             {groupFilter !== "" && (() => {
               const group = FILTER_GROUPS.find((g) => g.value === groupFilter);
               if (!group || group.children.length === 0) return null;
+              const parentActive = groupActiveClasses(group.value);
               return (
-                <div className="inline-flex bg-surface-low border border-border rounded-lg p-[3px] gap-[1px] overflow-x-auto">
+                <div className="inline-flex bg-surface-low border border-border rounded-lg p-[3px] gap-[1px] overflow-x-auto animate-in fade-in slide-in-from-top-1 duration-150">
                   {group.children.map((child) => {
                     const isActive = subFilter === child.value;
                     const count = counts[child.value] ?? 0;
@@ -412,14 +437,16 @@ export function ContractsList() {
                       <button
                         key={child.value}
                         onClick={() => handleSubFilter(child.value)}
-                        className={`inline-flex items-center gap-[6px] px-[11px] py-[6px] rounded-[5px] text-[12px] font-medium cursor-pointer transition-all whitespace-nowrap ${
-                          isActive ? "bg-surface text-on-surface" : "text-muted-foreground hover:text-on-surface"
+                        style={isActive && parentActive.style ? parentActive.style : undefined}
+                        className={`inline-flex items-center gap-[6px] px-[11px] py-[6px] rounded-[5px] text-[12px] font-medium cursor-pointer transition-all duration-150 whitespace-nowrap ${
+                          isActive ? parentActive.button : "text-muted-foreground hover:text-on-surface"
                         }`}
                       >
                         {child.label}
                         <span
-                          className={`font-mono text-[10.5px] px-[5px] py-[1px] rounded-[3px] border leading-[1.3] transition-all ${
-                            isActive ? "bg-surface-high border-border text-on-surface" : "bg-surface border-border text-muted-foreground"
+                          style={isActive && parentActive.style ? parentActive.style : undefined}
+                          className={`font-mono text-[10.5px] px-[5px] py-[1px] rounded-[3px] border leading-[1.3] transition-all duration-150 ${
+                            isActive ? parentActive.count : "bg-surface border-border text-muted-foreground"
                           }`}
                         >
                           {isLoading ? "·" : count}
@@ -504,13 +531,8 @@ export function ContractsList() {
                         onClick={() => router.push(`/contratos/${c.id}`)}
                       >
                         {/* Nº */}
-                        <td
-                          className="px-[16px] py-[14px] border-b border-border align-middle"
-                          style={{
-                            borderLeft: isExpiring ? "2px solid var(--mustard)" : isExpired ? "2px solid var(--error)" : undefined,
-                          }}
-                        >
-                          <span className="font-mono text-[11.5px] text-muted-foreground">
+                        <td className="px-[16px] py-[14px] border-b border-border align-middle">
+                          <span className={`font-mono text-[12px] ${isExpired || isTerminated ? "text-muted-foreground" : "text-on-surface"}`}>
                             {c.contractNumber}
                           </span>
                         </td>
@@ -594,7 +616,7 @@ export function ContractsList() {
                           ) : (
                             <>
                               <div className="font-mono font-semibold text-[13.5px] text-muted-foreground">—</div>
-                              <div className="text-[11px] text-muted-foreground mt-[3px]">Pendiente</div>
+                              <div className="text-[11px] text-muted-foreground mt-[3px]">Sin definir</div>
                             </>
                           )}
                         </td>
@@ -621,8 +643,13 @@ export function ContractsList() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="h-24 text-center text-[13px] text-muted-foreground">
-                      No hay contratos registrados.
+                    <td colSpan={8} className="py-12 text-center">
+                      <p className="text-[13px] font-medium text-on-surface mb-1">
+                        {groupFilter ? "Sin contratos en este grupo" : "Sin contratos registrados"}
+                      </p>
+                      <p className="text-[12px] text-muted-foreground">
+                        {groupFilter ? "Probá seleccionando otro filtro o volvé a Todos." : "Los contratos aparecen acá una vez creados."}
+                      </p>
                     </td>
                   </tr>
                 )}
