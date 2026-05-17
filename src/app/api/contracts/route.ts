@@ -10,7 +10,7 @@ import { canManageContracts } from "@/lib/permissions";
 import { requireAgencyId, handleAgencyError } from "@/lib/auth/agency";
 import { CONTRACT_TYPES } from "@/lib/clients/constants";
 import { z } from "zod";
-import { count, desc, eq, and, inArray, or, ilike } from "drizzle-orm";
+import { count, desc, eq, and, inArray, or, ilike, sql } from "drizzle-orm";
 import { formatAddress } from "@/lib/properties/format-address";
 
 const createContractSchema = z.object({
@@ -101,7 +101,17 @@ export async function GET(request: NextRequest) {
         .from(contract)
         .leftJoin(property, eq(contract.propertyId, property.id))
         .where(where)
-        .orderBy(desc(contract.createdAt))
+        .orderBy(
+          sql`CASE status
+            WHEN 'draft'             THEN 0
+            WHEN 'pending_signature' THEN 1
+            WHEN 'active'            THEN 2
+            WHEN 'expiring_soon'     THEN 3
+            WHEN 'expired'           THEN 4
+            WHEN 'terminated'        THEN 5
+            ELSE 6 END`,
+          desc(contract.createdAt)
+        )
         .limit(limit)
         .offset(offset),
       db.select({ value: count() }).from(contract).where(where),

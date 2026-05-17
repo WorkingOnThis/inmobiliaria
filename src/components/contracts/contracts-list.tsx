@@ -526,13 +526,22 @@ export function ContractsList() {
                     return (
                       <tr
                         key={c.id}
-                        className={`group cursor-pointer transition-colors hover:bg-surface-low row-animate ${isTerminated ? "opacity-60 hover:opacity-100" : ""}`}
+                        className={`group cursor-pointer transition-colors hover:bg-surface-low row-animate ${isTerminated || isExpired ? "opacity-45 hover:opacity-80" : ""}`}
                         style={{ "--row-delay": `${i * 45}ms` } as React.CSSProperties}
                         onClick={() => router.push(`/contratos/${c.id}`)}
                       >
                         {/* Nº */}
                         <td className="px-[16px] py-[14px] border-b border-border align-middle">
-                          <span className={`font-mono text-[12px] ${isExpired || isTerminated ? "text-muted-foreground" : "text-on-surface"}`}>
+                          <span
+                            className="font-mono text-[12px]"
+                            style={{
+                              color: isExpired || isTerminated
+                                ? "oklch(0.64 0.08 18)"
+                                : isDraft || c.status === "pending_signature"
+                                ? "oklch(0.70 0.09 245)"
+                                : "oklch(0.70 0.10 155)",
+                            }}
+                          >
                             {c.contractNumber}
                           </span>
                         </td>
